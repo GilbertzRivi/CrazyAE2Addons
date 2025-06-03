@@ -77,12 +77,13 @@ public abstract class MixinGT implements IPatternProviderTargetCacheExt {
             private final IPatternDetails details1 = MixinGT.this.details;
             @Override
             public long insert(AEKey what, long amount, Actionable type) {
-                if (details1 != null){
+                if (details1 != null) {
                     CompoundTag tag = details1.getDefinition().getTag();
                     int c = (tag != null && tag.contains("circuit")) ? tag.getInt("circuit") : -1;
-                    if (c != -1) {
-                        traverseGridIfInterface(c, pos1, lvl1);
-                        setCirc(c, pos1, lvl1);
+                    // If the circuit setting is not valid, do nothing.
+                    if (c != -1 && c != getCirc(pos1, lvl1)) {
+                        // Effectively output is full.
+                        return 0;
                     }
                 }
                 return storage.insert(what, amount, type, src);
@@ -90,7 +91,28 @@ public abstract class MixinGT implements IPatternProviderTargetCacheExt {
 
             @Override
             public boolean containsPatternInput(Set<AEKey> patternInputs) {
-                for (var stack : storage.getAvailableStacks()) {
+                var stacks = storage.getAvailableStacks();
+                if (details1 != null) {
+                    CompoundTag tag = details1.getDefinition().getTag();
+                    int c = (tag != null && tag.contains("circuit")) ? tag.getInt("circuit") : -1;
+                    // If the circuit setting is invalid, try change circuit.
+                    if (c != -1 && c != getCirc(pos1, lvl1)) {
+                        // Additonial item with other circuit setting.
+                        if (stacks.size() > 1) return true;
+                        // Check if item is in inventory without circuit.
+                        for (var stack : stacks) {
+                            if (stack.getKey().getId() != GenericStack.fromItemStack(GTItems.PROGRAMMED_CIRCUIT.asStack()).what().getId()) {
+                                return true;
+                            }
+                        }
+                        // Change circuit number in advance.
+                        traverseGridIfInterface(c, pos1, lvl1);
+                        setCirc(c, pos1, lvl1);
+                        return false;
+                    }
+                    // If the circuit setting is valid, freely check ingredient.
+                }
+                for (var stack : stacks) {
                     if (patternInputs.contains(stack.getKey().dropSecondary())) {
                         return true;
                     }
@@ -145,6 +167,28 @@ public abstract class MixinGT implements IPatternProviderTargetCacheExt {
             }
         } catch (Exception e){
             LogUtils.getLogger().info(e.toString());
+        }
+    }
+
+    @Unique
+    private static int getCirc(BlockPos pos, Level lvl) {
+        if (!CrazyConfig.COMMON.enableCPP.get()) return 0;
+        try {
+            var machine = SimpleTieredMachine.getMachine(lvl, pos);
+            NotifiableItemStackHandler inv;
+            if (machine instanceof SimpleTieredMachine STM) {
+                inv = STM.getCircuitInventory();
+            } else if (machine instanceof ItemBusPartMachine IBPM) {
+                inv = IBPM.getCircuitInventory();
+            } else if (machine instanceof FluidHatchPartMachine FHPM) {
+                inv = FHPM.getCircuitInventory();
+            } else {
+                return 0;
+            }
+            return IntCircuitBehaviour.getCircuitConfiguration(inv.getStackInSlot(0));
+        } catch (Exception e) {
+            LogUtils.getLogger().info(e.toString());
+            return 0;
         }
     }
 }

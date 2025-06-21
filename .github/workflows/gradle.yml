@@ -55,6 +55,13 @@ jobs:
           fi
           echo "FILE_NAME=${FILE}" >> $GITHUB_ENV
 
+      - name: Jar
+        uses: actions/upload-artifact@v4.0.0
+        with:
+          name: Jar
+          path: ${{ env.FILE_NAME }}
+          retention-days: 30
+      
       - name: Upload Release Asset
         uses: yakuhzi/github-release@4.0.1
         env:

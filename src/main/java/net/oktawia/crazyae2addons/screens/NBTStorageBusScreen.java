@@ -78,12 +78,12 @@ public class NBTStorageBusScreen<C extends NBTStorageBusMenu> extends Upgradeabl
 
     private void setupGui(){
         confirm = new IconButton(Icon.ENTER, (btn) -> getMenu().updateData(input.getValue()));
-        confirm.setTooltip(Tooltip.create(Component.literal("Confirm")));
+        confirm.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.nbt_storage_bus.confirm")));
         input = new MultilineTextFieldWidget(
                 font, 0, 0, 110, 100,
-                Component.literal("Input filter"));
+                Component.translatable("gui.crazyae2addons.nbt_storage_bus.confirm.input_filter"));
         load = new IconButton(Icon.ENTER, (x) -> getMenu().loadNBT());
-        load.setTooltip(Tooltip.create(Component.literal("Load selected item's NBT")));
+        load.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.nbt_storage_bus.load")));
         scrollbar = new Scrollbar();
         scrollbar.setSize(16, 64);
         scrollbar.setRange(0, 64, 4);

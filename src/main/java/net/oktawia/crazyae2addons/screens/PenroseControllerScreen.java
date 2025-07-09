@@ -9,7 +9,6 @@ import appeng.client.gui.widgets.ToggleButton;
 import appeng.core.definitions.AEItems;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.entity.player.Inventory;
 import net.oktawia.crazyae2addons.Utils;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
@@ -26,17 +25,23 @@ public class PenroseControllerScreen<C extends PenroseControllerMenu> extends AE
         var extractBtn = new IconButton(Icon.ARROW_UP, (btn) -> getMenu().extractFromCell());
         var insertBtn = new IconButton(Icon.ARROW_DOWN, (btn) -> getMenu().insertToCell());
         this.powerMode = new ToggleButton(Icon.POWER_UNIT_AE, Icon.POWER_UNIT_RF, this::changePowerMode);
-        extractBtn.setTooltip(Tooltip.create(Component.literal("Extract singularities")));
-        insertBtn.setTooltip(Tooltip.create(Component.literal("Insert singularities")));
-        this.powerMode.setTooltipOn(List.of(Component.literal("Store power"), Component.literal("as AE in the network power")));
-        this.powerMode.setTooltipOff(List.of(Component.literal("Store power"), Component.literal("as FE in the multiblock")));
+        extractBtn.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.penrose_controller.extract")));
+        insertBtn.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.penrose_controller.insert")));
+        this.powerMode.setTooltipOn(List.of(
+                Component.translatable("gui.crazyae2addons.penrose_controller.store_power_ae"),
+                Component.translatable("gui.crazyae2addons.penrose_controller.store_power_network")
+        ));
+        this.powerMode.setTooltipOff(List.of(
+                Component.translatable("gui.crazyae2addons.penrose_controller.store_power_fe"),
+                Component.translatable("gui.crazyae2addons.penrose_controller.store_power_multiblock")
+        ));
         this.widgets.add("add", extractBtn);
         this.widgets.add("remove", insertBtn);
         this.widgets.add("energy", powerMode);
         var prevBtn = new IconButton(Icon.ENTER, btn -> getMenu().changePreview(!getMenu().preview));
-        prevBtn.setTooltip(Tooltip.create(Component.literal("Enable/Disable preview")));
+        prevBtn.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.penrose_controller.preview_toggle")));
         var tierBtn = new IconButton(Icon.ENTER, btn -> getMenu().changePrevTier((getMenu().previewTier + 1) % 4));
-        tierBtn.setTooltip(Tooltip.create(Component.literal("Change preview tier")));
+        tierBtn.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.penrose_controller.change_tier")));
         this.widgets.add("prevbtn", prevBtn);
         this.widgets.add("tierbtn", tierBtn);
     }
@@ -49,7 +54,7 @@ public class PenroseControllerScreen<C extends PenroseControllerMenu> extends AE
     @Override
     public void updateBeforeRender() {
         super.updateBeforeRender();
-        setTextContent("generation", Component.literal("Power Generation"));
+        setTextContent("generation", Component.translatable("gui.crazyae2addons.penrose_controller.power_generation"));
         var disk0 = StorageCells.getCellInventory(getMenu().diskSlot0.getItem(), null);
         var disk1 = StorageCells.getCellInventory(getMenu().diskSlot1.getItem(), null);
         var disk2 = StorageCells.getCellInventory(getMenu().diskSlot2.getItem(), null);
@@ -76,8 +81,8 @@ public class PenroseControllerScreen<C extends PenroseControllerMenu> extends AE
         }
 
         this.powerMode.setState(getMenu().powerMode);
-        setTextContent("amount", Component.literal(String.format("%s FE/t", Utils.shortenNumber(generated))));
-        setTextContent("tier", Component.literal("Tier: " + getMenu().tier));
-        setTextContent("prev", Component.literal("Preview: " + getMenu().preview + ", preview tier: " + getMenu().previewTier));
+        setTextContent("amount", Component.translatable("gui.crazyae2addons.penrose_controller.fe_per_tick", Utils.shortenNumber(generated)));
+        setTextContent("tier", Component.translatable("gui.crazyae2addons.penrose_controller.tier", getMenu().tier));
+        setTextContent("prev", Component.translatable("gui.crazyae2addons.penrose_controller.preview", getMenu().preview, getMenu().previewTier));
     }
 }

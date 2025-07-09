@@ -16,7 +16,8 @@ import net.oktawia.crazyae2addons.misc.ProgramExpander;
 import net.oktawia.crazyae2addons.misc.SyntaxHighlighter;
 import org.lwjgl.glfw.GLFW;
 
-public class BuilderPatternScreen<C extends BuilderPatternMenu> extends AEBaseScreen<C> {
+public class BuilderPatternScreen<C extends BuilderPatternMenu> extends AEBaseScreen<C> implements CrazyScreen{
+    private static final String NAME = "builder_pattern";
     private static IconButton confirm;
     private static MultilineTextFieldWidget input;
     private static Scrollbar scrollbar;
@@ -25,6 +26,14 @@ public class BuilderPatternScreen<C extends BuilderPatternMenu> extends AEBaseSc
     private int lastScroll = -1;
     public static boolean initialized;
     private String program = "";
+
+    static {
+        CrazyScreen.i18n(NAME, "confirm_tooltip", "Confirm");
+        CrazyScreen.i18n(NAME, "syntax_error", "Syntax error: %s");
+        CrazyScreen.i18n(NAME, "delay_tooltip", "Amount of ticks to wait after each action");
+        CrazyScreen.i18n(NAME, "rename_placeholder", "Rename");
+        CrazyScreen.i18n(NAME, "input_placeholder", "Input program");
+    }
 
     @Override
     protected void updateBeforeRender() {
@@ -42,7 +51,7 @@ public class BuilderPatternScreen<C extends BuilderPatternMenu> extends AEBaseSc
         delay.setBordered(false);
         delay.setValue(String.valueOf(getMenu().delay));
         delay.setMaxLength(5);
-        delay.setTooltip(Tooltip.create(Component.literal("Amount of ticks to wait after each action")));
+        delay.setTooltip(Tooltip.create(l10n(NAME, "delay_tooltip")));
         setupGui();
         this.widgets.add("confirm", confirm);
         this.widgets.add("data", input);
@@ -50,7 +59,7 @@ public class BuilderPatternScreen<C extends BuilderPatternMenu> extends AEBaseSc
         this.widgets.add("delay", delay);
         this.rename = new AETextField(style, Minecraft.getInstance().font, 0, 0, 0, 0);
         rename.setBordered(false);
-        rename.setPlaceholder(Component.literal("Rename"));
+        rename.setPlaceholder(l10n(NAME, "rename_placeholder"));
         rename.setValue(getMenu().name);
         rename.setResponder(x -> {
             getMenu().rename(x);
@@ -81,7 +90,7 @@ public class BuilderPatternScreen<C extends BuilderPatternMenu> extends AEBaseSc
     }
 
     private Tooltip wrapErrorText(String text) {
-        return Tooltip.create(Component.literal(text));
+        return Tooltip.create(l10n(NAME, "syntax_error", text));
     }
 
     private void setupGui() {
@@ -89,21 +98,21 @@ public class BuilderPatternScreen<C extends BuilderPatternMenu> extends AEBaseSc
             String text = input.getValue();
             ProgramExpander.Result result = ProgramExpander.expand(text);
             if (result.success) {
-                confirm.setTooltip(Tooltip.create(Component.literal("Confirm")));
+                confirm.setTooltip(Tooltip.create(l10n(NAME, "confirm_tooltip")));
             } else {
-                confirm.setTooltip(wrapErrorText("Syntax error: " + result.error));
+                confirm.setTooltip(wrapErrorText(result.error));
             }
             getMenu().updateData(text);
-            try{
+            try {
                 getMenu().updateDelay(Integer.parseInt(delay.getValue()));
             } catch (Exception ignored) {
                 getMenu().updateDelay(0);
             }
         });
-        confirm.setTooltip(Tooltip.create(Component.literal("Confirm")));
+        confirm.setTooltip(Tooltip.create(l10n(NAME, "confirm_tooltip")));
         input = new MultilineTextFieldWidget(
                 font, 0, 0, 202, 135,
-                Component.literal("Input program")
+                l10n(NAME, "input_placeholder")
         );
         input.setTokenizer(SyntaxHighlighter::tokenize);
         scrollbar = new Scrollbar();

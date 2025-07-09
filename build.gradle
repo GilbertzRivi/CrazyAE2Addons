@@ -82,7 +82,10 @@ sourceSets {
     main {
         ext.refMap = "mixins.crazyae2addons.refmap.json"
         java {
-            srcDirs = ['src/main/java']
+            srcDirs = [
+                'src/main/java',
+                'build/generated/sources/annotationProcessor/java/main',
+            ]
         }
         resources {
             srcDirs = ['src/main/resources', 'src/generated/resources']
@@ -211,6 +214,9 @@ dependencies {
 //    implementation fg.deobf("curse.maven:iron-furnaces-237664:5159498")
     implementation fg.deobf("curse.maven:cc-tweaked-282001:5714507")
     implementation fg.deobf("curse.maven:advanced-peripherals-431725:6623216")
+    //
+    annotationProcessor 'com.google.auto.service:auto-service:1.0.1'
+    compileOnly 'com.google.auto.service:auto-service-annotations:1.0.1'
 }
 
 tasks.named('processResources', ProcessResources).configure {

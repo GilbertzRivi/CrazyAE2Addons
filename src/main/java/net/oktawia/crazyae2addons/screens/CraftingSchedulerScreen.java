@@ -13,15 +13,21 @@ import net.oktawia.crazyae2addons.Utils;
 import net.oktawia.crazyae2addons.menus.AmpereMeterMenu;
 import net.oktawia.crazyae2addons.menus.CraftingSchedulerMenu;
 
-public class CraftingSchedulerScreen<C extends CraftingSchedulerMenu> extends AEBaseScreen<C> {
+public class CraftingSchedulerScreen<C extends CraftingSchedulerMenu> extends AEBaseScreen<C> implements CrazyScreen{
+    private static final String NAME = "crafting_scheduler";
     public AETextField amount;
     public boolean initialized = false;
     public IconButton confirm;
 
+    static {
+        CrazyScreen.i18n(NAME, "amount_placeholder", "Amount");
+        CrazyScreen.i18n(NAME, "save_button", "Save");
+    }
+
     public CraftingSchedulerScreen(C menu, Inventory playerInventory, Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
         this.amount = new AETextField(style, Minecraft.getInstance().font, 0, 0,0,0);
-        this.amount.setPlaceholder(Component.literal("Amount"));
+        this.amount.setPlaceholder(l10n(NAME, "amount_placeholder"));
         this.amount.setBordered(false);
         this.amount.setMaxLength(9);
         this.confirm = new net.oktawia.crazyae2addons.misc.IconButton(Icon.ENTER, x -> save());

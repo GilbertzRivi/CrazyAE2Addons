@@ -42,6 +42,7 @@ The Auto Enchanter is a standalone enchanting machine that automatically enchant
 ## Apotheosis Support
 
 If Apotheosis is installed:
+
 - The Auto Enchanter will automatically scan all nearby shelves for bonus stats like Eterna, Quanta, Arcana, and Clues, including Treasure enchants.
 
 ## Behavior Summary

@@ -5,6 +5,7 @@ import net.minecraftforge.common.data.LanguageProvider;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.Utils;
+import net.oktawia.crazyae2addons.defs.LangDefs;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
 
@@ -20,6 +21,9 @@ public class CrazyLangProvider extends LanguageProvider {
         }
         for (var block : CrazyBlockRegistrar.getBlocks()){
             this.add(block.getDescriptionId(), Utils.toTitle(ForgeRegistries.BLOCKS.getKey(block).getPath()));
+        }
+        for (var entry : LangDefs.values()) {
+            this.add(entry.getTranslationKey(), entry.getEnglishText());
         }
     }
 }

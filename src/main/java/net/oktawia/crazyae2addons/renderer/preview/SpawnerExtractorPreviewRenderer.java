@@ -1,8 +1,6 @@
-package net.oktawia.crazyae2addons.misc;
+package net.oktawia.crazyae2addons.renderer.preview;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
@@ -10,31 +8,29 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.client.event.RenderLevelStageEvent.Stage;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.oktawia.crazyae2addons.CrazyAddons;
-import net.oktawia.crazyae2addons.blocks.MobFarmWallBlock;
-import net.oktawia.crazyae2addons.entities.MobFarmControllerBE;
+import net.oktawia.crazyae2addons.blocks.SpawnerExtractorWallBlock;
+import net.oktawia.crazyae2addons.entities.SpawnerExtractorControllerBE;
+import net.oktawia.crazyae2addons.renderer.PreviewRenderer;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Mod.EventBusSubscriber(modid = CrazyAddons.MODID, value = Dist.CLIENT)
-public class MobFarmPreviewRenderer {
+public class SpawnerExtractorPreviewRenderer {
 
     @SubscribeEvent
     public static void onRender(RenderLevelStageEvent event) {
-        if (event.getStage() != Stage.AFTER_SOLID_BLOCKS) return;
+        if (event.getStage() != Stage.AFTER_TRANSLUCENT_BLOCKS) return;
 
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || mc.player == null) return;
 
-        for (MobFarmControllerBE controller : MobFarmControllerBE.CLIENT_INSTANCES) {
+        for (SpawnerExtractorControllerBE controller : SpawnerExtractorControllerBE.CLIENT_INSTANCES) {
             if (!controller.preview) continue;
 
             BlockPos origin = controller.getBlockPos();
@@ -44,15 +40,15 @@ public class MobFarmPreviewRenderer {
                     .getValue(BlockStateProperties.HORIZONTAL_FACING)
                     .getOpposite();
 
-            if (controller.ghostCache == null) {
+            if (controller.getPreviewInfo() == null) {
                 rebuildCache(controller, facing);
             }
 
-            PreviewRenderer.render(controller.ghostCache, event);
+            PreviewRenderer.render(controller.getPreviewInfo(), event);
         }
     }
 
-    private static void rebuildCache(MobFarmControllerBE controller, Direction facing) {
+    private static void rebuildCache(SpawnerExtractorControllerBE controller, Direction facing) {
         Minecraft mc = Minecraft.getInstance();
         BlockRenderDispatcher blockRenderer = mc.getBlockRenderer();
 
@@ -64,12 +60,11 @@ public class MobFarmPreviewRenderer {
         int originZ = validator.getOriginZ();
 
         BlockPos origin = controller.getBlockPos();
-        List<CachedBlockInfo> cache = new ArrayList<>();
-
         int height = layers.size();
         int sizeZ = layers.get(0).size();
         int sizeX = layers.get(0).get(0).split(" ").length;
 
+        var blockInfos = new ArrayList<PreviewInfo.BlockInfo>();
         for (int y = 0; y < height; y++) {
             List<String> layer = layers.get(y);
             for (int z = 0; z < sizeZ; z++) {
@@ -82,8 +77,8 @@ public class MobFarmPreviewRenderer {
                     if (blocks.isEmpty()) continue;
 
                     BlockState state = blocks.get(0).defaultBlockState();
-                    if (state.getBlock() instanceof MobFarmWallBlock){
-                        state = state.setValue(MobFarmWallBlock.FORMED, true);
+                    if (state.getBlock() instanceof SpawnerExtractorWallBlock){
+                        state = state.setValue(SpawnerExtractorWallBlock.FORMED, true);
                     }
                     int relX = x - originX;
                     int relY = y - originY;
@@ -92,21 +87,21 @@ public class MobFarmPreviewRenderer {
                     BlockPos pos = origin.offset(offset.getX(), relY, offset.getZ());
 
                     BakedModel model = blockRenderer.getBlockModel(state);
-                    cache.add(new CachedBlockInfo(pos, state, model));
+                    blockInfos.add(new PreviewInfo.BlockInfo(pos, state, model));
                 }
             }
         }
 
-        controller.ghostCache = cache;
+        controller.setPreviewInfo(new PreviewInfo(blockInfos));
     }
 
     private static BlockPos rotateOffset(int x, int z, Direction facing) {
         return switch (facing) {
             case NORTH -> new BlockPos(x, 0, z);
             case SOUTH -> new BlockPos(-x, 0, -z);
-            case WEST  -> new BlockPos(z, 0, -x);
-            case EAST  -> new BlockPos(-z, 0, x);
-            default    -> BlockPos.ZERO;
+            case WEST -> new BlockPos(z, 0, -x);
+            case EAST -> new BlockPos(-z, 0, x);
+            default -> BlockPos.ZERO;
         };
     }
 }

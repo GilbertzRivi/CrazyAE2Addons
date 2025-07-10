@@ -1,4 +1,4 @@
-package net.oktawia.crazyae2addons.misc;
+package net.oktawia.crazyae2addons.renderer.preview;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
@@ -14,46 +14,67 @@ import net.minecraftforge.client.event.RenderLevelStageEvent.Stage;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.oktawia.crazyae2addons.CrazyAddons;
-import net.oktawia.crazyae2addons.blocks.EnergyStorageFrame;
-import net.oktawia.crazyae2addons.entities.EnergyStorageControllerBE;
+import net.oktawia.crazyae2addons.blocks.PenroseFrameBlock;
+import net.oktawia.crazyae2addons.entities.PenroseControllerBE;
+import net.oktawia.crazyae2addons.interfaces.PenroseValidator;
+import net.oktawia.crazyae2addons.renderer.PreviewRenderer;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+
 @Mod.EventBusSubscriber(modid = CrazyAddons.MODID, value = Dist.CLIENT)
-public class EnergyStoragePreviewRenderer {
+public class PenrosePreviewRenderer {
 
     @SubscribeEvent
     public static void onRender(RenderLevelStageEvent event) {
-        if (event.getStage() != Stage.AFTER_SOLID_BLOCKS) return;
+        if (event.getStage() != Stage.AFTER_TRANSLUCENT_BLOCKS) return;
 
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || mc.player == null) return;
 
-        for (EnergyStorageControllerBE controller : EnergyStorageControllerBE.CLIENT_INSTANCES) {
+        for (PenroseControllerBE controller : PenroseControllerBE.CLIENT_INSTANCES) {
             if (!controller.preview) continue;
-
             BlockPos origin = controller.getBlockPos();
             if (origin.distSqr(mc.player.blockPosition()) > 64 * 64) continue;
+
+            PenroseValidator validator = switch (controller.previewTier) {
+                case 3 -> controller.validatorT3;
+                case 2 -> controller.validatorT2;
+                case 1 -> controller.validatorT1;
+                default -> controller.validatorT0;
+            };
 
             Direction facing = controller.getBlockState()
                     .getValue(BlockStateProperties.HORIZONTAL_FACING)
                     .getOpposite();
 
-            if (controller.ghostCache == null) {
-                rebuildCache(controller, facing);
+            if (controller.getPreviewInfo() == null || controller.cachedTier != controller.previewTier) {
+                rebuildCache(controller, validator, facing);
             }
 
-            PreviewRenderer.render(controller.ghostCache, event);
+            System.out.println(event.getPartialTick());
+            PreviewRenderer.render(controller.getPreviewInfo(), event);
         }
     }
 
-    private static void rebuildCache(EnergyStorageControllerBE controller, Direction facing) {
+    private static BlockPos rotateOffset(int x, int z, Direction facing) {
+        return switch (facing) {
+            case NORTH -> new BlockPos(x, 0, z);
+            case SOUTH -> new BlockPos(-x, 0, -z);
+            case WEST -> new BlockPos(z, 0, -x);
+            case EAST -> new BlockPos(-z, 0, x);
+            default -> BlockPos.ZERO;
+        };
+    }
+
+    private static void rebuildCache(PenroseControllerBE controller, PenroseValidator validator, Direction facing) {
+        controller.cachedTier = controller.previewTier;
+
         Minecraft mc = Minecraft.getInstance();
         BlockRenderDispatcher blockRenderer = mc.getBlockRenderer();
 
-        var validator = controller.validator;
         List<List<String>> layers = validator.getLayers();
         Map<String, List<Block>> symbols = validator.getSymbols();
         int originX = validator.getOriginX();
@@ -61,12 +82,12 @@ public class EnergyStoragePreviewRenderer {
         int originZ = validator.getOriginZ();
 
         BlockPos origin = controller.getBlockPos();
-        List<CachedBlockInfo> cache = new ArrayList<>();
 
         int height = layers.size();
         int sizeZ = layers.get(0).size();
         int sizeX = layers.get(0).get(0).split(" ").length;
 
+        var blockInfos = new ArrayList<PreviewInfo.BlockInfo>();
         for (int y = 0; y < height; y++) {
             List<String> layer = layers.get(y);
             for (int z = 0; z < sizeZ; z++) {
@@ -79,8 +100,8 @@ public class EnergyStoragePreviewRenderer {
                     if (blocks.isEmpty()) continue;
 
                     BlockState state = blocks.get(0).defaultBlockState();
-                    if (state.getBlock() instanceof EnergyStorageFrame){
-                        state = state.setValue(EnergyStorageFrame.FORMED, true);
+                    if (state.getBlock() instanceof PenroseFrameBlock){
+                        state = state.setValue(PenroseFrameBlock.FORMED, true);
                     }
                     int relX = x - originX;
                     int relY = y - originY;
@@ -89,21 +110,13 @@ public class EnergyStoragePreviewRenderer {
                     BlockPos pos = origin.offset(offset.getX(), relY, offset.getZ());
 
                     BakedModel model = blockRenderer.getBlockModel(state);
-                    cache.add(new CachedBlockInfo(pos, state, model));
+                    blockInfos.add(new PreviewInfo.BlockInfo(pos, state, model));
                 }
             }
         }
 
-        controller.ghostCache = cache;
+        controller.setPreviewInfo(new PreviewInfo(blockInfos));
     }
 
-    private static BlockPos rotateOffset(int x, int z, Direction facing) {
-        return switch (facing) {
-            case NORTH -> new BlockPos(x, 0, z);
-            case SOUTH -> new BlockPos(-x, 0, -z);
-            case WEST -> new BlockPos(z, 0, -x);
-            case EAST -> new BlockPos(-z, 0, x);
-            default -> BlockPos.ZERO;
-        };
-    }
 }
+

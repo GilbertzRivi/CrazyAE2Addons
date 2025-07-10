@@ -28,21 +28,18 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.menus.EnergyStorageControllerMenu;
-import net.oktawia.crazyae2addons.misc.CachedBlockInfo;
-import net.oktawia.crazyae2addons.misc.EnergyStoragePreviewRenderer;
+import net.oktawia.crazyae2addons.renderer.preview.PreviewInfo;
 import net.oktawia.crazyae2addons.misc.EnergyStorageValidator;
+import net.oktawia.crazyae2addons.renderer.preview.Previewable;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
 import java.util.Set;
 
-public class EnergyStorageControllerBE extends AENetworkBlockEntity implements MenuProvider, IGridTickable, IAEPowerStorage {
+public class EnergyStorageControllerBE extends AENetworkBlockEntity implements Previewable, MenuProvider, IGridTickable, IAEPowerStorage {
 
     private boolean replace;
     public EnergyStorageValidator validator;
@@ -52,7 +49,17 @@ public class EnergyStorageControllerBE extends AENetworkBlockEntity implements M
     public EnergyStorageControllerMenu menu;
     public StoredEnergyAmount stored;
 
-    public List<CachedBlockInfo> ghostCache = null;
+    private PreviewInfo previewInfo = null;
+
+    @Override
+    public PreviewInfo getPreviewInfo() {
+        return previewInfo;
+    }
+
+    @Override
+    public void setPreviewInfo(PreviewInfo info) {
+        this.previewInfo = info;
+    }
 
     public boolean preview = false;
 

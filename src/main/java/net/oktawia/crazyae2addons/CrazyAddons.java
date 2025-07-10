@@ -15,7 +15,6 @@ import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
@@ -28,12 +27,12 @@ import net.oktawia.crazyae2addons.defs.UpgradeCards;
 import net.oktawia.crazyae2addons.defs.regs.*;
 import net.oktawia.crazyae2addons.logic.WirelessRedstoneTerminalItemLogicHost;
 import net.oktawia.crazyae2addons.menus.WirelessRedstoneTerminalMenu;
-import net.oktawia.crazyae2addons.misc.*;
 import net.oktawia.crazyae2addons.mobstorage.EntityTypeRenderer;
 import net.oktawia.crazyae2addons.mobstorage.MobKeyType;
 import net.oktawia.crazyae2addons.network.NetworkHandler;
 import net.oktawia.crazyae2addons.renderer.AutoBuilderBERenderer;
 import net.oktawia.crazyae2addons.renderer.TooltipRenderer;
+import net.oktawia.crazyae2addons.renderer.preview.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
@@ -42,11 +41,11 @@ import java.util.Objects;
 public class CrazyAddons {
     public static final String MODID = "crazyae2addons";
 
-    public CrazyAddons() {
+    public CrazyAddons(FMLJavaModLoadingContext context) {
         LogUtils.getLogger().info("Loading Crazy AE2 Addons");
 
-        IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
-        ModLoadingContext.get().registerConfig(
+        IEventBus modEventBus = context.getModEventBus();
+        context.registerConfig(
                 ModConfig.Type.COMMON,
                 CrazyConfig.COMMON_SPEC
         );

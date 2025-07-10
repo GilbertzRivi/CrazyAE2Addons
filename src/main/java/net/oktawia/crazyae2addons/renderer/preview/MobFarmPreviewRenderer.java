@@ -1,4 +1,4 @@
-package net.oktawia.crazyae2addons.misc;
+package net.oktawia.crazyae2addons.renderer.preview;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
@@ -14,17 +14,16 @@ import net.minecraftforge.client.event.RenderLevelStageEvent.Stage;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.oktawia.crazyae2addons.CrazyAddons;
-import net.oktawia.crazyae2addons.blocks.PenroseFrameBlock;
-import net.oktawia.crazyae2addons.entities.PenroseControllerBE;
-import net.oktawia.crazyae2addons.interfaces.PenroseValidator;
+import net.oktawia.crazyae2addons.blocks.MobFarmWallBlock;
+import net.oktawia.crazyae2addons.entities.MobFarmControllerBE;
+import net.oktawia.crazyae2addons.renderer.PreviewRenderer;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-
 @Mod.EventBusSubscriber(modid = CrazyAddons.MODID, value = Dist.CLIENT)
-public class PenrosePreviewRenderer {
+public class MobFarmPreviewRenderer {
 
     @SubscribeEvent
     public static void onRender(RenderLevelStageEvent event) {
@@ -33,47 +32,29 @@ public class PenrosePreviewRenderer {
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || mc.player == null) return;
 
-        for (PenroseControllerBE controller : PenroseControllerBE.CLIENT_INSTANCES) {
+        for (MobFarmControllerBE controller : MobFarmControllerBE.CLIENT_INSTANCES) {
             if (!controller.preview) continue;
+
             BlockPos origin = controller.getBlockPos();
             if (origin.distSqr(mc.player.blockPosition()) > 64 * 64) continue;
-
-            PenroseValidator validator = switch (controller.previewTier) {
-                case 3 -> controller.validatorT3;
-                case 2 -> controller.validatorT2;
-                case 1 -> controller.validatorT1;
-                default -> controller.validatorT0;
-            };
 
             Direction facing = controller.getBlockState()
                     .getValue(BlockStateProperties.HORIZONTAL_FACING)
                     .getOpposite();
 
-            if (controller.ghostCache == null || controller.cachedTier != controller.previewTier) {
-                rebuildCache(controller, validator, facing);
+            if (controller.getPreviewInfo() == null) {
+                rebuildCache(controller, facing);
             }
 
-            PreviewRenderer.render(controller.ghostCache, event);
+            PreviewRenderer.render(controller.getPreviewInfo(), event);
         }
     }
 
-    private static BlockPos rotateOffset(int x, int z, Direction facing) {
-        return switch (facing) {
-            case NORTH -> new BlockPos(x, 0, z);
-            case SOUTH -> new BlockPos(-x, 0, -z);
-            case WEST -> new BlockPos(z, 0, -x);
-            case EAST -> new BlockPos(-z, 0, x);
-            default -> BlockPos.ZERO;
-        };
-    }
-
-    private static void rebuildCache(PenroseControllerBE controller, PenroseValidator validator, Direction facing) {
-        controller.ghostCache = new ArrayList<CachedBlockInfo>();
-        controller.cachedTier = controller.previewTier;
-
+    private static void rebuildCache(MobFarmControllerBE controller, Direction facing) {
         Minecraft mc = Minecraft.getInstance();
         BlockRenderDispatcher blockRenderer = mc.getBlockRenderer();
 
+        var validator = controller.validator;
         List<List<String>> layers = validator.getLayers();
         Map<String, List<Block>> symbols = validator.getSymbols();
         int originX = validator.getOriginX();
@@ -81,11 +62,11 @@ public class PenrosePreviewRenderer {
         int originZ = validator.getOriginZ();
 
         BlockPos origin = controller.getBlockPos();
-
         int height = layers.size();
         int sizeZ = layers.get(0).size();
         int sizeX = layers.get(0).get(0).split(" ").length;
 
+        var blockInfos = new ArrayList<PreviewInfo.BlockInfo>();
         for (int y = 0; y < height; y++) {
             List<String> layer = layers.get(y);
             for (int z = 0; z < sizeZ; z++) {
@@ -98,8 +79,8 @@ public class PenrosePreviewRenderer {
                     if (blocks.isEmpty()) continue;
 
                     BlockState state = blocks.get(0).defaultBlockState();
-                    if (state.getBlock() instanceof PenroseFrameBlock){
-                        state = state.setValue(PenroseFrameBlock.FORMED, true);
+                    if (state.getBlock() instanceof MobFarmWallBlock){
+                        state = state.setValue(MobFarmWallBlock.FORMED, true);
                     }
                     int relX = x - originX;
                     int relY = y - originY;
@@ -108,11 +89,21 @@ public class PenrosePreviewRenderer {
                     BlockPos pos = origin.offset(offset.getX(), relY, offset.getZ());
 
                     BakedModel model = blockRenderer.getBlockModel(state);
-                    controller.ghostCache.add(new CachedBlockInfo(pos, state, model));
+                    blockInfos.add(new PreviewInfo.BlockInfo(pos, state, model));
                 }
             }
         }
+
+        controller.setPreviewInfo(new PreviewInfo(blockInfos));
     }
 
+    private static BlockPos rotateOffset(int x, int z, Direction facing) {
+        return switch (facing) {
+            case NORTH -> new BlockPos(x, 0, z);
+            case SOUTH -> new BlockPos(-x, 0, -z);
+            case WEST  -> new BlockPos(z, 0, -x);
+            case EAST  -> new BlockPos(-z, 0, x);
+            default    -> BlockPos.ZERO;
+        };
+    }
 }
-

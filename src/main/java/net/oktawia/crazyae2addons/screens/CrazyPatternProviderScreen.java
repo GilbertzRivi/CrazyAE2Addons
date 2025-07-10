@@ -15,9 +15,14 @@ import net.oktawia.crazyae2addons.mixins.SlotAccessor;
 
 import java.util.List;
 
-public class CrazyPatternProviderScreen<C extends CrazyPatternProviderMenu> extends PatternProviderScreen<C> {
+public class CrazyPatternProviderScreen<C extends CrazyPatternProviderMenu> extends PatternProviderScreen<C> implements CrazyScreen {
+    private static final String NAME = "crazy_pattern_provider";
     private Scrollbar scrollbar;
     private int lastOffset = -1;
+
+    static {
+        CrazyScreen.i18n(NAME, "capacity", "Capacity: %s patterns");
+    }
 
     public CrazyPatternProviderScreen(C menu, Inventory playerInventory, Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
@@ -29,10 +34,10 @@ public class CrazyPatternProviderScreen<C extends CrazyPatternProviderMenu> exte
     public void updateBeforeRender() {
         super.updateBeforeRender();
 
-        this.setTextContent("patterninfo", Component.literal(String.format("Capacity: %s patterns", getMenu().slotNum)));
+        this.setTextContent("patterninfo", l10n(NAME, "capacity", getMenu().slotNum));
 
         int scrollOffset = this.scrollbar.getCurrentScroll();
-        if (scrollOffset != lastOffset){
+        if (scrollOffset != lastOffset) {
             for (int i = 0; i < getMenu().slotNum; i++) {
                 int row = i / 9;
                 int col = i % 9;
@@ -40,9 +45,9 @@ public class CrazyPatternProviderScreen<C extends CrazyPatternProviderMenu> exte
                 int x = 8 + col * 18;
                 int y = 42 + (row - scrollOffset) * 18;
 
-                Slot s = getMenu().getSlots(appeng.menu.SlotSemantics.ENCODED_PATTERN).get(i);
+                Slot s = getMenu().getSlots(SlotSemantics.ENCODED_PATTERN).get(i);
                 if (!(s instanceof AppEngSlot slot)) return;
-                if (slot instanceof IMovableSlot accessor){
+                if (slot instanceof IMovableSlot accessor) {
                     if (row >= scrollOffset && row < scrollOffset + 4) {
                         accessor.setX(x);
                         accessor.setY(y);

@@ -15,11 +15,16 @@ import net.oktawia.crazyae2addons.menus.PatternManagementUnitControllerMenu;
 import net.oktawia.crazyae2addons.misc.IconButton;
 import net.oktawia.crazyae2addons.mixins.SlotAccessor;
 
-public class PatternManagementUnitControllerScreen<C extends PatternManagementUnitControllerMenu> extends AEBaseScreen<C> {
+public class PatternManagementUnitControllerScreen<C extends PatternManagementUnitControllerMenu> extends AEBaseScreen<C> implements CrazyScreen {
 
+    private static final String NAME = "pattern_management_unit_controller";
     private Scrollbar scrollbar;
     private int lastOffset = -1;
 
+    static {
+        CrazyScreen.i18n(NAME, "preview_toggle", "Enable/Disable preview");
+        CrazyScreen.i18n(NAME, "preview_status", "Preview: %s");
+    }
 
     public PatternManagementUnitControllerScreen(C menu, Inventory playerInventory, Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
@@ -32,14 +37,14 @@ public class PatternManagementUnitControllerScreen<C extends PatternManagementUn
 
         this.widgets.add("scrollbar", scrollbar);
         var prevBtn = new IconButton(Icon.ENTER, btn -> getMenu().changePreview(!getMenu().preview));
-        prevBtn.setTooltip(Tooltip.create(Component.literal("Enable/Disable preview")));
+        prevBtn.setTooltip(Tooltip.create(l10n(NAME, "preview_toggle")));
         this.widgets.add("prevbtn", prevBtn);
     }
 
     @Override
     protected void updateBeforeRender() {
         super.updateBeforeRender();
-        setTextContent("prev", Component.literal("Preview: " + getMenu().preview));
+        setTextContent("prev", l10n(NAME, "preview_status", getMenu().preview));
         int scrollOffset = scrollbar.getCurrentScroll();
         if (scrollOffset != lastOffset) {
             var slots = getMenu().getSlots(SlotSemantics.ENCODED_PATTERN);
@@ -52,7 +57,7 @@ public class PatternManagementUnitControllerScreen<C extends PatternManagementUn
 
                 Slot slot = slots.get(i);
                 if (slot instanceof AppEngSlot aeSlot) {
-                    if (aeSlot instanceof IMovableSlot accessor){
+                    if (aeSlot instanceof IMovableSlot accessor) {
                         if (row >= scrollOffset && row < scrollOffset + 4) {
                             accessor.setX(x);
                             accessor.setY(y);

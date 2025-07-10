@@ -14,9 +14,9 @@ import net.oktawia.crazyae2addons.Utils;
 import net.oktawia.crazyae2addons.menus.CrazyPatternMultiplierMenu;
 import net.oktawia.crazyae2addons.misc.IconButton;
 
+public class CrazyPatternMultiplierScreen<C extends CrazyPatternMultiplierMenu> extends AEBaseScreen<C> implements CrazyScreen {
 
-public class CrazyPatternMultiplierScreen<C extends CrazyPatternMultiplierMenu> extends AEBaseScreen<C> {
-
+    private static final String NAME = "crazy_pattern_multiplier";
     public IconButton clear;
     public IconButton circuit;
     public IconButton confirm;
@@ -25,28 +25,38 @@ public class CrazyPatternMultiplierScreen<C extends CrazyPatternMultiplierMenu> 
     public AETextField limit;
     private boolean initialized = false;
 
+    static {
+        CrazyScreen.i18n(NAME, "multiply", "Multiply all patterns by selected value");
+        CrazyScreen.i18n(NAME, "clear", "Clear all patterns");
+        CrazyScreen.i18n(NAME, "set_circuit", "Set selected circuit to all patterns");
+        CrazyScreen.i18n(NAME, "circuit_tooltip", "Input desired circuit number (0-32)");
+        CrazyScreen.i18n(NAME, "multiplier_placeholder", "Multiplier");
+        CrazyScreen.i18n(NAME, "multiplier_tooltip", "Input the amount by which you want to multiply your patterns, can also be an equation like 2*(3/4)");
+        CrazyScreen.i18n(NAME, "limit_tooltip", "Limit above which patterns won't get multiplied, 0 means limit disabled");
+    }
+
     public CrazyPatternMultiplierScreen(C menu, Inventory playerInventory, Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
 
         this.confirm = new IconButton(Icon.ENTER, this::modify);
-        this.confirm.setTooltip(Tooltip.create(Component.literal("Multiply all patterns by selected value")));
+        this.confirm.setTooltip(Tooltip.create(l10n(NAME, "multiply")));
         this.clear = new IconButton(Icon.CLEAR, this::clear);
-        this.clear.setTooltip(Tooltip.create(Component.literal("Clear all patterns")));
+        this.clear.setTooltip(Tooltip.create(l10n(NAME, "clear")));
         this.circuit = new IconButton(Icon.ENTER, this::circuit);
-        this.circuit.setTooltip(Tooltip.create(Component.literal("Set selected circuit to all patterns")));
+        this.circuit.setTooltip(Tooltip.create(l10n(NAME, "set_circuit")));
         this.circuitValue = new AETextField(style, Minecraft.getInstance().font, 0, 0, 0, 0);
         this.circuitValue.setBordered(false);
         this.circuitValue.setMaxLength(2);
-        this.circuitValue.setTooltip(Tooltip.create(Component.literal("Input desired circuit number (0-32)")));
-        this.value = new AETextField(style, Minecraft.getInstance().font, 0,0,0,0);
+        this.circuitValue.setTooltip(Tooltip.create(l10n(NAME, "circuit_tooltip")));
+        this.value = new AETextField(style, Minecraft.getInstance().font, 0, 0, 0, 0);
         this.value.setBordered(false);
         this.value.setMaxLength(50);
-        this.value.setPlaceholder(Component.literal("Multiplier"));
-        this.value.setTooltip(Tooltip.create(Component.literal("Input the amount by which you want to multiply your patterns, can also be an equation like 2*(3/4)")));
+        this.value.setPlaceholder(l10n(NAME, "multiplier_placeholder"));
+        this.value.setTooltip(Tooltip.create(l10n(NAME, "multiplier_tooltip")));
         this.limit = new AETextField(style, Minecraft.getInstance().font, 0, 0, 0, 0);
         this.limit.setBordered(false);
         this.limit.setMaxLength(16);
-        this.limit.setTooltip(Tooltip.create(Component.literal("Limit above which patterns wont get multiplied, 0 means limit disabled")));
+        this.limit.setTooltip(Tooltip.create(l10n(NAME, "limit_tooltip")));
         this.limit.setResponder(val -> {
             try {
                 int parsed = Integer.parseInt(val);
@@ -62,9 +72,9 @@ public class CrazyPatternMultiplierScreen<C extends CrazyPatternMultiplierMenu> 
     }
 
     private void circuit(Button button) {
-        if (circuitValue.getValue().isEmpty()){
+        if (circuitValue.getValue().isEmpty()) {
             this.getMenu().setCircuit(-1);
-        } else if ((circuitValue.getValue().chars().allMatch(Character::isDigit) && !circuitValue.getValue().isEmpty() && Integer.parseInt(circuitValue.getValue()) <= 32)){
+        } else if ((circuitValue.getValue().chars().allMatch(Character::isDigit) && !circuitValue.getValue().isEmpty() && Integer.parseInt(circuitValue.getValue()) <= 32)) {
             this.getMenu().setCircuit(Integer.parseInt(circuitValue.getValue()));
         }
     }
@@ -76,7 +86,7 @@ public class CrazyPatternMultiplierScreen<C extends CrazyPatternMultiplierMenu> 
     @Override
     protected void updateBeforeRender() {
         super.updateBeforeRender();
-        if (!this.initialized){
+        if (!this.initialized) {
             this.value.setValue(String.valueOf(getMenu().mult));
             this.limit.setValue(String.valueOf(getMenu().limit));
             this.initialized = true;
@@ -87,13 +97,13 @@ public class CrazyPatternMultiplierScreen<C extends CrazyPatternMultiplierMenu> 
         double evaled = 0;
         try {
             evaled = MathParser.parse(value.getValue());
-            if (evaled <= 0){
+            if (evaled <= 0) {
                 value.setTextColor(0xFF0000);
                 Runnable col = () -> value.setTextColor(0xFFFFFF);
                 Utils.asyncDelay(col, 1);
                 return;
             }
-        } catch (Exception ignored){
+        } catch (Exception ignored) {
             value.setTextColor(0xFF0000);
             Runnable col = () -> value.setTextColor(0xFFFFFF);
             Utils.asyncDelay(col, 1);

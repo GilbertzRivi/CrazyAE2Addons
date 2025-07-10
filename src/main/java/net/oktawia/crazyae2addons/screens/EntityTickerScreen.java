@@ -6,35 +6,41 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.Utils;
-import net.oktawia.crazyae2addons.parts.EntityTickerPart;
 import net.oktawia.crazyae2addons.menus.EntityTickerMenu;
 
 import static java.lang.Math.pow;
 
-public class EntityTickerScreen<C extends EntityTickerMenu> extends UpgradeableScreen<C> {
+public class EntityTickerScreen<C extends EntityTickerMenu> extends UpgradeableScreen<C> implements CrazyScreen {
+    private static final String NAME = "entity_ticker";
 
-    @Override
-    protected void updateBeforeRender(){
-        super.updateBeforeRender();
-        double powerUsage =  CrazyConfig.COMMON.EntityTickerCost.get() * pow(4, getMenu().upgradeNum);
-        setTextContent("energy", Component.literal(String.format("Energy Usage: %s FE/t", Utils.shortenNumber(powerUsage))));
-        setTextContent("speed", Component.literal(String.format("Current multiplier: %d", (int) pow(2, (getMenu().upgradeNum + 1)))));
+    static {
+        CrazyScreen.i18n(NAME, "energy_usage", "Energy Usage: %s FE/t");
+        CrazyScreen.i18n(NAME, "current_multiplier", "Current multiplier: %d");
+        CrazyScreen.i18n(NAME, "info1", "Each card multiplies");
+        CrazyScreen.i18n(NAME, "info2", "machines speed by 4");
     }
 
-    public EntityTickerScreen(
-            EntityTickerMenu menu, Inventory playerInventory, Component title, ScreenStyle style) {
+    @Override
+    protected void updateBeforeRender() {
+        super.updateBeforeRender();
+        double powerUsage = CrazyConfig.COMMON.EntityTickerCost.get() * pow(4, getMenu().upgradeNum);
+        setTextContent("energy", l10n(NAME, "energy_usage", Utils.shortenNumber(powerUsage)));
+        setTextContent("speed", l10n(NAME, "current_multiplier", (int) pow(2, getMenu().upgradeNum + 1)));
+    }
+
+    public EntityTickerScreen(EntityTickerMenu menu, Inventory playerInventory, Component title, ScreenStyle style) {
         super((C) menu, playerInventory, title, style);
         this.setupGui();
     }
 
-    public void setupGui(){
-        this.setTextContent("info1", Component.literal("Each card multiplies"));
-        this.setTextContent("info2", Component.literal("machines speed by 4"));
+    public void setupGui() {
+        setTextContent("info1", l10n(NAME, "info1"));
+        setTextContent("info2", l10n(NAME, "info2"));
     }
 
-    public void refreshGui(){
+    public void refreshGui() {
         double powerUsage = CrazyConfig.COMMON.EntityTickerCost.get() * pow(4, getMenu().upgradeNum);
-        setTextContent("energy", Component.literal(String.format("Energy Usage: %s FE/t", Utils.shortenNumber(powerUsage))));
-        setTextContent("speed", Component.literal(String.format("Current multiplier: %d", (int) pow(2,  (getMenu().upgradeNum + 1)))));
+        setTextContent("energy", l10n(NAME, "energy_usage", Utils.shortenNumber(powerUsage)));
+        setTextContent("speed", l10n(NAME, "current_multiplier", (int) pow(2, getMenu().upgradeNum + 1)));
     }
 }

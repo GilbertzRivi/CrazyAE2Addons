@@ -4,21 +4,18 @@ import appeng.api.config.*;
 import appeng.client.gui.Icon;
 import appeng.client.gui.implementations.UpgradeableScreen;
 import appeng.client.gui.style.ScreenStyle;
-import appeng.client.gui.widgets.AECheckbox;
 import appeng.client.gui.widgets.Scrollbar;
 import appeng.client.gui.widgets.ServerSettingToggleButton;
 import appeng.client.gui.widgets.SettingToggleButton;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.client.gui.components.Tooltip;
-import net.minecraft.nbt.TagParser;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
-import net.oktawia.crazyae2addons.Utils;
 import net.oktawia.crazyae2addons.menus.NBTStorageBusMenu;
 import net.oktawia.crazyae2addons.misc.IconButton;
 import net.oktawia.crazyae2addons.misc.MultilineTextFieldWidget;
 
-public class NBTStorageBusScreen<C extends NBTStorageBusMenu> extends UpgradeableScreen<C> {
+public class NBTStorageBusScreen<C extends NBTStorageBusMenu> extends UpgradeableScreen<C> implements CrazyScreen{
+    private static final String NAME = "nbt_storage_bus";
     private static IconButton confirm;
     private static MultilineTextFieldWidget input;
     public static boolean initialized;
@@ -29,14 +26,20 @@ public class NBTStorageBusScreen<C extends NBTStorageBusMenu> extends Upgradeabl
     private final SettingToggleButton<YesNo> filterOnExtract;
     private int lastScroll = -1;
 
+    static {
+        CrazyScreen.i18n(NAME, "confirm", "Confirm changes");
+        CrazyScreen.i18n(NAME, "load", "Load NBT data");
+        CrazyScreen.i18n(NAME, "input_filter", "Input filter:");
+    }
+
     @Override
-    protected void updateBeforeRender(){
+    protected void updateBeforeRender() {
         super.updateBeforeRender();
-        if (!initialized){
+        if (!initialized) {
             input.setValue(getMenu().data);
             initialized = true;
         }
-        if (getMenu().newData){
+        if (getMenu().newData) {
             input.setValue(getMenu().data);
             getMenu().newData = false;
         }
@@ -76,14 +79,14 @@ public class NBTStorageBusScreen<C extends NBTStorageBusMenu> extends Upgradeabl
         }
     }
 
-    private void setupGui(){
+    private void setupGui() {
         confirm = new IconButton(Icon.ENTER, (btn) -> getMenu().updateData(input.getValue()));
-        confirm.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.nbt_storage_bus.confirm")));
+        confirm.setTooltip(Tooltip.create(l10n(NAME, "confirm")));
         input = new MultilineTextFieldWidget(
                 font, 0, 0, 110, 100,
-                Component.translatable("gui.crazyae2addons.nbt_storage_bus.confirm.input_filter"));
+                l10n(NAME, "input_filter"));
         load = new IconButton(Icon.ENTER, (x) -> getMenu().loadNBT());
-        load.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.nbt_storage_bus.load")));
+        load.setTooltip(Tooltip.create(l10n(NAME, "load")));
         scrollbar = new Scrollbar();
         scrollbar.setSize(16, 64);
         scrollbar.setRange(0, 64, 4);

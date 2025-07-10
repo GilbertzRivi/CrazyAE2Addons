@@ -13,12 +13,18 @@ import net.oktawia.crazyae2addons.menus.CrazyPatternModifierMenu;
 import net.oktawia.crazyae2addons.misc.IconButton;
 import net.minecraft.client.gui.components.Button;
 
-public class CrazyPatternModifierScreen<C extends CrazyPatternModifierMenu> extends AEBaseScreen<C> {
-
+public class CrazyPatternModifierScreen<C extends CrazyPatternModifierMenu> extends AEBaseScreen<C> implements CrazyScreen {
+    private static final String NAME = "crazy_pattern_modifier";
     public IconButton nbt;
     public IconButton circConfirm;
     public AETextField circ;
     public final Button[] historyButtons = new Button[5];
+
+    static {
+        CrazyScreen.i18n(NAME, "gregtech_missing", "GregTech not detected");
+        CrazyScreen.i18n(NAME, "circuit_tooltip", "Circuit %s");
+        CrazyScreen.i18n(NAME, "empty_button", "-");
+    }
 
     public CrazyPatternModifierScreen(CrazyPatternModifierMenu menu, Inventory playerInventory, Component title, ScreenStyle style) {
         super((C) menu, playerInventory, title, style);
@@ -39,7 +45,9 @@ public class CrazyPatternModifierScreen<C extends CrazyPatternModifierMenu> exte
 
         for (int i = 0; i < 5; i++) {
             int index = i;
-            historyButtons[i] = Button.builder(Component.literal("-"), btn -> applyHistoryValue(index)).bounds(0, 0, 30, 20).build();
+            historyButtons[i] = Button.builder(l10n(NAME, "empty_button"), btn -> applyHistoryValue(index))
+                .bounds(0, 0, 30, 20)
+                .build();
             this.widgets.add("button" + (i + 1), historyButtons[i]);
         }
     }
@@ -66,7 +74,7 @@ public class CrazyPatternModifierScreen<C extends CrazyPatternModifierMenu> exte
         if (ModList.get().isLoaded("gtceu")){
             setTextContent("info2", Component.literal(getMenu().textCirc));
         } else {
-            setTextContent("info2", Component.literal("GregTech not detected"));
+            setTextContent("info2", l10n(NAME, "gregtech_missing"));
         }
 
         int[] history = {
@@ -83,10 +91,10 @@ public class CrazyPatternModifierScreen<C extends CrazyPatternModifierMenu> exte
             if (val != -1) {
                 btn.active = true;
                 btn.setMessage(Component.literal(String.valueOf(val)));
-                btn.setTooltip(Tooltip.create(Component.literal("Circuit " + val)));
+                btn.setTooltip(Tooltip.create(l10n(NAME, "circuit_tooltip", val)));
             } else {
                 btn.active = false;
-                btn.setMessage(Component.literal("-"));
+                btn.setMessage(l10n(NAME, "empty_button"));
                 btn.setTooltip(Tooltip.create(Component.empty()));
             }
         }

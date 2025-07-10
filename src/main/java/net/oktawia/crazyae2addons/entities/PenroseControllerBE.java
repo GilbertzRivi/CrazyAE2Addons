@@ -56,7 +56,7 @@ public class PenroseControllerBE extends AENetworkInvBlockEntity implements Menu
     private int myticks = 0;
     public EnergyStorage energyStorage = new EnergyStorage(Integer.MAX_VALUE, 0, Integer.MAX_VALUE, 0);
 
-    public List<PenrosePreviewRenderer.CachedBlockInfo> ghostCache = null;
+    public List<CachedBlockInfo> ghostCache = null;
 
     public int cachedTier = -1;
 

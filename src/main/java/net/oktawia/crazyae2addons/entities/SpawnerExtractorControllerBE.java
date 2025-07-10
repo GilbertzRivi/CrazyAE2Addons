@@ -65,6 +65,7 @@ import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.menus.SpawnerExtractorControllerMenu;
+import net.oktawia.crazyae2addons.misc.CachedBlockInfo;
 import net.oktawia.crazyae2addons.misc.SpawnerExtractorPreviewRenderer;
 import net.oktawia.crazyae2addons.misc.SpawnerExtractorValidator;
 import net.oktawia.crazyae2addons.mobstorage.MobKey;
@@ -82,7 +83,7 @@ public class SpawnerExtractorControllerBE extends AENetworkBlockEntity implement
 
     public boolean preview = false;
 
-    public List<SpawnerExtractorPreviewRenderer.CachedBlockInfo> ghostCache = null;
+    public List<CachedBlockInfo> ghostCache = null;
 
     public static final Set<SpawnerExtractorControllerBE> CLIENT_INSTANCES = new java.util.HashSet<>();
 

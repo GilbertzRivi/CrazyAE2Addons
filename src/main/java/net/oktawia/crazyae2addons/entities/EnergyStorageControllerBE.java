@@ -34,6 +34,7 @@ import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.menus.EnergyStorageControllerMenu;
+import net.oktawia.crazyae2addons.misc.CachedBlockInfo;
 import net.oktawia.crazyae2addons.misc.EnergyStoragePreviewRenderer;
 import net.oktawia.crazyae2addons.misc.EnergyStorageValidator;
 import org.jetbrains.annotations.Nullable;
@@ -51,7 +52,7 @@ public class EnergyStorageControllerBE extends AENetworkBlockEntity implements M
     public EnergyStorageControllerMenu menu;
     public StoredEnergyAmount stored;
 
-    public List<EnergyStoragePreviewRenderer.CachedBlockInfo> ghostCache = null;
+    public List<CachedBlockInfo> ghostCache = null;
 
     public boolean preview = false;
 

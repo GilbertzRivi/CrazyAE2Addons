@@ -29,19 +29,12 @@ import java.util.*;
 @Mod.EventBusSubscriber(modid = CrazyAddons.MODID, value = Dist.CLIENT)
 public class SpawnerExtractorPreviewRenderer {
 
-    public record CachedBlockInfo(BlockPos pos, BlockState state, BakedModel model) {}
-
     @SubscribeEvent
     public static void onRender(RenderLevelStageEvent event) {
         if (event.getStage() != Stage.AFTER_SOLID_BLOCKS) return;
 
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || mc.player == null) return;
-
-        PoseStack poseStack = event.getPoseStack();
-        Vec3 cameraPos = mc.gameRenderer.getMainCamera().getPosition();
-        MultiBufferSource.BufferSource buffer = mc.renderBuffers().bufferSource();
-        BlockRenderDispatcher blockRenderer = mc.getBlockRenderer();
 
         for (SpawnerExtractorControllerBE controller : SpawnerExtractorControllerBE.CLIENT_INSTANCES) {
             if (!controller.preview) continue;
@@ -57,36 +50,7 @@ public class SpawnerExtractorPreviewRenderer {
                 rebuildCache(controller, facing);
             }
 
-            poseStack.pushPose();
-            poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
-
-            for (CachedBlockInfo info : controller.ghostCache) {
-                BlockPos pos = info.pos();
-                if (!mc.level.isLoaded(pos)) continue;
-                if (pos.distSqr(mc.player.blockPosition()) > 64 * 64) continue;
-
-                BlockState current = mc.level.getBlockState(pos);
-                if (current.getBlock() == info.state().getBlock()) continue;
-
-                poseStack.pushPose();
-                poseStack.translate(pos.getX(), pos.getY(), pos.getZ());
-
-                RenderType layer = info.model().getRenderTypes(info.state(), mc.level.random, ModelData.EMPTY).asList().get(0);
-
-                blockRenderer.getModelRenderer().renderModel(
-                        poseStack.last(),
-                        buffer.getBuffer(layer),
-                        info.state(),
-                        info.model(),
-                        1f, 1f, 1f,
-                        0xF000F0,
-                        OverlayTexture.NO_OVERLAY
-                );
-
-                poseStack.popPose();
-            }
-
-            poseStack.popPose();
+            PreviewRenderer.render(controller.ghostCache, event);
         }
     }
 

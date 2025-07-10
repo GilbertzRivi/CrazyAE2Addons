@@ -1,37 +1,28 @@
 package net.oktawia.crazyae2addons.misc;
 
-import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ItemBlockRenderTypes;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
-import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.client.event.RenderLevelStageEvent.Stage;
-import net.minecraftforge.client.model.data.ModelData;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.blocks.EnergyStorageFrame;
-import net.oktawia.crazyae2addons.blocks.EntropyCradle;
-import net.oktawia.crazyae2addons.blocks.EntropyCradleCapacitor;
 import net.oktawia.crazyae2addons.entities.EnergyStorageControllerBE;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 @Mod.EventBusSubscriber(modid = CrazyAddons.MODID, value = Dist.CLIENT)
 public class EnergyStoragePreviewRenderer {
-
-    public record CachedBlockInfo(BlockPos pos, BlockState state, BakedModel model) {}
 
     @SubscribeEvent
     public static void onRender(RenderLevelStageEvent event) {
@@ -39,11 +30,6 @@ public class EnergyStoragePreviewRenderer {
 
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || mc.player == null) return;
-
-        PoseStack poseStack = event.getPoseStack();
-        Vec3 cameraPos = mc.gameRenderer.getMainCamera().getPosition();
-        MultiBufferSource.BufferSource buffer = mc.renderBuffers().bufferSource();
-        BlockRenderDispatcher blockRenderer = mc.getBlockRenderer();
 
         for (EnergyStorageControllerBE controller : EnergyStorageControllerBE.CLIENT_INSTANCES) {
             if (!controller.preview) continue;
@@ -59,38 +45,7 @@ public class EnergyStoragePreviewRenderer {
                 rebuildCache(controller, facing);
             }
 
-            poseStack.pushPose();
-            poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
-
-            for (CachedBlockInfo info : controller.ghostCache) {
-                BlockPos pos = info.pos();
-                if (!mc.level.isLoaded(pos)) continue;
-                if (pos.distSqr(mc.player.blockPosition()) > 64 * 64) continue;
-
-                BlockState current = mc.level.getBlockState(pos);
-                if (current.getBlock() == info.state().getBlock()) continue;
-
-                poseStack.pushPose();
-                poseStack.translate(pos.getX(), pos.getY(), pos.getZ());
-
-                var state = info.state();
-                BakedModel model = blockRenderer.getBlockModel(state);
-                RenderType layer = model.getRenderTypes(state, mc.level.random, ModelData.EMPTY).asList().get(0);
-
-                blockRenderer.getModelRenderer().renderModel(
-                        poseStack.last(),
-                        buffer.getBuffer(layer),
-                        state,
-                        model,
-                        1f, 1f, 1f,
-                        0xF0F0F0,
-                        OverlayTexture.NO_OVERLAY
-                );
-
-                poseStack.popPose();
-            }
-
-            poseStack.popPose();
+            PreviewRenderer.render(controller.ghostCache, event);
         }
     }
 

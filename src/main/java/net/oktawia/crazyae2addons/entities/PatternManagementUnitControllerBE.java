@@ -27,6 +27,7 @@ import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.menus.PatternManagementUnitControllerMenu;
+import net.oktawia.crazyae2addons.misc.CachedBlockInfo;
 import net.oktawia.crazyae2addons.misc.PatternManagementUnitPreviewRenderer;
 import net.oktawia.crazyae2addons.misc.PatternManagementUnitValidator;
 import org.jetbrains.annotations.Nullable;
@@ -49,7 +50,7 @@ public class PatternManagementUnitControllerBE extends AENetworkBlockEntity impl
     public boolean init;
     public boolean active;
 
-    public List<PatternManagementUnitPreviewRenderer.CachedBlockInfo> ghostCache = null;
+    public List<CachedBlockInfo> ghostCache = null;
 
     public static final Set<PatternManagementUnitControllerBE> CLIENT_INSTANCES = new HashSet<>();
 

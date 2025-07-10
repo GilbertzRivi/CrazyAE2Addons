@@ -44,6 +44,7 @@ import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.menus.EntropyCradleControllerMenu;
 import net.oktawia.crazyae2addons.menus.PenroseControllerMenu;
+import net.oktawia.crazyae2addons.misc.CachedBlockInfo;
 import net.oktawia.crazyae2addons.misc.CradleRecipes;
 import net.oktawia.crazyae2addons.misc.EntropyCradlePreviewRenderer;
 import net.oktawia.crazyae2addons.misc.EntropyCradleValidator;
@@ -57,7 +58,7 @@ public class EntropyCradleControllerBE extends AENetworkInvBlockEntity implement
     public int MAX_ENERGY = 600_000_000;
     public IEnergyStorage storedEnergy;
 
-    public List<EntropyCradlePreviewRenderer.CachedBlockInfo> ghostCache = null;
+    public List<CachedBlockInfo> ghostCache = null;
 
     public boolean preview = false;
 

@@ -74,6 +74,7 @@ import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.items.XpShardItem;
 import net.oktawia.crazyae2addons.menus.MobFarmControllerMenu;
 import net.oktawia.crazyae2addons.menus.SpawnerExtractorControllerMenu;
+import net.oktawia.crazyae2addons.misc.CachedBlockInfo;
 import net.oktawia.crazyae2addons.misc.MobFarmPreviewRenderer;
 import net.oktawia.crazyae2addons.misc.MobFarmValidator;
 import net.oktawia.crazyae2addons.misc.SpawnerExtractorValidator;
@@ -97,7 +98,7 @@ public class MobFarmControllerBE extends AENetworkBlockEntity implements MenuPro
 
     public boolean preview = false;
 
-    public List<MobFarmPreviewRenderer.CachedBlockInfo> ghostCache = null;
+    public List<CachedBlockInfo> ghostCache = null;
 
     public static final Set<MobFarmControllerBE> CLIENT_INSTANCES = new HashSet<>();
 

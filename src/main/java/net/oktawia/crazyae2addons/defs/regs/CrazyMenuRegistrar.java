@@ -10,6 +10,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.IsModLoaded;
+import net.oktawia.crazyae2addons.blocks.DataProcessorBlock;
 import net.oktawia.crazyae2addons.compat.CC.CCDataExtractorPart;
 import net.oktawia.crazyae2addons.compat.GregTech.GTAmpereMeterBE;
 import net.oktawia.crazyae2addons.compat.GregTech.GTEnergyExporterPart;
@@ -158,6 +159,9 @@ public class CrazyMenuRegistrar {
 
     public static final RegistryObject<MenuType<DataflowPatternMenu>> DATAFLOW_PATTERN_MENU =
             reg(id("dataflow_pattern_menu"), DataflowPatternMenu::new, DataflowPatternHost.class);
+
+    public static final RegistryObject<MenuType<DataProcessorMenu>> DATA_PROCESSOR_MENU =
+            reg(id("data_processor_menu"), DataProcessorMenu::new, DataProcessorBE.class);
 
     private CrazyMenuRegistrar() {}
 }

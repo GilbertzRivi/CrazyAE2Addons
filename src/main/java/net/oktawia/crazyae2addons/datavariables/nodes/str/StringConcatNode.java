@@ -2,19 +2,15 @@ package net.oktawia.crazyae2addons.datavariables.nodes.str;
 
 import net.oktawia.crazyae2addons.datavariables.*;
 
+import java.util.List;
 import java.util.Map;
 
 public class StringConcatNode implements IFlowNode {
 
-    private final String id;
-    private final IFlowNode next;
+    private IFlowNode next;
 
-    public StringConcatNode(String id, IFlowNode next) {
-        this.id = id;
-        this.next = next;
+    public StringConcatNode() {
     }
-
-    @Override public String getId() { return id; }
 
     @Override
     public Map<String, FlowResult> execute(String where, Map<String, DataValue<?>> inputs) {
@@ -24,14 +20,41 @@ public class StringConcatNode implements IFlowNode {
         if (a == null || b == null || a.getType() != DataType.STRING || b.getType() != DataType.STRING) return Map.of();
 
         String out = ((StringValue) a).getRaw() + ((StringValue) b).getRaw();
-        return Map.of("out", new FlowResult(new StringValue(out), next));
+        return Map.of("out", FlowResult.of(next, new StringValue(out)));
     }
 
-    @Override public Map<String, DataType> getExpectedInputs() {
-        return Map.of("a", DataType.STRING, "b", DataType.STRING);
+    @Override
+    public void setOutputNodes(List<IFlowNode> outputs) {
+        if (!outputs.isEmpty()) this.next = outputs.get(0);
     }
 
-    @Override public String getType() {
-        return "string_concat";
+    static
+    public Map<String, String> getArgs() {
+        return Map.of(
+                "Next", "Name of the node that should be called next"
+        );
+    }
+
+    static
+    public String getDesc() {
+        return "Appends string marked with ^B at the end of the string marked with ^A";
+    }
+
+    static
+    public int getOutputPaths() {
+        return 1;
+    }
+
+    static
+    public List<?> getInputTypes() {
+        return List.of(String.class, String.class);
+    }
+
+    static
+    public Map<String, DataType> getExpectedInputs() {
+        return Map.of(
+                "a", DataType.STRING,
+                "b", DataType.STRING
+        );
     }
 }

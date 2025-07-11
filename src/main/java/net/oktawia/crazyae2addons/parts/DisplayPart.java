@@ -229,6 +229,55 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
     private record Transformation(float tx, float ty, float tz, float yRotation, float xRotation) {
     }
 
+    public boolean isStructureComplete(Set<DisplayPart> group) {
+        if (group == null || group.isEmpty()) return false;
+
+        Direction side = this.getSide();
+
+        // Zamieniamy DisplayPart na współrzędne siatki (x, y)
+        Set<Pair<Integer, Integer>> coords = new HashSet<>();
+
+        int minRow = Integer.MAX_VALUE, maxRow = Integer.MIN_VALUE;
+        int minCol = Integer.MAX_VALUE, maxCol = Integer.MIN_VALUE;
+
+        for (DisplayPart part : group) {
+            BlockPos pos = part.getBlockEntity().getBlockPos();
+            int col = 0, row = 0;
+
+            switch (side) {
+                case NORTH, SOUTH -> {
+                    col = pos.getX();
+                    row = pos.getY();
+                }
+                case EAST, WEST -> {
+                    col = pos.getZ();
+                    row = pos.getY();
+                }
+                case UP, DOWN -> {
+                    col = pos.getX();
+                    row = pos.getZ();
+                }
+            }
+
+            coords.add(Pair.of(col, row));
+            minCol = Math.min(minCol, col);
+            maxCol = Math.max(maxCol, col);
+            minRow = Math.min(minRow, row);
+            maxRow = Math.max(maxRow, row);
+        }
+
+        for (int col = minCol; col <= maxCol; col++) {
+            for (int row = minRow; row <= maxRow; row++) {
+                if (!coords.contains(Pair.of(col, row))) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+
     private void applyFacingTransform(PoseStack poseStack) {
         Transformation t = getFacingTransformation(getSide());
         poseStack.translate(t.tx, t.ty, t.tz);
@@ -311,7 +360,11 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
             rowStart = rowStart.getNeighbor(Direction.UP);
         } while (rowStart != null && rowStart.getSide() == side && rowStart.isPowered() && rowStart.mode);
 
-        return result;
+        if (isStructureComplete(result)){
+            return result;
+        } else {
+            return Set.of(this);
+        }
     }
 
     @Nullable

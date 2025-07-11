@@ -67,6 +67,14 @@ public class NetworkHandler {
                 ClipboardPacket::handle,
                 Optional.of(NetworkDirection.PLAY_TO_CLIENT)
         );
+        INSTANCE.registerMessage(
+                id++,
+                TagPacket.class,
+                TagPacket::encode,
+                TagPacket::decode,
+                TagPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT)
+        );
     }
 
     public static void registerServerPackets() {
@@ -75,6 +83,13 @@ public class NetworkHandler {
                 SendLongStringToServerPacket::encode,
                 SendLongStringToServerPacket::decode,
                 SendLongStringToServerPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER)
+        );
+        INSTANCE.registerMessage(id++,
+                TagPacketToServer.class,
+                TagPacketToServer::encode,
+                TagPacketToServer::decode,
+                TagPacketToServer::handle,
                 Optional.of(NetworkDirection.PLAY_TO_SERVER)
         );
     }

@@ -2,24 +2,17 @@ package net.oktawia.crazyae2addons.datavariables.nodes.bool;
 
 import net.oktawia.crazyae2addons.datavariables.*;
 
+import java.util.List;
 import java.util.Map;
 
 public class BoolNorNode implements IFlowNode {
 
-    private final String id;
-    private final IFlowNode onTrue;
-    private final IFlowNode onFalse;
+    private IFlowNode onTrue;
+    private IFlowNode onFalse;
 
-    public BoolNorNode(String id, IFlowNode onTrue, IFlowNode onFalse) {
-        this.id = id;
-        this.onTrue = onTrue;
-        this.onFalse = onFalse;
+    public BoolNorNode() {
     }
 
-    @Override
-    public String getId() {
-        return id;
-    }
 
     @Override
     public Map<String, FlowResult> execute(String where, Map<String, DataValue<?>> inputs) {
@@ -33,17 +26,44 @@ public class BoolNorNode implements IFlowNode {
         boolean result = !((Boolean) a.getRaw() || (Boolean) b.getRaw());
         return Map.of(
             result ? "true" : "false",
-            new FlowResult(new BoolValue(result), result ? onTrue : onFalse)
+            FlowResult.of(result ? onTrue : onFalse, new BoolValue(result))
         );
     }
 
     @Override
-    public Map<String, DataType> getExpectedInputs() {
-        return Map.of("a", DataType.BOOL, "b", DataType.BOOL);
+    public void setOutputNodes(List<IFlowNode> outputs) {
+        if (!outputs.isEmpty()) this.onTrue = outputs.get(0);
+        if (outputs.size() > 1) this.onFalse = outputs.get(1);
     }
 
-    @Override
-    public String getType() {
-        return "bool_nor";
+    static
+    public Map<String, String> getArgs() {
+        return Map.of(
+                "onTrue", "Name of the node that should be called on true",
+                "onFalse", "Name of the node that should be called on false"
+        );
+    }
+
+    static
+    public String getDesc() {
+        return "Compares two boolean values and gives true if only one is true, false otherwise";
+    }
+
+    static
+    public int getOutputPaths() {
+        return 2;
+    }
+
+    static
+    public List<?> getInputTypes() {
+        return List.of(Boolean.class, Boolean.class);
+    }
+
+    static
+    public Map<String, DataType> getExpectedInputs() {
+        return Map.of(
+                "a", DataType.BOOL,
+                "b", DataType.BOOL
+        );
     }
 }

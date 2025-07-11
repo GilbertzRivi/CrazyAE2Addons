@@ -9,17 +9,13 @@ import java.util.Objects;
 
 public class SetRedstoneEmitterNode implements IFlowNode {
 
-    private final String id;
-    private final List<RedstoneEmitterPart> emitterRegistry;
+    private List<RedstoneEmitterPart> emitterRegistry;
 
-    public SetRedstoneEmitterNode(String id, List<RedstoneEmitterPart> emitterRegistry) {
-        this.id = id;
-        this.emitterRegistry = emitterRegistry;
+    public SetRedstoneEmitterNode() {
     }
 
-    @Override
-    public String getId() {
-        return id;
+    public void setEmitters(List<RedstoneEmitterPart> emitterRegistry){
+        this.emitterRegistry = emitterRegistry;
     }
 
     @Override
@@ -42,15 +38,35 @@ public class SetRedstoneEmitterNode implements IFlowNode {
     }
 
     @Override
-    public Map<String, DataType> getExpectedInputs() {
-        return Map.of(
-            "name", DataType.STRING,
-            "state", DataType.BOOL
-        );
+    public void setOutputNodes(List<IFlowNode> outputs) {
+
     }
 
-    @Override
-    public String getType() {
-        return "set_redstone_emitter";
+    static
+    public Map<String, String> getArgs() {
+        return Map.of();
+    }
+
+    static
+    public String getDesc() {
+        return "Finds redstone emitter with the name == String argument, and sets its output to Boolean argument";
+    }
+
+    static
+    public int getOutputPaths() {
+        return 0;
+    }
+
+    static
+    public List<?> getInputTypes() {
+        return List.of(String.class, Boolean.class);
+    }
+
+    static
+    public Map<String, DataType> getExpectedInputs() {
+        return Map.of(
+                "name", DataType.STRING,
+                "state", DataType.BOOL
+        );
     }
 }

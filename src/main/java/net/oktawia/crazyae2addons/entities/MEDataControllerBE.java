@@ -163,8 +163,17 @@ public class MEDataControllerBE extends AENetworkInvBlockEntity implements IGrid
 
         var machineRecord = new MachineRecord(machineId, machineClass);
         var variableRecord = new VariableRecord(variableId, variableName, variableValue);
+
+        VariableRecord previous = variables.get(machineRecord);
+
+        boolean isChanged = previous == null || !Objects.equals(previous.value(), variableValue);
+
         variables.put(machineRecord, variableRecord);
-        notifySubscribers(variableRecord);
+
+        if (isChanged) {
+            notifySubscribers(variableRecord);
+        }
+
         setChanged();
     }
 
@@ -247,6 +256,8 @@ public class MEDataControllerBE extends AENetworkInvBlockEntity implements IGrid
 
     @Override
     public void onChangeInventory(InternalInventory internalInventory, int i) {
+        this.variables.clear();
+        this.notifications.clear();
         this.setChanged();
     }
 

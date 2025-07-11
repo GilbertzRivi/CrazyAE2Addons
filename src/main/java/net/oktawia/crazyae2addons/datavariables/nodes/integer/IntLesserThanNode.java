@@ -2,23 +2,15 @@ package net.oktawia.crazyae2addons.datavariables.nodes.integer;
 
 import net.oktawia.crazyae2addons.datavariables.*;
 
+import java.util.List;
 import java.util.Map;
 
 public class IntLesserThanNode implements IFlowNode {
 
-    private final String id;
-    private final IFlowNode onTrue;
-    private final IFlowNode onFalse;
+    private IFlowNode onTrue;
+    private IFlowNode onFalse;
 
-    public IntLesserThanNode(String id, IFlowNode onTrue, IFlowNode onFalse) {
-        this.id = id;
-        this.onTrue = onTrue;
-        this.onFalse = onFalse;
-    }
-
-    @Override
-    public String getId() {
-        return id;
+    public IntLesserThanNode() {
     }
 
     @Override
@@ -32,17 +24,44 @@ public class IntLesserThanNode implements IFlowNode {
         boolean result = ((IntValue) a).getRaw() < ((IntValue) b).getRaw();
         return Map.of(
                 result ? "true" : "false",
-                new FlowResult(new BoolValue(result), result ? onTrue : onFalse)
+                FlowResult.of(result ? onTrue : onFalse, new BoolValue(result))
         );
     }
 
     @Override
-    public Map<String, DataType> getExpectedInputs() {
-        return Map.of("a", DataType.INT, "b", DataType.INT);
+    public void setOutputNodes(List<IFlowNode> outputs) {
+        if (!outputs.isEmpty()) this.onTrue = outputs.get(0);
+        if (outputs.size() > 1) this.onFalse = outputs.get(1);
     }
 
-    @Override
-    public String getType() {
-        return "int_lt";
+    static
+    public Map<String, String> getArgs() {
+        return Map.of(
+                "onTrue", "Name of the node that should be called on true",
+                "onFalse", "Name of the node that should be called on false"
+        );
+    }
+
+    static
+    public String getDesc() {
+        return "Compares INT marked with \"^A\" against one marked with \"^B\", true if A is smaller";
+    }
+
+    static
+    public int getOutputPaths() {
+        return 2;
+    }
+
+    static
+    public List<?> getInputTypes() {
+        return List.of(Integer.class, Integer.class);
+    }
+
+    static
+    public Map<String, DataType> getExpectedInputs() {
+        return Map.of(
+                "a", DataType.INT,
+                "b", DataType.INT
+        );
     }
 }

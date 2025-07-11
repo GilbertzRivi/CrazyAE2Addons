@@ -4,23 +4,16 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.server.ServerLifecycleHooks;
 import net.oktawia.crazyae2addons.datavariables.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
 public class IntSleepNode implements IFlowNode {
 
-    private final String id;
-    private final IFlowNode next;
+    private IFlowNode next;
 
-    public IntSleepNode(String id, IFlowNode next) {
-        this.id = id;
-        this.next = next;
-    }
-
-    @Override
-    public String getId() {
-        return id;
+    public IntSleepNode() {
     }
 
     @Override
@@ -32,7 +25,7 @@ public class IntSleepNode implements IFlowNode {
             return Map.of();
 
         int ticks = ((IntValue) duration).getRaw();
-        if (ticks <= 0) return Map.of("out", new FlowResult(payload, next));
+        if (ticks <= 0) return Map.of("out", FlowResult.of(next, payload));
 
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         if (server == null) return Map.of();
@@ -55,15 +48,37 @@ public class IntSleepNode implements IFlowNode {
     }
 
     @Override
+    public void setOutputNodes(List<IFlowNode> outputs) {
+        if (!outputs.isEmpty()) this.next = outputs.get(0);
+    }
+
+    static
+    public Map<String, String> getArgs() {
+        return Map.of(
+                "Next", "Name of the node that should be called next"
+        );
+    }
+
+    static
+    public String getDesc() {
+        return "Waits for the amount of ticks specified by the INT input marked ^A, and then emits INT input marked ^B";
+    }
+
+    static
+    public int getOutputPaths() {
+        return 1;
+    }
+
+    static
+    public List<?> getInputTypes() {
+        return List.of(Integer.class, Boolean.class);
+    }
+
+    static
     public Map<String, DataType> getExpectedInputs() {
         return Map.of(
                 "duration", DataType.INT,
                 "in", DataType.INT
         );
-    }
-
-    @Override
-    public String getType() {
-        return "int_sleep";
     }
 }

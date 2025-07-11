@@ -2,19 +2,15 @@ package net.oktawia.crazyae2addons.datavariables.nodes.str;
 
 import net.oktawia.crazyae2addons.datavariables.*;
 
+import java.util.List;
 import java.util.Map;
 
 public class StringLengthNode implements IFlowNode {
 
-    private final String id;
-    private final IFlowNode next;
+    private IFlowNode next;
 
-    public StringLengthNode(String id, IFlowNode next) {
-        this.id = id;
-        this.next = next;
+    public StringLengthNode() {
     }
-
-    @Override public String getId() { return id; }
 
     @Override
     public Map<String, FlowResult> execute(String where, Map<String, DataValue<?>> inputs) {
@@ -22,14 +18,39 @@ public class StringLengthNode implements IFlowNode {
         if (in == null || in.getType() != DataType.STRING) return Map.of();
 
         int len = ((StringValue) in).getRaw().length();
-        return Map.of("out", new FlowResult(new IntValue(len), next));
+        return Map.of("out", FlowResult.of(next, new IntValue(len)));
     }
 
-    @Override public Map<String, DataType> getExpectedInputs() {
-        return Map.of("in", DataType.STRING);
+    @Override
+    public void setOutputNodes(List<IFlowNode> outputs) {
+        if (!outputs.isEmpty()) this.next = outputs.get(0);
     }
 
-    @Override public String getType() {
-        return "string_length";
+    static
+    public Map<String, String> getArgs() {
+        return Map.of(
+                "Next", "Name of the node that should be called next"
+        );
+    }
+    static
+    public Map<String, DataType> getExpectedInputs() {
+        return Map.of(
+                "in", DataType.STRING
+        );
+    }
+
+    static
+    public String getDesc() {
+        return "Returns the length of given String";
+    }
+
+    static
+    public int getOutputPaths() {
+        return 1;
+    }
+
+    static
+    public List<?> getInputTypes() {
+        return List.of(String.class);
     }
 }

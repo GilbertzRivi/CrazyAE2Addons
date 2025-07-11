@@ -27,4 +27,30 @@ public class DataProcessorBlock extends AEBaseEntityBlock<DataProcessorBE> imple
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
         return new DataProcessorBE(pos, state);
     }
+
+    @Override
+    public InteractionResult onActivated(
+            Level level,
+            BlockPos pos,
+            Player player,
+            InteractionHand hand,
+            @Nullable ItemStack heldItem,
+            BlockHitResult hit) {
+        if (InteractionUtil.isInAlternateUseMode(player)) {
+            return InteractionResult.PASS;
+        }
+
+        var be = getBlockEntity(level, pos);
+
+        if (be != null) {
+            if (!level.isClientSide()) {
+                be.openMenu(player, MenuLocators.forBlockEntity(be));
+            }
+
+            return InteractionResult.sidedSuccess(level.isClientSide());
+        }
+
+        return InteractionResult.PASS;
+    }
+
 }

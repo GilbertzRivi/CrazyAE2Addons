@@ -2,23 +2,15 @@ package net.oktawia.crazyae2addons.datavariables.nodes.bool;
 
 import net.oktawia.crazyae2addons.datavariables.*;
 
+import java.util.List;
 import java.util.Map;
 
 public class BoolNotNode implements IFlowNode {
 
-    private final String id;
-    private final IFlowNode onTrue;
-    private final IFlowNode onFalse;
+    private IFlowNode onTrue;
+    private IFlowNode onFalse;
 
-    public BoolNotNode(String id, IFlowNode onTrue, IFlowNode onFalse) {
-        this.id = id;
-        this.onTrue = onTrue;
-        this.onFalse = onFalse;
-    }
-
-    @Override
-    public String getId() {
-        return id;
+    public BoolNotNode() {
     }
 
     @Override
@@ -32,17 +24,42 @@ public class BoolNotNode implements IFlowNode {
         boolean result = !(Boolean) in.getRaw();
         return Map.of(
             result ? "true" : "false",
-            new FlowResult(new BoolValue(result), result ? onTrue : onFalse)
+            FlowResult.of(result ? onTrue : onFalse, new BoolValue(result))
         );
     }
 
     @Override
-    public Map<String, DataType> getExpectedInputs() {
-        return Map.of("in", DataType.BOOL);
+    public void setOutputNodes(List<IFlowNode> outputs) {
+        if (!outputs.isEmpty()) this.onTrue = outputs.get(0);
+        if (outputs.size() > 1) this.onFalse = outputs.get(1);
     }
 
-    @Override
-    public String getType() {
-        return "bool_not";
+    static
+    public Map<String, String> getArgs() {
+        return Map.of(
+                "onTrue", "Name of the node that should be called on true",
+                "onFalse", "Name of the node that should be called on false"
+        );
+    }
+
+    static
+    public String getDesc() {
+        return "Inverts the value";
+    }
+
+    static
+    public int getOutputPaths() {
+        return 2;
+    }
+
+    static
+    public List<?> getInputTypes() {
+        return List.of(Boolean.class);
+    }
+    static
+    public Map<String, DataType> getExpectedInputs() {
+        return Map.of(
+                "in", DataType.BOOL
+        );
     }
 }

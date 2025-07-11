@@ -216,6 +216,12 @@ public final class Screens {
                 DataflowPatternScreen<DataflowPatternMenu>::new,
                 "/screens/dataflow_pattern.json"
         );
+
+        InitScreens.register(
+                CrazyMenuRegistrar.DATA_PROCESSOR_MENU.get(),
+                DataProcessorScreen<DataProcessorMenu>::new,
+                "/screens/data_processor.json"
+        );
     }
 
     private Screens() {}

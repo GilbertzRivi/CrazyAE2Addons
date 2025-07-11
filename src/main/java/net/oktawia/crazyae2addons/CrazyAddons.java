@@ -24,6 +24,7 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegisterEvent;
+import net.oktawia.crazyae2addons.datavariables.FlowNodeRegistry;
 import net.oktawia.crazyae2addons.defs.*;
 import net.oktawia.crazyae2addons.defs.regs.*;
 import net.oktawia.crazyae2addons.logic.WirelessRedstoneTerminalItemLogicHost;
@@ -107,6 +108,7 @@ public class CrazyAddons {
             CrazyBlockEntityRegistrar.setupBlockEntityTypes();
             NetworkHandler.registerClientPackets();
             NetworkHandler.registerServerPackets();
+            FlowNodeRegistry.init();
         });
     }
 

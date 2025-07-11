@@ -1,25 +1,67 @@
 package net.oktawia.crazyae2addons.datavariables;
 
+import appeng.api.networking.IGrid;
+import com.mojang.logging.LogUtils;
+import net.oktawia.crazyae2addons.datavariables.nodes.output.SetRedstoneEmitterNode;
+import net.oktawia.crazyae2addons.datavariables.nodes.output.SetVariableNode;
+import net.oktawia.crazyae2addons.datavariables.nodes.str.EntrypointNode;
+import net.oktawia.crazyae2addons.datavariables.nodes.str.ReadVariableNode;
+import net.oktawia.crazyae2addons.entities.MEDataControllerBE;
+import net.oktawia.crazyae2addons.parts.RedstoneEmitterPart;
+import org.slf4j.Logger;
+
 import java.util.*;
 
 public class DataFlowRunner {
 
+    private static final Logger LOGGER = LogUtils.getLogger();
+
     private final List<IFlowNode> allNodes;
     private final Map<IFlowNode, Map<String, DataValue<?>>> inputBuffers = new HashMap<>();
+    private final Set<IFlowNode> executed = new HashSet<>();
 
     public DataFlowRunner(List<IFlowNode> allNodes) {
         this.allNodes = allNodes;
     }
 
-    public void run() {
+    public void run(String startValue, String identifier, IGrid grid) {
+        List<MEDataControllerBE> dataControllers = grid != null ? grid.getMachines(MEDataControllerBE.class).stream().toList() : List.of();
+        MEDataControllerBE controller = dataControllers.isEmpty() ? null : dataControllers.get(0);
+
+        List<RedstoneEmitterPart> emitters = grid != null ? grid.getMachines(RedstoneEmitterPart.class).stream().toList() : List.of();
+
         for (IFlowNode node : allNodes) {
-            if (node.getExpectedInputs().isEmpty()) {
+            try {
+                if (node instanceof EntrypointNode ep) {
+                    ep.setValue(startValue);
+                } else if (node instanceof SetVariableNode sv) {
+                    sv.setId(identifier);
+                    if (controller != null) sv.setController(controller);
+                } else if (node instanceof SetRedstoneEmitterNode re) {
+                    if (!emitters.isEmpty()) re.setEmitters(emitters);
+                } else if (node instanceof ReadVariableNode rv) {
+                    if (controller != null) rv.setController(controller);
+                }
+            } catch (Exception e) {
+                LOGGER.error("Błąd przy konfiguracji noda: " + node.getClass().getSimpleName(), e);
+            }
+        }
+
+        run();
+    }
+
+    private void run() {
+        for (IFlowNode node : allNodes) {
+            Map<String, DataType> expectedInputs = FlowNodeRegistry.getExpectedInputs(node.getClass());
+            if (expectedInputs.isEmpty()) {
                 tryExecute(node, "start", Map.of());
             }
         }
     }
 
     public void receiveInput(IFlowNode node, String inputName, DataValue<?> value) {
+        if (node == null || inputName == null || value == null) return;
+
         inputBuffers
                 .computeIfAbsent(node, n -> new HashMap<>())
                 .put(inputName, value);
@@ -28,46 +70,58 @@ public class DataFlowRunner {
     }
 
     private void tryExecute(IFlowNode node, String lastInput, Map<String, DataValue<?>> currentInputs) {
-        Map<String, DataType> expected = node.getExpectedInputs();
+        if (node == null || executed.contains(node)) return;
+
+        Map<String, DataType> expected = FlowNodeRegistry.getExpectedInputs(node.getClass());
 
         if (expected.isEmpty()) {
-            Map<String, FlowResult> results = node.execute(lastInput, Map.of());
-
-            for (Map.Entry<String, FlowResult> entry : results.entrySet()) {
-                FlowResult res = entry.getValue();
-                IFlowNode next = res.nextNode();
-
-                if (next != null) {
-                    String inputName = findNextAvailableInput(next, res.value());
-                    if (inputName != null) {
-                        receiveInput(next, inputName, res.value());
-                    }
-                }
+            try {
+                Map<String, FlowResult> results = node.execute(lastInput, Map.of());
+                executed.add(node);
+                dispatchResults(results);
+            } catch (Exception e) {
+                LOGGER.error("Błąd podczas wykonywania noda: " + node.getClass().getSimpleName(), e);
             }
-
             return;
         }
 
-        if (currentInputs == null) {
-            return;
-        }
+        if (currentInputs == null) return;
 
         boolean ready = expected.keySet().stream().allMatch(currentInputs::containsKey);
-
-        if (!ready) {
-            return;
-        }
+        if (!ready) return;
 
         inputBuffers.remove(node);
+        executed.add(node);
 
-        Map<String, FlowResult> results = node.execute(lastInput, currentInputs);
+        try {
+            Map<String, FlowResult> results = node.execute(lastInput, currentInputs);
+            dispatchResults(results);
+        } catch (Exception e) {
+            LOGGER.error("Błąd w execute() dla: " + node.getClass().getSimpleName(), e);
+        }
+    }
+
+    private void dispatchResults(Map<String, FlowResult> results) {
+        if (results == null) return;
 
         for (Map.Entry<String, FlowResult> entry : results.entrySet()) {
+            String pathName = entry.getKey();
             FlowResult res = entry.getValue();
-            IFlowNode next = res.nextNode();
+            if (res == null || res.nextNodes() == null) continue;
 
-            if (next != null) {
-                String inputName = findNextAvailableInput(next, res.value());
+            String inputOverride = null;
+            int caretIdx = pathName.indexOf('^');
+            if (caretIdx != -1 && caretIdx < pathName.length() - 1) {
+                inputOverride = pathName.substring(caretIdx + 1);
+            }
+
+            for (IFlowNode next : res.nextNodes()) {
+                if (next == null || res.value() == null) continue;
+
+                String inputName = (inputOverride != null)
+                        ? inputOverride
+                        : findNextAvailableInput(next, res.value());
+
                 if (inputName != null) {
                     receiveInput(next, inputName, res.value());
                 }
@@ -76,7 +130,9 @@ public class DataFlowRunner {
     }
 
     private String findNextAvailableInput(IFlowNode node, DataValue<?> value) {
-        Map<String, DataType> expected = node.getExpectedInputs();
+        if (node == null || value == null || value.getType() == null) return null;
+
+        Map<String, DataType> expected = FlowNodeRegistry.getExpectedInputs(node.getClass());
         Map<String, DataValue<?>> current = inputBuffers.getOrDefault(node, Map.of());
 
         for (Map.Entry<String, DataType> entry : expected.entrySet()) {
@@ -90,5 +146,4 @@ public class DataFlowRunner {
 
         return null;
     }
-
 }

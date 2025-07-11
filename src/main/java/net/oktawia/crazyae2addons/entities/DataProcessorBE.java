@@ -1,39 +1,41 @@
 package net.oktawia.crazyae2addons.entities;
 
+import appeng.api.inventories.InternalInventory;
 import appeng.api.networking.GridFlags;
-import appeng.api.orientation.BlockOrientation;
-import appeng.blockentity.AEBaseBlockEntity;
-import appeng.blockentity.grid.AENetworkBlockEntity;
-import appeng.hooks.VisualStateSaving;
+import appeng.blockentity.grid.AENetworkInvBlockEntity;
+import appeng.menu.MenuOpener;
+import appeng.menu.locator.MenuLocator;
+import appeng.util.inv.AppEngInternalInventory;
+import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 import net.oktawia.crazyae2addons.datavariables.DataFlowRunner;
+import net.oktawia.crazyae2addons.datavariables.FlowNodeRegistry;
 import net.oktawia.crazyae2addons.datavariables.IFlowNode;
-import net.oktawia.crazyae2addons.datavariables.nodes.bool.BoolConstNode;
-import net.oktawia.crazyae2addons.datavariables.nodes.bool.BoolEqualsNode;
-import net.oktawia.crazyae2addons.datavariables.nodes.bool.BoolNotEqualsNode;
-import net.oktawia.crazyae2addons.datavariables.nodes.bool.IntToBoolNode;
-import net.oktawia.crazyae2addons.datavariables.nodes.integer.StringToIntNode;
-import net.oktawia.crazyae2addons.datavariables.nodes.output.SetRedstoneEmitterNode;
-import net.oktawia.crazyae2addons.datavariables.nodes.str.StringConstNode;
-import net.oktawia.crazyae2addons.datavariables.nodes.str.StringVariableProviderNode;
+import net.oktawia.crazyae2addons.datavariables.nodes.str.EntrypointNode;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
+import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.interfaces.VariableMachine;
-import net.oktawia.crazyae2addons.parts.RedstoneEmitterPart;
+import net.oktawia.crazyae2addons.menus.DataProcessorMenu;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.security.SecureRandom;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 
-public class DataProcessorBE extends AENetworkBlockEntity implements VariableMachine {
+public class DataProcessorBE extends AENetworkInvBlockEntity implements VariableMachine, MenuProvider {
 
     public String identifier = randomHexId();
+    public AppEngInternalInventory inv = new AppEngInternalInventory(this, 1, 1);
+    private List<IFlowNode> nodes;
 
     public DataProcessorBE(BlockPos pos, BlockState blockState) {
         super(CrazyBlockEntityRegistrar.DATA_PROCESSOR_BE.get(), pos, blockState);
@@ -54,12 +56,72 @@ public class DataProcessorBE extends AENetworkBlockEntity implements VariableMac
         if (data.contains("ident")){
             this.identifier = data.getString("ident");
         }
+        if (data.contains("inv")){
+            this.inv.readFromNBT(data, "inv");
+        }
+    }
+
+    @Override
+    public void onReady(){
+        super.onReady();
+        this.onChangeInventory(getInternalInventory(), 0);
+    }
+
+    @Override
+    public InternalInventory getInternalInventory() {
+        return this.inv;
     }
 
     @Override
     public void saveAdditional(CompoundTag data) {
         super.saveAdditional(data);
         data.putString("ident", this.identifier);
+        this.inv.writeToNBT(data, "inv");
+    }
+
+    @Override
+    public void onChangeInventory(InternalInventory inv, int slot) {
+        if (getMainNode().getGrid() == null) return;
+
+        if (inv.getStackInSlot(slot).isEmpty()){
+            this.nodes = null;
+            getMainNode().getGrid().getMachines(MEDataControllerBE.class).stream().findFirst().ifPresent(db -> db.removeNotification(this.identifier));
+            return;
+        }
+        ItemStack stack = inv.getStackInSlot(slot);
+        if (!stack.hasTag()) return;
+
+        CompoundTag tag = stack.getTag();
+        if (tag == null || !tag.contains("flow")) return;
+
+        CompoundTag flow = tag.getCompound("flow");
+
+        this.nodes = FlowNodeRegistry.deserializeNodesFromNBT(flow);
+        for (IFlowNode node : this.nodes){
+            LogUtils.getLogger().info(node.toString());
+        }
+        for (IFlowNode node : this.nodes) {
+            if (node instanceof EntrypointNode ep) {
+                getMainNode().getGrid().getMachines(MEDataControllerBE.class).stream().findFirst().ifPresent(db -> db.registerNotification(
+                        this.identifier, ep.getValueName(), this.identifier, this.getClass()
+                ));
+                break;
+            }
+        }
+    }
+
+    @Override
+    public @Nullable AbstractContainerMenu createMenu(int pContainerId, @NotNull Inventory pPlayerInventory, @NotNull Player pPlayer) {
+        return new DataProcessorMenu(pContainerId, pPlayerInventory, this);
+    }
+
+    public void openMenu(Player player, MenuLocator locator) {
+        MenuOpener.open(CrazyMenuRegistrar.DATA_PROCESSOR_MENU.get(), player, locator);
+    }
+
+    @Override
+    public @NotNull Component getDisplayName() {
+        return Component.literal("Data Processor");
     }
 
     @Override
@@ -69,41 +131,9 @@ public class DataProcessorBE extends AENetworkBlockEntity implements VariableMac
 
     @Override
     public void notifyVariable(String name, String value, MEDataControllerBE db) {
-        IFlowNode setRedstone = new SetRedstoneEmitterNode(
-                "set_rs",
-                getMainNode().getGrid().getMachines(RedstoneEmitterPart.class).stream().toList()
-        );
-
-        IFlowNode stringConst = new StringConstNode("const_str", "ABCD", setRedstone);
-        IFlowNode boolEquals = new BoolEqualsNode("bool_equals", setRedstone, null);
-        IFlowNode constTrue = new BoolConstNode("const_true", true, boolEquals);
-        IFlowNode intToBool = new IntToBoolNode("int_to_bool", boolEquals, null);
-        IFlowNode strToInt = new StringToIntNode("str_to_int", intToBool);
-        IFlowNode entry = new StringVariableProviderNode("entry", "TEST", db, strToInt);
-
-        List<IFlowNode> nodes = List.of(
-                entry,
-                strToInt,
-                intToBool,
-                constTrue,
-                boolEquals,
-                stringConst,
-                setRedstone
-        );
-
-        DataFlowRunner runner = new DataFlowRunner(nodes);
-        runner.run();
-    }
-
-    @Override
-    public void onReady(){
-        super.onReady();
-        if (getMainNode().getGrid() == null) return;
-        getMainNode()
-                .getGrid()
-                .getMachines(MEDataControllerBE.class)
-                .stream()
-                .findAny()
-                .ifPresent(db -> db.registerNotification(this.identifier, "TEST", this.identifier, this.getClass()));
+        if (this.nodes != null){
+            var runner = new DataFlowRunner(this.nodes);
+            runner.run(value, this.identifier, getMainNode().getGrid());
+        }
     }
 }

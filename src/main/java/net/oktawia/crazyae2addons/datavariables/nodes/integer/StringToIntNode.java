@@ -2,21 +2,14 @@ package net.oktawia.crazyae2addons.datavariables.nodes.integer;
 
 import net.oktawia.crazyae2addons.datavariables.*;
 
+import java.util.List;
 import java.util.Map;
 
 public class StringToIntNode implements IFlowNode {
 
-    private final String id;
-    private final IFlowNode next;
+    private IFlowNode next;
 
-    public StringToIntNode(String id, IFlowNode next) {
-        this.id = id;
-        this.next = next;
-    }
-
-    @Override
-    public String getId() {
-        return id;
+    public StringToIntNode() {
     }
 
     @Override
@@ -28,19 +21,43 @@ public class StringToIntNode implements IFlowNode {
         try {
             double parsed = Double.parseDouble((String) input.getRaw());
             int result = (int) parsed;
-            return Map.of("out", new FlowResult(new IntValue(result), next));
+            return Map.of("out", FlowResult.of(next, new IntValue(result)));
         } catch (Exception ignored) {
             return Map.of();
         }
     }
 
     @Override
-    public Map<String, DataType> getExpectedInputs() {
-        return Map.of("in", DataType.STRING);
+    public void setOutputNodes(List<IFlowNode> outputs) {
+        if (!outputs.isEmpty()) this.next = outputs.get(0);
     }
 
-    @Override
-    public String getType() {
-        return "string_to_int";
+    static
+    public Map<String, String> getArgs() {
+        return Map.of(
+                "Next", "Name of the node that should be called next"
+        );
+    }
+
+    static
+    public String getDesc() {
+        return "Takes String as input, emits equivalent INT if the conversion was successful";
+    }
+
+    static
+    public int getOutputPaths() {
+        return 1;
+    }
+
+    static
+    public List<?> getInputTypes() {
+        return List.of(String.class);
+    }
+
+    static
+    public Map<String, DataType> getExpectedInputs() {
+        return Map.of(
+                "in", DataType.STRING
+        );
     }
 }

@@ -2,21 +2,14 @@ package net.oktawia.crazyae2addons.datavariables.nodes.integer;
 
 import net.oktawia.crazyae2addons.datavariables.*;
 
+import java.util.List;
 import java.util.Map;
 
 public class IntModuloNode implements IFlowNode {
 
-    private final String id;
-    private final IFlowNode next;
+    private IFlowNode next;
 
-    public IntModuloNode(String id, IFlowNode next) {
-        this.id = id;
-        this.next = next;
-    }
-
-    @Override
-    public String getId() {
-        return id;
+    public IntModuloNode() {
     }
 
     @Override
@@ -28,16 +21,40 @@ public class IntModuloNode implements IFlowNode {
             return Map.of();
 
         int result = ((IntValue) a).getRaw() % ((IntValue) b).getRaw();
-        return Map.of("out", new FlowResult(new IntValue(result), next));
+        return Map.of("out", FlowResult.of(next, new IntValue(result)));
     }
 
     @Override
+    public void setOutputNodes(List<IFlowNode> outputs) {
+        if (!outputs.isEmpty()) this.next = outputs.get(0);
+    }
+
+    static
+    public Map<String, String> getArgs() {
+        return Map.of(
+                "Next", "Name of the node that should be called next"
+        );
+    }
+
+    static
+    public String getDesc() {
+        return "Emits the remainder of INT marked ^A divided by INT marked ^B";
+    }
+
+    static
+    public int getOutputPaths() {
+        return 1;
+    }
+
+    static
+    public List<?> getInputTypes() {
+        return List.of(Integer.class, Integer.class);
+    }
+    static
     public Map<String, DataType> getExpectedInputs() {
-        return Map.of("a", DataType.INT, "b", DataType.INT);
-    }
-
-    @Override
-    public String getType() {
-        return "int_modulo";
+        return Map.of(
+                "a", DataType.INT,
+                "b", DataType.INT
+        );
     }
 }

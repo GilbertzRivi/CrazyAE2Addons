@@ -15,7 +15,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
@@ -43,21 +42,34 @@ import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.menus.EntropyCradleControllerMenu;
-import net.oktawia.crazyae2addons.menus.PenroseControllerMenu;
+import net.oktawia.crazyae2addons.renderer.preview.PreviewInfo;
 import net.oktawia.crazyae2addons.misc.CradleRecipes;
-import net.oktawia.crazyae2addons.misc.EntropyCradlePreviewRenderer;
 import net.oktawia.crazyae2addons.misc.EntropyCradleValidator;
+import net.oktawia.crazyae2addons.renderer.preview.Previewable;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
-public class EntropyCradleControllerBE extends AENetworkInvBlockEntity implements IGridTickable, MenuProvider {
+public class EntropyCradleControllerBE extends AENetworkInvBlockEntity implements Previewable, IGridTickable, MenuProvider {
 
     public EntropyCradleValidator validator;
     public int MAX_ENERGY = 600_000_000;
     public IEnergyStorage storedEnergy;
 
-    public List<EntropyCradlePreviewRenderer.CachedBlockInfo> ghostCache = null;
+    @OnlyIn(Dist.CLIENT)
+    private PreviewInfo previewInfo = null;
+
+    @Override
+    @OnlyIn(Dist.CLIENT)
+    public PreviewInfo getPreviewInfo() {
+        return previewInfo;
+    }
+
+    @Override
+    @OnlyIn(Dist.CLIENT)
+    public void setPreviewInfo(PreviewInfo info) {
+        this.previewInfo = info;
+    }
 
     public boolean preview = false;
 

@@ -29,6 +29,8 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.util.LazyOptional;
@@ -40,6 +42,8 @@ import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.menus.PenroseControllerMenu;
 import net.oktawia.crazyae2addons.misc.*;
+import net.oktawia.crazyae2addons.renderer.preview.PreviewInfo;
+import net.oktawia.crazyae2addons.renderer.preview.Previewable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -48,7 +52,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-public class PenroseControllerBE extends AENetworkInvBlockEntity implements MenuProvider, IUpgradeableObject, IGridTickable {
+public class PenroseControllerBE extends AENetworkInvBlockEntity implements Previewable, MenuProvider, IUpgradeableObject, IGridTickable {
     public static final Set<PenroseControllerBE> CLIENT_INSTANCES = new HashSet<>();
     public boolean energyMode = false;
     public boolean preview = false;
@@ -56,9 +60,22 @@ public class PenroseControllerBE extends AENetworkInvBlockEntity implements Menu
     private int myticks = 0;
     public EnergyStorage energyStorage = new EnergyStorage(Integer.MAX_VALUE, 0, Integer.MAX_VALUE, 0);
 
-    public List<PenrosePreviewRenderer.CachedBlockInfo> ghostCache = null;
-
     public int cachedTier = -1;
+
+    @OnlyIn(Dist.CLIENT)
+    private PreviewInfo previewInfo = null;
+
+    @Override
+    @OnlyIn(Dist.CLIENT)
+    public PreviewInfo getPreviewInfo() {
+        return previewInfo;
+    }
+
+    @Override
+    @OnlyIn(Dist.CLIENT)
+    public void setPreviewInfo(PreviewInfo info) {
+        this.previewInfo = info;
+    }
 
     private final LazyOptional<IEnergyStorage> energyCap = LazyOptional.of(() -> new IEnergyStorage() {
         @Override public int getEnergyStored() {

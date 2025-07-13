@@ -1,26 +1,15 @@
 package net.oktawia.crazyae2addons.entities;
 
 import appeng.api.config.Actionable;
-import appeng.api.crafting.IPatternDetails;
-import appeng.api.crafting.PatternDetailsHelper;
 import appeng.api.inventories.ISegmentedInventory;
 import appeng.api.inventories.InternalInventory;
 import appeng.api.networking.GridFlags;
 import appeng.api.networking.IGridNode;
-import appeng.api.networking.crafting.CalculationStrategy;
-import appeng.api.networking.crafting.ICraftingLink;
-import appeng.api.networking.crafting.ICraftingPlan;
-import appeng.api.networking.crafting.ICraftingRequester;
 import appeng.api.networking.energy.IEnergyService;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.networking.ticking.IGridTickable;
 import appeng.api.networking.ticking.TickRateModulation;
 import appeng.api.networking.ticking.TickingRequest;
-import appeng.api.stacks.AEItemKey;
-import appeng.api.stacks.AEKey;
-import appeng.api.stacks.GenericStack;
-import appeng.api.stacks.KeyCounter;
-import appeng.api.storage.AEKeyFilter;
 import appeng.api.storage.MEStorage;
 import appeng.api.storage.StorageHelper;
 import appeng.api.upgrades.IUpgradeInventory;
@@ -28,13 +17,8 @@ import appeng.api.upgrades.IUpgradeableObject;
 import appeng.api.upgrades.UpgradeInventories;
 import appeng.blockentity.grid.AENetworkBlockEntity;
 import appeng.core.definitions.AEItems;
-import appeng.crafting.pattern.EncodedPatternItem;
-import appeng.helpers.patternprovider.PatternProviderTarget;
-import appeng.me.helpers.MachineSource;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuLocator;
-import appeng.util.ConfigInventory;
-import com.google.common.collect.ImmutableSet;
 import dev.shadowsoffire.apotheosis.spawn.spawner.ApothSpawnerTile;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -49,7 +33,6 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.BaseSpawner;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -65,16 +48,16 @@ import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.menus.SpawnerExtractorControllerMenu;
-import net.oktawia.crazyae2addons.misc.SpawnerExtractorPreviewRenderer;
+import net.oktawia.crazyae2addons.renderer.preview.PreviewInfo;
+import net.oktawia.crazyae2addons.renderer.preview.Previewable;
 import net.oktawia.crazyae2addons.misc.SpawnerExtractorValidator;
 import net.oktawia.crazyae2addons.mobstorage.MobKey;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Set;
 
-public class SpawnerExtractorControllerBE extends AENetworkBlockEntity implements MenuProvider, IUpgradeableObject, IGridTickable {
+public class SpawnerExtractorControllerBE extends AENetworkBlockEntity implements Previewable, MenuProvider, IUpgradeableObject, IGridTickable {
 
     public IUpgradeInventory upgrades = UpgradeInventories.forMachine(CrazyBlockRegistrar.SPAWNER_EXTRACTOR_CONTROLLER.get(), 4, this::saveChanges);
     public SpawnerExtractorValidator validator;
@@ -82,7 +65,20 @@ public class SpawnerExtractorControllerBE extends AENetworkBlockEntity implement
 
     public boolean preview = false;
 
-    public List<SpawnerExtractorPreviewRenderer.CachedBlockInfo> ghostCache = null;
+    @OnlyIn(Dist.CLIENT)
+    private PreviewInfo previewInfo = null;
+
+    @Override
+    @OnlyIn(Dist.CLIENT)
+    public PreviewInfo getPreviewInfo() {
+        return previewInfo;
+    }
+
+    @Override
+    @OnlyIn(Dist.CLIENT)
+    public void setPreviewInfo(PreviewInfo info) {
+        this.previewInfo = info;
+    }
 
     public static final Set<SpawnerExtractorControllerBE> CLIENT_INSTANCES = new java.util.HashSet<>();
 

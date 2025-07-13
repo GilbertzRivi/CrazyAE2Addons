@@ -34,14 +34,14 @@ import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.menus.EnergyStorageControllerMenu;
-import net.oktawia.crazyae2addons.misc.EnergyStoragePreviewRenderer;
+import net.oktawia.crazyae2addons.renderer.preview.PreviewInfo;
 import net.oktawia.crazyae2addons.misc.EnergyStorageValidator;
+import net.oktawia.crazyae2addons.renderer.preview.Previewable;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.List;
 import java.util.Set;
 
-public class EnergyStorageControllerBE extends AENetworkBlockEntity implements MenuProvider, IGridTickable, IAEPowerStorage {
+public class EnergyStorageControllerBE extends AENetworkBlockEntity implements Previewable, MenuProvider, IGridTickable, IAEPowerStorage {
 
     private boolean replace;
     public EnergyStorageValidator validator;
@@ -51,7 +51,20 @@ public class EnergyStorageControllerBE extends AENetworkBlockEntity implements M
     public EnergyStorageControllerMenu menu;
     public StoredEnergyAmount stored;
 
-    public List<EnergyStoragePreviewRenderer.CachedBlockInfo> ghostCache = null;
+    @OnlyIn(Dist.CLIENT)
+    private PreviewInfo previewInfo = null;
+
+    @Override
+    @OnlyIn(Dist.CLIENT)
+    public PreviewInfo getPreviewInfo() {
+        return previewInfo;
+    }
+
+    @Override
+    @OnlyIn(Dist.CLIENT)
+    public void setPreviewInfo(PreviewInfo info) {
+        this.previewInfo = info;
+    }
 
     public boolean preview = false;
 

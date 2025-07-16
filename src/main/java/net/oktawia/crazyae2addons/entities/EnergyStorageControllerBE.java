@@ -51,7 +51,6 @@ public class EnergyStorageControllerBE extends AENetworkBlockEntity implements P
     public EnergyStorageControllerMenu menu;
     public StoredEnergyAmount stored;
 
-    @OnlyIn(Dist.CLIENT)
     private PreviewInfo previewInfo = null;
 
     @Override

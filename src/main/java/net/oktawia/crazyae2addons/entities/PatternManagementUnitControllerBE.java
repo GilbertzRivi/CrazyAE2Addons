@@ -51,7 +51,6 @@ public class PatternManagementUnitControllerBE extends AENetworkBlockEntity impl
     public boolean init;
     public boolean active;
 
-    @OnlyIn(Dist.CLIENT)
     private PreviewInfo previewInfo = null;
 
     @Override

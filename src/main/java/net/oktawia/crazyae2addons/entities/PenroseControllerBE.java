@@ -62,7 +62,6 @@ public class PenroseControllerBE extends AENetworkInvBlockEntity implements Prev
 
     public int cachedTier = -1;
 
-    @OnlyIn(Dist.CLIENT)
     private PreviewInfo previewInfo = null;
 
     @Override

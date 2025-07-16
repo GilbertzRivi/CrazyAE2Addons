@@ -86,7 +86,6 @@ public class MobFarmControllerBE extends AENetworkBlockEntity implements Preview
 
     public boolean preview = false;
 
-    @OnlyIn(Dist.CLIENT)
     private PreviewInfo previewInfo = null;
 
     @Override

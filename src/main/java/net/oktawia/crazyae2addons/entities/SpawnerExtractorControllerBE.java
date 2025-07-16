@@ -65,7 +65,6 @@ public class SpawnerExtractorControllerBE extends AENetworkBlockEntity implement
 
     public boolean preview = false;
 
-    @OnlyIn(Dist.CLIENT)
     private PreviewInfo previewInfo = null;
 
     @Override

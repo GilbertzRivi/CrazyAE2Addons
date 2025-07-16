@@ -56,7 +56,6 @@ public class EntropyCradleControllerBE extends AENetworkInvBlockEntity implement
     public int MAX_ENERGY = 600_000_000;
     public IEnergyStorage storedEnergy;
 
-    @OnlyIn(Dist.CLIENT)
     private PreviewInfo previewInfo = null;
 
     @Override

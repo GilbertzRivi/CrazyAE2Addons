@@ -2,18 +2,18 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "C": {
-      "item": "crazyae2addons:logic_card"
-    },
     "D": {
-      "item": "ae2:sky_dust"
+      "item": "crazyae2addons:builder_pattern"
+    },
+    "I": {
+      "item": "crazyae2addons:logic_card"
     }
   },
   "pattern": [
-    "CD"
+    "DI"
   ],
   "result": {
-    "item": "crazyae2addons:sub_card"
+    "item": "crazyae2addons:dataflow_pattern"
   },
   "show_notification": true
 }

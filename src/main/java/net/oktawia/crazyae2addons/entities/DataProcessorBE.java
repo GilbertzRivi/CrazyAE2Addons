@@ -97,9 +97,7 @@ public class DataProcessorBE extends AENetworkInvBlockEntity implements Variable
         CompoundTag flow = tag.getCompound("flow");
 
         this.nodes = FlowNodeRegistry.deserializeNodesFromNBT(flow);
-        for (IFlowNode node : this.nodes){
-            LogUtils.getLogger().info(node.toString());
-        }
+
         for (IFlowNode node : this.nodes) {
             if (node instanceof EntrypointNode ep) {
                 getMainNode().getGrid().getMachines(MEDataControllerBE.class).stream().findFirst().ifPresent(db -> db.registerNotification(

@@ -23,6 +23,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
@@ -40,7 +41,7 @@ public class PatternManagementUnitControllerBE extends AENetworkBlockEntity impl
     public PatternManagementUnitControllerBE controller;
     public PatternManagementUnitValidator validator;
     public boolean valid = false;
-    public AppEngInternalInventory inv = new AppEngInternalInventory(this, 9*56, 1, new IAEItemFilter(){
+    public AppEngInternalInventory inv = new AppEngInternalInventory(this, CrazyConfig.COMMON.PatternUnitCapacity.get() * 9, 1, new IAEItemFilter(){
         public boolean allowInsert(InternalInventory inv, int slot, ItemStack stack) {
             return stack.getItem().asItem() == AEItems.CRAFTING_PATTERN.asItem().asItem();
         }

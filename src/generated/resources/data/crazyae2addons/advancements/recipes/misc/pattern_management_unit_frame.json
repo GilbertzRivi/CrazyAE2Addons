@@ -15,7 +15,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "crazyae2addons:min_card"
+        "recipe": "crazyae2addons:pattern_management_unit_frame"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -28,7 +28,7 @@
   ],
   "rewards": {
     "recipes": [
-      "crazyae2addons:min_card"
+      "crazyae2addons:pattern_management_unit_frame"
     ]
   },
   "sends_telemetry_event": false

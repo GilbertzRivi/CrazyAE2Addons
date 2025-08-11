@@ -71,36 +71,6 @@ public class CrazyItemRegistrar {
     public static final RegistryObject<LogicCard> LOGIC_CARD = regCard(
             "logic_card", () -> new LogicCard(new Item.Properties()));
 
-    public static final RegistryObject<AddCard> ADD_CARD = regCard(
-            "add_card", () -> new AddCard(new Item.Properties()));
-
-    public static final RegistryObject<SubCard> SUB_CARD = regCard(
-            "sub_card", () -> new SubCard(new Item.Properties()));
-
-    public static final RegistryObject<MulCard> MUL_CARD = regCard(
-            "mul_card", () -> new MulCard(new Item.Properties()));
-
-    public static final RegistryObject<DivCard> DIV_CARD = regCard(
-            "div_card", () -> new DivCard(new Item.Properties()));
-
-    public static final RegistryObject<MaxCard> MAX_CARD = regCard(
-            "max_card", () -> new MaxCard(new Item.Properties()));
-
-    public static final RegistryObject<MinCard> MIN_CARD = regCard(
-            "min_card", () -> new MinCard(new Item.Properties()));
-
-    public static final RegistryObject<BsrCard> BSR_CARD = regCard(
-            "bsr_card", () -> new BsrCard(new Item.Properties()));
-
-    public static final RegistryObject<BslCard> BSL_CARD = regCard(
-            "bsl_card", () -> new BslCard(new Item.Properties()));
-
-    public static final RegistryObject<HitCard> HIT_CARD = regCard(
-            "hit_card", () -> new HitCard(new Item.Properties()));
-
-    public static final RegistryObject<HifCard> HIF_CARD = regCard(
-            "hif_card", () -> new HifCard(new Item.Properties()));
-
     public static final RegistryObject<RRItemP2PTunnelPartItem> RR_ITEM_P2P_TUNNEL_PART =
             ITEMS.register("round_robin_item_p2p_tunnel",
                     () -> new RRItemP2PTunnelPartItem(new Item.Properties()));

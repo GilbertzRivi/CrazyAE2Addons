@@ -15,7 +15,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "crazyae2addons:max_card"
+        "recipe": "crazyae2addons:player_data_extractor"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -28,7 +28,7 @@
   ],
   "rewards": {
     "recipes": [
-      "crazyae2addons:max_card"
+      "crazyae2addons:player_data_extractor"
     ]
   },
   "sends_telemetry_event": false

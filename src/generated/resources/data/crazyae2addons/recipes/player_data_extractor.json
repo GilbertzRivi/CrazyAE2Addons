@@ -2,18 +2,18 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "C": {
-      "item": "crazyae2addons:logic_card"
-    },
     "D": {
-      "item": "minecraft:glowstone_dust"
+      "item": "crazyae2addons:data_extractor"
+    },
+    "I": {
+      "item": "minecraft:name_tag"
     }
   },
   "pattern": [
-    "DC"
+    "DI"
   ],
   "result": {
-    "item": "crazyae2addons:max_card"
+    "item": "crazyae2addons:player_data_extractor"
   },
   "show_notification": true
 }

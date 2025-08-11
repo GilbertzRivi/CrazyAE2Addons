@@ -23,14 +23,6 @@ public final class NBTMatcher {
         }
     }
 
-    public static boolean doesTagMatch(String tagSNBT, String expr) {
-        try {
-            return doesTagMatch(TagParser.parseTag(tagSNBT), expr);
-        } catch (CommandSyntaxException ex) {
-            return false;
-        }
-    }
-
     private interface Node { boolean eval(CompoundTag tag); }
 
     private record TagNode(CompoundTag crit) implements Node {

@@ -15,7 +15,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "crazyae2addons:bsr_card"
+        "recipe": "crazyae2addons:pattern_management_unit"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -28,7 +28,7 @@
   ],
   "rewards": {
     "recipes": [
-      "crazyae2addons:bsr_card"
+      "crazyae2addons:pattern_management_unit"
     ]
   },
   "sends_telemetry_event": false

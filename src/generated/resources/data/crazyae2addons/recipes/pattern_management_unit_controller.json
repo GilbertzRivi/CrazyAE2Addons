@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "C": {
+      "item": "ae2:engineering_processor"
+    },
+    "I": {
+      "item": "crazyae2addons:pattern_management_unit"
+    }
+  },
+  "pattern": [
+    " I ",
+    "ICI",
+    " I "
+  ],
+  "result": {
+    "item": "crazyae2addons:pattern_management_unit_controller"
+  },
+  "show_notification": true
+}

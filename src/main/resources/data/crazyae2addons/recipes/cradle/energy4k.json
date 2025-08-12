@@ -1,0 +1,58 @@
+{
+  "type": "crazyae2addons:cradle",
+  "result_block": "crazyae2addons:energy_storage_4k",
+  "preview_nbt": "crazyae2addons:4k_storage.nbt",
+  "pattern": {
+    "symbols": {
+      "A": [
+        "ae2:energy_cell"
+      ],
+      "B": [
+        "ae2:fluix_block"
+      ],
+      "D": [
+        "minecraft:iron_block"
+      ],
+      "E": [
+        "ae2:4k_crafting_storage"
+      ]
+    },
+    "layers": [
+      [
+        "A A B A A",
+        "A A D A A",
+        "B D D D B",
+        "A A D A A",
+        "A A B A A"
+      ],
+      [
+        "A A D A A",
+        "A E E E A",
+        "D E E E D",
+        "A E E E A",
+        "A A D A A"
+      ],
+      [
+        "B D D D B",
+        "D E E E D",
+        "D E E E D",
+        "D E E E D",
+        "B D D D B"
+      ],
+      [
+        "A A D A A",
+        "A E E E A",
+        "D E E E D",
+        "A E E E A",
+        "A A D A A"
+      ],
+      [
+        "A A B A A",
+        "A A D A A",
+        "B D D D B",
+        "A A D A A",
+        "A A B A A"
+      ]
+    ]
+  }
+}

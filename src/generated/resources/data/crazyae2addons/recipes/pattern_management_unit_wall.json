@@ -5,18 +5,20 @@
     "C": {
       "item": "ae2:interface"
     },
-    "E": {
-      "item": "ae2:export_bus"
-    },
     "I": {
-      "item": "ae2:import_bus"
+      "item": "ae2:engineering_processor"
+    },
+    "L": {
+      "item": "minecraft:quartz_block"
     }
   },
   "pattern": [
-    "ICE"
+    "LIL",
+    "ICI",
+    "LIL"
   ],
   "result": {
-    "item": "crazyae2addons:ampere_meter"
+    "item": "crazyae2addons:pattern_management_unit_wall"
   },
   "show_notification": true
 }

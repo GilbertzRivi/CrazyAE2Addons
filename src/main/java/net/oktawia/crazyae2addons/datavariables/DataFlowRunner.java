@@ -42,9 +42,7 @@ public class DataFlowRunner {
                 } else if (node instanceof ReadVariableNode rv) {
                     if (controller != null) rv.setController(controller);
                 }
-            } catch (Exception e) {
-                LOGGER.error("Błąd przy konfiguracji noda: " + node.getClass().getSimpleName(), e);
-            }
+            } catch (Exception ignored) {}
         }
 
         run();

@@ -58,6 +58,8 @@ public class CrazyAddons {
         CrazyBlockRegistrar.BLOCKS.register(modEventBus);
         CrazyBlockRegistrar.BLOCK_ITEMS.register(modEventBus);
         CrazyBlockEntityRegistrar.BLOCK_ENTITIES.register(modEventBus);
+        CrazyRecipes.RECIPE_SERIALIZERS.register(modEventBus);
+        CrazyRecipes.RECIPE_TYPES.register(modEventBus);
 
         CrazyMenuRegistrar.MENU_TYPES.register(modEventBus);
 

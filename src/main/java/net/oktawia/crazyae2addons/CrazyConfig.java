@@ -22,6 +22,7 @@ public class CrazyConfig {
         public final ForgeConfigSpec.IntValue EntityTickerCost;
         public final ForgeConfigSpec.ConfigValue<List<? extends String>> EntityTickerBlackList;
         public final ForgeConfigSpec.BooleanValue NestedP2PWormhole;
+        public final ForgeConfigSpec.IntValue PatternUnitCapacity;
 
         public Common(ForgeConfigSpec.Builder builder) {
             builder.comment("Crazy AE2 Addons - Config").push("general");
@@ -53,6 +54,10 @@ public class CrazyConfig {
             NestedP2PWormhole = builder
                     .comment("If it should be possible to route p2p tunnels through a wormhole tunnel")
                             .define("nestedP2Pwormhole", false);
+
+            PatternUnitCapacity = builder
+                    .comment("Amount of rows for patterns stored by the Pattern management unit")
+                        .defineInRange("PUnitCapacity", 216, 8, 1024);
 
             builder.pop();
         }

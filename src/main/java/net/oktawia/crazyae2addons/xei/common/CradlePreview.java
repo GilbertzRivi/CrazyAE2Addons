@@ -18,9 +18,13 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraftforge.registries.ForgeRegistries;
 import net.oktawia.crazyae2addons.Utils;
 import net.oktawia.crazyae2addons.blocks.EntropyCradle;
 import net.oktawia.crazyae2addons.blocks.EntropyCradleCapacitor;
+import net.oktawia.crazyae2addons.defs.regs.CrazyRecipes;
+import net.oktawia.crazyae2addons.recipes.CradlePattern;
+import net.oktawia.crazyae2addons.recipes.CradleRecipe;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.InputStream;
@@ -177,44 +181,46 @@ public class CradlePreview extends WidgetGroup {
 
     private void loadStructure() {
         try {
-            ResourceLocation assetRl = new ResourceLocation(structureId.getNamespace(), "structures/" + structureId.getPath());
-            InputStream stream = Minecraft.getInstance().getResourceManager().getResource(assetRl).orElseThrow().open();
-            CompoundTag tag = NbtIo.readCompressed(stream);
-
-            List<BlockState> palette = new ArrayList<>();
-            for (Tag t : tag.getList("palette", Tag.TAG_COMPOUND)) {
-                CompoundTag entry = (CompoundTag) t;
-                Block block = net.minecraftforge.registries.ForgeRegistries.BLOCKS.getValue(new ResourceLocation(entry.getString("Name")));
-                palette.add(block != null ? block.defaultBlockState() : Blocks.AIR.defaultBlockState());
+            var level = Minecraft.getInstance().level;
+            if (level == null) {
+                LogUtils.getLogger().warn("No client level available to load recipe {}", structureId);
+                return;
             }
 
-            Map<BlockPos, BlockInfo> blockMap = new HashMap<>();
-            int min = Integer.MAX_VALUE, max = Integer.MIN_VALUE;
-            for (Tag t : tag.getList("blocks", Tag.TAG_COMPOUND)) {
-                CompoundTag b = (CompoundTag) t;
-                ListTag posList = b.getList("pos", Tag.TAG_INT);
-                BlockPos pos = new BlockPos(posList.getInt(0), posList.getInt(1), posList.getInt(2));
-                BlockState state = palette.get(b.getInt("state"));
-                blockMap.put(pos, BlockInfo.fromBlockState(state));
-                min = Math.min(min, pos.getY());
-                max = Math.max(max, pos.getY());
+            var mgr = level.getRecipeManager();
+
+            net.oktawia.crazyae2addons.recipes.CradleRecipe r = mgr
+                    .getAllRecipesFor(CrazyRecipes.CRADLE_TYPE.get())
+                    .stream()
+                    .filter(cr -> cr.getId().equals(structureId))
+                    .findFirst()
+                    .orElse(null);
+
+            if (r == null) {
+                LogUtils.getLogger().warn("Cradle recipe not found for id {}", structureId);
+                return;
             }
 
-            minY = min;
-            maxY = max;
-            allPositions = blockMap.keySet();
+            var pattern = r.pattern();
+
+            Map<BlockPos, BlockInfo> innerBlockMap = buildBlocksFromPattern(pattern);
+
+            minY = 0;
+            maxY = 4;
+            allPositions = innerBlockMap.keySet();
 
             baseBlocks.clear();
-            baseBlocks.putAll(blockMap);
+            baseBlocks.putAll(innerBlockMap);
 
             world.clear();
-            world.addBlocks(blockMap);
+            world.addBlocks(innerBlockMap);
             sceneWidgetAll.setRenderedCore(allPositions, null);
             updateRenderedLayer();
 
         } catch (Exception e) {
-            LogUtils.getLogger().warn("Failed to load structure: {}", e.toString());
+            LogUtils.getLogger().warn("Failed to load inner structure from recipe {}: {}", structureId, e.toString());
         }
+
         if (cradleBlocks == null) {
             cradleBlocks = new HashMap<>();
             try {
@@ -225,7 +231,8 @@ public class CradlePreview extends WidgetGroup {
                 List<BlockState> cradlePalette = new ArrayList<>();
                 for (Tag t : cradleTag.getList("palette", Tag.TAG_COMPOUND)) {
                     CompoundTag entry = (CompoundTag) t;
-                    Block block = net.minecraftforge.registries.ForgeRegistries.BLOCKS.getValue(new ResourceLocation(entry.getString("Name")));
+                    Block block = net.minecraftforge.registries.ForgeRegistries.BLOCKS
+                            .getValue(new ResourceLocation(entry.getString("Name")));
                     cradlePalette.add(block != null ? block.defaultBlockState() : Blocks.AIR.defaultBlockState());
                 }
 
@@ -242,12 +249,42 @@ public class CradlePreview extends WidgetGroup {
                     if (!state.isAir()) {
                         cradleBlocks.put(pos.offset(-3, -1, -3), BlockInfo.fromBlockState(state));
                     }
-
                 }
-
             } catch (Exception e) {
-                LogUtils.getLogger().warn("Failed to load cradle: {}", e.toString());
+                LogUtils.getLogger().warn("Failed to load cradle overlay: {}", e.toString());
             }
         }
     }
+
+    @NotNull
+    private Map<BlockPos, BlockInfo> buildBlocksFromPattern(net.oktawia.crazyae2addons.recipes.CradlePattern pattern) {
+        final int SIZE = 5;
+        Map<BlockPos, BlockInfo> blockMap = new HashMap<>();
+
+        Map<String, List<Block>> symbols = pattern.symbolMap();
+        List<String[][]> layers = pattern.layers();
+
+        for (int y = 0; y < SIZE; y++) {
+            String[][] layer = layers.get(y);
+            for (int z = 0; z < SIZE; z++) {
+                String[] row = layer[z];
+                for (int x = 0; x < SIZE; x++) {
+                    String sym = row[x];
+                    if (sym.equals(".")) continue;
+
+                    var options = symbols.get(sym);
+                    Block chosen = (options != null && !options.isEmpty()) ? options.get(0) : Blocks.AIR;
+
+                    if (chosen != Blocks.AIR) {
+                        BlockState state = chosen.defaultBlockState();
+                        BlockPos pos = new BlockPos(x, y, z);
+                        blockMap.put(pos, BlockInfo.fromBlockState(state));
+                    }
+                }
+            }
+        }
+        return blockMap;
+    }
+
+
 }

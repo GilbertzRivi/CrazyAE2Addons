@@ -49,98 +49,6 @@ public class ItemDefs {
         );
 
         item(
-            CrazyItemRegistrar.ADD_CARD.get(),
-            "DC",
-            Map.of(
-                "D", AEItems.SKY_DUST.asItem(),
-                "C", CrazyItemRegistrar.LOGIC_CARD.get()
-            )
-        );
-
-        item(
-            CrazyItemRegistrar.SUB_CARD.get(),
-            "CD",
-            Map.of(
-                "D", AEItems.SKY_DUST.asItem(),
-                "C", CrazyItemRegistrar.LOGIC_CARD.get()
-            )
-        );
-
-        item(
-            CrazyItemRegistrar.MUL_CARD.get(),
-            "D/C",
-            Map.of(
-                "D", AEItems.SKY_DUST.asItem(),
-                "C", CrazyItemRegistrar.LOGIC_CARD.get()
-            )
-        );
-
-        item(
-            CrazyItemRegistrar.DIV_CARD.get(),
-            "C/D",
-            Map.of(
-                "D", AEItems.SKY_DUST.asItem(),
-                "C", CrazyItemRegistrar.LOGIC_CARD.get()
-            )
-        );
-
-        item(
-            CrazyItemRegistrar.MAX_CARD.get(),
-            "DC",
-            Map.of(
-                "D", Items.GLOWSTONE_DUST,
-                "C", CrazyItemRegistrar.LOGIC_CARD.get()
-            )
-        );
-
-        item(
-            CrazyItemRegistrar.MIN_CARD.get(),
-            "CD",
-            Map.of(
-                "D", Items.GLOWSTONE_DUST,
-                "C", CrazyItemRegistrar.LOGIC_CARD.get()
-            )
-        );
-
-        item(
-            CrazyItemRegistrar.BSR_CARD.get(),
-            "D/C",
-            Map.of(
-                "D",  Items.GLOWSTONE_DUST,
-                "C", CrazyItemRegistrar.LOGIC_CARD.get()
-            )
-        );
-
-        item(
-            CrazyItemRegistrar.BSL_CARD.get(),
-            "C/D",
-            Map.of(
-                "D", Items.GLOWSTONE_DUST,
-                "C", CrazyItemRegistrar.LOGIC_CARD.get()
-            )
-        );
-
-        item(
-            CrazyItemRegistrar.HIT_CARD.get(),
-            "DCR",
-            Map.of(
-                "D", Items.GLOWSTONE_DUST,
-                "C", CrazyItemRegistrar.LOGIC_CARD.get(),
-                "R", Items.REDSTONE
-            )
-        );
-
-        item(
-            CrazyItemRegistrar.HIF_CARD.get(),
-            "DCR",
-            Map.of(
-                "D", AEItems.SKY_DUST.asItem(),
-                "C", CrazyItemRegistrar.LOGIC_CARD.get(),
-                "R", Items.REDSTONE
-            )
-        );
-
-        item(
             CrazyItemRegistrar.RR_ITEM_P2P_TUNNEL_PART.get(),
             "PE",
             Map.of(
@@ -519,6 +427,24 @@ public class ItemDefs {
                 Map.of(
                         "R", CrazyItemRegistrar.REDSTONE_TERMINAL.get().asItem(),
                         "L", CrazyItemRegistrar.LOGIC_CARD.get().asItem()
+                )
+        );
+
+        item(
+                CrazyItemRegistrar.PLAYER_DATA_EXTRACTOR.get(),
+                "DI",
+                Map.of(
+                        "D", CrazyItemRegistrar.DATA_EXTRACTOR_PART_ITEM.get().asItem(),
+                        "I", Items.NAME_TAG
+                )
+        );
+
+        item(
+                CrazyItemRegistrar.DATAFLOW_PATTERN.get(),
+                "DI",
+                Map.of(
+                        "D", CrazyItemRegistrar.BUILDER_PATTERN.get().asItem(),
+                        "I", CrazyItemRegistrar.LOGIC_CARD.get().asItem()
                 )
         );
     }

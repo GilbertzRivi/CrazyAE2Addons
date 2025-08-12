@@ -5,12 +5,17 @@ import appeng.core.definitions.AEItems;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
 import net.oktawia.crazyae2addons.xei.jei.ReinforcedCondenserEntry;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+
+import static net.oktawia.crazyae2addons.defs.regs.CrazyRecipes.CRADLE_TYPE;
 
 public class CrazyRecipes {
 
@@ -91,129 +96,58 @@ public class CrazyRecipes {
     }
 
     public static List<CradleEntry> getCradleEntries() {
-        return List.of(
-                new CradleEntry(
-                        new ResourceLocation("crazyae2addons", "1k_storage.nbt"),
-                        List.of(
-                                new ItemStack(AEBlocks.ENERGY_CELL).copyWithCount(56),
-                                new ItemStack(Blocks.IRON_BLOCK).copyWithCount(30),
-                                new ItemStack(AEBlocks.CRAFTING_STORAGE_1K).copyWithCount(27),
-                                new ItemStack(AEBlocks.FLUIX_BLOCK).copyWithCount(12)
-                        ),
-                        new ItemStack(CrazyBlockRegistrar.ENERGY_STORAGE_1K_BLOCK.get())
-                ),
+        var mc = net.minecraft.client.Minecraft.getInstance();
+        var level = mc.level;
+        if (level == null) return List.of();
 
-                new CradleEntry(
-                        new ResourceLocation("crazyae2addons", "4k_storage.nbt"),
-                        List.of(
-                                new ItemStack(AEBlocks.ENERGY_CELL).copyWithCount(56),
-                                new ItemStack(Blocks.IRON_BLOCK).copyWithCount(30),
-                                new ItemStack(AEBlocks.CRAFTING_STORAGE_4K).copyWithCount(27),
-                                new ItemStack(AEBlocks.FLUIX_BLOCK).copyWithCount(12)
-                        ),
-                        new ItemStack(CrazyBlockRegistrar.ENERGY_STORAGE_4K_BLOCK.get())
-                ),
+        var rm = level.getRecipeManager();
+        var recipes = rm.getAllRecipesFor(CRADLE_TYPE.get());
 
-                new CradleEntry(
-                        new ResourceLocation("crazyae2addons", "16k_storage.nbt"),
-                        List.of(
-                                new ItemStack(AEBlocks.ENERGY_CELL).copyWithCount(56),
-                                new ItemStack(Blocks.IRON_BLOCK).copyWithCount(30),
-                                new ItemStack(AEBlocks.CRAFTING_STORAGE_16K).copyWithCount(27),
-                                new ItemStack(AEBlocks.FLUIX_BLOCK).copyWithCount(12)
-                        ),
-                        new ItemStack(CrazyBlockRegistrar.ENERGY_STORAGE_16K_BLOCK.get())
-                ),
-
-                new CradleEntry(
-                        new ResourceLocation("crazyae2addons", "64k_storage.nbt"),
-                        List.of(
-                                new ItemStack(AEBlocks.ENERGY_CELL).copyWithCount(56),
-                                new ItemStack(Blocks.IRON_BLOCK).copyWithCount(30),
-                                new ItemStack(AEBlocks.CRAFTING_STORAGE_64K).copyWithCount(27),
-                                new ItemStack(AEBlocks.FLUIX_BLOCK).copyWithCount(12)
-                        ),
-                        new ItemStack(CrazyBlockRegistrar.ENERGY_STORAGE_64K_BLOCK.get())
-                ),
-
-                new CradleEntry(
-                        new ResourceLocation("crazyae2addons", "256k_storage.nbt"),
-                        List.of(
-                                new ItemStack(AEBlocks.ENERGY_CELL).copyWithCount(56),
-                                new ItemStack(Blocks.IRON_BLOCK).copyWithCount(30),
-                                new ItemStack(AEBlocks.CRAFTING_STORAGE_256K).copyWithCount(27),
-                                new ItemStack(AEBlocks.FLUIX_BLOCK).copyWithCount(12)
-                        ),
-                        new ItemStack(CrazyBlockRegistrar.ENERGY_STORAGE_256K_BLOCK.get())
-                ),
-
-                new CradleEntry(
-                        new ResourceLocation("crazyae2addons", "1k_storage_dense.nbt"),
-                        List.of(
-                                new ItemStack(AEBlocks.DENSE_ENERGY_CELL).copyWithCount(56),
-                                new ItemStack(Blocks.IRON_BLOCK).copyWithCount(30),
-                                new ItemStack(CrazyBlockRegistrar.ENERGY_STORAGE_1K_BLOCK.get()).copyWithCount(27),
-                                new ItemStack(AEBlocks.FLUIX_BLOCK).copyWithCount(12)
-                        ),
-                        new ItemStack(CrazyBlockRegistrar.DENSE_ENERGY_STORAGE_1K_BLOCK.get())
-                ),
-
-                new CradleEntry(
-                        new ResourceLocation("crazyae2addons", "4k_storage_dense.nbt"),
-                        List.of(
-                                new ItemStack(AEBlocks.DENSE_ENERGY_CELL).copyWithCount(56),
-                                new ItemStack(Blocks.IRON_BLOCK).copyWithCount(30),
-                                new ItemStack(CrazyBlockRegistrar.ENERGY_STORAGE_4K_BLOCK.get()).copyWithCount(27),
-                                new ItemStack(AEBlocks.FLUIX_BLOCK).copyWithCount(12)
-                        ),
-                        new ItemStack(CrazyBlockRegistrar.DENSE_ENERGY_STORAGE_4K_BLOCK.get())
-                ),
-
-                new CradleEntry(
-                        new ResourceLocation("crazyae2addons", "16k_storage_dense.nbt"),
-                        List.of(
-                                new ItemStack(AEBlocks.DENSE_ENERGY_CELL).copyWithCount(56),
-                                new ItemStack(Blocks.IRON_BLOCK).copyWithCount(30),
-                                new ItemStack(CrazyBlockRegistrar.ENERGY_STORAGE_16K_BLOCK.get()).copyWithCount(27),
-                                new ItemStack(AEBlocks.FLUIX_BLOCK).copyWithCount(12)
-                        ),
-                        new ItemStack(CrazyBlockRegistrar.DENSE_ENERGY_STORAGE_16K_BLOCK.get())
-                ),
-
-                new CradleEntry(
-                        new ResourceLocation("crazyae2addons", "64k_storage_dense.nbt"),
-                        List.of(
-                                new ItemStack(AEBlocks.DENSE_ENERGY_CELL).copyWithCount(56),
-                                new ItemStack(Blocks.IRON_BLOCK).copyWithCount(30),
-                                new ItemStack(CrazyBlockRegistrar.ENERGY_STORAGE_64K_BLOCK.get()).copyWithCount(27),
-                                new ItemStack(AEBlocks.FLUIX_BLOCK).copyWithCount(12)
-                        ),
-                        new ItemStack(CrazyBlockRegistrar.DENSE_ENERGY_STORAGE_64K_BLOCK.get())
-                ),
-
-                new CradleEntry(
-                        new ResourceLocation("crazyae2addons", "256k_storage_dense.nbt"),
-                        List.of(
-                                new ItemStack(AEBlocks.DENSE_ENERGY_CELL).copyWithCount(56),
-                                new ItemStack(Blocks.IRON_BLOCK).copyWithCount(30),
-                                new ItemStack(CrazyBlockRegistrar.ENERGY_STORAGE_256K_BLOCK.get()).copyWithCount(27),
-                                new ItemStack(AEBlocks.FLUIX_BLOCK).copyWithCount(12)
-                        ),
-                        new ItemStack(CrazyBlockRegistrar.DENSE_ENERGY_STORAGE_256K_BLOCK.get())
-                ),
-
-                new CradleEntry(
-                        new ResourceLocation("crazyae2addons", "penrose_frame.nbt"),
-                        List.of(
-                                new ItemStack(Blocks.OBSIDIAN).copyWithCount(54),
-                                new ItemStack(AEBlocks.FLUIX_BLOCK).copyWithCount(44),
-                                new ItemStack(Blocks.IRON_BLOCK).copyWithCount(26),
-                                new ItemStack(CrazyBlockRegistrar.SUPER_SINGULARITY_BLOCK.get()).copyWithCount(1)
-                        ),
-                        new ItemStack(CrazyBlockRegistrar.PENROSE_FRAME.get())
-                )
-        );
+        return recipes.stream()
+                .map(r -> new CradleEntry(
+                        r.getId(),
+                        buildInputsFromPattern(r.pattern()),
+                        new ItemStack(r.resultBlock().asItem())
+                ))
+                .sorted(Comparator.comparing(e ->
+                        e.output().getItem().builtInRegistryHolder().key().location().toString()))
+                .toList();
     }
+
+    private static List<ItemStack> buildInputsFromPattern(net.oktawia.crazyae2addons.recipes.CradlePattern pattern) {
+        final int SIZE = 5;
+        Map<Block, Integer> counts = new java.util.LinkedHashMap<>();
+
+        var symbols = pattern.symbolMap();
+        var layers  = pattern.layers();  
+
+        for (int y = 0; y < SIZE; y++) {
+            String[][] layer = layers.get(y);
+            for (int z = 0; z < SIZE; z++) {
+                String[] row = layer[z];
+                for (int x = 0; x < SIZE; x++) {
+                    String sym = row[x];
+                    if (sym.equals(".")) continue;
+
+                    var opts = symbols.get(sym);
+                    if (opts == null || opts.isEmpty()) continue;
+                    var block = opts.get(0);
+                    if (block == net.minecraft.world.level.block.Blocks.AIR) continue;
+
+                    counts.merge(block, 1, Integer::sum);
+                }
+            }
+        }
+
+        java.util.List<ItemStack> stacks = new java.util.ArrayList<>();
+        counts.forEach((b, n) -> {
+            ItemStack s = new ItemStack(b.asItem());
+            s.setCount(n);
+            stacks.add(s);
+        });
+        return stacks;
+    }
+
 
     public static List<ReinforcedCondenserEntry> getCondenserEntried() {
         return List.of(

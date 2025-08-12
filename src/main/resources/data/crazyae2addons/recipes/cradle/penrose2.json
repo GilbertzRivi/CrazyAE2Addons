@@ -1,0 +1,20 @@
+{
+  "type": "crazyae2addons:cradle",
+  "result_block": "crazyae2addons:penrose_frame",
+  "preview_nbt": "crazyae2addons:penrose_frame.nbt",
+  "pattern": {
+    "symbols": {
+      "A": ["ae2:fluix_block"],
+      "B": ["minecraft:dirt"],
+      "D": ["minecraft:iron_block"],
+      "E": ["crazyae2addons:super_singularity_block"]
+    },
+    "layers": [
+      ["A A A A A", "A B B B A", "A B B B A", "A B B B A", "A A A A A"],
+      ["A B B B A", "B D D D B", "B D D D B", "B D D D B", "A B B B A"],
+      ["A B B B A", "B D D D B", "B D E D B", "B D D D B", "A B B B A"],
+      ["A B B B A", "B D D D B", "B D D D B", "B D D D B", "A B B B A"],
+      ["A A A A A", "A B B B A", "A B B B A", "A B B B A", "A A A A A"]
+    ]
+  }
+}

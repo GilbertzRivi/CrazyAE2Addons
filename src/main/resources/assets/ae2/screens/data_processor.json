@@ -18,83 +18,9 @@
   },
   "slots": {
     "STORAGE": {
-      "left": 8,
+      "left": 80,
       "top": 59,
       "grid": "HORIZONTAL"
-    }
-  },
-  "widgets": {
-    "button0": {
-      "left": 10,
-      "top": 79,
-      "width": 12,
-      "height": 12
-    },
-    "button1": {
-      "left": 28,
-      "top": 79,
-      "width": 12,
-      "height": 12
-    },
-    "button2": {
-      "left": 46,
-      "top": 79,
-      "width": 12,
-      "height": 12
-    },
-    "button3": {
-      "left": 64,
-      "top": 79,
-      "width": 12,
-      "height": 12
-    },
-    "button4": {
-      "left": 82,
-      "top": 79,
-      "width": 12,
-      "height": 12
-    },
-    "button5": {
-      "left": 100,
-      "top": 79,
-      "width": 12,
-      "height": 12
-    },
-    "button6": {
-      "left": 118,
-      "top": 79,
-      "width": 12,
-      "height": 12
-    },
-    "button7": {
-      "left": 136,
-      "top": 79,
-      "width": 12,
-      "height": 12
-    },
-    "button8": {
-      "left": 154,
-      "top": 79,
-      "width": 12,
-      "height": 12
-    },
-    "inval": {
-      "left": 10,
-      "top": 35,
-      "width": 75,
-      "height": 16
-    },
-    "save": {
-      "left": 141,
-      "top": 22,
-      "width": 30,
-      "height": 16
-    },
-    "clear": {
-      "left": 141,
-      "top": 38,
-      "width": 30,
-      "height": 16
     }
   }
 }

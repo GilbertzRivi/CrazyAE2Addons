@@ -24,15 +24,17 @@ public class SpawnerExtractorWallBE extends AENetworkBlockEntity {
 
     public void setController(SpawnerExtractorControllerBE spawnerExtractorControllerBE) {
         this.controller = spawnerExtractorControllerBE;
-        if (this.controller != null){
-            if (getMainNode().getNode().getConnections().stream()
-                    .noneMatch(x -> (x.a() == this.controller.getMainNode().getNode() || x.b() == this.controller.getMainNode().getNode()))){
-                GridHelper.createConnection(getMainNode().getNode(), this.controller.getMainNode().getNode());
+        if (getMainNode().getNode() != null){
+            if (this.controller != null && this.controller.getMainNode().getNode() != null){
+                if (getMainNode().getNode().getConnections().stream()
+                        .noneMatch(x -> (x.a() == this.controller.getMainNode().getNode() || x.b() == this.controller.getMainNode().getNode()))){
+                    GridHelper.createConnection(getMainNode().getNode(), this.controller.getMainNode().getNode());
+                }
+            } else {
+                getMainNode().getNode().getConnections().stream()
+                        .filter(x -> (!x.isInWorld()))
+                        .forEach(IGridConnection::destroy);
             }
-        } else {
-            getMainNode().getNode().getConnections().stream()
-                    .filter(x -> (!x.isInWorld()))
-                    .forEach(IGridConnection::destroy);
         }
     }
 }

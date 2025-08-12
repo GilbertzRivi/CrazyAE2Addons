@@ -5,13 +5,13 @@ import appeng.menu.SlotSemantics;
 import appeng.menu.guisync.GuiSync;
 import appeng.menu.slot.RestrictedInputSlot;
 import net.minecraft.world.entity.player.Inventory;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.entities.PatternManagementUnitControllerBE;
 
 public class PatternManagementUnitControllerMenu extends AEBaseMenu {
 
-    public static final int COLUMNS = 9;
-    public static final int ROWS = 56;
+    public static final int ROWS = CrazyConfig.COMMON.PatternUnitCapacity.get();
     public String PREVIEW = "actionPrev";
     @GuiSync(893)
     public boolean preview;

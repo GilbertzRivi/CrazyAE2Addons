@@ -54,7 +54,6 @@ public class PenrosePreviewRenderer {
                 rebuildCache(controller, validator, facing);
             }
 
-            System.out.println(event.getPartialTick());
             PreviewRenderer.render(controller.getPreviewInfo(), event);
         }
     }

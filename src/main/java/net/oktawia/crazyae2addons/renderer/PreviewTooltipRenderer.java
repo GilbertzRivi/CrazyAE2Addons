@@ -21,19 +21,19 @@ public class PreviewTooltipRenderer {
         PoseStack pose = guiGraphics.pose();
         pose.pushPose();
         pose.translate((float) screenWidth / 2 + 8, (float) (screenHeight - font.lineHeight) / 2 + 8, 0.0F);
-        drawTextWithGradient(guiGraphics, font, text, new float[]{0.0f, 0.5f, 1.0f}, new float[]{1.0f, 0.5f, 0.0f}, true);
+        drawTextWithGradient(guiGraphics, font, text);
         pose.popPose();
         text = null;
     });
 
-    private static void drawTextWithGradient(GuiGraphics guiGraphics, Font font, String text, float[] rgb1, float[] rgb2, boolean shadow) {
+    private static void drawTextWithGradient(GuiGraphics g, Font font, String text) {
         char[] arr = text.toCharArray();
         int dx = 0;
         for (int i = 0; i < arr.length; i++) {
             char ch = arr[i];
-            float[] color = LabGradient.labGradient(rgb1, rgb2, i / (float) (arr.length - 1));
-            int colorInt = (int) (color[0] * 255) << 16 | (int) (color[1] * 255) << 8 | (int) (color[2] * 255);
-            guiGraphics.drawString(font, String.valueOf(ch), dx, 0, colorInt, shadow);
+            double t = (arr.length > 1) ? (i / (double) (arr.length - 1)) : 0.0;
+            int colorInt = SimpleGradient.blueGradient(t);
+            g.drawString(font, String.valueOf(ch), dx, 0, colorInt, true);
             dx += font.width(String.valueOf(ch));
         }
     }

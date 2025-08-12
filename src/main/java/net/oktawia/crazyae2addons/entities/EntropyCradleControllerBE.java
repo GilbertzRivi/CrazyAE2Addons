@@ -40,10 +40,12 @@ import net.oktawia.crazyae2addons.blocks.EntropyCradleCapacitor;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
+import net.oktawia.crazyae2addons.defs.regs.CrazyRecipes;
 import net.oktawia.crazyae2addons.menus.EntropyCradleControllerMenu;
-import net.oktawia.crazyae2addons.misc.CradleRecipes;
 import net.oktawia.crazyae2addons.misc.EntropyCradlePreviewRenderer;
 import net.oktawia.crazyae2addons.misc.EntropyCradleValidator;
+import net.oktawia.crazyae2addons.recipes.CradleContext;
+import net.oktawia.crazyae2addons.recipes.CradleRecipe;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -163,81 +165,37 @@ public class EntropyCradleControllerBE extends AENetworkInvBlockEntity implement
             validator.markCaps(getLevel(), getBlockPos(), getBlockState(), EntropyCradleCapacitor.POWER, false, level, false);
         }
         if (extracted < MAX_ENERGY) return;
+
         var facing = getBlockState().getValue(BlockStateProperties.HORIZONTAL_FACING);
         BlockPos origin;
-        if (facing == Direction.NORTH || facing == Direction.WEST){
+        if (facing == Direction.NORTH || facing == Direction.WEST) {
             origin = this.getBlockPos().relative(facing.getOpposite().getAxis(), 5).above(3);
         } else {
             origin = this.getBlockPos().relative(facing.getOpposite().getAxis(), -5).above(3);
         }
-        for (var recipe : CradleRecipes.RECIPES.entrySet()){
-            if (validateStructure(getLevel(), origin, recipe.getKey(), facing)){
-                fillStructureWithAir(getLevel(), origin, facing);
-                getLevel().setBlock(origin, recipe.getValue().defaultBlockState(), 3);
-                if (!level.isClientSide()) {
-                    ((ServerLevel) level).sendParticles(ParticleTypes.EXPLOSION,
-                            origin.getX() + 0.5, origin.getY() + 0.5, origin.getZ() + 0.5,
-                            30, 0.5, 0.5, 0.5, 0.01);
 
-                    level.playSound(null, origin, SoundEvents.GENERIC_EXPLODE,
-                            SoundSource.BLOCKS, 1.0F, 1.0F);
-                }
-            }
+        var ctx = new CradleContext(getLevel(), origin, facing);
+
+        var opt = getLevel().getRecipeManager()
+                .getRecipeFor(CrazyRecipes.CRADLE_TYPE.get(), ctx, getLevel());
+
+        if (opt.isEmpty()) return;
+
+        CradleRecipe r = opt.get();
+
+        fillStructureWithAir(getLevel(), origin, facing);
+
+        getLevel().setBlock(origin, r.resultBlock().defaultBlockState(), 3);
+
+        if (!level.isClientSide()) {
+            ((ServerLevel) level).sendParticles(ParticleTypes.EXPLOSION,
+                    origin.getX() + 0.5, origin.getY() + 0.5, origin.getZ() + 0.5,
+                    30, 0.5, 0.5, 0.5, 0.01);
+            level.playSound(null, origin, SoundEvents.GENERIC_EXPLODE,
+                    SoundSource.BLOCKS, 1.0F, 1.0F);
         }
     }
 
-
-    public static boolean validateStructure(Level level, BlockPos center, String patternJsonStr, Direction controllerFacing) {
-        JsonObject patternJson = JsonParser.parseString(patternJsonStr).getAsJsonObject();
-
-        Map<String, List<Block>> symbolMap = new HashMap<>();
-        JsonObject symbolsJson = patternJson.getAsJsonObject("symbols");
-        for (Map.Entry<String, JsonElement> entry : symbolsJson.entrySet()) {
-            JsonArray arr = entry.getValue().getAsJsonArray();
-            List<Block> blocks = new ArrayList<>();
-            for (JsonElement el : arr) {
-                ResourceLocation id = new ResourceLocation(el.getAsString());
-                Block block = ForgeRegistries.BLOCKS.getValue(id);
-                if (block != null) {
-                    blocks.add(block);
-                }
-            }
-            symbolMap.put(entry.getKey(), blocks);
-        }
-
-        JsonArray layersArray = patternJson.getAsJsonArray("layers");
-        if (layersArray.size() != 5) return false;
-
-        final int OFFSET = 2;
-
-        for (int y = 0; y < 5; y++) {
-            JsonArray layer = layersArray.get(y).getAsJsonArray();
-            if (layer.size() != 5) return false;
-
-            for (int z = 0; z < 5; z++) {
-                String[] row = layer.get(z).getAsString().split(" ");
-                if (row.length != 5) return false;
-
-                for (int x = 0; x < 5; x++) {
-                    String symbol = row[x];
-                    if (symbol.equals(".")) continue;
-
-                    BlockPos relative = rotateOffset(x - OFFSET, y - OFFSET, z - OFFSET, controllerFacing);
-                    BlockPos checkPos = center.offset(relative);
-
-                    BlockState state = level.getBlockState(checkPos);
-                    Block block = state.getBlock();
-
-                    List<Block> allowed = symbolMap.get(symbol);
-                    if (allowed == null || !allowed.contains(block)) {
-                        return false;
-                    }
-                }
-            }
-        }
-
-        return true;
-    }
 
     public static void fillStructureWithAir(Level level, BlockPos center, Direction controllerFacing) {
         final int OFFSET = 2;

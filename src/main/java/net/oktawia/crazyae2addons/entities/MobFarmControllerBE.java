@@ -8,7 +8,6 @@ import appeng.api.networking.IGridNode;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.AEKey;
 import com.mojang.authlib.GameProfile;
-import com.mojang.logging.LogUtils;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -44,11 +43,8 @@ import appeng.menu.locator.MenuLocator;
 import appeng.util.ConfigInventory;
 import appeng.util.inv.AppEngInternalInventory;
 import appeng.util.inv.InternalInventoryHost;
-import dev.shadowsoffire.apotheosis.spawn.spawner.ApothSpawnerTile;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.Difficulty;
@@ -58,32 +54,25 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.BaseSpawner;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.entity.SpawnerBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraftforge.common.util.FakePlayerFactory;
 import net.oktawia.crazyae2addons.CrazyConfig;
-import net.oktawia.crazyae2addons.IsModLoaded;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.items.XpShardItem;
 import net.oktawia.crazyae2addons.menus.MobFarmControllerMenu;
-import net.oktawia.crazyae2addons.menus.SpawnerExtractorControllerMenu;
-import net.oktawia.crazyae2addons.misc.MobFarmPreviewRenderer;
+import net.oktawia.crazyae2addons.renderer.preview.PreviewInfo;
 import net.oktawia.crazyae2addons.misc.MobFarmValidator;
-import net.oktawia.crazyae2addons.misc.SpawnerExtractorValidator;
+import net.oktawia.crazyae2addons.renderer.preview.Previewable;
 import net.oktawia.crazyae2addons.mobstorage.MobKey;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.reflect.Field;
 import java.util.*;
 
-public class MobFarmControllerBE extends AENetworkBlockEntity implements MenuProvider, IUpgradeableObject, IGridTickable, InternalInventoryHost {
+public class MobFarmControllerBE extends AENetworkBlockEntity implements Previewable, MenuProvider, IUpgradeableObject, IGridTickable, InternalInventoryHost {
 
     public IUpgradeInventory upgrades = UpgradeInventories.forMachine(CrazyBlockRegistrar.MOB_FARM_CONTROLLER.get(), 5, this::saveChanges);
     public MobFarmValidator validator;
@@ -97,7 +86,19 @@ public class MobFarmControllerBE extends AENetworkBlockEntity implements MenuPro
 
     public boolean preview = false;
 
-    public List<MobFarmPreviewRenderer.CachedBlockInfo> ghostCache = null;
+    private PreviewInfo previewInfo = null;
+
+    @Override
+    @OnlyIn(Dist.CLIENT)
+    public PreviewInfo getPreviewInfo() {
+        return previewInfo;
+    }
+
+    @Override
+    @OnlyIn(Dist.CLIENT)
+    public void setPreviewInfo(PreviewInfo info) {
+        this.previewInfo = info;
+    }
 
     public static final Set<MobFarmControllerBE> CLIENT_INSTANCES = new HashSet<>();
 

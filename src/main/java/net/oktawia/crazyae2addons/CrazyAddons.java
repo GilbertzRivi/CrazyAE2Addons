@@ -10,9 +10,8 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
-import net.minecraftforge.client.event.InputEvent;
 import net.minecraftforge.client.event.ModelEvent;
-import net.minecraftforge.client.event.RenderLevelStageEvent;
+import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -25,15 +24,17 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegisterEvent;
 import net.oktawia.crazyae2addons.datavariables.FlowNodeRegistry;
-import net.oktawia.crazyae2addons.defs.*;
+import net.oktawia.crazyae2addons.defs.Screens;
+import net.oktawia.crazyae2addons.defs.UpgradeCards;
 import net.oktawia.crazyae2addons.defs.regs.*;
 import net.oktawia.crazyae2addons.logic.WirelessRedstoneTerminalItemLogicHost;
 import net.oktawia.crazyae2addons.menus.WirelessRedstoneTerminalMenu;
-import net.oktawia.crazyae2addons.misc.*;
 import net.oktawia.crazyae2addons.mobstorage.EntityTypeRenderer;
 import net.oktawia.crazyae2addons.mobstorage.MobKeyType;
 import net.oktawia.crazyae2addons.network.NetworkHandler;
 import net.oktawia.crazyae2addons.renderer.AutoBuilderBERenderer;
+import net.oktawia.crazyae2addons.renderer.PreviewTooltipRenderer;
+import net.oktawia.crazyae2addons.renderer.preview.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
@@ -143,6 +144,11 @@ public class CrazyAddons {
                     CrazyBlockEntityRegistrar.AUTO_BUILDER_BE.get(),
                     AutoBuilderBERenderer::new
             );
+        }
+
+        @SubscribeEvent
+        public static void registerGuiOverlays(RegisterGuiOverlaysEvent event) {
+            event.registerBelowAll("crazypreviewtooltip", PreviewTooltipRenderer.TOOLTIP);
         }
     }
 }

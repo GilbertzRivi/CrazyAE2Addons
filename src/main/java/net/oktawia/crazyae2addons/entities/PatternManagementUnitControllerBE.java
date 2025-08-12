@@ -23,20 +23,22 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.menus.PatternManagementUnitControllerMenu;
-import net.oktawia.crazyae2addons.misc.PatternManagementUnitPreviewRenderer;
+import net.oktawia.crazyae2addons.renderer.preview.PreviewInfo;
 import net.oktawia.crazyae2addons.misc.PatternManagementUnitValidator;
+import net.oktawia.crazyae2addons.renderer.preview.Previewable;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
-public class PatternManagementUnitControllerBE extends AENetworkBlockEntity implements IGridTickable, InternalInventoryHost, MenuProvider {
+public class PatternManagementUnitControllerBE extends AENetworkBlockEntity implements Previewable, IGridTickable, InternalInventoryHost, MenuProvider {
 
     public PatternManagementUnitControllerBE controller;
     public PatternManagementUnitValidator validator;
@@ -50,7 +52,19 @@ public class PatternManagementUnitControllerBE extends AENetworkBlockEntity impl
     public boolean init;
     public boolean active;
 
-    public List<PatternManagementUnitPreviewRenderer.CachedBlockInfo> ghostCache = null;
+    private PreviewInfo previewInfo = null;
+
+    @Override
+    @OnlyIn(Dist.CLIENT)
+    public PreviewInfo getPreviewInfo() {
+        return previewInfo;
+    }
+
+    @Override
+    @OnlyIn(Dist.CLIENT)
+    public void setPreviewInfo(PreviewInfo info) {
+        this.previewInfo = info;
+    }
 
     public static final Set<PatternManagementUnitControllerBE> CLIENT_INSTANCES = new HashSet<>();
 

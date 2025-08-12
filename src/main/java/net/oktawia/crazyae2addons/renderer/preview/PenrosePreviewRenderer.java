@@ -1,52 +1,41 @@
-package net.oktawia.crazyae2addons.misc;
-import com.mojang.blaze3d.vertex.PoseStack;
+package net.oktawia.crazyae2addons.renderer.preview;
+
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
-import net.minecraft.client.renderer.culling.Frustum;
-import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.client.event.RenderLevelStageEvent.Stage;
-import net.minecraftforge.client.model.data.ModelData;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.blocks.PenroseFrameBlock;
 import net.oktawia.crazyae2addons.entities.PenroseControllerBE;
 import net.oktawia.crazyae2addons.interfaces.PenroseValidator;
+import net.oktawia.crazyae2addons.renderer.PreviewRenderer;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
 
 @Mod.EventBusSubscriber(modid = CrazyAddons.MODID, value = Dist.CLIENT)
 public class PenrosePreviewRenderer {
 
     @SubscribeEvent
     public static void onRender(RenderLevelStageEvent event) {
-        if (event.getStage() != Stage.AFTER_SOLID_BLOCKS) return;
+        if (event.getStage() != Stage.AFTER_TRANSLUCENT_BLOCKS) return;
 
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || mc.player == null) return;
 
-        PoseStack poseStack = event.getPoseStack();
-        Vec3 cameraPos = mc.gameRenderer.getMainCamera().getPosition();
-        MultiBufferSource.BufferSource buffer = mc.renderBuffers().bufferSource();
-        BlockRenderDispatcher blockRenderer = mc.getBlockRenderer();
-        Frustum frustum = event.getFrustum();
-
         for (PenroseControllerBE controller : PenroseControllerBE.CLIENT_INSTANCES) {
             if (!controller.preview) continue;
-
             BlockPos origin = controller.getBlockPos();
             if (origin.distSqr(mc.player.blockPosition()) > 64 * 64) continue;
 
@@ -61,48 +50,14 @@ public class PenrosePreviewRenderer {
                     .getValue(BlockStateProperties.HORIZONTAL_FACING)
                     .getOpposite();
 
-            if (controller.ghostCache == null || controller.cachedTier != controller.previewTier) {
+            if (controller.getPreviewInfo() == null || controller.cachedTier != controller.previewTier) {
                 rebuildCache(controller, validator, facing);
             }
 
-            poseStack.pushPose();
-            poseStack.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
-
-            for (CachedBlockInfo info : controller.ghostCache) {
-
-                BlockPos pos = info.pos();
-                if (!mc.level.isLoaded(pos)) continue;
-                if (pos.distSqr(mc.player.blockPosition()) > 64 * 64) continue;
-
-                if (!frustum.isVisible(new AABB(pos))) continue;
-
-                BlockState current = mc.level.getBlockState(pos);
-                if (current.getBlock() == info.state().getBlock()) continue;
-
-                poseStack.pushPose();
-                poseStack.translate(pos.getX(), pos.getY(), pos.getZ());
-
-                var state = info.state();
-                BakedModel model = blockRenderer.getBlockModel(state);
-                RenderType layer = model.getRenderTypes(state, mc.level.random, ModelData.EMPTY).asList().get(0);
-
-                blockRenderer.getModelRenderer().renderModel(
-                        poseStack.last(),
-                        buffer.getBuffer(layer),
-                        state,
-                        model,
-                        1f, 1f, 1f,
-                        0xF0F0F0,
-                        OverlayTexture.NO_OVERLAY
-                );
-
-                poseStack.popPose();
-            }
-
-            poseStack.popPose();
+            System.out.println(event.getPartialTick());
+            PreviewRenderer.render(controller.getPreviewInfo(), event);
         }
     }
-
 
     private static BlockPos rotateOffset(int x, int z, Direction facing) {
         return switch (facing) {
@@ -115,7 +70,6 @@ public class PenrosePreviewRenderer {
     }
 
     private static void rebuildCache(PenroseControllerBE controller, PenroseValidator validator, Direction facing) {
-        controller.ghostCache = new java.util.ArrayList<>();
         controller.cachedTier = controller.previewTier;
 
         Minecraft mc = Minecraft.getInstance();
@@ -133,6 +87,7 @@ public class PenrosePreviewRenderer {
         int sizeZ = layers.get(0).size();
         int sizeX = layers.get(0).get(0).split(" ").length;
 
+        var blockInfos = new ArrayList<PreviewInfo.BlockInfo>();
         for (int y = 0; y < height; y++) {
             List<String> layer = layers.get(y);
             for (int z = 0; z < sizeZ; z++) {
@@ -155,11 +110,13 @@ public class PenrosePreviewRenderer {
                     BlockPos pos = origin.offset(offset.getX(), relY, offset.getZ());
 
                     BakedModel model = blockRenderer.getBlockModel(state);
-                    controller.ghostCache.add(new CachedBlockInfo(pos, state, model));
+                    blockInfos.add(new PreviewInfo.BlockInfo(pos, state, model));
                 }
             }
         }
+
+        controller.setPreviewInfo(new PreviewInfo(blockInfos));
     }
 
-    public record CachedBlockInfo(BlockPos pos, BlockState state, BakedModel model) {}
 }
+

@@ -59,6 +59,7 @@ public class NBTStorageBusMenu extends UpgradeableMenu<NBTStorageBusPart> {
         this.data = data;
         this.host.config = data;
         this.host.getHost().markForSave();
+        this.host.onSettingChanged(null, null);
         if (isClientSide()){
             sendClientAction(SEND_DATA, data);
         }

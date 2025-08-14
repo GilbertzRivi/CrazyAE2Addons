@@ -10,6 +10,11 @@
       "left": 8,
       "top": 42,
       "grid": "BREAK_AFTER_9COLS"
+    },
+    "ENCODED_PATTERN": {
+      "left": 152,
+      "top": 5,
+      "grid": "BREAK_AFTER_3COLS"
     }
   },
   "text": {
@@ -43,6 +48,14 @@
       },
       "align": "CENTER",
       "text": "Missing:"
+    }
+  },
+  "widgets": {
+    "load": {
+      "left": 152,
+      "top": 23,
+      "width": 16,
+      "height": 16
     }
   }
 }

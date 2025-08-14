@@ -60,6 +60,8 @@ public class MultilineTextFieldWidget extends AbstractWidget {
         return Math.max(textH - (height - 4), 0);
     }
 
+    public int getScrollStep() { return this.font.lineHeight; }
+
     @Override public boolean keyPressed(int key, int sc, int mod) {
         if (!isFocused()) return false;
         if (textField.keyPressed(key) || Minecraft.getInstance().options.keyInventory.matches(key, sc)) {

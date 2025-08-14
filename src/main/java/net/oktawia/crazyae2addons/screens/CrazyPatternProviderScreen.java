@@ -11,59 +11,72 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.oktawia.crazyae2addons.interfaces.IMovableSlot;
 import net.oktawia.crazyae2addons.menus.CrazyPatternProviderMenu;
-import net.oktawia.crazyae2addons.mixins.SlotAccessor;
 
 import java.util.List;
 
 public class CrazyPatternProviderScreen<C extends CrazyPatternProviderMenu> extends PatternProviderScreen<C> {
-    private Scrollbar scrollbar;
+    private static final int COLS = 9;
+    private static final int VISIBLE_ROWS = 4;
+
+    private final Scrollbar scrollbar = new Scrollbar();
     private int lastOffset = -1;
 
     public CrazyPatternProviderScreen(C menu, Inventory playerInventory, Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
-        scrollbar = new Scrollbar();
-        scrollbar.setRange(0, (getMenu().slotNum / 9) - 4, 1);
+        scrollbar.setRange(0, Math.max(0, (getMenu().slotNum / COLS) - VISIBLE_ROWS), 1);
         this.widgets.add("scrollbar", scrollbar);
     }
 
     public void updateBeforeRender() {
         super.updateBeforeRender();
 
-        this.setTextContent("patterninfo", Component.literal(String.format("Capacity: %s patterns", getMenu().slotNum)));
+        this.setTextContent("patterninfo",
+                Component.literal("Capacity: " + getMenu().slotNum + " patterns"));
+
+        scrollbar.setRange(0, Math.max(0, (getMenu().slotNum / COLS) - VISIBLE_ROWS), 1);
 
         int scrollOffset = this.scrollbar.getCurrentScroll();
-        if (scrollOffset != lastOffset){
-            for (int i = 0; i < getMenu().slotNum; i++) {
-                int row = i / 9;
-                int col = i % 9;
+        if (scrollOffset != lastOffset) {
+            List<Slot> slots = getMenu().getSlots(SlotSemantics.ENCODED_PATTERN);
+
+            for (int i = 0; i < getMenu().slotNum && i < slots.size(); i++) {
+                int row = i / COLS;
+                int col = i % COLS;
 
                 int x = 8 + col * 18;
                 int y = 42 + (row - scrollOffset) * 18;
 
-                Slot s = getMenu().getSlots(appeng.menu.SlotSemantics.ENCODED_PATTERN).get(i);
-                if (!(s instanceof AppEngSlot slot)) return;
-                if (slot instanceof IMovableSlot accessor){
-                    if (row >= scrollOffset && row < scrollOffset + 4) {
-                        accessor.setX(x);
-                        accessor.setY(y);
+                Slot s = slots.get(i);
+                if (!(s instanceof AppEngSlot slot)) {
+                    continue;
+                }
+
+                if (slot instanceof IMovableSlot movable) {
+                    boolean inView = row >= scrollOffset && row < scrollOffset + VISIBLE_ROWS;
+                    if (inView) {
+                        movable.setX(x);
+                        movable.setY(y);
                         slot.setSlotEnabled(true);
-                        getMenu().requestUpdate();
                     } else {
                         slot.setSlotEnabled(false);
                     }
                 }
             }
+
+            getMenu().requestUpdate(scrollOffset);
+            lastOffset = scrollOffset;
         }
-        lastOffset = scrollOffset;
     }
 
-    public void updatePatternsFromServer(List<ItemStack> stacks) {
+    public void updatePatternsFromServer(int startIndex, List<ItemStack> stacks) {
         List<Slot> slots = getMenu().getSlots(SlotSemantics.ENCODED_PATTERN);
-
         for (int i = 0; i < stacks.size(); i++) {
-            Slot s = slots.get(i);
-            if (s instanceof AppEngSlot slot) {
-                slot.set(stacks.get(i));
+            int global = startIndex + i;
+            if (global >= 0 && global < slots.size()) {
+                Slot s = slots.get(global);
+                if (s instanceof AppEngSlot slot) {
+                    slot.set(stacks.get(i));
+                }
             }
         }
     }

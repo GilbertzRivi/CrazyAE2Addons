@@ -10,10 +10,10 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.IsModLoaded;
-import net.oktawia.crazyae2addons.blocks.DataProcessorBlock;
 import net.oktawia.crazyae2addons.compat.CC.CCDataExtractorPart;
 import net.oktawia.crazyae2addons.compat.GregTech.GTAmpereMeterBE;
 import net.oktawia.crazyae2addons.compat.GregTech.GTEnergyExporterPart;
+import net.oktawia.crazyae2addons.items.TagViewCellItem;
 import net.oktawia.crazyae2addons.logic.*;
 import net.oktawia.crazyae2addons.mobstorage.MobExportBus;
 import net.oktawia.crazyae2addons.mobstorage.MobExportBusMenu;
@@ -162,6 +162,15 @@ public class CrazyMenuRegistrar {
 
     public static final RegistryObject<MenuType<DataProcessorMenu>> DATA_PROCESSOR_MENU =
             reg(id("data_processor_menu"), DataProcessorMenu::new, DataProcessorBE.class);
+
+    public static final RegistryObject<MenuType<CrazyPatternModifierMenuPP>> CRAZY_PATTERN_MODIFIER_MENU_PP =
+            reg(id("crazy_pattern_modifier_menu_pp"), CrazyPatternModifierMenuPP::new, CrazyPatternModifierHost.class);
+
+    public static final RegistryObject<MenuType<NbtViewCellMenu>> NBT_VIEW_CELL_MENU =
+            reg(id("nbt_view_cell_menu"), NbtViewCellMenu::new, ViewCellHost.class);
+
+    public static final RegistryObject<MenuType<TagViewCellMenu>> TAG_VIEW_CELL_MENU =
+            reg(id("tag_view_cell_menu"), TagViewCellMenu::new, ViewCellHost.class);
 
     private CrazyMenuRegistrar() {}
 }

@@ -4,29 +4,44 @@ import appeng.client.gui.AEBaseScreen;
 import appeng.client.gui.Icon;
 import appeng.client.gui.style.ScreenStyle;
 import appeng.client.gui.widgets.AETextField;
+import appeng.client.gui.widgets.Scrollbar;
+import appeng.menu.SlotSemantics;
+import appeng.menu.slot.AppEngSlot;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.fml.ModList;
-import net.oktawia.crazyae2addons.menus.CrazyPatternModifierMenu;
+import net.oktawia.crazyae2addons.interfaces.IMovableSlot;
+import net.oktawia.crazyae2addons.menus.CrazyPatternModifierMenuPP;
 import net.oktawia.crazyae2addons.misc.IconButton;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class CrazyPatternModifierScreen<C extends CrazyPatternModifierMenu> extends AEBaseScreen<C> {
+public class CrazyPatternModifierScreenPP<C extends CrazyPatternModifierMenuPP> extends AEBaseScreen<C> {
 
     public IconButton nbt;
     public IconButton circConfirm;
     public AETextField circ;
 
     private final List<Button> circuitButtons = new ArrayList<>(33);
-
     private final boolean gtLoaded;
 
-    public CrazyPatternModifierScreen(C menu, Inventory playerInventory, Component title, ScreenStyle style) {
+    private Scrollbar configScrollbar;
+    private int lastOffset = -1;
+
+    private static final int COLS = 9;
+    private static final int VISIBLE_ROWS = 4;
+    private static final int CELL = 18;
+
+    private static final int GRID_START_X = 8;
+    private static final int GRID_START_Y = 175;
+
+    public CrazyPatternModifierScreenPP(C menu, Inventory playerInventory, Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
         this.gtLoaded = ModList.get().isLoaded("gtceu");
         setupGui();
@@ -35,10 +50,20 @@ public class CrazyPatternModifierScreen<C extends CrazyPatternModifierMenu> exte
     private void setupGui() {
         this.nbt = new IconButton(Icon.ENTER, this::changeNbt);
         this.widgets.add("nbt", this.nbt);
-        if (this.gtLoaded){
+
+        if (this.gtLoaded) {
             setupCircuitUI();
             setupCircuitButtons();
         }
+
+        this.configScrollbar = new Scrollbar();
+        this.widgets.add("scrollbar", this.configScrollbar);
+    }
+
+    private int getConfigRows() {
+        var list = getMenu().getSlots(SlotSemantics.CONFIG);
+        int size = (list != null) ? list.size() : 0;
+        return (int) Math.ceil(size / (double) COLS);
     }
 
     private void setupCircuitUI() {
@@ -57,7 +82,7 @@ public class CrazyPatternModifierScreen<C extends CrazyPatternModifierMenu> exte
         for (int i = 0; i <= 32; i++) {
             final int value = i;
             Button b = Button.builder(Component.literal(Integer.toString(value)), btn -> onCircuitPick(value))
-                    .bounds(0, 0, 16, 16)
+                    .bounds(0, 0, 16, 16) // pozycje/visibility zdefiniowane w style.json
                     .build();
             b.setTooltip(Tooltip.create(Component.literal("Set circuit: " + value)));
             this.circuitButtons.add(b);
@@ -70,9 +95,33 @@ public class CrazyPatternModifierScreen<C extends CrazyPatternModifierMenu> exte
             setTextContent("info2", Component.literal(getMenu().textCirc));
             this.circ.setEditable(true);
             this.circConfirm.active = true;
-            for (Button b : circuitButtons) {
-                b.active = true;
-                b.visible = true;
+        }
+    }
+
+    private void layoutConfigSlots(int scrollOffset) {
+        var slots = getMenu().getSlots(SlotSemantics.CONFIG);
+        if (slots == null || slots.isEmpty()) return;
+
+        for (int i = 0; i < slots.size(); i++) {
+            int row = i / COLS;
+            int col = i % COLS;
+
+            var s = slots.get(i);
+            if (!(s instanceof AppEngSlot appEngSlot)) continue;
+
+            if (appEngSlot instanceof IMovableSlot movable) {
+                if (row >= scrollOffset && row < scrollOffset + VISIBLE_ROWS) {
+                    int x = GRID_START_X + col * CELL;
+                    int y = GRID_START_Y + (row - scrollOffset) * CELL;
+                    movable.setX(x);
+                    movable.setY(y);
+                    appEngSlot.setSlotEnabled(true);
+                } else {
+                    appEngSlot.setSlotEnabled(false);
+                }
+            } else {
+                boolean visibleRow = row >= scrollOffset && row < scrollOffset + VISIBLE_ROWS;
+                appEngSlot.setSlotEnabled(visibleRow);
             }
         }
     }
@@ -124,6 +173,17 @@ public class CrazyPatternModifierScreen<C extends CrazyPatternModifierMenu> exte
         super.updateBeforeRender();
         setTextContent("info1", Component.literal(getMenu().textNBT));
         renderCircuitUI();
+
+        int rows = getConfigRows();
+        int maxOffset = Math.max(0, rows - VISIBLE_ROWS);
+        this.configScrollbar.setRange(0, maxOffset, 1);
+
+        int scrollOffset = this.configScrollbar.getCurrentScroll();
+        if (scrollOffset != lastOffset) {
+            layoutConfigSlots(scrollOffset);
+            lastOffset = scrollOffset;
+            menu.requestUpdate();
+        }
     }
 
     @Override
@@ -133,5 +193,18 @@ public class CrazyPatternModifierScreen<C extends CrazyPatternModifierMenu> exte
             return true;
         }
         return handled;
+    }
+
+    public void updatePatternsFromServer(int startIndex, List<ItemStack> stacks) {
+        List<Slot> slots = getMenu().getSlots(SlotSemantics.CONFIG);
+        for (int i = 0; i < stacks.size(); i++) {
+            int global = startIndex + i;
+            if (global >= 0 && global < slots.size()) {
+                Slot s = slots.get(global);
+                if (s instanceof AppEngSlot slot) {
+                    slot.set(stacks.get(i));
+                }
+            }
+        }
     }
 }

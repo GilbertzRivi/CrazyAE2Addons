@@ -25,7 +25,9 @@
     "PatternProviderBlockEntityAccessor",
     "PatternProviderMenuAccessor",
     "PatternProviderTargetCacheAccessor",
-    "SlotAccessor"
+    "RestrictedInputSlotMixin",
+    "SlotAccessor",
+    "ViewCellItemMixin"
   ],
   "client": [
     "AEBaseScreenInvoker"

@@ -58,7 +58,7 @@ public class RedstoneTerminalPart extends AbstractDisplayPart implements IUpgrad
         var grid = getMainNode().getGrid();
         if (grid == null) return List.of();
         return grid.getActiveMachines(RedstoneEmitterPart.class)
-                .stream().filter(emitter -> emitter.name.contains(filter.toLowerCase()))
+                .stream().filter(emitter -> emitter.name.toLowerCase().contains(filter.toLowerCase()))
                 .sorted((a, b) -> a.name.compareToIgnoreCase(b.name)).map(
                         part -> new RedstoneTerminalMenu.EmitterInfo(
                                 part.getBlockEntity().getBlockPos(), part.name, part.getState()

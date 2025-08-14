@@ -25,6 +25,7 @@ import appeng.me.helpers.MachineSource;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuLocator;
 import appeng.util.ConfigInventory;
+import appeng.util.inv.AppEngInternalInventory;
 import com.google.common.collect.ImmutableSet;
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
@@ -73,6 +74,7 @@ public class EjectorBE extends AENetworkBlockEntity implements MenuProvider, IUp
         this.toCraftPlans.clear();
         this.saveChanges();
     });
+    public AppEngInternalInventory pattern = new AppEngInternalInventory(1);
     public Boolean doesWait = false;
     public List<Future<ICraftingPlan>> toCraftPlans = new ArrayList<>();
     public List<ICraftingLink> craftingLinks = new ArrayList<>();
@@ -102,12 +104,16 @@ public class EjectorBE extends AENetworkBlockEntity implements MenuProvider, IUp
         if (data.contains("upgrades")) {
             this.upgrades.readFromNBT(data, "upgrades");
         }
+        if (data.contains("pattern")) {
+            this.pattern.readFromNBT(data, "pattern");
+        }
     }
 
     @Override
     public void addAdditionalDrops(Level level, BlockPos pos, List<ItemStack> drops) {
         super.addAdditionalDrops(level, pos, drops);
         drops.add(upgrades.getStackInSlot(0));
+        drops.add(pattern.getStackInSlot(0));
         for (int i = 0; i < storage.size(); i++) {
             if (storage.getKey(i) instanceof AEItemKey itemKey) {
                 drops.add(itemKey.toStack());
@@ -121,6 +127,7 @@ public class EjectorBE extends AENetworkBlockEntity implements MenuProvider, IUp
         this.config.writeToChildTag(data, "config");
         this.storage.writeToChildTag(data, "storage");
         this.upgrades.writeToNBT(data, "upgrades");
+        this.pattern.writeToNBT(data, "pattern");
     }
 
     @Override
@@ -442,5 +449,9 @@ public class EjectorBE extends AENetworkBlockEntity implements MenuProvider, IUp
 
     public void setMenu(EjectorMenu ejectorMenu) {
         this.menu = ejectorMenu;
+    }
+
+    public ItemStack getMainMenuIcon() {
+        return CrazyBlockRegistrar.EJECTOR_BLOCK.get().asItem().getDefaultInstance();
     }
 }

@@ -447,5 +447,23 @@ public class ItemDefs {
                         "I", CrazyItemRegistrar.LOGIC_CARD.get().asItem()
                 )
         );
+
+        item(
+                CrazyItemRegistrar.NBT_VIEW_CELL.get(),
+                "DI",
+                Map.of(
+                        "D", AEItems.VIEW_CELL.asItem(),
+                        "I", Items.NAME_TAG.asItem()
+                )
+        );
+
+        item(
+                CrazyItemRegistrar.TAG_VIEW_CELL.get(),
+                "DI",
+                Map.of(
+                        "D", AEItems.VIEW_CELL.asItem(),
+                        "I", Items.BOOK.asItem()
+                )
+        );
     }
 }

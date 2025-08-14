@@ -8,11 +8,11 @@ import com.mojang.logging.LogUtils;
 
 import java.util.Collections;
 
-public class NBTPriorityList implements IPartitionList {
+public class TagPriorityList implements IPartitionList {
 
     private final String criteria;
 
-    public NBTPriorityList(String criteria) {
+    public TagPriorityList(String criteria) {
         this.criteria = criteria == null ? "" : criteria;
     }
 
@@ -34,7 +34,7 @@ public class NBTPriorityList implements IPartitionList {
     @Override
     public boolean matchesFilter(AEKey key, IncludeExclude mode) {
         if (key instanceof AEItemKey ik) {
-            return NBTMatcher.doesItemMatch(ik, criteria);
+            return TagMatcher.doesItemMatch(ik, criteria);
         }
         return false;
     }

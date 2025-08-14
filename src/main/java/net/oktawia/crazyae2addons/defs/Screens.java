@@ -4,6 +4,8 @@ import appeng.init.client.InitScreens;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.entities.CrazyPatternProviderBE;
 import net.oktawia.crazyae2addons.entities.ReinforcedMatterCondenserBE;
+import net.oktawia.crazyae2addons.items.CrazyPatternModifierItem;
+import net.oktawia.crazyae2addons.items.NbtViewCellItem;
 import net.oktawia.crazyae2addons.menus.*;
 import net.oktawia.crazyae2addons.mobstorage.MobExportBusMenu;
 import net.oktawia.crazyae2addons.mobstorage.MobExportBusScreen;
@@ -221,6 +223,24 @@ public final class Screens {
                 CrazyMenuRegistrar.DATA_PROCESSOR_MENU.get(),
                 DataProcessorScreen<DataProcessorMenu>::new,
                 "/screens/data_processor.json"
+        );
+
+        InitScreens.register(
+                CrazyMenuRegistrar.CRAZY_PATTERN_MODIFIER_MENU_PP.get(),
+                CrazyPatternModifierScreenPP<CrazyPatternModifierMenuPP>::new,
+                "/screens/crazy_pattern_modifier_pp.json"
+        );
+
+        InitScreens.register(
+                CrazyMenuRegistrar.NBT_VIEW_CELL_MENU.get(),
+                NbtViewCellScreen<NbtViewCellMenu>::new,
+                "/screens/view_cell.json"
+        );
+
+        InitScreens.register(
+                CrazyMenuRegistrar.TAG_VIEW_CELL_MENU.get(),
+                TagViewCellScreen<TagViewCellMenu>::new,
+                "/screens/view_cell.json"
         );
     }
 

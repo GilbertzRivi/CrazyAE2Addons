@@ -222,6 +222,14 @@ public class CrazyItemRegistrar {
             ITEMS.register("dataflow_pattern",
                     () -> new DataFlowPatternItem(new Item.Properties()));
 
+    public static final RegistryObject<NbtViewCellItem> NBT_VIEW_CELL =
+            ITEMS.register("nbt_view_cell",
+                    () -> new NbtViewCellItem(new Item.Properties()));
+
+    public static final RegistryObject<TagViewCellItem> TAG_VIEW_CELL =
+            ITEMS.register("tag_view_cell",
+                    () -> new TagViewCellItem(new Item.Properties()));
+
     private CrazyItemRegistrar() {}
 
 }

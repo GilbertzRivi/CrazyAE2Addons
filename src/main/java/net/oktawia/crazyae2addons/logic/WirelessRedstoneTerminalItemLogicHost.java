@@ -47,7 +47,7 @@ public class WirelessRedstoneTerminalItemLogicHost extends WTMenuHost implements
         var grid = WRT.getLinkedGrid(this.getItemStack(), this.getPlayer().level(), this.getPlayer());
         if (grid == null) return List.of();
         return grid.getActiveMachines(RedstoneEmitterPart.class)
-                .stream().filter(emitter -> emitter.name.contains(filter.toLowerCase()))
+                .stream().filter(emitter -> emitter.name.toLowerCase().contains(filter.toLowerCase()))
                 .sorted((a, b) -> a.name.compareToIgnoreCase(b.name)).map(
                         part -> new RedstoneTerminalMenu.EmitterInfo(
                                 part.getBlockEntity().getBlockPos(), part.name, part.getState()

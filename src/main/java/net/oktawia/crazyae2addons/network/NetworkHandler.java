@@ -92,5 +92,12 @@ public class NetworkHandler {
                 TagPacketToServer::handle,
                 Optional.of(NetworkDirection.PLAY_TO_SERVER)
         );
+        INSTANCE.registerMessage(id++,
+                SetConfigAmountPacket.class,
+                SetConfigAmountPacket::encode,
+                SetConfigAmountPacket::decode,
+                SetConfigAmountPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER)
+        );
     }
 }

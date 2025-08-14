@@ -74,6 +74,9 @@ public class CrazyPatternMultiplierMenu extends AEBaseMenu {
         var originalTag = stack.getTag();
         var ignoreNbtTag = originalTag != null && originalTag.contains("ignorenbt") ? originalTag.get("ignorenbt").copy() : null;
         var circuitTag = originalTag != null && originalTag.contains("circuit") ? originalTag.get("circuit").copy() : null;
+        var customModelDataTag = originalTag != null && originalTag.contains("CustomModelData")
+                ? originalTag.get("CustomModelData").copy()
+                : null;
 
         var detail = pattern.decode(stack, level, false);
         if (!(detail instanceof AEProcessingPattern process))
@@ -81,17 +84,6 @@ public class CrazyPatternMultiplierMenu extends AEBaseMenu {
 
         GenericStack[] input = process.getSparseInputs();
         GenericStack[] output = process.getOutputs();
-
-        if (multiplier < 1) {
-            for (GenericStack gs : input) {
-                if (gs != null && !(gs.what() instanceof AEFluidKey) && gs.amount() == 1)
-                    return stack;
-            }
-            for (GenericStack gs : output) {
-                if (gs != null && !(gs.what() instanceof AEFluidKey) && gs.amount() == 1)
-                    return stack;
-            }
-        }
 
         if (limit > 0) {
             int totalOutput = 0;
@@ -104,6 +96,33 @@ public class CrazyPatternMultiplierMenu extends AEBaseMenu {
                 double maxMultiplier = Math.floor((double) limit / totalOutput);
                 if (maxMultiplier < multiplier) {
                     multiplier = maxMultiplier;
+                }
+            }
+        }
+
+        if (multiplier < 1.0) {
+            double inv = 1.0 / multiplier;
+            int divisor = (int) Math.round(inv);
+
+            if (Math.abs(inv - divisor) > 1e-9) {
+                return stack;
+            }
+
+            for (GenericStack gs : input) {
+                if (gs == null) continue;
+                if (gs.what() instanceof AEFluidKey) continue;
+                long amt = gs.amount();
+                if (amt % divisor != 0) {
+                    return stack;
+                }
+            }
+
+            for (GenericStack gs : output) {
+                if (gs == null) continue;
+                if (gs.what() instanceof AEFluidKey) continue;
+                long amt = gs.amount();
+                if (amt % divisor != 0) {
+                    return stack;
                 }
             }
         }
@@ -133,9 +152,13 @@ public class CrazyPatternMultiplierMenu extends AEBaseMenu {
         if (circuitTag != null) {
             modifiedStack.getOrCreateTag().put("circuit", circuitTag);
         }
+        if (customModelDataTag != null) {
+            modifiedStack.getOrCreateTag().put("CustomModelData", customModelDataTag);
+        }
 
         return modifiedStack;
     }
+
 
     public void clearPatterns(){
         if (isClientSide()){

@@ -1,21 +1,16 @@
 package net.oktawia.crazyae2addons.blocks;
 
 import appeng.block.crafting.PatternProviderBlock;
-import appeng.core.definitions.AEBlocks;
 import appeng.menu.locator.MenuLocators;
 import appeng.util.InteractionUtil;
-import appeng.util.Platform;
-import appeng.util.inv.AppEngInternalInventory;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.world.Containers;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.loot.LootParams;
@@ -29,10 +24,10 @@ import net.oktawia.crazyae2addons.network.SyncBlockClientPacket;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class CrazyPatternProviderBlock extends PatternProviderBlock {
+
     @Nullable
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
@@ -42,50 +37,50 @@ public class CrazyPatternProviderBlock extends PatternProviderBlock {
     @Override
     public InteractionResult onActivated(Level level, BlockPos pos, Player player,
                                          InteractionHand hand, ItemStack heldItem, BlockHitResult hit) {
-        if (level.isClientSide()) {
+        if (level.isClientSide) {
             return InteractionResult.SUCCESS;
         }
+
         BlockEntity myBe = level.getBlockEntity(pos);
         if (myBe instanceof CrazyPatternProviderBE crazyProvider) {
-            var added = crazyProvider.getAdded();
-            if(!level.isClientSide){
-                NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(),
-                        new SyncBlockClientPacket(pos, added));
-            }
+            int added = crazyProvider.getAdded();
+            NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(),
+                    new SyncBlockClientPacket(pos, added));
         }
 
-        if (heldItem != null && heldItem.getItem() == CrazyItemRegistrar.CRAZY_UPGRADE.get().asItem()) {
+        if (!heldItem.isEmpty() && heldItem.getItem() == CrazyItemRegistrar.CRAZY_UPGRADE.get().asItem()) {
             BlockEntity be = level.getBlockEntity(pos);
             if (be instanceof CrazyPatternProviderBE crazyProvider) {
                 crazyProvider.incrementAdded();
-                var added = crazyProvider.getAdded();
-                var newBe = crazyProvider.refreshLogic(added);
+                int added = crazyProvider.getAdded();
+
+                CrazyPatternProviderBE newBe = crazyProvider.refreshLogic(added);
                 newBe.setAdded(added);
-                level.sendBlockUpdated(pos, level.getBlockState(pos), level.getBlockState(pos), Block.UPDATE_ALL);
+
+                level.sendBlockUpdated(pos, level.getBlockState(pos), level.getBlockState(pos), 3);
 
                 ItemStack inHand = player.getItemInHand(hand);
                 inHand.shrink(1);
                 player.setItemInHand(hand, inHand.isEmpty() ? ItemStack.EMPTY : inHand);
-                if(!level.isClientSide){
-                    NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(),
-                            new SyncBlockClientPacket(pos, added));
-                }
+
+                NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(),
+                        new SyncBlockClientPacket(pos, added));
+
                 return InteractionResult.SUCCESS;
             }
         }
 
-        if (heldItem != null && InteractionUtil.canWrenchRotate(heldItem)) {
+        if (InteractionUtil.canWrenchRotate(heldItem)) {
             setSide(level, pos, hit.getDirection());
-            return InteractionResult.sidedSuccess(level.isClientSide());
+            return InteractionResult.sidedSuccess(false);
         }
 
         var be = this.getBlockEntity(level, pos);
         if (be != null) {
-            if (!level.isClientSide()) {
-                be.openMenu(player, MenuLocators.forBlockEntity(be));
-            }
-            return InteractionResult.sidedSuccess(level.isClientSide());
+            be.openMenu(player, MenuLocators.forBlockEntity(be));
+            return InteractionResult.sidedSuccess(false);
         }
+
         return InteractionResult.PASS;
     }
 
@@ -96,10 +91,14 @@ public class CrazyPatternProviderBlock extends PatternProviderBlock {
             ItemStack stack = new ItemStack(this);
             CompoundTag tag = new CompoundTag();
             tag.putInt("added", myBe.getAdded());
+            myBe.getLogic().writeToNBT(tag);
+            appeng.util.inv.AppEngInternalInventory inv =
+                    (appeng.util.inv.AppEngInternalInventory) myBe.getLogic().getPatternInv();
+            inv.writeToNBT(tag, "dainv");
             stack.setTag(tag);
+            myBe.getLogic().getPatternInv().clear();
             return List.of(stack);
         }
-
         return super.getDrops(state, builder);
     }
 

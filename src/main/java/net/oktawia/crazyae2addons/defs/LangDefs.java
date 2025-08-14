@@ -3,7 +3,7 @@ package net.oktawia.crazyae2addons.defs;
 import appeng.core.localization.LocalizationEnum;
 
 public enum LangDefs implements LocalizationEnum {
-    EXAMPLE_LANG_ENTRY("example.lang.entry", "Example Entry");
+    LANG_ENTRY("key.ae2.wireless_redstone_terminal", "Open Wireless Redstone Terminal");
 
     private final String key;
     private final String value;

@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "D": {
+      "item": "ae2:view_cell"
+    },
+    "I": {
+      "item": "minecraft:name_tag"
+    }
+  },
+  "pattern": [
+    "DI"
+  ],
+  "result": {
+    "item": "crazyae2addons:nbt_view_cell"
+  },
+  "show_notification": true
+}

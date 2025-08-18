@@ -271,7 +271,7 @@ public class PenroseValidatorT0 implements PenroseValidator {
                   "A A A A A A A A A A B A A A A A A A A A A"
                 ],
                 [
-                  "B B B B B B B B B B P B B B B B B B B B B",
+                  "B B B B B B B B B B B B B B B B B B B B B",
                   "B . . . . . . . . . . . . . . . . . . . B",
                   "B . . . . . . . . . . . . . . . . . . . B",
                   "B . . . . . . . . . . . . . . . . . . . B",
@@ -281,7 +281,7 @@ public class PenroseValidatorT0 implements PenroseValidator {
                   "B . . . . . . . B B B B B . . . . . . . B",
                   "B . . . . . . B . . . . . B . . . . . . B",
                   "B . . . . . . B . . . . . B . . . . . . B",
-                  "P . . . . . . B . . . . . B . . . . . . P",
+                  "B . . . . . . B . . . . . B . . . . . . B",
                   "B . . . . . . B . . . . . B . . . . . . B",
                   "B . . . . . . B . . . . . B . . . . . . B",
                   "B . . . . . . . B B C B B . . . . . . . B",

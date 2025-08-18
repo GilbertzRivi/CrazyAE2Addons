@@ -465,5 +465,14 @@ public class ItemDefs {
                         "I", Items.BOOK.asItem()
                 )
         );
+
+        item(
+                CrazyItemRegistrar.CPU_PRIO_TUNER.get(),
+                "WC",
+                Map.of(
+                        "W", AEItems.CERTUS_QUARTZ_WRENCH.asItem(),
+                        "C", AEBlocks.CRAFTING_UNIT.asItem()
+                )
+        );
     }
 }

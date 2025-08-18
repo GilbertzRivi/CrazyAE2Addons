@@ -13,6 +13,7 @@ import net.oktawia.crazyae2addons.IsModLoaded;
 import net.oktawia.crazyae2addons.compat.CC.CCDataExtractorPart;
 import net.oktawia.crazyae2addons.compat.GregTech.GTAmpereMeterBE;
 import net.oktawia.crazyae2addons.compat.GregTech.GTEnergyExporterPart;
+import net.oktawia.crazyae2addons.items.CpuPrioTunerItem;
 import net.oktawia.crazyae2addons.items.TagViewCellItem;
 import net.oktawia.crazyae2addons.logic.*;
 import net.oktawia.crazyae2addons.mobstorage.MobExportBus;
@@ -171,6 +172,9 @@ public class CrazyMenuRegistrar {
 
     public static final RegistryObject<MenuType<TagViewCellMenu>> TAG_VIEW_CELL_MENU =
             reg(id("tag_view_cell_menu"), TagViewCellMenu::new, ViewCellHost.class);
+
+    public static final RegistryObject<MenuType<CpuPrioMenu>> CPU_PRIO_MENU =
+            reg(id("cpu_prio_menu"), CpuPrioMenu::new, CpuPrioHost.class);
 
     private CrazyMenuRegistrar() {}
 }

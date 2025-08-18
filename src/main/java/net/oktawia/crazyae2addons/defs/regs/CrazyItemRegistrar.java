@@ -230,6 +230,10 @@ public class CrazyItemRegistrar {
             ITEMS.register("tag_view_cell",
                     () -> new TagViewCellItem(new Item.Properties()));
 
+    public static final RegistryObject<CpuPrioTunerItem> CPU_PRIO_TUNER =
+            ITEMS.register("cpu_prio_tuner",
+                    () -> new CpuPrioTunerItem(new Item.Properties()));
+
     private CrazyItemRegistrar() {}
 
 }

@@ -193,11 +193,11 @@ dependencies {
     compileOnly fg.deobf("curse.maven:applied-flux-965012:6649403")
     // END OF REQUIRED
     implementation fg.deobf("curse.maven:jade-324717:6106101")
-//    implementation fg.deobf("dev.emi:emi-forge:1.1.22+1.20.1")
+    implementation fg.deobf("dev.emi:emi-forge:1.1.22+1.20.1")
     implementation fg.deobf("mezz.jei:jei-1.20.1-forge:15.20.0.112")
 //    implementation fg.deobf("curse.maven:mekanism-268560:6552911")
 //    implementation fg.deobf("curse.maven:mekanism-generators-268566:6552914")
-//    implementation fg.deobf("com.gregtechceu.gtceu:gtceu-1.20.1:1.6.4") { transitive = false }
+    implementation fg.deobf("com.gregtechceu.gtceu:gtceu-1.20.1:1.6.4") { transitive = false }
 //    implementation fg.deobf("curse.maven:modern-ae2-additions-1028068:6342203")
 //    implementation fg.deobf("curse.maven:ex-pattern-provider-892005:6167228")
 //    implementation fg.deobf("curse.maven:applied-flux-965012:6649403")

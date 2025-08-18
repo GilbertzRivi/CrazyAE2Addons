@@ -275,7 +275,7 @@ public class PenroseValidatorT3 implements PenroseValidator {
                   "A A A A A A A A A A B A A A A A A A A A A"
                 ],
                 [
-                  "B B B B B B B B B B P B B B B B B B B B B",
+                  "B B B B B B B B B B B B B B B B B B B B B",
                   "B A A A A A A A A A B A A A A A A A A A B",
                   "B A . . . . . . . A B A . . . . . . . A B",
                   "B A . . . . . . . A B A . . . . . . . A B",
@@ -285,7 +285,7 @@ public class PenroseValidatorT3 implements PenroseValidator {
                   "B A . . . . . . B B B B B . . . . . . A B",
                   "B A . . . . . B . . . . . B . . . . . A B",
                   "B A A A A A . B . . . . . B . A A A A A B",
-                  "P B B B B A . B . . . . . B . A B B B B P",
+                  "B B B B B A . B . . . . . B . A B B B B B",
                   "B A A A A A . B . . . . . B . A A A A A B",
                   "B A . . . . . B . . . . . B . . . . . A B",
                   "B A . . . . . . B B C B B . . . . . . A B",

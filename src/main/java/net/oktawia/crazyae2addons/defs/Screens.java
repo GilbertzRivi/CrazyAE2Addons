@@ -242,6 +242,12 @@ public final class Screens {
                 TagViewCellScreen<TagViewCellMenu>::new,
                 "/screens/view_cell.json"
         );
+
+        InitScreens.register(
+                CrazyMenuRegistrar.CPU_PRIO_MENU.get(),
+                CpuPrioScreen<CpuPrioMenu>::new,
+                "/screens/cpu_prio.json"
+        );
     }
 
     private Screens() {}

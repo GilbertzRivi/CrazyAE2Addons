@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "C": {
+      "item": "ae2:crafting_unit"
+    },
+    "W": {
+      "item": "ae2:certus_quartz_wrench"
+    }
+  },
+  "pattern": [
+    "WC"
+  ],
+  "result": {
+    "item": "crazyae2addons:cpu_prio_tuner"
+  },
+  "show_notification": true
+}

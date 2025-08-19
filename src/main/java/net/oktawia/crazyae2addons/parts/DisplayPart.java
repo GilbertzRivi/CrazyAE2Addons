@@ -6,6 +6,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import appeng.api.stacks.AEFluidKey;
+import appeng.api.stacks.AEItemKey;
+import appeng.api.stacks.AEKey;
+import appeng.api.stacks.GenericStack;
 import appeng.blockentity.networking.CableBusBlockEntity;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuLocators;
@@ -15,6 +19,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.logging.LogUtils;
 import com.mojang.math.Axis;
+import it.unimi.dsi.fastutil.objects.Object2LongMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -31,12 +36,16 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.network.PacketDistributor;
+import net.minecraftforge.registries.ForgeRegistries;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.entities.MEDataControllerBE;
 import net.oktawia.crazyae2addons.interfaces.VariableMachine;
@@ -61,6 +70,10 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
 
     private static final PlaneModels MODELS = new PlaneModels("part/display_mon_off",
             "part/display_mon_on");
+    private static final Pattern CLIENT_VAR_TOKEN =
+            Pattern.compile("&(s\\^[a-z0-9_\\.:]+(?:%\\d+)?|[A-Za-z0-9_]+)");
+    private static final Pattern CLIENT_STOCK_TOKEN =
+            Pattern.compile("&s\\^([a-z0-9_\\.:]+)(?:%(\\d+))?");
 
     public byte spin = 0; // 0-3
     public String textValue = "";
@@ -98,18 +111,19 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
     public void notifyVariable(String name, String value, MEDataControllerBE db) {
         this.variables.put(name, value);
         if (!getLevel().isClientSide()) {
-            String variables;
+            String packed;
             if (this.getGridNode() != null && !this.getGridNode().getGrid().getMachines(MEDataControllerBE.class).isEmpty()){
-                variables = this.variables.entrySet().stream()
-                        .map(e -> e.getKey() + ":" + e.getValue())
-                        .collect(Collectors.joining("|"));
+                packed = this.variables.entrySet().stream()
+                        .map(e -> e.getKey() + "=" + e.getValue())
+                        .collect(java.util.stream.Collectors.joining("|"));
             } else {
-                variables = "";
+                packed = "";
             }
             NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(),
-                    new DisplayValuePacket(this.getBlockEntity().getBlockPos(), this.textValue, this.getSide(), this.spin, variables, this.fontSize, this.mode));
+                    new DisplayValuePacket(this.getBlockEntity().getBlockPos(), this.textValue, this.getSide(), this.spin, packed, this.fontSize, this.mode));
         }
     }
+
 
     @Override
     public void getBoxes(IPartCollisionHelper bch) {
@@ -163,10 +177,14 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
             this.fontSize = extra.getInt("font");
         }
         if(!isClientSide()){
+            String packed = this.variables.entrySet().stream()
+                    .map(e -> e.getKey() + "=" + e.getValue())
+                    .collect(java.util.stream.Collectors.joining("|"));
             NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(),
-                    new DisplayValuePacket(this.getBlockEntity().getBlockPos(), this.textValue, this.getSide(), this.spin, "", fontSize, mode));
+                    new DisplayValuePacket(this.getBlockEntity().getBlockPos(), this.textValue, this.getSide(), this.spin, packed, fontSize, mode));
         }
     }
+
 
 
     @Override
@@ -193,36 +211,163 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
         }
     }
 
-    public String replaceVariables(String text) {
-        Pattern pattern = Pattern.compile("&\\w+");
-        Matcher matcher = pattern.matcher(text);
-        StringBuilder result = new StringBuilder();
-        while (matcher.find()) {
-            String key = matcher.group().substring(1);
-            String value = variables.getOrDefault(key, "&" + key);
-            matcher.appendReplacement(result, Matcher.quoteReplacement(value));
+    private void recomputeStockVariablesAndNotify() {
+        if (this.getLevel() == null || this.getLevel().isClientSide()) return;
+
+        String txt = this.textValue == null ? "" : this.textValue;
+        Pattern p = Pattern.compile("&(s\\^[\\w:]+(?:%\\d+)?)");
+        Matcher m = p.matcher(txt);
+
+        int seen = 0;
+
+        while (m.find()) {
+            String token = m.group(1);
+            String core = token;
+            long divisor = 1L;
+
+            int pct = token.indexOf('%');
+            if (pct >= 0) {
+                core = token.substring(0, pct);
+                try {
+                    int pow = Integer.parseInt(token.substring(pct + 1));
+                    if (pow > 0) divisor = (long) Math.pow(10, pow);
+                } catch (NumberFormatException ignored) { divisor = 1L; }
+            }
+
+            if (!core.startsWith("s^")) continue;
+            seen++;
+
+            String itemId = core.substring(2);
+            long amount = getItemAmountInME(itemId);
+            long display = Math.round((double) amount / (double) divisor);
+
+            String old = this.variables.get(token);
+            String now = String.valueOf(display);
+            if (!Objects.equals(old, now)) {
+                this.variables.put(token, now);
+            }
         }
-        matcher.appendTail(result);
-        return result.toString();
+
+        if (seen > 0) {
+            String packed = this.variables.entrySet().stream()
+                    .map(e -> e.getKey() + "=" + e.getValue())
+                    .collect(Collectors.joining("|"));
+
+            NetworkHandler.INSTANCE.send(
+                    PacketDistributor.ALL.noArg(),
+                    new DisplayValuePacket(
+                            this.getBlockEntity().getBlockPos(),
+                            this.textValue,
+                            this.getSide(),
+                            this.spin,
+                            packed,
+                            this.fontSize,
+                            this.mode
+                    )
+            );
+        }
     }
+
+
+    private long getItemAmountInME(String id) {
+        try {
+            var node = this.getGridNode();
+            if (node == null) return 0;
+            var grid = node.getGrid();
+            if (grid == null) return 0;
+
+            var storage = grid.getService(appeng.api.networking.storage.IStorageService.class);
+            if (storage == null) return 0;
+
+            var rl = new ResourceLocation(id);
+
+            var item = ForgeRegistries.ITEMS.getValue(rl);
+            if (item != Items.AIR) {
+                var itemKey = AEItemKey.of(new ItemStack(item));
+                if (itemKey == null) return 0;
+
+                long total = 0L;
+                var avail = storage.getInventory().getAvailableStacks();
+                for (var gs : avail) {
+                    if (gs.getKey().equals(itemKey)) {
+                        total += gs.getLongValue();
+                    }
+                }
+                if (total > 0) return total;
+            }
+
+            var fluid = ForgeRegistries.FLUIDS.getValue(rl);
+            if (fluid != null) {
+                var fluidKey = AEFluidKey.of(new FluidStack(fluid, 1));
+                if (fluidKey == null) return 0;
+
+                long total = 0L;
+                var avail = storage.getInventory().getAvailableStacks();
+                for (var gs : avail) {
+                    if (gs.getKey().equals(fluidKey)) {
+                        total += gs.getLongValue();
+                    }
+                }
+                return total;
+            }
+
+            return 0;
+        } catch (Throwable t) {
+            return 0;
+        }
+    }
+
+
 
     public void updateController(String value) {
         this.textValue = value;
-        if (this.getGridNode() == null || this.getGridNode().getGrid() == null || this.getGridNode().getGrid().getMachines(MEDataControllerBE.class).isEmpty()){
+
+        try {
+            var node = this.getGridNode();
+            if (node == null) {
+                this.reRegister = true;
+                return;
+            }
+            var grid = node.getGrid();
+            if (grid == null) {
+                this.reRegister = true;
+                return;
+            }
+
+            var machines = grid.getMachines(MEDataControllerBE.class);
+            if (machines == null || machines.isEmpty()) {
+                this.reRegister = true;
+                return;
+            }
+            var controller = machines.stream().findFirst().orElse(null);
+            if (controller == null) {
+                this.reRegister = true;
+                return;
+            }
+
+            int maxVars = controller.getMaxVariables();
+            if (maxVars <= 0) {
+                this.reRegister = true;
+                return;
+            }
+
+            controller.removeNotification(this.identifier);
+
+            Pattern pattern = Pattern.compile("&\\w+");
+            Matcher matcher = pattern.matcher(value);
+            while (matcher.find()) {
+                String word = matcher.group();
+                String name = word.substring(1);
+                controller.registerNotification(this.identifier, name, this.identifier, this.getClass());
+            }
+
+            this.reRegister = false;
+
+            if (!isClientSide()) {
+                recomputeStockVariablesAndNotify();
+            }
+        } catch (Throwable t) {
             this.reRegister = true;
-            return;
-        }
-        MEDataControllerBE controller = this.getGridNode().getGrid().getMachines(MEDataControllerBE.class).stream().toList().get(0);
-        if (controller.getMaxVariables() <= 0){
-            this.reRegister = true;
-            return;
-        }
-        controller.removeNotification(this.identifier);
-        Pattern pattern = Pattern.compile("&\\w+");
-        Matcher matcher = pattern.matcher(value);
-        while (matcher.find()) {
-            String word = matcher.group();
-            controller.registerNotification(this.identifier, word.replace("&", ""), this.identifier, this.getClass());
         }
     }
 
@@ -234,7 +379,6 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
 
         Direction side = this.getSide();
 
-        // Zamieniamy DisplayPart na współrzędne siatki (x, y)
         Set<Pair<Integer, Integer>> coords = new HashSet<>();
 
         int minRow = Integer.MAX_VALUE, maxRow = Integer.MIN_VALUE;
@@ -397,19 +541,25 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
             MEDataControllerBE controller = getMainNode().getGrid().getMachines(MEDataControllerBE.class).stream().toList().get(0);
             if (controller.getMaxVariables() <= 0){
                 this.reRegister = true;
-            } else {
-                if (this.reRegister){
-                    this.reRegister = false;
-                    updateController(this.textValue);
-                }
+            } else if (this.reRegister){
+                this.reRegister = false;
+                updateController(this.textValue);
             }
         }
+
         if(!isClientSide()){
+            recomputeStockVariablesAndNotify();
+            String packed = this.variables.entrySet().stream()
+                    .map(e -> e.getKey() + "=" + e.getValue())
+                    .collect(Collectors.joining("|"));
             NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(),
-                    new DisplayValuePacket(this.getBlockEntity().getBlockPos(), this.textValue, this.getSide(), this.spin, "", this.fontSize, this.mode));
+                    new DisplayValuePacket(this.getBlockEntity().getBlockPos(), this.textValue, this.getSide(), this.spin, packed, this.fontSize, this.mode));
         }
         return TickRateModulation.IDLE;
     }
+
+
+
 
     public static Pair<Integer, Integer> getGridSize(List<DisplayPart> sorted, Direction side) {
         int minCol = Integer.MAX_VALUE, maxCol = Integer.MIN_VALUE;
@@ -446,6 +596,48 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
         return Pair.of(width, height);
     }
 
+    private String resolveTokensClientSide(String input) {
+        if (input == null || input.isEmpty()) return "";
+
+        StringBuilder sb = new StringBuilder();
+        Matcher m = CLIENT_VAR_TOKEN.matcher(input);
+        while (m.find()) {
+            String key = m.group(1);         // np. s^minecraft:oak_log%1  |  foo
+            String withAmp = "&" + key;
+
+            String repl = this.variables.get(key); // dokładne trafienie
+            if (repl == null) {
+                Matcher sm = CLIENT_STOCK_TOKEN.matcher(withAmp);
+                if (sm.matches()) {
+                    String itemId = sm.group(1);                   // minecraft:oak_log
+                    String powStr = sm.group(2);                   // N lub null
+                    String baseVal = this.variables.get("s^" + itemId);
+                    if (baseVal != null) {
+                        try {
+                            long amount = Long.parseLong(baseVal);
+                            long divisor = 1L;
+                            if (powStr != null) {
+                                int pow = Integer.parseInt(powStr);
+                                if (pow > 0) divisor = (long) Math.pow(10, pow);
+                            }
+                            long display = Math.round((double) amount / (double) divisor);
+                            repl = String.valueOf(display);
+                        } catch (NumberFormatException ignored) {
+                        }
+                    }
+                }
+            }
+
+            if (repl == null) {
+                repl = this.variables.getOrDefault(key, withAmp);
+            }
+
+            m.appendReplacement(sb, Matcher.quoteReplacement(repl));
+        }
+        m.appendTail(sb);
+        return sb.toString();
+    }
+
 
     @OnlyIn(Dist.CLIENT)
     @Override
@@ -464,7 +656,10 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
         int height = dims.getSecond();
 
         Font font = Minecraft.getInstance().font;
-        TextWithColors parsed = parseStyledText(replaceVariables(textValue));
+
+        String resolved = resolveTokensClientSide(this.textValue);
+
+        TextWithColors parsed = parseStyledText(resolved);
         List<Component> lines = parsed.lines();
         Integer bgColor = parsed.backgroundColor();
 
@@ -507,6 +702,7 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
 
         poseStack.popPose();
     }
+
 
     @OnlyIn(Dist.CLIENT)
     private void drawBackground(PoseStack poseStack, MultiBufferSource buffers, int blocksWide, int blocksHigh, int color) {
@@ -594,7 +790,6 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
 
 
     private Component parseMarkdownSegment(String text, Style baseStyle) {
-        // Zagnieżdżone style: **, *, __, ~~, ``
         Pattern pattern = Pattern.compile("(\\*\\*|\\*|__|~~|`)(.+?)\\1");
         Matcher matcher = pattern.matcher(text);
 

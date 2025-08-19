@@ -60,9 +60,31 @@ public class DataFlowRunner {
     public void receiveInput(IFlowNode node, String inputName, DataValue<?> value) {
         if (node == null || inputName == null || value == null) return;
 
+        Map<String, DataType> expected = FlowNodeRegistry.getExpectedInputs(node.getClass());
+        DataType expectedType = expected.get(inputName);
+
+        DataValue<?> toStore = value;
+
+        if (expectedType != null && value.getType() != expectedType) {
+            if (TypeConverters.canConvert(value.getType(), expectedType)) {
+                Optional<DataValue<?>> converted = TypeConverters.convert(value, expectedType);
+                if (converted.isPresent()) {
+                    toStore = converted.get();
+                } else {
+                    LOGGER.warn("Nie udało się skonwertować wartości typu {} do {} dla wejścia '{}' w nodzie {}. Wartość zostaje odrzucona.",
+                            value.getType(), expectedType, inputName, node.getClass().getSimpleName());
+                    return; // nie dostarczaj błędnej wartości
+                }
+            } else {
+                LOGGER.warn("Brak możliwości konwersji wartości typu {} do {} dla wejścia '{}' w nodzie {}. Wartość zostaje odrzucona.",
+                        value.getType(), expectedType, inputName, node.getClass().getSimpleName());
+                return;
+            }
+        }
+
         inputBuffers
                 .computeIfAbsent(node, n -> new HashMap<>())
-                .put(inputName, value);
+                .put(inputName, toStore);
 
         tryExecute(node, inputName, inputBuffers.get(node));
     }
@@ -137,7 +159,9 @@ public class DataFlowRunner {
             String inputName = entry.getKey();
             DataType expectedType = entry.getValue();
 
-            if (!current.containsKey(inputName) && expectedType == value.getType()) {
+            if (current.containsKey(inputName)) continue;
+
+            if (expectedType == value.getType() || TypeConverters.canConvert(value.getType(), expectedType)) {
                 return inputName;
             }
         }

@@ -20,6 +20,7 @@ public class CpuPrioScreen<C extends CpuPrioMenu> extends AEBaseScreen<C> {
     public void updateBeforeRender(){
         if (!this.initialized){
             priorityInput.setValue(Integer.toString(menu.prio));
+            priority.setLongValue(menu.prio);
             this.initialized = true;
         }
     }

@@ -1,0 +1,25 @@
+{
+  "$schema": "schema.json",
+  "includes": ["common/common.json", "common/player_inventory.json"],
+  "background": {
+    "texture": "guis/fabricator.png",
+    "srcRect": [0, 0, 176, 205]
+  },
+  "text": {
+    "dialog_title": {
+      "text": {"translate": "block.crazyae2addons.recipe_fabricator"},
+      "position": {"left": 8, "top": 6}
+    },
+    "lbl_input": { "text": "Input",  "position": {"left": 21, "top": 23}, "align": "CENTER"  },
+    "lbl_drive": { "text": "Drive",  "position": {"left": 39, "top": 63}, "align": "CENTER"  },
+    "lbl_output": { "text": "Output", "position": {"right": 8, "top": 23}, "align": "RIGHT" },
+    "progress": {
+      "position": {"right": 8, "top": 63},
+      "align": "RIGHT"
+    }
+  },
+  "slots": {
+    "MACHINE_INPUT": { "left": 12, "top": 38, "grid": "BREAK_AFTER_3COLS" },
+    "MACHINE_OUTPUT": { "right": 24, "top": 38, "grid": "BREAK_AFTER_3COLS" }
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "type": "crazyae2addons:fabrication",
+  "input": { "item": "ae2:certus_quartz_wrench" },
+  "input_count": 1,
+  "output": { "item": "crazyae2addons:cpu_prio_tuner", "count": 1 },
+  "required_key": "crazyae2addons:cpu_prio_tunner_research"
+}

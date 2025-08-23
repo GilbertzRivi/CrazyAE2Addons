@@ -23,7 +23,6 @@ import java.util.UUID;
 
 public class BuilderPatternHost extends ItemMenuHost {
 
-    private String program = "";
     private boolean code;
     private int delay = 0;
 
@@ -46,7 +45,6 @@ public class BuilderPatternHost extends ItemMenuHost {
         return this.delay;
     }
     public void setProgram(String program) {
-        this.program = program;
         ProgramExpander.Result result = ProgramExpander.expand(program);
         this.code = result.success;
         this.getItemStack().getOrCreateTag().putBoolean("code", this.code);
@@ -69,17 +67,19 @@ public class BuilderPatternHost extends ItemMenuHost {
     }
 
     public static String loadProgramFromFile(ItemStack stack, MinecraftServer server) {
-        if (!stack.hasTag() || !stack.getTag().contains("program_id")) return "";
-
-        String id = stack.getTag().getString("program_id");
-        Path file = server.getWorldPath(new LevelResource("serverdata"))
-                .resolve("autobuilder")
-                .resolve(id);
-
         try {
+            if (server == null || stack == null || stack.isEmpty() || !stack.hasTag()) return "";
+            var tag = stack.getTag();
+            if (tag == null || !tag.getBoolean("code") || !tag.contains("program_id")) return "";
+            String id = tag.getString("program_id");
+            if (id == null || id.isEmpty()) return "";
+
+            Path file = server.getWorldPath(new LevelResource("serverdata"))
+                    .resolve("autobuilder")
+                    .resolve(id);
+            if (!Files.exists(file)) return "";
             return Files.readString(file, StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            LogUtils.getLogger().info(e.toString());
+        } catch (Exception ignored) {
             return "";
         }
     }

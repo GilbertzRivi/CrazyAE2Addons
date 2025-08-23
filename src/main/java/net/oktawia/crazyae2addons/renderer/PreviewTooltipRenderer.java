@@ -12,22 +12,42 @@ import net.oktawia.crazyae2addons.CrazyAddons;
 @Mod.EventBusSubscriber(modid = CrazyAddons.MODID, value = Dist.CLIENT)
 public class PreviewTooltipRenderer {
     public static String text = null;
+    public static Integer forceColor = null;
+    public static long expireAtMs = 0L;
+    public static final long DEFAULT_TTL_MS = 150L;
 
     public static final IGuiOverlay TOOLTIP = ((gui, guiGraphics, partialTick, screenWidth, screenHeight) -> {
-        if (text == null) {
+        long now = System.currentTimeMillis();
+        if (text == null || now > expireAtMs) {
             return;
         }
+
         Font font = Minecraft.getInstance().font;
         PoseStack pose = guiGraphics.pose();
         pose.pushPose();
-        pose.translate((float) screenWidth / 2 + 8, (float) (screenHeight - font.lineHeight) / 2 + 8, 0.0F);
-        drawTextWithGradient(guiGraphics, font, text);
+        float x = screenWidth / 2f + 8f;
+        float y = (screenHeight - font.lineHeight) / 2f + 8f;
+        pose.translate(x, y, 0.0F);
+        drawText(guiGraphics, font, text);
         pose.popPose();
-        text = null;
+
+        com.mojang.blaze3d.systems.RenderSystem.enableBlend();
+        com.mojang.blaze3d.systems.RenderSystem.defaultBlendFunc();
+        com.mojang.blaze3d.systems.RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
     });
 
-    private static void drawTextWithGradient(GuiGraphics g, Font font, String text) {
-        char[] arr = text.toCharArray();
+    public static void set(String msg, Integer color, long ttlMs) {
+        text = msg;
+        forceColor = color;
+        expireAtMs = System.currentTimeMillis() + Math.max(50L, ttlMs);
+    }
+
+    private static void drawText(GuiGraphics g, Font font, String txt) {
+        if (forceColor != null) {
+            g.drawString(font, txt, 0, 0, forceColor, true);
+            return;
+        }
+        char[] arr = txt.toCharArray();
         int dx = 0;
         for (int i = 0; i < arr.length; i++) {
             char ch = arr[i];

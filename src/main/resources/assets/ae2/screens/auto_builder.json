@@ -1,14 +1,22 @@
 {
   "$schema": "schema.json",
-  "includes": ["common/common.json", "common/player_inventory.json"],
+  "includes": [
+    "common/common.json",
+    "common/player_inventory.json"
+  ],
   "background": {
     "texture": "guis/auto_builder.png",
-    "srcRect": [0, 0, 176, 205]
+    "srcRect": [
+      0,
+      0,
+      176,
+      205
+    ]
   },
   "slots": {
-    "ENCODED_PATTERN": {
+    "CONFIG": {
       "left": 120,
-      "top": 62,
+      "top": 76,
       "grid": "HORIZONTAL"
     }
   },
@@ -26,7 +34,7 @@
       "text": "Pattern",
       "position": {
         "left": 128,
-        "top": 50
+        "top": 64
       },
       "align": "CENTER"
     },
@@ -41,15 +49,30 @@
     "missing": {
       "position": {
         "left": 88,
-        "top": 30
+        "top": 26
+      },
+      "align": "CENTER"
+    },
+    "missing2": {
+      "text": "Missing:",
+      "position": {
+        "left": 88,
+        "top": 16
+      },
+      "align": "CENTER"
+    },
+    "energy": {
+      "position": {
+        "left": 88,
+        "top": 38
       },
       "align": "CENTER"
     }
   },
   "widgets": {
     "skipmissing": {
-      "left": 121,
-      "top": 80,
+      "left": 112,
+      "top": 96,
       "width": 35,
       "height": 16
     },
@@ -104,6 +127,12 @@
     "w": {
       "left": 62,
       "top": 94,
+      "width": 16,
+      "height": 16
+    },
+    "preview": {
+      "right": 24,
+      "top": 8,
       "width": 16,
       "height": 16
     }

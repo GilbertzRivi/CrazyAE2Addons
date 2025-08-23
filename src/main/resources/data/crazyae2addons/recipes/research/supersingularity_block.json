@@ -1,0 +1,100 @@
+{
+  "type": "crazyae2addons:research",
+  "duration": 18000,
+  "energy_per_tick": 500,
+  "fluid": "crazyae2addons:researchfluid",
+  "fluid_per_tick": 8,
+  "requires_stabilizer": true,
+  "gadget": true,
+  "consumables": [
+    { "item": "crazyae2addons:super_singularity", "count": 1 }
+  ],
+  "drive": true,
+  "structure": {
+    "mode": "pattern",
+    "size": [7, 7, 7],
+  "symbols": {
+    "A": [
+      "minecraft:obsidian"
+    ],
+    "B": [
+      "minecraft:iron_block"
+    ],
+    "D": [
+      "ae2:fluix_block"
+    ],
+    "E": [
+      "minecraft:netherite_block"
+    ]
+  },
+  "layers": [
+    [
+      "A A A A A A A",
+      "A A A A A A A",
+      "A A A A A A A",
+      "A A A A A A A",
+      "A A A A A A A",
+      "A A A A A A A",
+      "A A A A A A A"
+    ],
+    [
+      "A A A A A A A",
+      "A B B B B B A",
+      "A B B B B B A",
+      "A B B B B B A",
+      "A B B B B B A",
+      "A B B B B B A",
+      "A A A A A A A"
+    ],
+    [
+      "A A . . . A A",
+      "A B B B B B A",
+      ". B D D D B .",
+      ". B D D D B .",
+      ". B D D D B .",
+      "A B B B B B A",
+      "A A . . . A A"
+    ],
+    [
+      "A A . . . A A",
+      "A B B B B B A",
+      ". B D D D B .",
+      ". B D E D B .",
+      ". B D D D B .",
+      "A B B B B B A",
+      "A A . . . A A"
+    ],
+    [
+      "A A . . . A A",
+      "A B B B B B A",
+      ". B D D D B .",
+      ". B D D D B .",
+      ". B D D D B .",
+      "A B B B B B A",
+      "A A . . . A A"
+    ],
+    [
+      "A A A A A A A",
+      "A B B B B B A",
+      "A B B B B B A",
+      "A B B B B B A",
+      "A B B B B B A",
+      "A B B B B B A",
+      "A A A A A A A"
+    ],
+    [
+      "A A A A A A A",
+      "A A A A A A A",
+      "A A A A A A A",
+      "A A A A A A A",
+      "A A A A A A A",
+      "A A A A A A A",
+      "A A A A A A A"
+    ]
+  ]
+},
+  "unlock": {
+    "key": "crazyae2addons:super_singularity_research",
+    "label": "Penrose Sphere"
+  }
+}

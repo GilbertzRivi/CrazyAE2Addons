@@ -9,6 +9,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
+import net.oktawia.crazyae2addons.recipes.ResearchRecipe;
 import net.oktawia.crazyae2addons.xei.jei.ReinforcedCondenserEntry;
 
 import java.util.Comparator;
@@ -119,7 +120,7 @@ public class CrazyRecipes {
         Map<Block, Integer> counts = new java.util.LinkedHashMap<>();
 
         var symbols = pattern.symbolMap();
-        var layers  = pattern.layers();  
+        var layers = pattern.layers();
 
         for (int y = 0; y < SIZE; y++) {
             String[][] layer = layers.get(y);
@@ -156,5 +157,89 @@ public class CrazyRecipes {
                         new ItemStack(CrazyItemRegistrar.SUPER_SINGULARITY.get())
                 )
         );
+    }
+
+    public static List<ResearchEntry> getResearchEntries() {
+        var mc = net.minecraft.client.Minecraft.getInstance();
+        var level = mc.level;
+        if (level == null) return List.of();
+
+        var rm = level.getRecipeManager();
+        var recipes = rm.getAllRecipesFor(net.oktawia.crazyae2addons.defs.regs.CrazyRecipes.RESEARCH_TYPE.get());
+
+        return recipes.stream()
+                .map(r -> new ResearchEntry(
+                        r.getId(),
+                        buildInputsFromResearch(r),
+                        buildDriveOrOutput(r),
+                        r.requiresStabilizer,
+                        new int[]{r.structure.size[0], r.structure.size[1], r.structure.size[2]},
+                        (r.unlock.label == null || r.unlock.label.isEmpty()) ? r.unlock.key.toString() : r.unlock.label,
+                        r.unlock.key
+                ))
+                .sorted(Comparator.comparing(e -> e.unlockKey().toString()))
+                .toList();
+    }
+
+    private static List<ItemStack> buildInputsFromResearch(ResearchRecipe r) {
+        java.util.List<ItemStack> stacks = new java.util.ArrayList<>();
+
+        if (r.gadgetRequired) {
+            stacks.add(new ItemStack(CrazyItemRegistrar.STRUCTURE_GADGET.get()).copyWithCount(1));
+        }
+
+        for (var c : r.consumables) {
+            stacks.add(new ItemStack(c.item).copyWithCount(Math.max(1, c.count)));
+        }
+        return stacks;
+    }
+
+    private static ItemStack buildDriveOrOutput(ResearchRecipe r) {
+        if (r.driveRequired) {
+            return new ItemStack(CrazyItemRegistrar.DATA_DRIVE.get()).copyWithCount(1);
+        }
+        return ItemStack.EMPTY;
+    }
+    public static java.util.List<FabricationEntry> getFabricationEntries() {
+        var mc = net.minecraft.client.Minecraft.getInstance();
+        var level = mc.level;
+        if (level == null) return java.util.List.of();
+
+        var researchEntries = getResearchEntries();
+        java.util.Map<net.minecraft.resources.ResourceLocation, String> labelByKey =
+                researchEntries.stream().collect(java.util.stream.Collectors.toMap(
+                        ResearchEntry::unlockKey,
+                        ResearchEntry::label,
+                        (a, b) -> a
+                ));
+
+        var rm = level.getRecipeManager();
+        var recipes = rm.getAllRecipesFor(net.oktawia.crazyae2addons.defs.regs.CrazyRecipes.FABRICATION_TYPE.get());
+
+        return recipes.stream()
+                .map(r -> {
+                    var choices = r.getInput().getItems();
+                    net.minecraft.world.item.ItemStack in =
+                            choices.length > 0 ? choices[0].copy() : net.minecraft.world.item.ItemStack.EMPTY;
+                    if (!in.isEmpty()) in.setCount(Math.max(1, r.getInputCount()));
+
+                    net.minecraft.resources.ResourceLocation keyRL = null;
+                    String label = null;
+                    if (r.getRequiredKey() != null && !r.getRequiredKey().isBlank()) {
+                        keyRL = new net.minecraft.resources.ResourceLocation(r.getRequiredKey());
+                        label = labelByKey.getOrDefault(keyRL, keyRL.toString());
+                    }
+
+                    return new FabricationEntry(
+                            r.getId(),
+                            in,
+                            r.getOutput().copy(),
+                            keyRL,
+                            label
+                    );
+                })
+                .sorted(java.util.Comparator.comparing(e ->
+                        e.output().getItem().builtInRegistryHolder().key().location().toString()))
+                .toList();
     }
 }

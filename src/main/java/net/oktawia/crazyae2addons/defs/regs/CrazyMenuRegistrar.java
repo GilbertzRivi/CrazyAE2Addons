@@ -176,5 +176,17 @@ public class CrazyMenuRegistrar {
     public static final RegistryObject<MenuType<CpuPrioMenu>> CPU_PRIO_MENU =
             reg(id("cpu_prio_menu"), CpuPrioMenu::new, CpuPrioHost.class);
 
+    public static final RegistryObject<MenuType<ResearchStationMenu>> RESEARCH_STATION_MENU =
+            reg(id("research_station_menu"), ResearchStationMenu::new, ResearchStationBE.class);
+
+    public static final RegistryObject<MenuType<GadgetMenu>> GADGET_MENU =
+            reg(id("gadget_menu"), GadgetMenu::new, GadgetHost.class);
+
+    public static final RegistryObject<MenuType<DataDriveMenu>> DATA_DRIVE_MENU =
+            reg(id("data_drive_menu"), DataDriveMenu::new, DataHost.class);
+
+    public static final RegistryObject<MenuType<RecipeFabricatorMenu>> RECIPE_FABRICATOR_MENU =
+            reg(id("recipe_fabricator_menu"), RecipeFabricatorMenu::new, RecipeFabricatorBE.class);
+
     private CrazyMenuRegistrar() {}
 }

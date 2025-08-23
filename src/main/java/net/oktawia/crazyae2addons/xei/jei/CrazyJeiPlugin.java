@@ -26,20 +26,26 @@ public class CrazyJeiPlugin implements IModPlugin {
         registration.addRecipeCategories(new CrazyCategory(registration.getJeiHelpers().getGuiHelper()));
         registration.addRecipeCategories(new ReinforcedCondenserCategory(registration.getJeiHelpers().getGuiHelper()));
         registration.addRecipeCategories(new CradleCategory(registration.getJeiHelpers().getGuiHelper()));
+        registration.addRecipeCategories(new ResearchCategory(registration.getJeiHelpers().getGuiHelper()));
+        registration.addRecipeCategories(new FabricationCategory(registration.getJeiHelpers().getGuiHelper()));
     }
 
     @Override
     public void registerRecipes(IRecipeRegistration registration) {
-
-        List<CrazyWrapper> wrapped = CrazyRecipes.getCrazyEntries().stream().map(CrazyWrapper::new).toList();
+        var wrapped = CrazyRecipes.getCrazyEntries().stream().map(CrazyWrapper::new).toList();
         registration.addRecipes(CrazyCategory.TYPE, wrapped);
 
         registration.addRecipes(ReinforcedCondenserCategory.TYPE, CrazyRecipes.getCondenserEntried());
 
-        List<CradleWrapper> wrapped2 = CrazyRecipes.getCradleEntries().stream()
-                .map(CradleWrapper::new)
-                .toList();
+        var cradleWrapped = CrazyRecipes.getCradleEntries().stream().map(CradleWrapper::new).toList();
+        registration.addRecipes(CradleCategory.TYPE, cradleWrapped);
 
-        registration.addRecipes(CradleCategory.TYPE, wrapped2);
+        var researchWrapped = CrazyRecipes.getResearchEntries().stream().map(ResearchWrapper::new).toList();
+        registration.addRecipes(ResearchCategory.TYPE, researchWrapped);
+
+        var fabricationWrapped = CrazyRecipes.getFabricationEntries().stream()
+                .map(FabricationWrapper::new)
+                .toList();
+        registration.addRecipes(FabricationCategory.TYPE, fabricationWrapped);
     }
 }

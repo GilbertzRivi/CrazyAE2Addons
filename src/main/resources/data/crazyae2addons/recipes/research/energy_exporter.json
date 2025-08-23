@@ -1,0 +1,46 @@
+{
+  "type": "crazyae2addons:research",
+  "duration": 3600,
+  "energy_per_tick": 160,
+  "fluid": "crazyae2addons:researchfluid",
+  "fluid_per_tick": 6,
+  "requires_stabilizer": false,
+  "gadget": true,
+  "consumables": [
+    { "item": "minecraft:coal", "count": 768 }
+  ],
+  "drive": true,
+  "structure": {
+    "mode": "pattern",
+    "size": [3, 3, 3],
+  "symbols": {
+    "A": [
+      "minecraft:blast_furnace"
+    ],
+    "B": [
+      "minecraft:copper_block"
+    ]
+  },
+  "layers": [
+    [
+      "A A A",
+      "A B A",
+      "A A A"
+    ],
+    [
+      "A A A",
+      "A B A",
+      "A A A"
+    ],
+    [
+      "A A A",
+      "A B A",
+      "A A A"
+    ]
+  ]
+},
+  "unlock": {
+    "key": "crazyae2addons:energy_exporter_research",
+    "label": "Energy Exporter"
+  }
+}

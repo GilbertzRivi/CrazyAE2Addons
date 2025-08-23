@@ -1,0 +1,7 @@
+{
+  "type": "crazyae2addons:fabrication",
+  "input": { "item": "crazyae2addons:super_singularity" },
+  "input_count": 5,
+  "output": { "item": "crazyae2addons:super_singularity_block", "count": 1 },
+  "required_key": "crazyae2addons:super_singularity_research"
+}

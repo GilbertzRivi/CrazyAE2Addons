@@ -1,0 +1,7 @@
+{
+  "type": "crazyae2addons:fabrication",
+  "input": { "item": "minecraft:enchanting_table" },
+  "input_count": 1,
+  "output": { "item": "crazyae2addons:auto_enchanter", "count": 1 },
+  "required_key": "crazyae2addons:auto_enchanter_research"
+}

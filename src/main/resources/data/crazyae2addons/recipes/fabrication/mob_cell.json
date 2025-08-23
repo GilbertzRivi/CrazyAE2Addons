@@ -1,0 +1,7 @@
+{
+  "type": "crazyae2addons:fabrication",
+  "input": { "item": "ae2:item_cell_housing" },
+  "input_count": 1,
+  "output": { "item": "crazyae2addons:mob_cell_housing", "count": 1 },
+  "required_key": "crazyae2addons:mob_cell_research"
+}

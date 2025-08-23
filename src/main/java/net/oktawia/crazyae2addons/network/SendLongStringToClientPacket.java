@@ -5,6 +5,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.NetworkEvent;
 import net.oktawia.crazyae2addons.screens.BuilderPatternScreen;
 import net.oktawia.crazyae2addons.screens.CrazyPatternProviderScreen;
+import net.oktawia.crazyae2addons.screens.GadgetScreen;
 
 import java.nio.charset.StandardCharsets;
 import java.util.function.Supplier;
@@ -32,6 +33,8 @@ public class SendLongStringToClientPacket {
         ctxSupplier.get().enqueueWork(() -> {
             Minecraft mc = Minecraft.getInstance();
             if (mc.screen instanceof BuilderPatternScreen<?> screen) {
+                screen.setProgram(packet.data);
+            } else if (mc.screen instanceof GadgetScreen<?> screen) {
                 screen.setProgram(packet.data);
             }
         });

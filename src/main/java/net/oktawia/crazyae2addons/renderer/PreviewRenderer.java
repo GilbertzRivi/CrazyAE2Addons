@@ -158,6 +158,13 @@ public class PreviewRenderer {
                         translucentBuffer.putBulkData(poseStack.last(), quad, 1f, 1f, 1f, alpha, 0xF0F0F0, OverlayTexture.NO_OVERLAY, true);
                     }
                 }
+                for (BakedQuad quad : model.getQuads(state, null, mc.level.random, ModelData.EMPTY, null)) {
+                    translucentBuffer.putBulkData(
+                            poseStack.last(), quad,
+                            1f, 1f, 1f, alpha,
+                            0xF0F0F0, OverlayTexture.NO_OVERLAY, true
+                    );
+                }
             }
 
             poseStack.popPose();

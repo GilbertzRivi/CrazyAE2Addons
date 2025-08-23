@@ -6,8 +6,6 @@ import java.util.regex.Pattern;
 
 public class ProgramExpander {
 
-    private static final int MAX_EXPANSION_TOKENS = Integer.MAX_VALUE;
-
     public static Result expand(String code) {
         try {
             String[] parts = code.split("\\|", 3);
@@ -23,9 +21,6 @@ public class ProgramExpander {
             String expandedProgram = expandMacros(programPart, macros);
 
             List<String> expanded = tokenize(expandedProgram, blockMap, 0);
-            if (expanded.size() > MAX_EXPANSION_TOKENS) {
-                return Result.error("Program too long or infinite loop detected (more than " + MAX_EXPANSION_TOKENS + " steps)");
-            }
             return Result.success(expanded);
         } catch (Exception e) {
             return Result.error("Failed to expand program: " + e.getMessage());
@@ -169,7 +164,7 @@ public class ProgramExpander {
                 if (!blockMap.containsKey(id)) throw new Exception("Block ID [" + id + "] not defined in map at position " + i);
                 tokens.add("P|" + blockMap.get(id));
                 i = j + 1;
-            } else if ("NSEWUDXR".indexOf(c) != -1) {
+            } else if ("FBLRUDXH".indexOf(c) != -1) {
                 tokens.add(String.valueOf(c));
                 i++;
             } else if (Character.isDigit(c)) {
@@ -190,8 +185,6 @@ public class ProgramExpander {
                 if (depthCount != 0) throw new Exception("Unmatched '{' at position " + i);
                 List<String> expanded = tokenize(loopBody.toString(), blockMap, depth + 1);
                 for (int k = 0; k < count; k++) tokens.addAll(expanded);
-                if (tokens.size() > MAX_EXPANSION_TOKENS)
-                    throw new Exception("Too many steps during loop expansion at position " + i);
                 i = j;
             } else if (input.startsWith("Z(", i)) {
                 int j = i + 2;

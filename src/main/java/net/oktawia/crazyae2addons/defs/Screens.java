@@ -248,6 +248,30 @@ public final class Screens {
                 CpuPrioScreen<CpuPrioMenu>::new,
                 "/screens/cpu_prio.json"
         );
+
+        InitScreens.register(
+                CrazyMenuRegistrar.RESEARCH_STATION_MENU.get(),
+                ResearchStationScreen<ResearchStationMenu>::new,
+                "/screens/research_station.json"
+        );
+
+        InitScreens.register(
+                CrazyMenuRegistrar.GADGET_MENU.get(),
+                GadgetScreen<GadgetMenu>::new,
+                "/screens/gadget.json"
+        );
+
+        InitScreens.register(
+                CrazyMenuRegistrar.DATA_DRIVE_MENU.get(),
+                DataDriveScreen<DataDriveMenu>::new,
+                "/screens/data_drive.json"
+        );
+
+        InitScreens.register(
+                CrazyMenuRegistrar.RECIPE_FABRICATOR_MENU.get(),
+                RecipeFabricatorScreen<RecipeFabricatorMenu>::new,
+                "/screens/fabricator.json"
+        );
     }
 
     private Screens() {}

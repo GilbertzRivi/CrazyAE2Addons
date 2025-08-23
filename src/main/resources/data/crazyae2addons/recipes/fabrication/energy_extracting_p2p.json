@@ -1,0 +1,7 @@
+{
+  "type": "crazyae2addons:fabrication",
+  "input": { "item": "ae2:fe_p2p_tunnel" },
+  "input_count": 1,
+  "output": { "item": "crazyae2addons:extracting_fe_p2p_tunnel", "count": 1 },
+  "required_key": "crazyae2addons:extracting_p2p_research"
+}

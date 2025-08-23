@@ -6,6 +6,9 @@ import appeng.items.tools.powered.WirelessTerminalItem;
 import com.mojang.logging.LogUtils;
 import de.mari_023.ae2wtlib.terminal.IUniversalWirelessTerminalItem;
 import de.mari_023.ae2wtlib.wut.WUTHandler;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.ItemBlockRenderTypes;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
@@ -13,6 +16,8 @@ import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.client.event.ModelEvent;
 import net.minecraftforge.client.event.RegisterGuiOverlaysEvent;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.crafting.CraftingHelper;
+import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModLoadingContext;
@@ -60,6 +65,7 @@ public class CrazyAddons {
         CrazyBlockEntityRegistrar.BLOCK_ENTITIES.register(modEventBus);
         CrazyRecipes.RECIPE_SERIALIZERS.register(modEventBus);
         CrazyRecipes.RECIPE_TYPES.register(modEventBus);
+        CrazyFluidRegistrar.register(modEventBus);
 
         CrazyMenuRegistrar.MENU_TYPES.register(modEventBus);
 
@@ -88,6 +94,9 @@ public class CrazyAddons {
         );
 
         modEventBus.addListener(this::registerCreativeTab);
+
+        CrazyRecipes.RECIPE_SERIALIZERS.register(modEventBus);
+        CrazyRecipes.RECIPE_TYPES.register(modEventBus);
 
         MinecraftForge.EVENT_BUS.register(this);
     }
@@ -131,6 +140,7 @@ public class CrazyAddons {
             MinecraftForge.EVENT_BUS.addListener(SpawnerExtractorPreviewRenderer::onRender);
             MinecraftForge.EVENT_BUS.addListener(MobFarmPreviewRenderer::onRender);
             MinecraftForge.EVENT_BUS.addListener(PatternManagementUnitPreviewRenderer::onRender);
+            ItemBlockRenderTypes.setRenderLayer(CrazyFluidRegistrar.RESEARCH_FLUID_BLOCK.get(), RenderType.translucent());
         }
         @SubscribeEvent
         public static void onRegisterGeometryLoaders(ModelEvent.RegisterGeometryLoaders evt) {

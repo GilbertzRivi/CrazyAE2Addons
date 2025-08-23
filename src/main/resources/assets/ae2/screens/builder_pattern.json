@@ -58,6 +58,24 @@
       "top": 6,
       "width": 120,
       "height": 16
+    },
+    "flipH": {
+      "left": 231,
+      "top": 58,
+      "width": 16,
+      "height": 16
+    },
+    "flipV": {
+      "left": 231,
+      "top": 76,
+      "width": 16,
+      "height": 16
+    },
+    "rotate": {
+      "left": 231,
+      "top": 94,
+      "width": 16,
+      "height": 16
     }
   }
 }

@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "crazyae2addons:block/auto_builder" },
+    "facing=east":  { "model": "crazyae2addons:block/auto_builder", "y": 90 },
+    "facing=south": { "model": "crazyae2addons:block/auto_builder", "y": 180 },
+    "facing=west":  { "model": "crazyae2addons:block/auto_builder", "y": 270 }
+  }
+}

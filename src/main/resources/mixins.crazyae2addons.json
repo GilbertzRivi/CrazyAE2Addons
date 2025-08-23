@@ -6,6 +6,7 @@
   "plugin": "net.oktawia.crazyae2addons.mixins.Plugin",
   "refmap": "mixins.crazyae2addons.refmap.json",
   "mixins": [
+    "AAECraftingServiceMixin",
     "AAEExecutingCraftingJobAccessor",
     "AEBaseMenuInvoker",
     "ExecutingCraftingJobAccessor",

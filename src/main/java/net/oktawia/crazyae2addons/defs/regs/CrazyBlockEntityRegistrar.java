@@ -130,6 +130,12 @@ public class CrazyBlockEntityRegistrar {
     public static final RegistryObject<BlockEntityType<PatternManagementUnitControllerBE>> PATTERN_MANAGEMENT_UNIT_CONTROLLER_BE =
             reg("pattern_management_unit_controller_be", CrazyBlockRegistrar.PATTERN_MANAGEMENT_UNIT_CONTROLLER_BLOCK, PatternManagementUnitControllerBE::new, PatternManagementUnitControllerBE.class);
 
+    public static final RegistryObject<BlockEntityType<ResearchStationBE>> RESEARCH_STATION_BE =
+            reg("research_station_be", CrazyBlockRegistrar.RESEARCH_STATION, ResearchStationBE::new, ResearchStationBE.class);
+
+    public static final RegistryObject<BlockEntityType<RecipeFabricatorBE>> RECIPE_FABRICATOR_BE =
+            reg("recipe_fabricator", CrazyBlockRegistrar.RECIPE_FABRICATOR_BLOCK, RecipeFabricatorBE::new, RecipeFabricatorBE.class);
+
     public static final RegistryObject<BlockEntityType<? extends AmpereMeterBE>> AMPERE_METER_BE =
             BLOCK_ENTITIES.register("ampere_meter_be", () -> {
                 var blk = CrazyBlockRegistrar.AMPERE_METER_BLOCK.get();

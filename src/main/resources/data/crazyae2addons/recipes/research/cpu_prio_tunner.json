@@ -1,0 +1,52 @@
+{
+  "type": "crazyae2addons:research",
+  "duration": 1800,
+  "energy_per_tick": 140,
+  "fluid": "crazyae2addons:researchfluid",
+  "fluid_per_tick": 5,
+  "requires_stabilizer": false,
+  "gadget": true,
+  "consumables": [
+    { "item": "ae2:crafting_unit", "count": 4 }
+  ],
+  "drive": true,
+  "structure": {
+    "mode": "pattern",
+    "size": [3, 3, 3],
+    "symbols": {
+      "A": [
+        "minecraft:stone"
+        ],
+      "B": [
+        "ae2:crafting_accelerator"
+        ],
+      "D": [
+        "ae2:crafting_unit"
+       ],
+      "E": [
+        "minecraft:lectern"
+       ]
+      },
+      "layers": [
+      [
+        "A A A",
+        "A B A",
+        "A A A"
+      ],
+      [
+        "D . D",
+        ". E .",
+        "D . D"
+      ],
+      [
+        "A A A",
+        "A B A",
+        "A A A"
+      ]
+    ]
+  },
+  "unlock": {
+    "key": "crazyae2addons:cpu_prio_tunner_research",
+    "label": "CPU Priorities"
+  }
+}

@@ -40,15 +40,6 @@ public class ItemDefs {
         );
 
         item(
-            CrazyItemRegistrar.LOGIC_CARD.get(),
-            "AS",
-            Map.of(
-                "A", AEItems.ADVANCED_CARD.asItem(),
-                "S", AEItems.SKY_DUST.asItem()
-            )
-        );
-
-        item(
             CrazyItemRegistrar.RR_ITEM_P2P_TUNNEL_PART.get(),
             "PE",
             Map.of(
@@ -105,54 +96,15 @@ public class ItemDefs {
         );
 
         item(
-            CrazyItemRegistrar.ENERGY_EXPORTER_PART_ITEM.get(),
-            "ERR",
-            Map.of(
-                "E", AEParts.EXPORT_BUS.asItem(),
-                "R", Items.REDSTONE
-            )
-        );
-
-        item(
-            CrazyItemRegistrar.ENTITY_TICKER_PART_ITEM.get(),
-            "DND/NEN/DND",
-            Map.of(
-                "D", Items.DIAMOND,
-                "N", Items.NETHER_STAR,
-                "E", CrazyItemRegistrar.ENERGY_EXPORTER_PART_ITEM.get()
-            )
-        );
-
-        item(
-            CrazyItemRegistrar.CRAZY_PATTERN_MODIFIER_ITEM.get(),
-            "PZ/ZP",
-            Map.of(
-                "P", AEItems.BLANK_PATTERN.asItem(),
-                "Z", AEItems.LOGIC_PROCESSOR.asItem()
-            )
-        );
-
-        item(
                 CrazyItemRegistrar.CRAZY_PATTERN_MULTIPLIER_ITEM.get(),
-                "PZ/ZP",
+                "PZ",
                 Map.of(
-                        "P", AEItems.BLANK_PATTERN.asItem(),
+                        "P", CrazyItemRegistrar.CRAZY_PATTERN_MODIFIER_ITEM.get(),
                         "Z", AEItems.CALCULATION_PROCESSOR.asItem()
                 )
         );
 
         item(
-                CrazyItemRegistrar.MOB_CELL_HOUSING.get(),
-                "GRG/R R/EFE",
-                Map.of(
-                        "G", AEBlocks.QUARTZ_VIBRANT_GLASS.asItem(),
-                        "R", Items.REDSTONE.asItem(),
-                        "E", Items.ECHO_SHARD.asItem(),
-                        "F", Items.FLINT.asItem()
-                )
-        );
-
-        item(
                 CrazyItemRegistrar.MOB_CELL_1K.get(),
                 "HC",
                 Map.of(
@@ -193,66 +145,6 @@ public class ItemDefs {
                 "HC",
                 Map.of(
                         "H", CrazyItemRegistrar.MOB_CELL_HOUSING.get().asItem().asItem(),
-                        "C", AEItems.CELL_COMPONENT_256K.asItem()
-                )
-        );
-
-        item(
-                CrazyItemRegistrar.MOB_CELL_1K.get(),
-                "GRG/RCR/EFE",
-                Map.of(
-                        "G", AEBlocks.QUARTZ_VIBRANT_GLASS.asItem(),
-                        "R", Items.REDSTONE.asItem(),
-                        "E", Items.ECHO_SHARD.asItem(),
-                        "F", Items.FLINT.asItem(),
-                        "C", AEItems.CELL_COMPONENT_1K.asItem()
-                )
-        );
-
-        item(
-                CrazyItemRegistrar.MOB_CELL_4K.get(),
-                "GRG/RCR/EFE",
-                Map.of(
-                        "G", AEBlocks.QUARTZ_VIBRANT_GLASS.asItem(),
-                        "R", Items.REDSTONE.asItem(),
-                        "E", Items.ECHO_SHARD.asItem(),
-                        "F", Items.FLINT.asItem(),
-                        "C", AEItems.CELL_COMPONENT_4K.asItem()
-                )
-        );
-
-        item(
-                CrazyItemRegistrar.MOB_CELL_16K.get(),
-                "GRG/RCR/EFE",
-                Map.of(
-                        "G", AEBlocks.QUARTZ_VIBRANT_GLASS.asItem(),
-                        "R", Items.REDSTONE.asItem(),
-                        "E", Items.ECHO_SHARD.asItem(),
-                        "F", Items.FLINT.asItem(),
-                        "C", AEItems.CELL_COMPONENT_16K.asItem()
-                )
-        );
-
-        item(
-                CrazyItemRegistrar.MOB_CELL_64K.get(),
-                "GRG/RCR/EFE",
-                Map.of(
-                        "G", AEBlocks.QUARTZ_VIBRANT_GLASS.asItem(),
-                        "R", Items.REDSTONE.asItem(),
-                        "E", Items.ECHO_SHARD.asItem(),
-                        "F", Items.FLINT.asItem(),
-                        "C", AEItems.CELL_COMPONENT_64K.asItem()
-                )
-        );
-
-        item(
-                CrazyItemRegistrar.MOB_CELL_256K.get(),
-                "GRG/RCR/EFE",
-                Map.of(
-                        "G", AEBlocks.QUARTZ_VIBRANT_GLASS.asItem(),
-                        "R", Items.REDSTONE.asItem(),
-                        "E", Items.ECHO_SHARD.asItem(),
-                        "F", Items.FLINT.asItem(),
                         "C", AEItems.CELL_COMPONENT_256K.asItem()
                 )
         );
@@ -306,10 +198,10 @@ public class ItemDefs {
 
         item(
                 CrazyItemRegistrar.CRAZY_EMITTER_MULTIPLIER_ITEM.get(),
-                "AC",
+                "PC",
                 Map.of(
-                        "A", AEParts.LEVEL_EMITTER.asItem(),
-                        "C", AEItems.LOGIC_PROCESSOR.asItem()
+                        "P", CrazyItemRegistrar.CRAZY_PATTERN_MULTIPLIER_ITEM.get(),
+                        "C", AEParts.LEVEL_EMITTER.asItem()
                 )
         );
 
@@ -329,36 +221,6 @@ public class ItemDefs {
                 Map.of(
                         "L", AEParts.LEVEL_EMITTER.asItem(),
                         "R", Items.REDSTONE
-                )
-        );
-
-        item(
-                CrazyItemRegistrar.EXTRACTING_FE_P2P_TUNNEL.get(),
-                "FEA",
-                Map.of(
-                        "F", AEParts.FE_P2P_TUNNEL.asItem(),
-                        "E", AEParts.IMPORT_BUS.asItem(),
-                        "A", AEItems.SPEED_CARD.asItem()
-                )
-        );
-
-        item(
-                CrazyItemRegistrar.EXTRACTING_ITEM_P2P_TUNNEL.get(),
-                "FEA",
-                Map.of(
-                        "F", AEParts.ITEM_P2P_TUNNEL.asItem(),
-                        "E", AEParts.IMPORT_BUS.asItem(),
-                        "A", AEItems.SPEED_CARD.asItem()
-                )
-        );
-
-        item(
-                CrazyItemRegistrar.EXTRACTING_FLUID_P2P_TUNNEL.get(),
-                "FEA",
-                Map.of(
-                        "F", AEParts.FLUID_P2P_TUNNEL.asItem(),
-                        "E", AEParts.IMPORT_BUS.asItem(),
-                        "A", AEItems.SPEED_CARD.asItem()
                 )
         );
 
@@ -395,29 +257,11 @@ public class ItemDefs {
         );
 
         item(
-                CrazyItemRegistrar.ENERGY_INTERFACE_PART.get(),
-                "TR",
-                Map.of(
-                        "R", CrazyItemRegistrar.ENERGY_EXPORTER_PART_ITEM.get(),
-                        "T", AEBlocks.INTERFACE.asItem()
-                )
-        );
-
-        item(
                 CrazyItemRegistrar.CRAZY_UPGRADE.get(),
                 "PPP/PDP/PPP",
                 Map.of(
                         "P", AEBlocks.PATTERN_PROVIDER.asItem(),
                         "D", Items.DIAMOND.asItem()
-                )
-        );
-
-        item(
-                CrazyItemRegistrar.BUILDER_PATTERN.get(),
-                "PE",
-                Map.of(
-                        "P", AEItems.BLANK_PATTERN.asItem(),
-                        "E", Items.EMERALD.asItem()
                 )
         );
 
@@ -467,11 +311,11 @@ public class ItemDefs {
         );
 
         item(
-                CrazyItemRegistrar.CPU_PRIO_TUNER.get(),
-                "WC",
+                CrazyItemRegistrar.UNASSEMBLED_CRAZY_PATTERN_PROVIDER.get(),
+                "PPP/PDP/PPP",
                 Map.of(
-                        "W", AEItems.CERTUS_QUARTZ_WRENCH.asItem(),
-                        "C", AEBlocks.CRAFTING_UNIT.asItem()
+                        "P", AEBlocks.PATTERN_PROVIDER.asItem(),
+                        "D", Items.DIAMOND.asItem()
                 )
         );
     }

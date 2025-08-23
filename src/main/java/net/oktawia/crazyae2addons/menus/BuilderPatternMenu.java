@@ -8,6 +8,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.network.PacketDistributor;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.entities.AutoBuilderBE;
+import net.oktawia.crazyae2addons.items.BuilderPatternItem;
 import net.oktawia.crazyae2addons.logic.BuilderPatternHost;
 import net.oktawia.crazyae2addons.network.DataValuesPacket;
 import net.oktawia.crazyae2addons.network.NetworkHandler;
@@ -22,6 +23,9 @@ public class BuilderPatternMenu extends AEBaseMenu {
     public static final String SEND_DELAY = "SendDelay";
     public static final String REQUEST_DATA = "requestData";
     public static final String RENAME = "renameAction";
+    public static final String FLIP_H = "flipH";
+    public static final String FLIP_V = "flipV";
+    public static final String ROTATE = "rotateCW";
 
     public String program;
     public BuilderPatternHost host;
@@ -36,6 +40,9 @@ public class BuilderPatternMenu extends AEBaseMenu {
         registerClientAction(SEND_DELAY, Integer.class, this::updateDelay);
         registerClientAction(REQUEST_DATA, this::requestData);
         registerClientAction(RENAME, String.class, this::rename);
+        registerClientAction(FLIP_H, this::flipH);
+        registerClientAction(FLIP_V, this::flipV);
+        registerClientAction(ROTATE, Integer.class, this::rotateCW);
         this.host = host;
         this.name = host.getItemStack().getDisplayName().getString().substring(1, host.getItemStack().getDisplayName().getString().length()-1);
         this.delay = host.getDelay();
@@ -49,6 +56,11 @@ public class BuilderPatternMenu extends AEBaseMenu {
         if (isClientSide()){
             sendClientAction(REQUEST_DATA);
         } else {
+            NetworkHandler.INSTANCE.send(
+                    PacketDistributor.TRACKING_CHUNK.with(() -> getPlayer().level().getChunkAt(getPlayer().blockPosition())),
+                    new SendLongStringToClientPacket("__RESET__")
+            );
+
             byte[] bytes = program.getBytes(StandardCharsets.UTF_8);
             int maxSize = 1000 * 1000;
             int total = (int) Math.ceil((double) bytes.length / maxSize);
@@ -64,6 +76,41 @@ public class BuilderPatternMenu extends AEBaseMenu {
                         new SendLongStringToClientPacket(partString)
                 );
             }
+        }
+    }
+
+
+    public void flipH() {
+        if (isClientSide()) {
+            sendClientAction(FLIP_H);
+        } else {
+            ItemStack s = host.getItemStack();
+            BuilderPatternItem.applyFlipHorizontalToItem(s, getPlayer().getServer(), getPlayer());
+            this.program = host.getProgram();
+            requestData();
+        }
+    }
+
+    public void flipV() {
+        if (isClientSide()) {
+            sendClientAction(FLIP_V);
+        } else {
+            ItemStack s = host.getItemStack();
+            BuilderPatternItem.applyFlipVerticalToItem(s, getPlayer().getServer(), getPlayer());
+            this.program = host.getProgram();
+            requestData();
+        }
+    }
+
+    public void rotateCW(Integer times) {
+        int t = times == null ? 1 : times;
+        if (isClientSide()) {
+            sendClientAction(ROTATE, t);
+        } else {
+            ItemStack s = host.getItemStack();
+            BuilderPatternItem.applyRotateCWToItem(s, getPlayer().getServer(), t, getPlayer());
+            this.program = host.getProgram();
+            requestData();
         }
     }
 

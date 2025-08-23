@@ -1,0 +1,7 @@
+{
+  "type": "crazyae2addons:fabrication",
+  "input": { "item": "ae2:pattern_provider" },
+  "input_count": 1,
+  "output": { "item": "crazyae2addons:ejector", "count": 1 },
+  "required_key": "crazyae2addons:ejector_research"
+}

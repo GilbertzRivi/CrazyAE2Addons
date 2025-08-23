@@ -1,0 +1,18 @@
+{
+  "type": "ae2:inscriber",
+  "ingredients": {
+    "bottom": {
+      "item": "ae2:blank_pattern"
+    },
+    "middle": {
+      "item": "ae2:cell_component_256k"
+    },
+    "top": {
+      "item": "ae2:blank_pattern"
+    }
+  },
+  "mode": "press",
+  "result": {
+    "item": "crazyae2addons:data_drive"
+  }
+}

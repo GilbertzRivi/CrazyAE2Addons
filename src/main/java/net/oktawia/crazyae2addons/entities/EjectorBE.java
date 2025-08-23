@@ -1,6 +1,7 @@
 package net.oktawia.crazyae2addons.entities;
 
 import appeng.api.config.Actionable;
+import appeng.api.config.PowerMultiplier;
 import appeng.api.crafting.IPatternDetails;
 import appeng.api.crafting.PatternDetailsHelper;
 import appeng.api.inventories.ISegmentedInventory;
@@ -8,6 +9,7 @@ import appeng.api.inventories.InternalInventory;
 import appeng.api.networking.GridFlags;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.crafting.*;
+import appeng.api.networking.energy.IEnergyService;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.networking.ticking.IGridTickable;
 import appeng.api.networking.ticking.TickRateModulation;
@@ -28,6 +30,7 @@ import appeng.util.ConfigInventory;
 import appeng.util.inv.AppEngInternalInventory;
 import com.google.common.collect.ImmutableSet;
 import com.mojang.logging.LogUtils;
+import it.unimi.dsi.fastutil.objects.Object2LongMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -56,6 +59,8 @@ import java.util.concurrent.Future;
 public class EjectorBE extends AENetworkBlockEntity implements MenuProvider, IUpgradeableObject, ICraftingRequester, IGridTickable {
 
     private final List<GenericStack> leftoversToInsert = new ArrayList<>();
+
+    private static final double ENERGY_PER_ITEM = 0.5;
 
     public ConfigInventory config = ConfigInventory.configStacks(
             AEKeyFilter.none(),
@@ -172,32 +177,42 @@ public class EjectorBE extends AENetworkBlockEntity implements MenuProvider, IUp
         }
     }
 
-    public void flushInv(){
+    public void flushInv() {
         var node = getGridNode();
         if (node == null) return;
         var grid = node.getGrid();
         if (grid == null) return;
-        var storage = grid.getStorageService();
-        if (storage == null) return;
+        var storageService = grid.getStorageService();
+        if (storageService == null) return;
+
+        var inv = storageService.getInventory();
+        var source = IActionSource.ofMachine(this);
 
         for (int i = 0; i < this.storage.size(); i++) {
             GenericStack stack = this.storage.getStack(i);
             if (stack == null || stack.amount() <= 0) continue;
 
-            long inserted = storage.getInventory().insert(stack.what(), stack.amount(), Actionable.MODULATE, IActionSource.ofMachine(this));
-            if (inserted > 0) {
-                long remaining = stack.amount() - inserted;
-                if (remaining > 0) {
-                    this.storage.setStack(i, new GenericStack(stack.what(), remaining));
-                } else {
-                    this.storage.setStack(i, null);
-                }
+            long toTry = stack.amount();
+            long allowed = capByEnergy(toTry);
+            if (allowed <= 0) continue;
+
+            if (!consumeEnergyFor(allowed, Actionable.MODULATE)) continue;
+
+            long inserted = inv.insert(stack.what(), allowed, Actionable.MODULATE, source);
+
+            long remainingHere = stack.amount() - inserted;
+            if (remainingHere > 0) {
+                this.storage.setStack(i, new GenericStack(stack.what(), remainingHere));
+            } else {
+                this.storage.setStack(i, null);
             }
         }
     }
 
+
     public void doWork() {
         if (getGridNode() == null || getGridNode().getGrid() == null || !getMainNode().isActive() || doesWait) return;
+        this.cantCraft = GenericStack.fromItemStack(ItemStack.EMPTY);
 
         flushInv();
         List<GenericStack> toCraft = new ArrayList<>();
@@ -209,25 +224,47 @@ public class EjectorBE extends AENetworkBlockEntity implements MenuProvider, IUp
 
             AEKey key = keyStack.what();
             long amount = keyStack.amount();
-            if (amount > 512 && keyStack.what() instanceof AEItemKey) return;
 
             long extractedAmount = storage.getInventory().extract(key, amount, Actionable.SIMULATE, IActionSource.ofMachine(this));
 
             if (extractedAmount < amount) {
                 if (!getGridNode().getGrid().getCraftingService().isCraftable(key)) {
+                    this.cantCraft = new GenericStack(key, amount - extractedAmount);
+                    if (this.menu != null) {
+                        this.menu.cantCraft = String.format(
+                                "%sx %s",
+                                this.cantCraft.what().formatAmount(this.cantCraft.amount(), AmountFormat.SLOT),
+                                this.cantCraft.what().toString()
+                        );
+                    }
+                    if (getLevel() != null) {
+                        getLevel().setBlockAndUpdate(getBlockPos(),
+                                getBlockState().setValue(EjectorBlock.ISCRAFTING, false));
+                    }
                     return;
                 }
 
                 GenericStack craftStack = new GenericStack(key, amount - extractedAmount);
                 toCraft.add(craftStack);
             }
+
         }
 
         for (int slot = 0; slot < config.size(); slot++) {
             GenericStack keyStack = config.getStack(slot);
             if (keyStack == null || keyStack.what() == null || keyStack.amount() <= 0) continue;
 
-            long extracted = storage.getInventory().extract(keyStack.what(), keyStack.amount(), Actionable.MODULATE, IActionSource.ofMachine(this));
+            long want = keyStack.amount();
+
+            long available = storage.getInventory().extract(keyStack.what(), want, Actionable.SIMULATE, IActionSource.ofMachine(this));
+            if (available <= 0) continue;
+
+            long allowed = capByEnergy(available);
+            if (allowed <= 0) continue;
+
+            if (!consumeEnergyFor(allowed, Actionable.MODULATE)) continue;
+
+            long extracted = storage.getInventory().extract(keyStack.what(), allowed, Actionable.MODULATE, IActionSource.ofMachine(this));
             if (extracted > 0) {
                 this.storage.setStack(slot, new GenericStack(keyStack.what(), extracted));
             }
@@ -253,8 +290,24 @@ public class EjectorBE extends AENetworkBlockEntity implements MenuProvider, IUp
         }
 
         long remaining = amount;
+        long acceptedTotal = 0;
 
-        for (int slot = 0; slot < config.size() && remaining > 0; slot++) {
+        long allowedByEnergy = capByEnergy(remaining);
+        if (allowedByEnergy <= 0) {
+            if (mode == Actionable.MODULATE) {
+                leftoversToInsert.add(new GenericStack(what, remaining));
+            }
+            return amount;
+        }
+
+        if (mode == Actionable.MODULATE && !consumeEnergyFor(allowedByEnergy, Actionable.MODULATE)) {
+            leftoversToInsert.add(new GenericStack(what, remaining));
+            return amount;
+        }
+
+        long toDistribute = allowedByEnergy;
+
+        for (int slot = 0; slot < config.size() && toDistribute > 0; slot++) {
             GenericStack configStack = config.getStack(slot);
             if (configStack == null || !what.equals(configStack.what())) continue;
 
@@ -262,7 +315,7 @@ public class EjectorBE extends AENetworkBlockEntity implements MenuProvider, IUp
             GenericStack storedStack = this.storage.getStack(slot);
 
             long currentAmount = storedStack != null ? storedStack.amount() : 0;
-            long canInsert = Math.min(remaining, targetAmount - currentAmount);
+            long canInsert = Math.min(toDistribute, targetAmount - currentAmount);
 
             if (canInsert > 0) {
                 if (mode == Actionable.MODULATE) {
@@ -273,15 +326,19 @@ public class EjectorBE extends AENetworkBlockEntity implements MenuProvider, IUp
                         this.storage.setStack(slot, new GenericStack(storedStack.what(), storedStack.amount() + canInsert));
                     }
                 }
-                remaining -= canInsert;
+                toDistribute -= canInsert;
+                acceptedTotal += canInsert;
             }
         }
+
+        remaining -= acceptedTotal;
 
         if (remaining > 0 && mode == Actionable.MODULATE) {
             leftoversToInsert.add(new GenericStack(what, remaining));
         }
         return amount;
     }
+
 
     @Override
     public void jobStateChange(ICraftingLink link) {
@@ -345,12 +402,40 @@ public class EjectorBE extends AENetworkBlockEntity implements MenuProvider, IUp
                             }
                             iterator.remove();
                             break;
-                        } else if (!result.successful()){
-                            this.cantCraft = craftingPlan.get().finalOutput();
-                            if (this.menu != null){
-                                this.menu.cantCraft = String.format("%sx %s", this.cantCraft.what().formatAmount(this.cantCraft.amount(), AmountFormat.SLOT), this.cantCraft.what().toString());
+                        } else if (!result.successful()) {
+                            var plan = craftingPlan.get();
+
+                            Object2LongMap.Entry<AEKey> firstMissing = null;
+                            try {
+                                KeyCounter missing = plan.missingItems();
+                                if (missing != null && !missing.isEmpty()) {
+                                    firstMissing = missing.iterator().next();
+                                }
+                            } catch (Throwable ignored) {
                             }
-                            getLevel().setBlockAndUpdate(getBlockPos(), getBlockState().setValue(EjectorBlock.ISCRAFTING, false));
+
+                            if (firstMissing != null) {
+                                this.cantCraft = new GenericStack(firstMissing.getKey(), firstMissing.getLongValue());
+                                if (this.menu != null) {
+                                    this.menu.cantCraft = String.format(
+                                            "%sx %s",
+                                            this.cantCraft.what().formatAmount(this.cantCraft.amount(), AmountFormat.SLOT),
+                                            this.cantCraft.what().toString()
+                                    );
+                                }
+                            } else {
+                                this.cantCraft = plan.finalOutput();
+                                if (this.menu != null) {
+                                    this.menu.cantCraft = String.format(
+                                            "%sx %s",
+                                            this.cantCraft.what().formatAmount(this.cantCraft.amount(), AmountFormat.SLOT),
+                                            this.cantCraft.what().toString()
+                                    );
+                                }
+                            }
+
+                            getLevel().setBlockAndUpdate(getBlockPos(),
+                                    getBlockState().setValue(EjectorBlock.ISCRAFTING, false));
                             iterator.remove();
                             toCraftPlans.clear();
                             for (var link : craftingLinks){
@@ -359,6 +444,7 @@ public class EjectorBE extends AENetworkBlockEntity implements MenuProvider, IUp
                             craftingLinks.clear();
                             flushInv();
                         }
+
                     } catch (Exception e) {
                         LogUtils.getLogger().info("Crafting plan submit error: {}", String.valueOf(e));
                         iterator.remove();
@@ -368,6 +454,35 @@ public class EjectorBE extends AENetworkBlockEntity implements MenuProvider, IUp
         }
         return TickRateModulation.IDLE;
     }
+
+    private IEnergyService energy() {
+        if (getGridNode() == null || getGridNode().getGrid() == null) return null;
+        return getGridNode().getGrid().getEnergyService();
+    }
+
+    private long capByEnergy(long requestedItems) {
+        if (requestedItems <= 0) return 0;
+        var es = energy();
+        if (es == null) return 0;
+
+        double need = requestedItems * ENERGY_PER_ITEM;
+        double can = es.extractAEPower(need, Actionable.SIMULATE, PowerMultiplier.ONE);
+        if (can <= 0) return 0;
+
+        long maxByEnergy = (long) Math.floor(can / ENERGY_PER_ITEM);
+        return Math.max(0, Math.min(requestedItems, maxByEnergy));
+    }
+
+    private boolean consumeEnergyFor(long items, Actionable mode) {
+        if (items <= 0) return true;
+        var es = energy();
+        if (es == null) return false;
+
+        double need = items * ENERGY_PER_ITEM;
+        double got = es.extractAEPower(need, mode, PowerMultiplier.ONE);
+        return got + 1e-9 >= need;
+    }
+
 
     public void checkAndExport() {
         if (getGridNode() == null || getGridNode().getGrid() == null || !getMainNode().isActive()) return;
@@ -433,6 +548,25 @@ public class EjectorBE extends AENetworkBlockEntity implements MenuProvider, IUp
         var storageInventory = grid.getStorageService().getInventory();
         var source = IActionSource.ofMachine(this);
 
+        long totalOut = 0L;
+        for (int i = 0; i < config.size(); i++) {
+            GenericStack configStack = config.getStack(i);
+            GenericStack storedStack = storage.getStack(i);
+            if (configStack == null || storedStack == null) continue;
+            if (!configStack.what().equals(storedStack.what())) continue;
+            if (storedStack.amount() < configStack.amount()) continue;
+            totalOut += configStack.amount();
+        }
+
+        long allowed = capByEnergy(totalOut);
+        if (allowed < totalOut) {
+            return;
+        }
+
+        if (!consumeEnergyFor(totalOut, Actionable.MODULATE)) {
+            return;
+        }
+
         pattern.pushInputsToExternalInventory(inputCounters, (key, amount) -> {
             long inserted = target.insert(key, amount, Actionable.MODULATE);
             if (inserted < amount) {
@@ -441,8 +575,15 @@ public class EjectorBE extends AENetworkBlockEntity implements MenuProvider, IUp
             }
         });
         for (int i = 0; i < config.size(); i++) {
-            storage.setStack(i, null);
+            GenericStack cfg = config.getStack(i);
+            GenericStack st  = storage.getStack(i);
+            if (cfg == null || st == null) continue;
+            if (!cfg.what().equals(st.what())) continue;
+
+            long remain = st.amount() - cfg.amount();
+            storage.setStack(i, remain > 0 ? new GenericStack(st.what(), remain) : null);
         }
+
         doesWait = false;
         flushInv();
     }

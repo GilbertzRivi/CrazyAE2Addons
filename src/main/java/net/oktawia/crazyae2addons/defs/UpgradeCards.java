@@ -32,6 +32,7 @@ public class UpgradeCards {
             Upgrades.add(AEItems.SPEED_CARD, CrazyBlockRegistrar.AUTO_BUILDER_BLOCK.get(), 6, "group.auto_builder.name");
             Upgrades.add(AEItems.CRAFTING_CARD, CrazyBlockRegistrar.AUTO_BUILDER_BLOCK.get(), 1, "group.auto_builder.name");
             Upgrades.add(AE2wtlib.QUANTUM_BRIDGE_CARD, CrazyItemRegistrar.WIRELESS_REDSTONE_TERMINAL.get(), 1, "group.wireless_redstone_terminal.name");
+            Upgrades.add(AEItems.ENERGY_CARD, CrazyItemRegistrar.STRUCTURE_GADGET.get(), 4, "group.structure_gadget.name");
 
             if (IsModLoaded.isAppFluxLoaded()){
                 Upgrades.add(AFItemAndBlock.INDUCTION_CARD, CrazyBlockRegistrar.CRAZY_PATTERN_PROVIDER_BLOCK.get(), 1, "group.crazy_pattern_provider.name");

@@ -1,0 +1,12 @@
+{
+  "parent": "block/cube",
+  "textures": {
+    "particle": "crazyae2addons:block/auto_builder",
+    "down": "crazyae2addons:block/auto_builder",
+    "up": "crazyae2addons:block/auto_builder",
+    "north": "crazyae2addons:block/auto_builder_front",
+    "south": "crazyae2addons:block/auto_builder",
+    "east": "crazyae2addons:block/auto_builder",
+    "west": "crazyae2addons:block/auto_builder"
+  }
+}

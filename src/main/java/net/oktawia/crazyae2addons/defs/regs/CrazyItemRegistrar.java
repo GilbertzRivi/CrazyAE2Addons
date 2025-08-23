@@ -234,6 +234,18 @@ public class CrazyItemRegistrar {
             ITEMS.register("cpu_prio_tuner",
                     () -> new CpuPrioTunerItem(new Item.Properties()));
 
+    public static final RegistryObject<StructureGadgetItem> STRUCTURE_GADGET =
+            ITEMS.register("nokia_3310",
+                    () -> new StructureGadgetItem(new Item.Properties()));
+
+    public static final RegistryObject<DataDrive> DATA_DRIVE =
+            ITEMS.register("data_drive",
+                    () -> new DataDrive(new Item.Properties()));
+
+    public static final RegistryObject<UnassembledCrazyPatternProviderItem> UNASSEMBLED_CRAZY_PATTERN_PROVIDER =
+            ITEMS.register("unassembled_crazy_pattern_provider",
+                    () -> new UnassembledCrazyPatternProviderItem(new Item.Properties()));
+
     private CrazyItemRegistrar() {}
 
 }

@@ -17,24 +17,17 @@ import net.oktawia.crazyae2addons.misc.SyntaxHighlighter;
 import org.lwjgl.glfw.GLFW;
 
 public class BuilderPatternScreen<C extends BuilderPatternMenu> extends AEBaseScreen<C> {
-    private static IconButton confirm;
-    private static MultilineTextFieldWidget input;
-    private static Scrollbar scrollbar;
-    private static AETextField delay;
+    private IconButton confirm;
+    private MultilineTextFieldWidget input;
+    private Scrollbar scrollbar;
+    private AETextField delay;
     private final AETextField rename;
     private int lastScroll = -1;
-    public static boolean initialized;
+    public boolean initialized;
     private String program = "";
-
-    @Override
-    protected void updateBeforeRender() {
-        super.updateBeforeRender();
-        if (!initialized) {
-            delay.setValue(String.valueOf(getMenu().delay));
-            rename.setValue(getMenu().name);
-            initialized = true;
-        }
-    }
+    private IconButton flipHBtn;
+    private IconButton flipVBtn;
+    private IconButton rotateBtn;
 
     public BuilderPatternScreen(C menu, Inventory playerInventory, Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
@@ -57,7 +50,20 @@ public class BuilderPatternScreen<C extends BuilderPatternMenu> extends AEBaseSc
         });
         this.widgets.add("rename", rename);
         initialized = false;
+        this.widgets.add("flipH", flipHBtn);
+        this.widgets.add("flipV", flipVBtn);
+        this.widgets.add("rotate", rotateBtn);
         getMenu().requestData();
+    }
+
+    @Override
+    protected void updateBeforeRender() {
+        super.updateBeforeRender();
+        if (!initialized) {
+            delay.setValue(String.valueOf(getMenu().delay));
+            rename.setValue(getMenu().name);
+            initialized = true;
+        }
     }
 
     @Override
@@ -101,14 +107,34 @@ public class BuilderPatternScreen<C extends BuilderPatternMenu> extends AEBaseSc
             }
         });
         confirm.setTooltip(Tooltip.create(Component.literal("Confirm")));
+
         input = new MultilineTextFieldWidget(
                 font, 0, 0, 202, 135,
                 Component.literal("Input program")
         );
         input.setTokenizer(SyntaxHighlighter::tokenize);
+
         scrollbar = new Scrollbar();
         scrollbar.setSize(12, 100);
         scrollbar.setRange(0, 100, 4);
+
+        flipHBtn = new IconButton(Icon.ARROW_RIGHT, (btn) -> {
+            this.input.setValue("");
+            getMenu().flipH();
+        });
+        flipHBtn.setTooltip(Tooltip.create(Component.literal("Horizontal flip")));
+
+        flipVBtn = new IconButton(Icon.ARROW_UP, (btn) -> {
+            this.input.setValue("");
+            getMenu().flipV();
+        });
+        flipVBtn.setTooltip(Tooltip.create(Component.literal("Vertical flip")));
+
+        rotateBtn = new IconButton(Icon.SCHEDULING_DEFAULT, (btn) -> {
+            this.input.setValue("");
+            getMenu().rotateCW(1);
+        });
+        rotateBtn.setTooltip(Tooltip.create(Component.literal("Rotate by 90 deg")));
     }
 
     @Override
@@ -141,6 +167,11 @@ public class BuilderPatternScreen<C extends BuilderPatternMenu> extends AEBaseSc
     }
 
     public void setProgram(String data) {
+        if ("__RESET__".equals(data)) {
+            program = "";
+            input.setValue("");
+            return;
+        }
         program += data;
         input.setValue(program);
     }

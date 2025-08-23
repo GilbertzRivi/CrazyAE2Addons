@@ -74,6 +74,8 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
             Pattern.compile("&(s\\^[a-z0-9_\\.:]+(?:%\\d+)?|[A-Za-z0-9_]+)");
     private static final Pattern CLIENT_STOCK_TOKEN =
             Pattern.compile("&s\\^([a-z0-9_\\.:]+)(?:%(\\d+))?");
+    private static final Pattern CLIENT_ICON_TOKEN =
+            Pattern.compile("(?i)&ii?\\^([a-z0-9_\\.:]+)");
 
     public byte spin = 0; // 0-3
     public String textValue = "";
@@ -596,6 +598,61 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
         return Pair.of(width, height);
     }
 
+    private record IconSpan(int columnIndex, String itemId) {}
+    private record TokenizedLine(String textWithoutIcons, List<IconSpan> icons) {}
+
+    private TokenizedLine stripIconTokens(String rawLine) {
+        List<IconSpan> icons = new ArrayList<>();
+        StringBuilder out = new StringBuilder();
+
+        Matcher m = CLIENT_ICON_TOKEN.matcher(rawLine);
+        int last = 0;
+        while (m.find()) {
+            out.append(rawLine, last, m.start());
+            int column = out.length();
+
+            String itemId = m.group(1);
+            icons.add(new IconSpan(column, itemId));
+
+            out.append(' ');
+            last = m.end();
+        }
+        if (last < rawLine.length()) {
+            out.append(rawLine.substring(last));
+        }
+        return new TokenizedLine(out.toString(), icons);
+    }
+
+    private String replaceStockTokensForMeasure(String line) {
+        if (line == null || line.isEmpty()) return "";
+        StringBuffer out = new StringBuffer();
+        Matcher m = CLIENT_STOCK_TOKEN.matcher(line);
+        while (m.find()) {
+            String itemId = m.group(1);
+            String powStr = m.group(2);
+            String baseVal = this.variables.get("s^" + itemId);
+
+            String repl = "0";
+            if (baseVal != null) {
+                try {
+                    long amount = Long.parseLong(baseVal);
+                    long divisor = 1L;
+                    if (powStr != null) {
+                        int pow = Integer.parseInt(powStr);
+                        if (pow > 0) divisor = (long) Math.pow(10, pow);
+                    }
+                    long display = Math.round((double) amount / (double) divisor);
+                    repl = String.valueOf(display);
+                } catch (NumberFormatException ignored) {}
+            }
+
+            m.appendReplacement(out, Matcher.quoteReplacement(repl));
+        }
+        m.appendTail(out);
+        return out.toString();
+    }
+
+
     private String resolveTokensClientSide(String input) {
         if (input == null || input.isEmpty()) return "";
 
@@ -652,56 +709,116 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
                 .thenComparingInt(dp -> dp.getBlockEntity().getBlockPos().getX()));
 
         var dims = getGridSize(sorted, getSide());
-        int width = dims.getFirst();
-        int height = dims.getSecond();
+        int widthBlocks = dims.getFirst();
+        int heightBlocks = dims.getSecond();
 
         Font font = Minecraft.getInstance().font;
 
         String resolved = resolveTokensClientSide(this.textValue);
 
-        TextWithColors parsed = parseStyledText(resolved);
-        List<Component> lines = parsed.lines();
+        String[] rawLines = resolved.split("&nl");
+        List<TokenizedLine> tokenized = new ArrayList<>(rawLines.length);
+        for (String rl : rawLines) {
+            tokenized.add(stripIconTokens(rl));
+        }
+
+        StringBuilder withoutIconsAll = new StringBuilder();
+        for (int i = 0; i < tokenized.size(); i++) {
+            if (i > 0) withoutIconsAll.append("&nl");
+            withoutIconsAll.append(tokenized.get(i).textWithoutIcons());
+        }
+        TextWithColors parsed = parseStyledText(withoutIconsAll.toString());
+        List<Component> styledLines = parsed.lines();
         Integer bgColor = parsed.backgroundColor();
 
-        int maxLineWidth = lines.stream().mapToInt(font::width).max().orElse(1);
+        int maxLineWidth = 1;
+        for (int i = 0; i < tokenized.size(); i++) {
+            TokenizedLine lineTok = tokenized.get(i);
+            String measuredText = replaceStockTokensForMeasure(lineTok.textWithoutIcons());
+
+            int widthPx = font.width(measuredText) + lineTok.icons().size() * font.lineHeight;
+            if (i < parsed.lines().size()) {
+                widthPx = Math.max(widthPx,
+                        font.width(parsed.lines().get(i)) + lineTok.icons().size() * font.lineHeight);
+            }
+            maxLineWidth = Math.max(maxLineWidth, widthPx);
+        }
+        int totalTextHeight = styledLines.size() * font.lineHeight;
+
         float scale;
         if (fontSize <= 0) {
-            float base = 1 / 64f;
-            float fitX = (64f * width) / maxLineWidth;
-            float fitY = (64f * height) / (lines.size() * font.lineHeight);
-            scale = base * Math.min(fitX, fitY);
+            float pxW = 64f * widthBlocks;
+            float pxH = 64f * heightBlocks;
+            float fitX = pxW / Math.max(1, maxLineWidth);
+            float fitY = pxH / Math.max(1, totalTextHeight);
+            scale = (1f / 64f) * Math.min(fitX, fitY);
         } else {
             scale = fontSize / (64f * 8f);
         }
-
-        int pxWidth = (int) (64f * width);
-        int pxHeight = (int) (64f * height);
 
         poseStack.pushPose();
         applyFacingTransform(poseStack);
         poseStack.translate(0, 0, 0.51f);
         if (bgColor != null) {
-            drawBackground(poseStack, buffers, width, height, 0xFF000000 | bgColor);
+            drawBackground(poseStack, buffers, widthBlocks, heightBlocks, 0xFF000000 | bgColor);
         }
         poseStack.popPose();
 
         poseStack.pushPose();
         applyFacingTransform(poseStack);
         poseStack.translate(0, 0, 0.52f);
-
         poseStack.scale(scale, -scale, scale);
 
-        for (int i = 0; i < lines.size(); i++) {
-            Component line = lines.get(i);
-            float y = i * font.lineHeight;
-            if (y + font.lineHeight > pxHeight) break;
+        for (int i = 0; i < styledLines.size(); i++) {
+            if (i >= tokenized.size()) break;
 
-            font.drawInBatch(line, 0, y, 0xFFFFFF, false,
+            TokenizedLine lineTok = tokenized.get(i);
+            Component styled = styledLines.get(i);
+
+            float y = i * font.lineHeight;
+
+            font.drawInBatch(styled, 0, y, 0xFFFFFF, false,
                     poseStack.last().pose(), buffers, Font.DisplayMode.NORMAL, 0, light);
+
+            if (!lineTok.icons().isEmpty()) {
+                String printable = lineTok.textWithoutIcons();
+                for (IconSpan is : lineTok.icons()) {
+                    int col = Math.min(is.columnIndex(), printable.length());
+                    int xBefore = font.width(printable.substring(0, col));
+                    int charH = font.lineHeight;
+                    drawInlineIcon(poseStack, buffers, (float) xBefore, y, charH, charH, is.itemId(), overlay);
+                }
+            }
         }
 
         poseStack.popPose();
     }
+
+    @OnlyIn(Dist.CLIENT)
+    private void drawInlineIcon(PoseStack poseStack, MultiBufferSource buffers, float x, float y, int w, int h, String itemId, int overlay) {
+        var item = ForgeRegistries.ITEMS.getValue(new ResourceLocation(itemId));
+        if (item == null || item == Items.AIR) return;
+
+        ItemStack stack = new ItemStack(item);
+
+        poseStack.pushPose();
+        poseStack.translate(x + w * 0.5f, y + h * 0.5f, 0.0f);
+        poseStack.scale(w * 0.9f, -h * 0.9f, 0.1f);
+
+        Minecraft.getInstance().getItemRenderer().renderStatic(
+                stack,
+                net.minecraft.world.item.ItemDisplayContext.GUI,
+                0xF000F0,
+                overlay,
+                poseStack,
+                buffers,
+                Minecraft.getInstance().level,
+                0
+        );
+
+        poseStack.popPose();
+    }
+
 
 
     @OnlyIn(Dist.CLIENT)

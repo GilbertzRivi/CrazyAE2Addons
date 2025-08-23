@@ -32,6 +32,8 @@ public class CrazyBlockStateProvider extends BlockStateProvider {
                     && block != CrazyBlockRegistrar.ENTROPY_CRADLE_CAPACITOR.get()
                     && block != CrazyBlockRegistrar.PATTERN_MANAGEMENT_UNIT_CONTROLLER_BLOCK.get()
                     && block != CrazyBlockRegistrar.PATTERN_MANAGEMENT_UNIT_FRAME_BLOCK.get()
+                    && block != CrazyBlockRegistrar.AUTO_BUILDER_BLOCK.get()
+                    && block != CrazyBlockRegistrar.RESEARCH_STATION.get()
                     && block != CrazyBlockRegistrar.EJECTOR_BLOCK.get()){
                 simpleBlockWithItem(block);
             }

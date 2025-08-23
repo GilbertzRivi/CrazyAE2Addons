@@ -1,0 +1,7 @@
+{
+  "type": "crazyae2addons:fabrication",
+  "input": { "item": "crazyae2addons:energy_interface" },
+  "input_count": 1,
+  "output": { "item": "crazyae2addons:entity_ticker", "count": 1 },
+  "required_key": "crazyae2addons:entity_ticker_research"
+}

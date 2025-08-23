@@ -1,0 +1,7 @@
+{
+  "type": "crazyae2addons:fabrication",
+  "input": { "item": "ae2:export_bus" },
+  "input_count": 1,
+  "output": { "item": "crazyae2addons:energy_exporter", "count": 1 },
+  "required_key": "crazyae2addons:energy_exporter_research"
+}

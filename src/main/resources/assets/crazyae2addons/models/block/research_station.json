@@ -1,0 +1,12 @@
+{
+  "parent": "block/cube",
+  "textures": {
+    "particle": "crazyae2addons:block/spawner_extractor_controller_wall",
+    "down": "crazyae2addons:block/spawner_extractor_controller_wall",
+    "up": "crazyae2addons:block/spawner_extractor_controller_wall",
+    "north": "crazyae2addons:block/spawner_extractor_controller",
+    "south": "crazyae2addons:block/spawner_extractor_controller_wall",
+    "east": "crazyae2addons:block/spawner_extractor_controller_wall",
+    "west": "crazyae2addons:block/spawner_extractor_controller_wall"
+  }
+}

@@ -9,6 +9,7 @@ import net.minecraftforge.registries.RegistryObject;
 import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.blocks.*;
 import net.oktawia.crazyae2addons.entities.PatternManagementUnitBE;
+import net.oktawia.crazyae2addons.entities.RecipeFabricatorBE;
 import net.oktawia.crazyae2addons.items.*;
 import net.oktawia.crazyae2addons.menus.BrokenPatternProviderMenu;
 import net.oktawia.crazyae2addons.menus.EnergyStorageControllerMenu;
@@ -344,6 +345,27 @@ public class CrazyBlockRegistrar {
     public static final RegistryObject<BlockItem> PATTERN_MANAGEMENT_UNIT_CONTROLLER_BLOCK_ITEM =
             BLOCK_ITEMS.register("pattern_management_unit_controller",
                     () -> new PatternManagementUnitControllerBlockItem(PATTERN_MANAGEMENT_UNIT_CONTROLLER_BLOCK.get(), new Item.Properties()));
+
+    public static final RegistryObject<ResearchStation> RESEARCH_STATION =
+            BLOCKS.register("research_station", ResearchStation::new);
+
+    public static final RegistryObject<BlockItem> RESEARCH_STATION_BLOCK_ITEM =
+            BLOCK_ITEMS.register("research_station",
+                    () -> new ResearchStationBlockItem(RESEARCH_STATION.get(), new Item.Properties()));
+
+    public static final RegistryObject<StabilizerBlock> STABILIZER_BLOCK =
+            BLOCKS.register("stabilizer_block", StabilizerBlock::new);
+
+    public static final RegistryObject<BlockItem> STABILIZER_BLOCK_ITEM =
+            BLOCK_ITEMS.register("stabilizer_block",
+                    () -> new StabilizerBlockItem(STABILIZER_BLOCK.get(), new Item.Properties()));
+
+    public static final RegistryObject<RecipeFabricatorBlock> RECIPE_FABRICATOR_BLOCK =
+            BLOCKS.register("recipe_fabricator", RecipeFabricatorBlock::new);
+
+    public static final RegistryObject<BlockItem> RECIPE_FABRICATOR_BLOCK_ITEM =
+            BLOCK_ITEMS.register("recipe_fabricator",
+                    () -> new RecipeFabricatorBlockItem(RECIPE_FABRICATOR_BLOCK.get(), new Item.Properties()));
 
     private CrazyBlockRegistrar() {}
 }

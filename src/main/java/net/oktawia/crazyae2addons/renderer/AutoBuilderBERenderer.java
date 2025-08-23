@@ -2,7 +2,6 @@ package net.oktawia.crazyae2addons.renderer;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
@@ -24,16 +23,14 @@ public class AutoBuilderBERenderer implements BlockEntityRenderer<AutoBuilderBE>
         BlockPos ghostPos = be.getGhostRenderPos();
         if (ghostPos == null) return;
 
-        Vec3 offset = Vec3.atLowerCornerWithOffset(ghostPos, 1, 1, 1).subtract(Vec3.atCenterOf(be.getBlockPos()));
+        Vec3 offset = Vec3.atLowerCornerWithOffset(ghostPos, 1, 1, 1)
+                .subtract(Vec3.atCenterOf(be.getBlockPos()));
 
         poseStack.pushPose();
         poseStack.translate(offset.x, offset.y, offset.z);
-
         renderGhostOutlineBox(poseStack, buffer);
-
         poseStack.popPose();
     }
-
 
     private void renderGhostOutlineBox(PoseStack poseStack, MultiBufferSource buffer) {
         VertexConsumer builder = buffer.getBuffer(RenderType.lines());
@@ -64,16 +61,11 @@ public class AutoBuilderBERenderer implements BlockEntityRenderer<AutoBuilderBE>
             Vec3 pb = corners[edge[1]];
 
             builder.vertex(mat, (float)pa.x, (float)pa.y, (float)pa.z)
-                    .color(r, g, b, alpha)
-                    .uv2(0x00F000F0)
-                    .normal(normalMat, 0, 1, 0)
-                    .endVertex();
+                    .color(r, g, b, alpha).uv2(0x00F000F0).normal(normalMat, 0, 1, 0).endVertex();
 
             builder.vertex(mat, (float)pb.x, (float)pb.y, (float)pb.z)
-                    .color(r, g, b, alpha)
-                    .uv2(0x00F000F0)
-                    .normal(normalMat, 0, 1, 0)
-                    .endVertex();
+                    .color(r, g, b, alpha).uv2(0x00F000F0).normal(normalMat, 0, 1, 0).endVertex();
         }
     }
 }
+

@@ -84,28 +84,6 @@ public class BlockDefs {
         );
 
         block(
-                CrazyBlockRegistrar.AUTO_ENCHANTER_BLOCK.get(),
-                " S /ICO/BEB",
-                () -> Map.of(
-                        "S", Items.NETHER_STAR,
-                        "I", AEParts.IMPORT_BUS.asItem(),
-                        "C", Blocks.ENCHANTING_TABLE.asItem(),
-                        "O", AEParts.EXPORT_BUS.asItem(),
-                        "B", Blocks.OBSIDIAN.asItem(),
-                        "E", AEBlocks.DENSE_ENERGY_CELL.asItem()
-                )
-        );
-
-        block(
-                CrazyBlockRegistrar.EJECTOR_BLOCK.get(),
-                "PR",
-                () -> Map.of(
-                        "P", AEBlocks.PATTERN_PROVIDER.asItem(),
-                        "R", Items.REDSTONE.asItem()
-                )
-        );
-
-        block(
                 CrazyBlockRegistrar.MOB_FARM_WALL.get(),
                 "BIB/IRI/BIB",
                 () -> Map.of(
@@ -213,15 +191,6 @@ public class BlockDefs {
         );
 
         block(
-                CrazyBlockRegistrar.CRAZY_PATTERN_PROVIDER_BLOCK.get(),
-                "AAA/APA/AAA",
-                () -> Map.of(
-                        "A", AEBlocks.PATTERN_PROVIDER.asItem(),
-                        "P", AEItems.ENGINEERING_PROCESSOR.asItem()
-                )
-        );
-
-        block(
                 CrazyBlockRegistrar.ENERGY_STORAGE_FRAME_BLOCK.get(),
                 "FMF/MEM/FMF",
                 () -> Map.of(
@@ -249,15 +218,6 @@ public class BlockDefs {
                         "B", AEParts.IMPORT_BUS.asItem(),
                         "R", AEBlocks.PATTERN_PROVIDER.asItem(),
                         "N", AEParts.EXPORT_BUS.asItem()
-                )
-        );
-
-        block(
-                CrazyBlockRegistrar.SUPER_SINGULARITY_BLOCK.get(),
-                "SFS/FSF/SFS",
-                () -> Map.of(
-                        "S", CrazyItemRegistrar.SUPER_SINGULARITY.get().asItem(),
-                        "F", AEBlocks.FLUIX_BLOCK.asItem()
                 )
         );
 
@@ -343,6 +303,27 @@ public class BlockDefs {
                 () -> Map.of(
                         "I", CrazyBlockRegistrar.PATTERN_MANAGEMENT_UNIT_BLOCK.get().asItem(),
                         "C", AEItems.ENGINEERING_PROCESSOR.asItem()
+                )
+        );
+
+        block(
+                CrazyBlockRegistrar.RESEARCH_STATION.get(),
+                " C /IKO/ E ",
+                () -> Map.of(
+                        "C", Items.CLOCK.asItem(),
+                        "I", AEParts.IMPORT_BUS.asItem(),
+                        "K", AEBlocks.CONTROLLER.asItem(),
+                        "O", AEParts.EXPORT_BUS.asItem(),
+                        "E", AEBlocks.ENERGY_ACCEPTOR.asItem()
+                )
+        );
+
+        block(
+                CrazyBlockRegistrar.RECIPE_FABRICATOR_BLOCK.get(),
+                "CR",
+                () -> Map.of(
+                        "C", Blocks.CRAFTING_TABLE.asItem(),
+                        "R", CrazyBlockRegistrar.RESEARCH_STATION.get().asItem()
                 )
         );
     }

@@ -31,7 +31,7 @@ import com.google.common.collect.ImmutableSet;
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.*;
 import net.minecraft.network.Connection;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
@@ -49,12 +49,12 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.level.block.state.properties.IntegerProperty;
-import net.minecraft.world.level.block.state.properties.Property;
+import net.minecraft.world.level.block.state.properties.*;
 import net.minecraft.world.level.storage.LevelResource;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.util.LazyOptional;
@@ -66,6 +66,7 @@ import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.menus.AutoBuilderMenu;
 import net.oktawia.crazyae2addons.misc.ProgramExpander;
+import net.oktawia.crazyae2addons.renderer.preview.PreviewInfo;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -92,8 +93,37 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
     public List<ICraftingLink> craftingLinks = new ArrayList<>();
     private boolean isCrafting = false;
     private List<GenericStack> toCraft = new ArrayList<>();
-    public ItemStack missingItems = ItemStack.EMPTY;
+    public GenericStack missingItems = GenericStack.fromItemStack(ItemStack.EMPTY);
     public boolean skipEmpty = false;
+    private boolean previewEnabled = false;
+    private final List<BlockPos> previewPositions = new ArrayList<>();
+    private final List<String> previewPalette = new ArrayList<>();
+    private int[] previewIndices = new int[0];
+    private final int PREVIEW_LIMIT = 8192;
+    private double requiredEnergyAE = 0.0D;
+    private boolean energyPrepaid = false;
+    private Direction sourceFacing = Direction.NORTH;
+
+    @OnlyIn(Dist.CLIENT)
+    public static final java.util.List<AutoBuilderBE> CLIENT_INSTANCES = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+    @OnlyIn(Dist.CLIENT)
+    private PreviewInfo previewInfo;
+
+    private boolean previewDirty = true;
+    private AutoBuilderMenu menu;
+
+    @OnlyIn(Dist.CLIENT)
+    public PreviewInfo getPreviewInfo() { return previewInfo; }
+
+    @OnlyIn(Dist.CLIENT)
+    public void setPreviewInfo(PreviewInfo info) { this.previewInfo = info; }
+
+    public boolean isPreviewEnabled() { return previewEnabled; }
+    public List<BlockPos> getPreviewPositions() { return previewPositions; }
+    public List<String> getPreviewPalette() { return previewPalette; }
+    public int[] getPreviewIndices() { return previewIndices; }
+
 
     public AutoBuilderBE(BlockPos pos, BlockState state) {
         super(CrazyBlockEntityRegistrar.AUTO_BUILDER_BE.get(), pos, state);
@@ -110,6 +140,22 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
                 return stack.getItem().equals(CrazyItemRegistrar.BUILDER_PATTERN.get().asItem());
             }
         });
+    }
+
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        if (level != null && level.isClientSide) {
+            CLIENT_INSTANCES.add(this);
+        }
+    }
+
+    @Override
+    public void setRemoved() {
+        super.setRemoved();
+        if (level != null && level.isClientSide) {
+            CLIENT_INSTANCES.remove(this);
+        }
     }
 
     @Override
@@ -198,6 +244,30 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         if (tag.contains("offset")){
             this.offset = BlockPos.of(tag.getLong("offset"));
         }
+        this.previewEnabled = tag.getBoolean("previewEnabled");
+        this.energyPrepaid = tag.getBoolean("energyPrepaid"); // <---
+
+        previewPositions.clear();
+        if (tag.contains("previewPositions", Tag.TAG_LIST)) {
+            ListTag list = tag.getList("previewPositions", Tag.TAG_LONG);
+            for (int i = 0; i < Math.min(list.size(), PREVIEW_LIMIT); i++) {
+                previewPositions.add(BlockPos.of(((LongTag) list.get(i)).getAsLong()));
+            }
+        }
+
+        previewPalette.clear();
+        if (tag.contains("previewPalette", Tag.TAG_LIST)) {
+            ListTag list = tag.getList("previewPalette", Tag.TAG_STRING);
+            for (int i = 0; i < list.size(); i++) {
+                previewPalette.add(list.getString(i));
+            }
+        }
+
+        if (tag.contains("previewIndices", Tag.TAG_INT_ARRAY)) {
+            previewIndices = tag.getIntArray(tag.contains("previewIndices") ? "previewIndices" : "");
+        } else {
+            previewIndices = new int[0];
+        }
     }
 
     @Override
@@ -210,7 +280,22 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         tag.putBoolean("isRunning", this.isRunning);
         tag.putLong("GhostPos", ghostRenderPos.asLong());
         tag.putLong("offset", this.offset.asLong());
+        tag.putBoolean("previewEnabled", previewEnabled);
+        tag.putBoolean("energyPrepaid", energyPrepaid); // <---
+
+        ListTag posList = new ListTag();
+        for (int i = 0; i < Math.min(previewPositions.size(), PREVIEW_LIMIT); i++) {
+            posList.add(LongTag.valueOf(previewPositions.get(i).asLong()));
+        }
+        tag.put("previewPositions", posList);
+
+        ListTag palList = new ListTag();
+        for (String s : previewPalette) palList.add(StringTag.valueOf(s));
+        tag.put("previewPalette", palList);
+
+        tag.put("previewIndices", new IntArrayTag(previewIndices));
     }
+
 
     private void triggerRedstonePulse() {
         redstonePulseTicks = 1;
@@ -227,32 +312,227 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
     @Override
     public CompoundTag getUpdateTag() {
         CompoundTag tag = super.getUpdateTag();
-        tag.putLong("GhostPos", ghostRenderPos.asLong());
+
+        tag.putLong("GhostPos", getGhostRenderPos() != null ? getGhostRenderPos().asLong() : BlockPos.ZERO.asLong());
+        tag.putBoolean("previewEnabled", previewEnabled);
+
+        ListTag posList = new ListTag();
+        for (int i = 0; i < Math.min(previewPositions.size(), PREVIEW_LIMIT); i++) {
+            posList.add(LongTag.valueOf(previewPositions.get(i).asLong()));
+        }
+        tag.put("previewPositions", posList);
+
+        ListTag palList = new ListTag();
+        for (String s : previewPalette) palList.add(StringTag.valueOf(s));
+        tag.put("previewPalette", palList);
+
+        tag.put("previewIndices", new IntArrayTag(previewIndices));
+
+        tag.put("Inv", writeInventoryToTag());
+
         return tag;
     }
+
 
     @Override
     public void handleUpdateTag(CompoundTag tag) {
         super.handleUpdateTag(tag);
+
         if (tag.contains("GhostPos")) {
-            ghostRenderPos = BlockPos.of(tag.getLong("GhostPos"));
+            this.ghostRenderPos = BlockPos.of(tag.getLong("GhostPos"));
         }
+        this.previewEnabled = tag.getBoolean("previewEnabled");
+
+        previewPositions.clear();
+        if (tag.contains("previewPositions", Tag.TAG_LIST)) {
+            ListTag list = tag.getList("previewPositions", Tag.TAG_LONG);
+            for (int i = 0; i < list.size(); i++) {
+                previewPositions.add(BlockPos.of(((LongTag) list.get(i)).getAsLong()));
+            }
+        }
+
+        previewPalette.clear();
+        if (tag.contains("previewPalette", Tag.TAG_LIST)) {
+            ListTag list = tag.getList("previewPalette", Tag.TAG_STRING);
+            for (int i = 0; i < list.size(); i++) {
+                previewPalette.add(list.getString(i));
+            }
+        }
+
+        if (tag.contains("previewIndices", Tag.TAG_INT_ARRAY)) {
+            previewIndices = tag.getIntArray("previewIndices");
+        } else {
+            previewIndices = new int[0];
+        }
+
+        if (tag.contains("Inv", Tag.TAG_COMPOUND)) {
+            readInventoryFromTag(tag.getCompound("Inv"));
+        }
+
+        this.setPreviewDirty(true);
+        if (level != null && level.isClientSide) this.setPreviewInfo(null);
     }
+
 
     @Override
     public @Nullable ClientboundBlockEntityDataPacket getUpdatePacket() {
-        return ClientboundBlockEntityDataPacket.create(this, be -> {
-            CompoundTag tag = new CompoundTag();
-            tag.putLong("GhostPos", ghostRenderPos.asLong());
-            return tag;
-        });
+        return ClientboundBlockEntityDataPacket.create(this);
     }
 
     @Override
     public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt) {
         CompoundTag tag = pkt.getTag();
-        if (tag.contains("GhostPos")) {
-            ghostRenderPos = BlockPos.of(tag.getLong("GhostPos"));
+        handleUpdateTag(tag);
+    }
+
+
+    private static BlockPos stepLocal(BlockPos pos, char cmd) {
+        return switch (cmd) {
+            case 'F' -> pos.offset(0, 0,  1);
+            case 'B' -> pos.offset(0, 0, -1);
+            case 'R' -> pos.offset(1, 0,  0);
+            case 'L' -> pos.offset(-1,0,  0);
+            case 'U' -> pos.offset(0, 1,  0);
+            case 'D' -> pos.offset(0,-1,  0);
+            default  -> pos;
+        };
+    }
+
+    public boolean isPreviewDirty() { return previewDirty; }
+    public void setPreviewDirty(boolean dirty) { this.previewDirty = dirty; }
+
+    private void rebuildPreviewFromCode() {
+        previewPositions.clear();
+        var indices = new it.unimi.dsi.fastutil.ints.IntArrayList();
+
+        if (this.code == null || this.code.isEmpty()) {
+            previewIndices = new int[0];
+            return;
+        }
+
+        BlockPos localCursor = BlockPos.ZERO;
+
+        for (String inst : this.code) {
+            if (previewPositions.size() >= PREVIEW_LIMIT) break;
+            if (inst == null || inst.isEmpty()) continue;
+
+            if (inst.startsWith("Z|")) continue;
+
+            if (inst.equals("H")) {
+                localCursor = BlockPos.ZERO;
+                continue;
+            }
+
+            if (inst.length() == 1) {
+                char c = inst.charAt(0);
+                if ("FBLRUD".indexOf(c) >= 0) {
+                    localCursor = stepLocal(localCursor, c);
+                }
+                continue;
+            }
+
+            int paletteIndex = -1;
+
+            if (inst.startsWith("P|")) {
+                String blockKey = inst.substring(2);
+                int idx = previewPalette.indexOf(blockKey);
+                if (idx < 0) {
+                    previewPalette.add(blockKey);
+                    idx = previewPalette.size() - 1;
+                }
+                paletteIndex = idx;
+            }
+
+            else if (inst.startsWith("P(") && inst.endsWith(")")) {
+                try {
+                    int id = Integer.parseInt(inst.substring(2, inst.length() - 1));
+                    if (id >= 1 && id <= previewPalette.size()) {
+                        paletteIndex = id - 1;
+                    } else {
+                        continue;
+                    }
+                } catch (NumberFormatException ignored) {
+                    continue;
+                }
+            } else {
+                continue;
+            }
+
+            BlockPos localTotal = new BlockPos(
+                    offset.getX() + localCursor.getX(),
+                    offset.getY() + localCursor.getY(),
+                    offset.getZ() + localCursor.getZ()
+            );
+
+            BlockPos worldPos = transformRelative(localTotal);
+
+            previewPositions.add(worldPos);
+            indices.add(paletteIndex);
+        }
+
+        previewIndices = indices.toIntArray();
+        this.setPreviewDirty(true);
+        if (level != null && level.isClientSide) this.setPreviewInfo(null);
+    }
+
+    public void togglePreview() {
+        this.previewEnabled = !this.previewEnabled;
+
+        if (this.previewEnabled) {
+            if (this.code.isEmpty()) {
+                ItemStack s = this.inventory.getStackInSlot(0);
+                if (s.isEmpty()) s = this.inventory.getStackInSlot(1);
+                if (!s.isEmpty()) {
+                    var res = ProgramExpander.expand(loadProgramFromFile(s, getLevel().getServer()));
+                    if (res.success) this.code = res.program;
+                }
+            }
+            rebuildPreviewFromCode();
+        } else {
+            previewPositions.clear();
+            previewPalette.clear();
+            previewIndices = new int[0];
+        }
+
+        setChanged();
+        if (!level.isClientSide) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        }
+        this.setPreviewDirty(true);
+        if (level != null && level.isClientSide) this.setPreviewInfo(null);
+    }
+
+    private CompoundTag writeInventoryToTag() {
+        CompoundTag root = new CompoundTag();
+        ListTag list = new ListTag();
+        for (int i = 0; i < this.inventory.size(); i++) {
+            ItemStack stack = this.inventory.getStackInSlot(i);
+            if (!stack.isEmpty()) {
+                CompoundTag entry = new CompoundTag();
+                entry.putByte("Slot", (byte) i);
+                entry.put("Stack", stack.save(new CompoundTag()));
+                list.add(entry);
+            }
+        }
+        root.put("Items", list);
+        return root;
+    }
+
+    private void readInventoryFromTag(CompoundTag root) {
+        if (root == null || !root.contains("Items")) return;
+
+        for (int i = 0; i < this.inventory.size(); i++) {
+            this.inventory.setItemDirect(i, ItemStack.EMPTY);
+        }
+
+        ListTag list = root.getList("Items", Tag.TAG_COMPOUND);
+        for (int i = 0; i < list.size(); i++) {
+            CompoundTag entry = list.getCompound(i);
+            int slot = entry.getByte("Slot") & 0xFF;
+            ItemStack stack = ItemStack.of(entry.getCompound("Stack"));
+            if (slot >= 0 && slot < this.inventory.size()) {
+                this.inventory.setItemDirect(slot, stack);
+            }
         }
     }
 
@@ -273,6 +553,52 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         return new TickingRequest(1, 1, false, false);
     }
 
+    private double calcStepCostAE(BlockPos target) {
+        double dx = target.getX() - worldPosition.getX();
+        double dy = target.getY() - worldPosition.getY();
+        double dz = target.getZ() - worldPosition.getZ();
+        double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        return Math.pow(distance, 3) / 25.0;
+    }
+
+
+    public double getRequiredEnergyAE() {
+        recalculateRequiredEnergy();
+        return requiredEnergyAE;
+    }
+
+
+    public void recalculateRequiredEnergy() {
+        requiredEnergyAE = 0.0D;
+        if (level == null || code == null || code.isEmpty()) return;
+
+        BlockPos cursor = homePos();
+        for (String inst : code) {
+            if (inst == null || inst.isEmpty()) continue;
+
+            if (inst.startsWith("Z|")) continue;
+
+            if (inst.equals("H")) {
+                cursor = homePos();
+                continue;
+            }
+
+            if (inst.length() == 1) {
+                char c = inst.charAt(0);
+                if (c == 'X') {
+                    requiredEnergyAE += calcStepCostAE(cursor);
+                } else if ("FBLRUD".indexOf(c) >= 0) {
+                    cursor = stepRelative(cursor, c);
+                }
+                continue;
+            }
+
+            if (inst.startsWith("P|") || (inst.startsWith("P(") && inst.endsWith(")"))) {
+                requiredEnergyAE += calcStepCostAE(cursor);
+            }
+        }
+    }
+
     @Override
     public TickRateModulation tickingRequest(IGridNode node, int ticksSinceLastCall) {
 
@@ -286,7 +612,7 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
                         if (!craftingPlan.get().missingItems().isEmpty()) {
                             this.craftingLinks.clear();
                             this.toCraftPlans.clear();
-                            this.missingItems = craftingPlan.get().finalOutput().what().wrapForDisplayOrFilter();
+                            this.missingItems = new GenericStack(craftingPlan.get().finalOutput().what(), craftingPlan.get().finalOutput().amount());
                             return TickRateModulation.IDLE;
                         }
                         var result = getGridNode().getGrid().getCraftingService().submitJob(
@@ -304,9 +630,14 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
             return TickRateModulation.URGENT;
         }
 
+        if (!energyPrepaid) {
+            isRunning = false;
+            return TickRateModulation.URGENT;
+        }
+
         if (inventory.getStackInSlot(0).isEmpty()) {
             isRunning = false;
-            setGhostRenderPos(worldPosition.offset(this.offset));
+            resetGhostToHome();
             return TickRateModulation.URGENT;
         }
 
@@ -332,38 +663,28 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
             didWork = true;
 
             switch (inst) {
-                case "N" -> setGhostRenderPos(getGhostRenderPos().offset(0, 0, -1));
-                case "S" -> setGhostRenderPos(getGhostRenderPos().offset(0, 0, 1));
-                case "E" -> setGhostRenderPos(getGhostRenderPos().offset(1, 0, 0));
-                case "W" -> setGhostRenderPos(getGhostRenderPos().offset(-1, 0, 0));
-                case "U" -> setGhostRenderPos(getGhostRenderPos().offset(0, 1, 0));
-                case "D" -> setGhostRenderPos(getGhostRenderPos().offset(0, -1, 0));
-                case "R" -> setGhostRenderPos(worldPosition.offset(this.offset));
+                case "F", "B", "L", "R", "U", "D" -> setGhostRenderPos(stepRelative(getGhostRenderPos(), inst.charAt(0)));
+
+                case "H" -> resetGhostToHome();
+
                 case "X" -> {
                     var grid = getMainNode().getGrid();
                     if (grid != null) {
-                        double dx = getGhostRenderPos().getX() - worldPosition.getX();
-                        double dy = getGhostRenderPos().getY() - worldPosition.getY();
-                        double dz = getGhostRenderPos().getZ() - worldPosition.getZ();
-                        double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-                        var power = grid.getEnergyService().extractAEPower(Math.pow(distance, 3) / 25, Actionable.MODULATE, PowerMultiplier.ONE);
-                        if (power >= Math.pow(distance, 3) / 25){
-                            if (isBreakable(level.getBlockState(getGhostRenderPos()), level, getGhostRenderPos())) {
-                                var drops = getSilkTouchDrops(level.getBlockState(getGhostRenderPos()), (ServerLevel) level, getGhostRenderPos());
-                                long inserted = 0;
-                                for (var drop : drops){
-                                    inserted += StorageHelper.poweredInsert(grid.getEnergyService(), grid.getStorageService().getInventory(), AEItemKey.of(drop.getItem()), 1, IActionSource.ofMachine(this), Actionable.MODULATE);
-                                }
-                                if (inserted > 0){
-                                    getLevel().destroyBlock(getGhostRenderPos(), false);
-                                }
+                        if (isBreakable(level.getBlockState(getGhostRenderPos()), level, getGhostRenderPos())) {
+                            var drops = getSilkTouchDrops(level.getBlockState(getGhostRenderPos()), (ServerLevel) level, getGhostRenderPos());
+                            long inserted = 0;
+                            for (var drop : drops){
+                                inserted += StorageHelper.poweredInsert(grid.getEnergyService(), grid.getStorageService().getInventory(), AEItemKey.of(drop.getItem()), 1, IActionSource.ofMachine(this), Actionable.MODULATE);
                             }
-                            if (!getLevel().getFluidState(getGhostRenderPos()).isEmpty()){
-                                if (getLevel().getFluidState(getGhostRenderPos()).isSource()){
-                                    StorageHelper.poweredInsert(grid.getEnergyService(), grid.getStorageService().getInventory(), AEFluidKey.of(getLevel().getFluidState(getGhostRenderPos()).getType()), 1000, IActionSource.ofMachine(this), Actionable.MODULATE);
-                                }
-                                getLevel().setBlock(getGhostRenderPos(), Blocks.AIR.defaultBlockState(), 3);
+                            if (inserted > 0){
+                                getLevel().destroyBlock(getGhostRenderPos(), false);
                             }
+                        }
+                        if (!getLevel().getFluidState(getGhostRenderPos()).isEmpty()){
+                            if (getLevel().getFluidState(getGhostRenderPos()).isSource()){
+                                StorageHelper.poweredInsert(grid.getEnergyService(), grid.getStorageService().getInventory(), AEFluidKey.of(getLevel().getFluidState(getGhostRenderPos()).getType()), 1000, IActionSource.ofMachine(this), Actionable.MODULATE);
+                            }
+                            getLevel().setBlock(getGhostRenderPos(), Blocks.AIR.defaultBlockState(), 3);
                         }
                     }
                 }
@@ -393,42 +714,44 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
                                 var grid = getMainNode().getGrid();
                                 if (grid != null) {
                                     BlockPos target = getGhostRenderPos();
-                                    double dx = getGhostRenderPos().getX() - worldPosition.getX();
-                                    double dy = getGhostRenderPos().getY() - worldPosition.getY();
-                                    double dz = getGhostRenderPos().getZ() - worldPosition.getZ();
-                                    double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-                                    var power = grid.getEnergyService().extractAEPower(Math.pow(distance, 3) / 25, Actionable.MODULATE, PowerMultiplier.ONE);
-                                    if (power >= Math.pow(distance, 3) / 25){
-                                        if (isBreakable(level.getBlockState(getGhostRenderPos()), level, getGhostRenderPos())) {
-                                            var drops = getSilkTouchDrops(level.getBlockState(getGhostRenderPos()), (ServerLevel) level, getGhostRenderPos());
-                                            long inserted = 0;
-                                            for (var drop : drops){
-                                                inserted += StorageHelper.poweredInsert(grid.getEnergyService(), grid.getStorageService().getInventory(), AEItemKey.of(drop.getItem()), 1, IActionSource.ofMachine(this), Actionable.MODULATE);
-                                            }
-                                            if (inserted <= 0 && !drops.isEmpty()) return TickRateModulation.IDLE;
-                                        }
 
-                                        long extracted = 0;
-                                        if (getMainNode().getGrid().getMachines(AutoBuilderCreativeSupplyBE.class).isEmpty()){
-                                            extracted = StorageHelper.poweredExtraction(
-                                                    grid.getEnergyService(),
-                                                    grid.getStorageService().getInventory(),
-                                                    AEItemKey.of(block.asItem()),
-                                                    1, IActionSource.ofMachine(this), Actionable.MODULATE);
+                                    if (isBreakable(level.getBlockState(getGhostRenderPos()), level, getGhostRenderPos())) {
+                                        var drops = getSilkTouchDrops(level.getBlockState(getGhostRenderPos()), (ServerLevel) level, getGhostRenderPos());
+                                        long inserted = 0;
+                                        for (var drop : drops){
+                                            inserted += StorageHelper.poweredInsert(grid.getEnergyService(), grid.getStorageService().getInventory(), AEItemKey.of(drop.getItem()), 1, IActionSource.ofMachine(this), Actionable.MODULATE);
                                         }
+                                        if (inserted <= 0 && !drops.isEmpty()) {
+                                            currentInstruction++;
+                                            return TickRateModulation.URGENT;
+                                        }
+                                    }
 
-                                        if (extracted > 0 || !getMainNode().getGrid().getMachines(AutoBuilderCreativeSupplyBE.class).isEmpty()) {
-                                            BlockState state = block.defaultBlockState();
-                                            if (!props.isEmpty()) {
-                                                for (Map.Entry<String, String> entry : props.entrySet()) {
-                                                    Property<?> property = state.getBlock().getStateDefinition().getProperty(entry.getKey());
-                                                    if (property != null) {
-                                                        state = applyProperty(state, property, entry.getValue());
-                                                    }
+                                    long extracted = 0;
+                                    if (getMainNode().getGrid().getMachines(AutoBuilderCreativeSupplyBE.class).isEmpty()){
+                                        extracted = StorageHelper.poweredExtraction(
+                                                grid.getEnergyService(),
+                                                grid.getStorageService().getInventory(),
+                                                AEItemKey.of(block.asItem()),
+                                                1, IActionSource.ofMachine(this), Actionable.MODULATE);
+                                    }
+
+                                    if (extracted > 0 || !getMainNode().getGrid().getMachines(AutoBuilderCreativeSupplyBE.class).isEmpty()) {
+                                        BlockState state = block.defaultBlockState();
+                                        if (!props.isEmpty()) {
+                                            for (Map.Entry<String, String> entry : props.entrySet()) {
+                                                Property<?> property = state.getBlock().getStateDefinition().getProperty(entry.getKey());
+                                                if (property != null) {
+                                                    state = applyProperty(state, property, entry.getValue());
                                                 }
                                             }
-                                            level.setBlock(target, state, 3);
                                         }
+
+                                        // NOWOŚĆ: obróć stan o różnicę (player-at-copy vs builder-now)
+                                        int delta = Math.floorMod(yawStepsFromNorth(getFacing()) - yawStepsFromNorth(this.sourceFacing), 4);
+                                        state = rotateStateByDelta(state, delta);
+
+                                        level.setBlock(target, state, 3);
                                     }
                                 }
                             }
@@ -442,12 +765,13 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
 
         if (currentInstruction >= code.size()) {
             isRunning = false;
+            energyPrepaid = false;
             ItemStack pattern = inventory.getStackInSlot(0);
             if (!pattern.isEmpty()) {
                 inventory.setItemDirect(0, ItemStack.EMPTY);
                 inventory.setItemDirect(1, pattern.copyWithCount(1));
             }
-            setGhostRenderPos(worldPosition.offset(this.offset));
+            resetGhostToHome();
             triggerRedstonePulse();
         } else if (didWork) {
             tickDelayLeft = this.delay;
@@ -461,6 +785,63 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
             }
         }
         return TickRateModulation.URGENT;
+    }
+
+
+
+    private BlockPos transformRelative(BlockPos local) {
+        return getBlockPos().offset(localToWorldOffset(local));
+    }
+
+    private Direction getFacing() {
+        BlockState state = getBlockState();
+        if (state.hasProperty(BlockStateProperties.HORIZONTAL_FACING)) {
+            return state.getValue(BlockStateProperties.HORIZONTAL_FACING).getOpposite();
+        }
+        return Direction.NORTH;
+    }
+
+    private BlockPos localToWorldOffset(BlockPos local) {
+        Direction f = getFacing();
+        int fx, fz, rx, rz;
+        switch (f) {
+            case SOUTH -> { fx =  0; fz =  1; rx = -1; rz =  0; }
+            case EAST  -> { fx =  1; fz =  0; rx =  0; rz =  1; }
+            case WEST  -> { fx = -1; fz =  0; rx =  0; rz = -1; }
+            default    -> { fx =  0; fz = -1; rx =  1; rz =  0; }
+        }
+        int wx = local.getX() * rx + local.getZ() * fx;
+        int wy = local.getY();
+        int wz = local.getX() * rz + local.getZ() * fz;
+        return new BlockPos(wx, wy, wz);
+    }
+
+    private BlockPos homePos() {
+        return transformRelative(offset);
+    }
+
+    private BlockPos stepRelative(BlockPos pos, char cmd) {
+        Direction f = getFacing();
+        int fx, fz, rx, rz;
+        switch (f) {
+            case SOUTH -> { fx =  0; fz =  1; rx = -1; rz =  0; }
+            case EAST  -> { fx =  1; fz =  0; rx =  0; rz =  1; }
+            case WEST  -> { fx = -1; fz =  0; rx =  0; rz = -1; }
+            default    -> { fx =  0; fz = -1; rx =  1; rz =  0; } // NORTH
+        }
+        return switch (cmd) {
+            case 'F' -> pos.offset(fx, 0, fz);
+            case 'B' -> pos.offset(-fx, 0, -fz);
+            case 'R' -> pos.offset(rx, 0, rz);
+            case 'L' -> pos.offset(-rx, 0, -rz);
+            case 'U' -> pos.offset(0, 1, 0);
+            case 'D' -> pos.offset(0, -1, 0);
+            default  -> pos;
+        };
+    }
+
+    public void resetGhostToHome() {
+        setGhostRenderPos(homePos());
     }
 
     public static List<ItemStack> getSilkTouchDrops(BlockState state, ServerLevel level, BlockPos pos) {
@@ -551,7 +932,7 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
     }
 
     public static String loadProgramFromFile(ItemStack stack, MinecraftServer server) {
-        if (!stack.hasTag() || !stack.getTag().contains("program_id")) return "";
+        if (!stack.hasTag() || !stack.getTag().contains("program_id") || server == null) return "";
 
         String id = stack.getTag().getString("program_id");
         Path file = server.getWorldPath(new LevelResource("serverdata"))
@@ -566,26 +947,45 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         }
     }
 
+    public void loadCode(){
+        ItemStack s = this.inventory.getStackInSlot(0);
+        if (s.isEmpty()) s = this.inventory.getStackInSlot(1);
+
+        if (s.isEmpty()) {
+            this.code.clear();
+            return;
+        }
+
+        var tag = s.getOrCreateTag();
+        if (tag.contains("code") && tag.getBoolean("code")){
+            var program = ProgramExpander.expand(loadProgramFromFile(s, getLevel().getServer()));
+            if (program.success){
+                this.code = program.program;
+            }
+        }
+        if (tag.contains("delay")){
+            this.delay = tag.getInt("delay");
+        }
+
+        // NOWOŚĆ: odczytaj orientację źródłową z patternu (fallback: NORTH)
+        if (tag.contains("srcFacing")) {
+            Direction d = Direction.byName(tag.getString("srcFacing"));
+            if (d != null) this.sourceFacing = d;
+            else this.sourceFacing = Direction.NORTH;
+        } else {
+            this.sourceFacing = Direction.NORTH;
+        }
+    }
+
+
     public void onRedstoneActivate(@Nullable GenericStack additional) {
         if (getLevel() == null) return;
+
         if (inventory.getStackInSlot(0).isEmpty() && !inventory.getStackInSlot(1).isEmpty()) {
             inventory.setItemDirect(0, inventory.getStackInSlot(1).copyWithCount(1));
             inventory.setItemDirect(1, ItemStack.EMPTY);
         }
-        if (!this.inventory.isEmpty()){
-            var tag = inventory.getStackInSlot(0).getOrCreateTag();
-            if (tag.contains("code")){
-                if (tag.getBoolean("code")){
-                    var program = ProgramExpander.expand(loadProgramFromFile(inventory.getStackInSlot(0), getLevel().getServer()));
-                    if (program.success){
-                        code = program.program;
-                    }
-                }
-            }
-            if (tag.contains("delay")){
-                this.delay = tag.getInt("delay");
-            }
-        }
+        loadCode();
         if (this.code.isEmpty()) return;
 
         checkBlocksInStorage(ProgramExpander.countUsedBlocks(String.join("/", this.code)), additional);
@@ -593,32 +993,83 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
             if (isUpgradedWith(AEItems.CRAFTING_CARD)){
                 scheduleCrafts();
                 isCrafting = true;
+            } else {
+                this.missingItems = new GenericStack(toCraft.get(0).what(), toCraft.get(0).amount());
             }
-        } else {
-            this.missingItems = ItemStack.EMPTY;
-            this.isCrafting = false;
-            this.isRunning = true;
-            this.currentInstruction = 0;
-            this.tickDelayLeft = 0;
+            return;
         }
+
+        recalculateRequiredEnergy();
+
+        var node = getMainNode();
+        if (node == null || node.getGrid() == null) {
+            this.missingItems = GenericStack.fromItemStack(ItemStack.EMPTY);
+            this.isCrafting = false;
+            this.isRunning = false;
+            this.energyPrepaid = false;
+            return;
+        }
+
+        var es = node.getGrid().getEnergyService();
+
+        double can = es.extractAEPower(requiredEnergyAE, Actionable.SIMULATE, PowerMultiplier.ONE);
+        if (can < requiredEnergyAE) {
+            this.missingItems = GenericStack.fromItemStack(ItemStack.EMPTY);
+            this.isCrafting = false;
+            this.isRunning = false;
+            this.energyPrepaid = false;
+            return;
+        }
+
+        es.extractAEPower(requiredEnergyAE, Actionable.MODULATE, PowerMultiplier.ONE);
+        this.energyPrepaid = true;
+
+        this.missingItems = GenericStack.fromItemStack(ItemStack.EMPTY);
+        this.isCrafting = false;
+        this.isRunning = true;
+        this.currentInstruction = 0;
+        this.tickDelayLeft = 0;
     }
+
 
     @Override
     public InternalInventory getInternalInventory() {
         return this.inventory;
     }
 
+    public void setMenu(AutoBuilderMenu menu){
+        this.menu = menu;
+    }
+
+    public AutoBuilderMenu getMenu(){
+        return this.menu;
+    }
+
     @Override
     public void onChangeInventory(InternalInventory inv, int slot) {
+        if (this.isPreviewEnabled()){
+            this.togglePreview();
+            if (this.getMenu() != null){
+                this.getMenu().preview = false;
+            }
+        }
         this.setChanged();
+        loadCode();
+        recalculateRequiredEnergy();
+        if (getMenu() != null){
+            getMenu().pushEnergyDisplay();
+        }
         if (inventory.getStackInSlot(0).isEmpty() && inventory.getStackInSlot(1).isEmpty()) {
             isRunning = false;
             code = new ArrayList<>();
             currentInstruction = 0;
             tickDelayLeft = 0;
-            setGhostRenderPos(worldPosition.offset(this.offset));
+            energyPrepaid = false;
+            requiredEnergyAE = 0.0D;
+            resetGhostToHome();
         }
     }
+
 
     @Override
     public ImmutableSet<ICraftingLink> getRequestedJobs() {
@@ -656,4 +1107,58 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
             }
         }
     }
+
+    private static int yawStepsFromNorth(Direction d) {
+        return switch (d) {
+            case NORTH -> 0;
+            case EAST  -> 1;
+            case SOUTH -> 2;
+            case WEST  -> 3;
+            default    -> 0;
+        };
+    }
+
+    private static Direction rotateHorizontal(Direction dir, int steps) {
+        steps = Math.floorMod(steps, 4);
+        Direction out = dir;
+        for (int i = 0; i < steps; i++) out = out.getClockWise();
+        return out;
+    }
+
+    private static boolean isHorizontal(Direction d) {
+        return d.getAxis().isHorizontal();
+    }
+
+    private BlockState rotateStateByDelta(BlockState state, int steps) {
+        // 1) każde poziome DirectionProperty (np. facing)
+        for (var p : state.getProperties()) {
+            if (p instanceof DirectionProperty dp) {
+                Direction d = state.getValue(dp);
+                if (isHorizontal(d)) {
+                    state = state.setValue(dp, rotateHorizontal(d, steps));
+                }
+            }
+        }
+        // 2) osie poziome X<->Z przy 90°/270°
+        if (state.hasProperty(BlockStateProperties.AXIS)) {
+            var ax = state.getValue(BlockStateProperties.AXIS);
+            if (ax.isHorizontal() && (steps % 2 != 0)) {
+                state = state.setValue(BlockStateProperties.AXIS, ax == Direction.Axis.X ? Direction.Axis.Z : Direction.Axis.X);
+            }
+        }
+        if (state.hasProperty(BlockStateProperties.HORIZONTAL_AXIS)) {
+            var ax = state.getValue(BlockStateProperties.HORIZONTAL_AXIS);
+            if (ax.isHorizontal() && (steps % 2 != 0)) {
+                state = state.setValue(BlockStateProperties.HORIZONTAL_AXIS, ax == Direction.Axis.X ? Direction.Axis.Z : Direction.Axis.X);
+            }
+        }
+        // 3) ROTATION_16 – +4 na każde 90°
+        if (state.hasProperty(BlockStateProperties.ROTATION_16)) {
+            int val = state.getValue(BlockStateProperties.ROTATION_16);
+            val = (val + steps * 4) & 15;
+            state = state.setValue(BlockStateProperties.ROTATION_16, val);
+        }
+        return state;
+    }
+
 }

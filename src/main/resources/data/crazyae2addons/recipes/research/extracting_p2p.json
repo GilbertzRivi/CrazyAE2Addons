@@ -1,0 +1,94 @@
+{
+  "type": "crazyae2addons:research",
+  "duration": 8400,
+  "energy_per_tick": 280,
+  "fluid": "crazyae2addons:researchfluid",
+  "fluid_per_tick": 6,
+  "requires_stabilizer": true,
+  "gadget": true,
+  "consumables": [
+    { "item": "minecraft:diamond", "count": 128 }
+  ],
+  "drive": true,
+  "structure": {
+    "mode": "pattern",
+    "size": [6, 6, 6],
+  "symbols": {
+    "A": [
+      "minecraft:gray_concrete"
+    ],
+    "B": [
+      "minecraft:coal_block"
+    ],
+    "D": [
+      "minecraft:iron_block"
+    ],
+    "E": [
+      "minecraft:emerald_block"
+    ],
+    "F": [
+      "minecraft:redstone_block"
+    ],
+    "G": [
+      "minecraft:gold_block"
+    ],
+    "H": [
+      "minecraft:lapis_block"
+    ]
+  },
+  "layers": [
+    [
+      "A A A A A A",
+      "A A A A A A",
+      "A A A A A A",
+      "A A A A A A",
+      "A A A A A A",
+      "A A A A A A"
+    ],
+    [
+      "A B B B B A",
+      "D . . . . E",
+      "D . F F . E",
+      "D . F F . E",
+      "D . . . . E",
+      "A G G G G A"
+    ],
+    [
+      "A B B B B A",
+      "D . . . . E",
+      "D . H H . E",
+      "D . H H . E",
+      "D . . . . E",
+      "A G G G G A"
+    ],
+    [
+      "A B B B B A",
+      "D . . . . E",
+      "D . F F . E",
+      "D . F F . E",
+      "D . . . . E",
+      "A G G G G A"
+    ],
+    [
+      "A B B B B A",
+      "D . . . . E",
+      "D . H H . E",
+      "D . H H . E",
+      "D . . . . E",
+      "A G G G G A"
+    ],
+    [
+      "A A A A A A",
+      "A A A A A A",
+      "A A A A A A",
+      "A A A A A A",
+      "A A A A A A",
+      "A A A A A A"
+    ]
+  ]
+},
+  "unlock": {
+    "key": "crazyae2addons:extracting_p2p_research",
+    "label": "Extracting P2Ps"
+  }
+}

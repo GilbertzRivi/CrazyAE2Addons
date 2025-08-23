@@ -208,7 +208,7 @@ public class SyntaxHighlighter {
                 continue;
             }
 
-            if (matchWord(line, i, "AND", "OR", "XOR", "NAND", "P", "Z", "X", "N", "S", "E", "W", "U", "D", "R")) {
+            if (matchWord(line, i, "AND", "OR", "XOR", "NAND", "P", "Z", "X", "F", "B", "U", "D", "R", "L", "H")) {
                 flush(out, buf, color);
                 String w = readWord(line, i);
                 out.add(new Tok(w, COL_RED));

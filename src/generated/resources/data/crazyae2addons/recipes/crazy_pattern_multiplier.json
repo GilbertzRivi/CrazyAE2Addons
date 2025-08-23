@@ -3,15 +3,14 @@
   "category": "misc",
   "key": {
     "P": {
-      "item": "ae2:blank_pattern"
+      "item": "crazyae2addons:crazy_pattern_modifier"
     },
     "Z": {
       "item": "ae2:calculation_processor"
     }
   },
   "pattern": [
-    "PZ",
-    "ZP"
+    "PZ"
   ],
   "result": {
     "item": "crazyae2addons:crazy_pattern_multiplier"

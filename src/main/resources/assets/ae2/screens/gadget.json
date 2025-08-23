@@ -1,0 +1,45 @@
+{
+  "$schema": "schema.json",
+  "includes": ["common/common.json", "common/player_inventory.json"],
+  "background": {
+    "texture": "guis/blank_background.png",
+    "srcRect": [0, 0, 176, 205]
+  },
+  "text": {
+    "dialog_title": {
+      "text": {
+        "translate": "item.crazyae2addons.nokia_3310"
+      },
+      "position": {
+        "left": 8,
+        "top": 6
+      }
+    }
+  },
+  "widgets": {
+    "flipH": {
+      "right": 24,
+      "top": 8,
+      "width": 16,
+      "height": 16
+    },
+    "flipV": {
+      "right": 42,
+      "top": 8,
+      "width": 16,
+      "height": 16
+    },
+    "rotate": {
+      "right": 60,
+      "top": 8,
+      "width": 16,
+      "height": 16
+    },
+    "preview": {
+      "right": 20,
+      "top": 20,
+      "width": 100,
+      "height": 80
+    }
+  }
+}

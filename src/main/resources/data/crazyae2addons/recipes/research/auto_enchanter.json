@@ -1,0 +1,66 @@
+{
+  "type": "crazyae2addons:research",
+  "duration": 10800,
+  "energy_per_tick": 270,
+  "fluid": "crazyae2addons:researchfluid",
+  "fluid_per_tick": 6,
+  "requires_stabilizer": true,
+  "gadget": true,
+  "consumables": [
+    { "item": "minecraft:enchanting_table", "count": 4 }
+  ],
+  "drive": true,
+  "structure": {
+    "mode": "pattern",
+    "size": [5, 5, 5],
+  "symbols": {
+    "A": [
+      "minecraft:obsidian"
+    ],
+    "B": [
+      "minecraft:bookshelf"
+    ]
+  },
+  "layers": [
+    [
+      "A A A A A",
+      "A A A A A",
+      "A A A A A",
+      "A A A A A",
+      "A A A A A"
+    ],
+    [
+      "B B . B B",
+      "B . . . B",
+      ". . B . .",
+      "B . . . B",
+      "B B . B B"
+    ],
+    [
+      "B B . B B",
+      "B . . . B",
+      ". . B . .",
+      "B . . . B",
+      "B B . B B"
+    ],
+    [
+      "B B . B B",
+      "B . . . B",
+      ". . B . .",
+      "B . . . B",
+      "B B . B B"
+    ],
+    [
+      "A A A A A",
+      "A A A A A",
+      "A A A A A",
+      "A A A A A",
+      "A A A A A"
+    ]
+  ]
+},
+  "unlock": {
+    "key": "crazyae2addons:auto_enchanter_research",
+    "label": "Auto enchanter"
+  }
+}

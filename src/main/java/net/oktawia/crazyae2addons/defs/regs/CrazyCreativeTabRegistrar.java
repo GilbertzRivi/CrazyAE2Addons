@@ -22,6 +22,7 @@ public final class CrazyCreativeTabRegistrar {
     private static void populate(CreativeModeTab.ItemDisplayParameters ignored, CreativeModeTab.Output out) {
         CrazyItemRegistrar.ITEMS.getEntries().forEach(ro -> push(out, ro.get()));
         CrazyBlockRegistrar.BLOCK_ITEMS.getEntries().forEach(ro -> push(out, ro.get()));
+        push(out, CrazyFluidRegistrar.RESEARCH_FLUID_BUCKET.get());
     }
 
     private static void push(CreativeModeTab.Output out, net.minecraft.world.item.Item item) {

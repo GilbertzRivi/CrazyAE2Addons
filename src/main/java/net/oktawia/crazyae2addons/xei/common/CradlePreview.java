@@ -189,7 +189,7 @@ public class CradlePreview extends WidgetGroup {
 
             var mgr = level.getRecipeManager();
 
-            net.oktawia.crazyae2addons.recipes.CradleRecipe r = mgr
+            CradleRecipe r = mgr
                     .getAllRecipesFor(CrazyRecipes.CRADLE_TYPE.get())
                     .stream()
                     .filter(cr -> cr.getId().equals(structureId))
@@ -285,6 +285,4 @@ public class CradlePreview extends WidgetGroup {
         }
         return blockMap;
     }
-
-
 }

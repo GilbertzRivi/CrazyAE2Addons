@@ -76,7 +76,6 @@ public class MobFarmControllerBE extends AENetworkBlockEntity implements Preview
 
     public IUpgradeInventory upgrades = UpgradeInventories.forMachine(CrazyBlockRegistrar.MOB_FARM_CONTROLLER.get(), 5, this::saveChanges);
     public MobFarmValidator validator;
-    public Integer damageBlocks = 0;
     public final AppEngInternalInventory inventory = new AppEngInternalInventory(this, 1, 1);
     public final ConfigInventory configInventory = ConfigInventory.configTypes(
             (x) -> x instanceof MobKey || x.wrapForDisplayOrFilter().getItem() instanceof SpawnEggItem,
@@ -195,19 +194,14 @@ public class MobFarmControllerBE extends AENetworkBlockEntity implements Preview
     }
 
     public int getSpeed() {
-        if (this.damageBlocks <= 0) {
-            return 0;
-        }
         int upgradeCount = this.getUpgrades().getInstalledUpgrades(AEItems.SPEED_CARD);
-        int maxSpeed = switch (upgradeCount) {
+        return switch (upgradeCount) {
             case 1 -> 28;
             case 2 -> 40;
             case 3 -> 52;
             case 4 -> 64;
             default -> 16;
         };
-        double ratio = this.damageBlocks / 16.0;
-        return (int) Math.round(maxSpeed * ratio);
     }
 
     @Override
@@ -286,12 +280,10 @@ public class MobFarmControllerBE extends AENetworkBlockEntity implements Preview
 
     @Override
     public TickRateModulation tickingRequest(IGridNode node, int ticksSinceLastCall) {
-        if (!CrazyConfig.COMMON.enablePeacefullSpawner.get() && getLevel().getDifficulty() == Difficulty.PEACEFUL) return TickRateModulation.IDLE;
         if (!validator.matchesStructure(getLevel(), getBlockPos(), getBlockState(), this)){
             return TickRateModulation.IDLE;
         }
 
-        this.damageBlocks = validator.countBlockInStructure(getLevel(), getBlockPos(), getBlockState(), CrazyBlockRegistrar.MOB_FARM_DAMAGE.get());
         MEStorage inv = getGridNode().getGrid().getStorageService().getInventory();
         IEnergyService eng = getGridNode().getGrid().getEnergyService();
         int speed = Math.max(getSpeed(), 1);

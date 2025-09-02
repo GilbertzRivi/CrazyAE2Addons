@@ -31,6 +31,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.energy.EnergyStorage;
 import net.minecraftforge.energy.IEnergyStorage;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.blocks.EntropyCradleCapacitor;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
@@ -49,7 +50,7 @@ import java.util.*;
 public class EntropyCradleControllerBE extends AENetworkInvBlockEntity implements Previewable, IGridTickable, MenuProvider {
 
     public EntropyCradleValidator validator;
-    public int MAX_ENERGY = 600_000_000;
+    public int MAX_ENERGY = CrazyConfig.COMMON.CradleCapacity.get();
     public IEnergyStorage storedEnergy;
 
     private PreviewInfo previewInfo = null;
@@ -135,18 +136,18 @@ public class EntropyCradleControllerBE extends AENetworkInvBlockEntity implement
 
         for (int level = 0; level < maxLevels; level++) {
             boolean shouldBeLit = level < litLevels;
-            validator.markCaps(getLevel(), getBlockPos(), getBlockState(), EntropyCradleCapacitor.POWER, shouldBeLit, level, this.storedEnergy.getEnergyStored() == 600_000_000);
+            validator.markCaps(getLevel(), getBlockPos(), getBlockState(), EntropyCradleCapacitor.POWER, shouldBeLit, level, this.storedEnergy.getEnergyStored() == MAX_ENERGY);
         }
 
         if (currentFE >= MAX_ENERGY) {
-            validator.markCaps(getLevel(), getBlockPos(), getBlockState(), EntropyCradleCapacitor.POWER, true, 0, this.storedEnergy.getEnergyStored() == 600_000_000);
+            validator.markCaps(getLevel(), getBlockPos(), getBlockState(), EntropyCradleCapacitor.POWER, true, 0, this.storedEnergy.getEnergyStored() == MAX_ENERGY);
             return TickRateModulation.IDLE;
         }
 
         int remainingFE = MAX_ENERGY - currentFE;
         int maxAEToExtract = remainingFE / 2;
-        if (maxAEToExtract > 25_000_000){
-            maxAEToExtract = 25_000_000;
+        if (maxAEToExtract > CrazyConfig.COMMON.CradleChargingSpeed.get()){
+            maxAEToExtract = CrazyConfig.COMMON.CradleChargingSpeed.get();
         }
 
         var extractedAE = getGridNode().getGrid().getEnergyService().extractAEPower(
@@ -168,11 +169,11 @@ public class EntropyCradleControllerBE extends AENetworkInvBlockEntity implement
     public void onChangeInventory(InternalInventory inv, int slot) {}
 
     public void onRedstonePulse() {
-        var extracted = this.storedEnergy.extractEnergy(MAX_ENERGY, false);
+        var extracted = this.storedEnergy.extractEnergy(CrazyConfig.COMMON.CradleCost.get(), false);
         for (int level = 0; level < 6; level++) {
-            validator.markCaps(getLevel(), getBlockPos(), getBlockState(), EntropyCradleCapacitor.POWER, false, level, false);
+            validator.markCaps(getLevel(), getBlockPos(), getBlockState(), EntropyCradleCapacitor.POWER, false, level, this.storedEnergy.getEnergyStored() == MAX_ENERGY);
         }
-        if (extracted < MAX_ENERGY) return;
+        if (extracted < CrazyConfig.COMMON.CradleCost.get()) return;
 
         var facing = getBlockState().getValue(BlockStateProperties.HORIZONTAL_FACING);
         BlockPos origin;

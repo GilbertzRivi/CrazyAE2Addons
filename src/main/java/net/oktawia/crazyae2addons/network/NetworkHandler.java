@@ -99,5 +99,12 @@ public class NetworkHandler {
                 SetConfigAmountPacket::handle,
                 Optional.of(NetworkDirection.PLAY_TO_SERVER)
         );
+        INSTANCE.registerMessage(id++,
+                CancellAllCraftingPacket.class,
+                CancellAllCraftingPacket::encode,
+                CancellAllCraftingPacket::decode,
+                CancellAllCraftingPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER)
+        );
     }
 }

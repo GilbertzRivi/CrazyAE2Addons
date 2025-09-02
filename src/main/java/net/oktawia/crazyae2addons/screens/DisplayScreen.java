@@ -31,7 +31,7 @@ public class DisplayScreen<C extends DisplayMenu> extends AEBaseScreen<C> {
     public Button confirm;
     public ToggleButton mode;
     public ToggleButton center;
-    public AETextField fontSize;
+    public ToggleButton margin;
     public boolean initialized = false;
     public Scrollbar scrollbar;
     private int lastScroll = -1;
@@ -42,7 +42,8 @@ public class DisplayScreen<C extends DisplayMenu> extends AEBaseScreen<C> {
         this.widgets.add("value", value);
         this.widgets.add("confirm", confirm);
         this.widgets.add("mode", mode);
-        this.widgets.add("font", fontSize);
+        this.widgets.add("center", center);
+        this.widgets.add("margin", margin);
         this.widgets.add("scroll", scrollbar);
     }
 
@@ -51,8 +52,9 @@ public class DisplayScreen<C extends DisplayMenu> extends AEBaseScreen<C> {
         super.updateBeforeRender();
         if (!this.initialized){
             value.setValue(getMenu().displayValue.replace("&nl", "\n"));
-            fontSize.setValue(String.valueOf(getMenu().fontSize));
             mode.setState(getMenu().mode);
+            center.setState(getMenu().centerText);
+            margin.setState(getMenu().margin);
             this.initialized = true;
         }
     }
@@ -67,34 +69,29 @@ public class DisplayScreen<C extends DisplayMenu> extends AEBaseScreen<C> {
         confirm.setTooltip(Tooltip.create(Component.literal("Submit")));
         mode = new ToggleButton(Icon.VALID, Icon.INVALID, this::changeMode);
         mode.setTooltip(Tooltip.create(Component.literal("Join with adjacent displays")));
-        fontSize = new AETextField(style, Minecraft.getInstance().font, 0,0,0,0);
-        fontSize.setBordered(false);
-        fontSize.setMaxLength(5);
-        fontSize.setTooltip(Tooltip.create(Component.literal("Font size")));
-        fontSize.setResponder(val -> getMenu().setFont(val));
+        center = new ToggleButton(Icon.VALID, Icon.INVALID, this::changeCenter);
+        center.setTooltip(Tooltip.create(Component.literal("Center text")));
+        margin = new ToggleButton(Icon.VALID, Icon.INVALID, this::changeMargin);
+        margin.setTooltip(Tooltip.create(Component.literal("3% margin around the text")));
     }
 
     private void changeMode(boolean b) {
         this.getMenu().changeMode(b);
         mode.setState(b);
     }
+    private void changeCenter(boolean b) {
+        this.getMenu().changeCenter(b);
+        center.setState(b);
+    }
+    private void changeMargin(boolean b) {
+        this.getMenu().changeMargin(b);
+        margin.setState(b);
+    }
 
     private void save(){
         getMenu().syncValue(value.getValue().replace("\n", "&nl"));
     }
 
-
-    @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        boolean handled = super.mouseClicked(mouseX, mouseY, button);
-
-        if (button == 1 && this.fontSize != null && this.fontSize.isMouseOver(mouseX, mouseY)) {
-            this.fontSize.setValue("");
-            return true;
-        }
-
-        return handled;
-    }
 
     @Override
     public void containerTick() {

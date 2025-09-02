@@ -44,6 +44,7 @@ import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.registries.ForgeRegistries;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.Utils;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
@@ -238,7 +239,7 @@ public class AutoEnchanterBE extends AENetworkInvBlockEntity implements MenuProv
         }
 
         int fullXpAmount = levelToXp(enchantLevel);
-        int xpToConsume = Math.max(1, fullXpAmount / 10);
+        int xpToConsume = Math.max(1, fullXpAmount / 100) * CrazyConfig.COMMON.AutoEnchanterCost.get();
 
         var grid = getGridNode().getGrid();
         var energy = grid.getEnergyService();
@@ -264,7 +265,7 @@ public class AutoEnchanterBE extends AENetworkInvBlockEntity implements MenuProv
 
         int totalXpAvailable = xpFromShards + xpFromFluids;
 
-        if (totalXpAvailable < fullXpAmount) {
+        if (totalXpAvailable < fullXpAmount * CrazyConfig.COMMON.AutoEnchanterCost.get()) {
             return input;
         }
 
@@ -422,7 +423,7 @@ public class AutoEnchanterBE extends AENetworkInvBlockEntity implements MenuProv
                         countBookshelves(this.getBlockPos().above().above()),
                         this.inputInv.getStackInSlot(0)
                 )
-        ));
+        ) * CrazyConfig.COMMON.AutoEnchanterCost.get());
         if (this.menu != null){
             this.menu.levelCost = this.levelCost;
         }

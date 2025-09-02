@@ -80,18 +80,6 @@ public class CrazyRecipes {
                                 new ItemStack(CrazyBlockRegistrar.MOB_FARM_CONTROLLER.get()).copyWithCount(1)
                         ),
                         new ItemStack(CrazyBlockRegistrar.MOB_FARM_CONTROLLER.get()).copyWithCount(1)
-                ),
-
-                new CrazyEntry(
-                        new ResourceLocation("crazyae2addons", "pattern_unit.nbt"),
-                        Component.literal("Pattern Management Unit"),
-                        List.of(
-                                new ItemStack(CrazyBlockRegistrar.PATTERN_MANAGEMENT_UNIT_WALL_BLOCK.get()).copyWithCount(54),
-                                new ItemStack(CrazyBlockRegistrar.PATTERN_MANAGEMENT_UNIT_FRAME_BLOCK.get()).copyWithCount(44),
-                                new ItemStack(CrazyBlockRegistrar.PATTERN_MANAGEMENT_UNIT_BLOCK.get()).copyWithCount(27),
-                                new ItemStack(CrazyBlockRegistrar.PATTERN_MANAGEMENT_UNIT_CONTROLLER_BLOCK.get()).copyWithCount(1)
-                        ),
-                        new ItemStack(CrazyBlockRegistrar.PATTERN_MANAGEMENT_UNIT_CONTROLLER_BLOCK.get()).copyWithCount(1)
                 )
         );
     }

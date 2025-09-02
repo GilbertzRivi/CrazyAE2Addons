@@ -12,6 +12,7 @@ import appeng.util.SettingsFrom;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.BlockGetter;
@@ -33,6 +34,7 @@ import appeng.api.util.AECableType;
 import appeng.hooks.ticking.TickHandler;
 import appeng.items.parts.PartModels;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
@@ -48,6 +50,7 @@ import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.misc.CombinedEnergyStorage;
 import net.oktawia.crazyae2addons.misc.CombinedFluidHandlerItem;
 import net.oktawia.crazyae2addons.misc.FluidHandlerConcatenate;
+import net.oktawia.crazyae2addons.misc.WormholeAnchor;
 import net.oktawia.crazyae2addons.mixins.P2PTunnelPartAccessor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -145,16 +148,10 @@ public class WormholeP2PTunnelPart extends P2PTunnelPart<WormholeP2PTunnelPart> 
 
     @Override
     public boolean onPartActivate(Player player, InteractionHand hand, Vec3 pos) {
-        if (isClientSide()) {
-            return true;
-        }
-
-        if (hand == InteractionHand.OFF_HAND) {
-            return false;
-        }
+        if (isClientSide()) return true;
+        if (hand == InteractionHand.OFF_HAND) return false;
 
         var is = player.getItemInHand(hand);
-
         if (!is.isEmpty() && is.getItem() instanceof IMemoryCard mc) {
             var configData = mc.getData(is);
             if (configData.contains("p2pType") || configData.contains("p2pFreq") || !configData.contains("wormhole")) {
@@ -166,8 +163,46 @@ public class WormholeP2PTunnelPart extends P2PTunnelPart<WormholeP2PTunnelPart> 
                 return true;
             }
         }
-        return false;
+
+        var level = getLevel();
+        if (!(player instanceof ServerPlayer sp) || level == null) return false;
+
+        BlockPos targetPos = null;
+        Direction hitFace = null;
+
+        if (isOutput()) {
+            var input = getInput();
+            if (input != null && input.getHost() != null) {
+                var remoteHost = input.getHost().getBlockEntity();
+                targetPos = remoteHost.getBlockPos().relative(input.getSide());
+                hitFace = input.getSide().getOpposite();
+            }
+        } else {
+            var outs = getOutputs();
+            if (!outs.isEmpty()) {
+                var out = outs.iterator().next();
+                var remoteHost = out.getHost().getBlockEntity();
+                targetPos = remoteHost.getBlockPos().relative(out.getSide());
+                hitFace = out.getSide().getOpposite();
+            }
+        }
+
+        if (targetPos == null) return false;
+
+        var state = level.getBlockState(targetPos);
+        var hit = new BlockHitResult(Vec3.atCenterOf(targetPos), hitFace, targetPos, false);
+
+        WormholeAnchor.set(sp, targetPos);
+
+        var result = state.use(level, player, hand, hit);
+
+        if (!result.consumesAction()) {
+            WormholeAnchor.clear(player);
+        }
+
+        return result.consumesAction();
     }
+
 
     @Override
     public void importSettings(SettingsFrom mode, CompoundTag input, @Nullable Player player) {

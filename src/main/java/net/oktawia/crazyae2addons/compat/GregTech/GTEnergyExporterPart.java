@@ -13,6 +13,7 @@ import com.gregtechceu.gtceu.common.data.GTItems;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.Utils;
 import net.oktawia.crazyae2addons.parts.EnergyExporterPart;
 
@@ -72,7 +73,7 @@ public class GTEnergyExporterPart extends EnergyExporterPart {
 
             double minAllowed = stored < 1_000_000_000 ? maxStored * 0.33 : 1_000_000_000;
 
-            if (this.greg) {
+            if (this.greg && CrazyConfig.COMMON.GregEnergyExporter.get()) {
                 neighbor.getCapability(GTCapability.CAPABILITY_ENERGY_CONTAINER, getSide().getOpposite()).ifPresent(gtStorage -> {
                     long euCanInsert = gtStorage.getEnergyCanBeInserted();
 

@@ -246,6 +246,14 @@ public class CrazyItemRegistrar {
             ITEMS.register("unassembled_crazy_pattern_provider",
                     () -> new UnassembledCrazyPatternProviderItem(new Item.Properties()));
 
+    public static final RegistryObject<MobKeyItem> MOB_KEY_ITEM =
+            ITEMS.register("mob_key",
+                    () -> new MobKeyItem(new Item.Properties()));
+
+    public static final RegistryObject<MobKeySelectorItem> MOB_KEY_SELECTOR_ITEM =
+            ITEMS.register("mob_key_selector",
+                    () -> new MobKeySelectorItem(new Item.Properties()));
+
     private CrazyItemRegistrar() {}
 
 }

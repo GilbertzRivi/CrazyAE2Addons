@@ -36,6 +36,8 @@ import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.energy.EnergyStorage;
 import net.minecraftforge.energy.IEnergyStorage;
+import net.minecraftforge.registries.ForgeRegistries;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
@@ -196,19 +198,19 @@ public class PenroseControllerBE extends AENetworkInvBlockEntity implements Prev
         long maxEnergy = switch (tier) {
             case 1 -> {
                 maxCount = 16384;
-                yield (1L << 26) / 64;
+                yield CrazyConfig.COMMON.PenroseGenT1.get();
             }
             case 2 -> {
                 maxCount = 24576;
-                yield (1L << 28) / 64;
+                yield CrazyConfig.COMMON.PenroseGenT2.get();
             }
             case 3 -> {
                 maxCount = 32768;
-                yield (1L << 30) / 64;
+                yield CrazyConfig.COMMON.PenroseGenT3.get();
             }
             default -> {
                 maxCount = 8192;
-                yield (1L << 24) / 64;
+                yield CrazyConfig.COMMON.PenroseGenT0.get();
             }
         };
 
@@ -289,10 +291,16 @@ public class PenroseControllerBE extends AENetworkInvBlockEntity implements Prev
 
             generated = PenroseControllerBE.energyGenerated(count, tier) * extracted;
 
-            if (AEItems.MATTER_BALL.isSameAs(((AEItemKey) config.getStack(0).what()).toStack())){
-                generated *= 8;
-            } else if (AEItems.SINGULARITY.isSameAs(((AEItemKey) config.getStack(0).what()).toStack())){
-                generated *= 64;
+            if (config.getStack(0).what() instanceof AEItemKey itemKey){
+                var rs = ForgeRegistries.ITEMS.getKey(itemKey.getItem());
+                if (rs != null && CrazyConfig.COMMON.PenroseGoodFuel.get().contains(rs.toString())){
+                    generated *= 8;
+                }
+            } else if (config.getStack(0).what() instanceof AEItemKey itemKey){
+                var rs = ForgeRegistries.ITEMS.getKey(itemKey.getItem());
+                if (rs != null && CrazyConfig.COMMON.PenroseBestFuel.get().contains(rs.toString())){
+                    generated *= 64;
+                }
             }
             if (!energyMode){
                 this.energyStorage = new EnergyStorage(Integer.MAX_VALUE, 0, Integer.MAX_VALUE, (int) Math.min((Integer.MAX_VALUE), ((long)this.energyStorage.getEnergyStored()) + generated));

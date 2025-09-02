@@ -6,7 +6,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.network.NetworkEvent;
 import net.oktawia.crazyae2addons.screens.CrazyPatternModifierScreenPP;
 import net.oktawia.crazyae2addons.screens.CrazyPatternProviderScreen;
-import net.oktawia.crazyae2addons.screens.PatternManagementUnitControllerScreen;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,8 +45,6 @@ public class UpdatePatternsPacket {
             if (mc.screen instanceof CrazyPatternProviderScreen<?> screen) {
                 screen.updatePatternsFromServer(packet.startIndex, packet.patterns);
             } else if (mc.screen instanceof CrazyPatternModifierScreenPP<?> screen) {
-                screen.updatePatternsFromServer(packet.startIndex, packet.patterns);
-            } else if (mc.screen instanceof PatternManagementUnitControllerScreen<?> screen) {
                 screen.updatePatternsFromServer(packet.startIndex, packet.patterns);
             }
         });

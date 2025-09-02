@@ -118,18 +118,6 @@ public class CrazyBlockEntityRegistrar {
     public static final RegistryObject<BlockEntityType<SuperSingularityBlockBE>> SUPER_SINGULARITY_BLOCK_BE =
             reg("super_singularity_block_be", CrazyBlockRegistrar.SUPER_SINGULARITY_BLOCK, SuperSingularityBlockBE::new, SuperSingularityBlockBE.class);
 
-    public static final RegistryObject<BlockEntityType<PatternManagementUnitBE>> PATTERN_MANAGEMENT_UNIT_BE =
-            reg("pattern_management_unit_be", CrazyBlockRegistrar.PATTERN_MANAGEMENT_UNIT_BLOCK, PatternManagementUnitBE::new, PatternManagementUnitBE.class);
-
-    public static final RegistryObject<BlockEntityType<PatternManagementUnitFrameBE>> PATTERN_MANAGEMENT_UNIT_FRAME_BE =
-            reg("pattern_management_unit_frame_be", CrazyBlockRegistrar.PATTERN_MANAGEMENT_UNIT_FRAME_BLOCK, PatternManagementUnitFrameBE::new, PatternManagementUnitFrameBE.class);
-
-    public static final RegistryObject<BlockEntityType<PatternManagementUnitWallBE>> PATTERN_MANAGEMENT_UNIT_WALL_BE =
-            reg("pattern_management_unit_wall_be", CrazyBlockRegistrar.PATTERN_MANAGEMENT_UNIT_WALL_BLOCK, PatternManagementUnitWallBE::new, PatternManagementUnitWallBE.class);
-
-    public static final RegistryObject<BlockEntityType<PatternManagementUnitControllerBE>> PATTERN_MANAGEMENT_UNIT_CONTROLLER_BE =
-            reg("pattern_management_unit_controller_be", CrazyBlockRegistrar.PATTERN_MANAGEMENT_UNIT_CONTROLLER_BLOCK, PatternManagementUnitControllerBE::new, PatternManagementUnitControllerBE.class);
-
     public static final RegistryObject<BlockEntityType<ResearchStationBE>> RESEARCH_STATION_BE =
             reg("research_station_be", CrazyBlockRegistrar.RESEARCH_STATION, ResearchStationBE::new, ResearchStationBE.class);
 

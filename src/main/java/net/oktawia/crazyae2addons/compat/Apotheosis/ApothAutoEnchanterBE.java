@@ -17,6 +17,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.EnchantmentInstance;
 import net.minecraft.world.level.block.state.BlockState;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.Utils;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
 import net.oktawia.crazyae2addons.entities.AutoEnchanterBE;
@@ -85,7 +86,7 @@ public class ApothAutoEnchanterBE extends AutoEnchanterBE {
 
         int enchantLevel = getXpCostForEnchant(input);
         int fullXpRequired = levelToXp(enchantLevel);
-        int xpToConsume = Math.max(1, fullXpRequired / 10);
+        int xpToConsume = Math.max(1, fullXpRequired / 100) * CrazyConfig.COMMON.AutoEnchanterCost.get();
 
         var grid = getGridNode().getGrid();
         var energy = grid.getEnergyService();
@@ -111,7 +112,7 @@ public class ApothAutoEnchanterBE extends AutoEnchanterBE {
 
         int totalXpAvailable = xpFromShards + xpFromFluids;
 
-        if (totalXpAvailable < fullXpRequired) {
+        if (totalXpAvailable < fullXpRequired * CrazyConfig.COMMON.AutoEnchanterCost.get()) {
             return input;
         }
 
@@ -194,7 +195,7 @@ public class ApothAutoEnchanterBE extends AutoEnchanterBE {
     @Override
     public TickRateModulation tickingRequest(IGridNode node, int ticksSinceLastCall) {
         super.tickingRequest(node, ticksSinceLastCall);
-        this.levelCost = Utils.shortenNumber(levelToXp(getXpCostForEnchant(this.inputInv.getStackInSlot(0))));
+        this.levelCost = Utils.shortenNumber(levelToXp(getXpCostForEnchant(this.inputInv.getStackInSlot(0))) * CrazyConfig.COMMON.AutoEnchanterCost.get());
         if (this.menu != null){
             this.menu.levelCost = this.levelCost;
         }

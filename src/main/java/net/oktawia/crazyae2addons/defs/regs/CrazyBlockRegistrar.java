@@ -8,11 +8,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.blocks.*;
-import net.oktawia.crazyae2addons.entities.PatternManagementUnitBE;
-import net.oktawia.crazyae2addons.entities.RecipeFabricatorBE;
 import net.oktawia.crazyae2addons.items.*;
-import net.oktawia.crazyae2addons.menus.BrokenPatternProviderMenu;
-import net.oktawia.crazyae2addons.menus.EnergyStorageControllerMenu;
 
 import java.util.List;
 
@@ -317,34 +313,6 @@ public class CrazyBlockRegistrar {
     public static final RegistryObject<BlockItem> SUPER_SINGULARITY_BLOCK_ITEM =
             BLOCK_ITEMS.register("super_singularity_block",
                     () -> new EntropyCradleCapacitorItem(SUPER_SINGULARITY_BLOCK.get(), new Item.Properties()));
-
-    public static final RegistryObject<PatternManagementUnitBlock> PATTERN_MANAGEMENT_UNIT_BLOCK =
-            BLOCKS.register("pattern_management_unit", PatternManagementUnitBlock::new);
-
-    public static final RegistryObject<BlockItem> PATTERN_MANAGEMENT_UNIT_BLOCK_ITEM =
-            BLOCK_ITEMS.register("pattern_management_unit",
-                    () -> new PatternManagementUnitBlockItem(PATTERN_MANAGEMENT_UNIT_BLOCK.get(), new Item.Properties()));
-
-    public static final RegistryObject<PatternManagementUnitFrameBlock> PATTERN_MANAGEMENT_UNIT_FRAME_BLOCK =
-            BLOCKS.register("pattern_management_unit_frame", PatternManagementUnitFrameBlock::new);
-
-    public static final RegistryObject<BlockItem> PATTERN_MANAGEMENT_UNIT_FRAME_BLOCK_ITEM =
-            BLOCK_ITEMS.register("pattern_management_unit_frame",
-                    () -> new PatternManagementUnitFrameBlockItem(PATTERN_MANAGEMENT_UNIT_FRAME_BLOCK.get(), new Item.Properties()));
-
-    public static final RegistryObject<PatternManagementUnitWallBlock> PATTERN_MANAGEMENT_UNIT_WALL_BLOCK =
-            BLOCKS.register("pattern_management_unit_wall", PatternManagementUnitWallBlock::new);
-
-    public static final RegistryObject<BlockItem> PATTERN_MANAGEMENT_UNIT_WALL_BLOCK_ITEM =
-            BLOCK_ITEMS.register("pattern_management_unit_wall",
-                    () -> new PatternManagementUnitWallBlockItem(PATTERN_MANAGEMENT_UNIT_WALL_BLOCK.get(), new Item.Properties()));
-
-    public static final RegistryObject<PatternManagementUnitControllerBlock> PATTERN_MANAGEMENT_UNIT_CONTROLLER_BLOCK =
-            BLOCKS.register("pattern_management_unit_controller", PatternManagementUnitControllerBlock::new);
-
-    public static final RegistryObject<BlockItem> PATTERN_MANAGEMENT_UNIT_CONTROLLER_BLOCK_ITEM =
-            BLOCK_ITEMS.register("pattern_management_unit_controller",
-                    () -> new PatternManagementUnitControllerBlockItem(PATTERN_MANAGEMENT_UNIT_CONTROLLER_BLOCK.get(), new Item.Properties()));
 
     public static final RegistryObject<ResearchStation> RESEARCH_STATION =
             BLOCKS.register("research_station", ResearchStation::new);

@@ -139,7 +139,6 @@ public class CrazyAddons {
             MinecraftForge.EVENT_BUS.addListener(EnergyStoragePreviewRenderer::onRender);
             MinecraftForge.EVENT_BUS.addListener(SpawnerExtractorPreviewRenderer::onRender);
             MinecraftForge.EVENT_BUS.addListener(MobFarmPreviewRenderer::onRender);
-            MinecraftForge.EVENT_BUS.addListener(PatternManagementUnitPreviewRenderer::onRender);
             ItemBlockRenderTypes.setRenderLayer(CrazyFluidRegistrar.RESEARCH_FLUID_BLOCK.get(), RenderType.translucent());
         }
         @SubscribeEvent

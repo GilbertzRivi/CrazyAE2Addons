@@ -33,6 +33,7 @@ import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.level.storage.LevelResource;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.registries.ForgeRegistries;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.logic.BuildScheduler;
 import net.oktawia.crazyae2addons.logic.BuilderPatternHost;
@@ -50,37 +51,24 @@ import java.util.*;
 
 public class StructureGadgetItem extends AEBaseItem implements IMenuItem {
 
-    // =========================
-    // Selekcja/stan pracy
-    // =========================
     private BlockPos cornerA = null;
     private BlockPos cornerB = null;
     private BlockPos origin = null;
     private Direction originFacing = Direction.NORTH;
 
-    // =========================
-    // Energia
-    // =========================
-    private static final int BASE_ENERGY_CAPACITY = 200_000;     // baza
-    private static final int ENERGY_CARD_BONUS    = 200_000;     // +200k za kartę
-    private static final int ENERGY_CARD_SLOTS    = 4;           // max kart
-    private static final int MAX_RECEIVE          = 25_000;      // I/O limity
+    private static final int BASE_ENERGY_CAPACITY = 200_000;
+    private static final int ENERGY_CARD_BONUS    = 200_000;
+    private static final int ENERGY_CARD_SLOTS    = 4;
+    private static final int MAX_RECEIVE          = 25_000;
     private static final int MAX_EXTRACT          = Integer.MAX_VALUE;
 
     private static final String NBT_ENERGY        = "energy";
 
-    // =========================
-    // Program
-    // =========================
     private static final String SEP = "|";
 
     public StructureGadgetItem(Properties props) {
         super(props.stacksTo(1));
     }
-
-    // =========================================================
-    // UI / użycie
-    // =========================================================
 
     public static boolean hasStoredStructure(ItemStack stack) {
         if (stack == null || stack.isEmpty() || !stack.hasTag()) return false;
@@ -98,7 +86,6 @@ public class StructureGadgetItem extends AEBaseItem implements IMenuItem {
         return stack.getTag().getString("program_id");
     }
 
-    // === Snapshot z NBT gadżetu → StructureSnapshot ===
     public static @Nullable StructureSnapshot loadSnapshot(ItemStack stack, @Nullable Level level) {
         if (stack == null || stack.isEmpty() || !stack.hasTag()) return null;
         CompoundTag tag = stack.getTag();
@@ -107,7 +94,6 @@ public class StructureGadgetItem extends AEBaseItem implements IMenuItem {
         if (!tag.contains("preview_palette") || !tag.contains("preview_positions") || !tag.contains("preview_indices"))
             return null;
 
-        // --- paleta ---
         var palList = tag.getList("preview_palette", Tag.TAG_STRING);
         if (palList.isEmpty()) return null;
 
@@ -141,7 +127,6 @@ public class StructureGadgetItem extends AEBaseItem implements IMenuItem {
         int sizeY = (maxY - minY) + 1;
         int sizeZ = (maxZ - minZ) + 1;
 
-        // --- mapa bloków ---
         Map<BlockPos, BlockState> map = new HashMap<>(blocksN * 2);
         for (int i = 0; i < blocksN; i++) {
             int lx = posArr[i * 3]     - minX;
@@ -156,7 +141,6 @@ public class StructureGadgetItem extends AEBaseItem implements IMenuItem {
         return new StructureSnapshot(sizeX, sizeY, sizeZ, map);
     }
 
-    // Helper: spec „modid:block[prop=val,...]” → BlockState
     private static @Nullable BlockState parseBlockStateSpecForSnapshot(String spec) {
         String name = spec;
         String props = null;
@@ -197,13 +181,11 @@ public class StructureGadgetItem extends AEBaseItem implements IMenuItem {
     public @NotNull InteractionResultHolder<ItemStack> use(@NotNull Level level, @NotNull Player p, @NotNull InteractionHand hand) {
         ItemStack stack = p.getItemInHand(hand);
 
-        // Otwórz GUI gadżetu (Shift+PPM)
         if (!level.isClientSide() && p.isShiftKeyDown()) {
             MenuOpener.open(CrazyMenuRegistrar.GADGET_MENU.get(), p, MenuLocators.forHand(p, hand));
             return new InteractionResultHolder<>(InteractionResult.SUCCESS, stack);
         }
 
-        // Jeśli mamy już kod – najpierw wklej
         if (stack.hasTag() && stack.getTag().getBoolean("code")) {
             if (level.isClientSide()) {
                 p.displayClientMessage(Component.literal("First paste your current structure"), true);
@@ -211,7 +193,6 @@ public class StructureGadgetItem extends AEBaseItem implements IMenuItem {
             return new InteractionResultHolder<>(InteractionResult.sidedSuccess(level.isClientSide()), stack);
         }
 
-        // Gdy mamy dwa rogi i origin – wytnij + zapisz program
         if (!level.isClientSide() && cornerA != null && cornerB != null && origin != null) {
             generateProgramAndCut(level, p, stack);
             return InteractionResultHolder.success(stack);
@@ -229,7 +210,6 @@ public class StructureGadgetItem extends AEBaseItem implements IMenuItem {
 
         ItemStack stack = ctx.getItemInHand();
 
-        // Shift+klik = wklej w miejscu (po stronie klikniętej ścianki)
         if (player.isShiftKeyDown()) {
             if (!level.isClientSide()) {
                 BlockPos placeOrigin = clicked.relative(ctx.getClickedFace());
@@ -238,12 +218,10 @@ public class StructureGadgetItem extends AEBaseItem implements IMenuItem {
             return InteractionResult.SUCCESS;
         }
 
-        // Wybór cornerów do CUT
         if (stack.hasTag() && stack.getTag().getBoolean("code")) {
             player.displayClientMessage(Component.literal("Paste current structure first"), true);
         } else if (cornerA == null) {
             cornerA = clicked.immutable();
-            // zapisz do NBT dla clientowego preview kosztu
             CompoundTag tag = stack.getOrCreateTag();
             tag.putIntArray("selA", new int[]{cornerA.getX(), cornerA.getY(), cornerA.getZ()});
             player.displayClientMessage(Component.literal("Corner 1 set!"), true);
@@ -264,18 +242,11 @@ public class StructureGadgetItem extends AEBaseItem implements IMenuItem {
         return InteractionResult.SUCCESS;
     }
 
-    // =========================================================
-    // AE2 menu-host
-    // =========================================================
 
     @Override
     public @Nullable ItemMenuHost getMenuHost(Player player, int inventorySlot, ItemStack stack, @Nullable BlockPos pos) {
         return new GadgetHost(player, inventorySlot, stack);
     }
-
-    // =========================================================
-    // Energia (z AE2 UpgradeInventories — Energy Card)
-    // =========================================================
 
     private static int getEnergy(ItemStack stack) {
         return stack.getOrCreateTag().getInt(NBT_ENERGY);
@@ -286,16 +257,13 @@ public class StructureGadgetItem extends AEBaseItem implements IMenuItem {
         stack.getOrCreateTag().putInt(NBT_ENERGY, Math.max(0, Math.min(cap, value)));
     }
 
-    /** Zwraca inwentarz upgrade’ów AE2 dla tego itemu (utrzymywany w NBT stacka). */
     public IUpgradeInventory getUpgrades(ItemStack stack) {
         IUpgradeInventory inv = UpgradeInventories.forItem(stack, ENERGY_CARD_SLOTS);
-        // sanity: przytnij energię gdy zmalała pojemność (wyjęto karty)
         int cap = getMaxEnergyCapacity(stack);
         if (getEnergy(stack) > cap) setEnergy(stack, cap);
         return inv;
     }
 
-    /** Maksymalna pojemność = baza + (liczba ENERGY_CARD) * bonus. */
     private static int getMaxEnergyCapacity(ItemStack stack) {
         IUpgradeInventory inv = UpgradeInventories.forItem(stack, ENERGY_CARD_SLOTS);
         int cards = inv.getInstalledUpgrades(AEItems.ENERGY_CARD);
@@ -379,7 +347,7 @@ public class StructureGadgetItem extends AEBaseItem implements IMenuItem {
         double dy = target.getY() - from.getY();
         double dz = target.getZ() - from.getZ();
         double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-        return Math.pow(distance, 3) / 25.0;
+        return distance * CrazyConfig.COMMON.NokiaCost.get();
     }
 
     public static int computeCutCostFE(Level level, BlockPos cornerA, BlockPos cornerB, BlockPos origin) {

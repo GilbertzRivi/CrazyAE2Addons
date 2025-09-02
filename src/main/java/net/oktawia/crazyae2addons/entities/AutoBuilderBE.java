@@ -38,6 +38,7 @@ import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.Mth;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -60,6 +61,7 @@ import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.registries.ForgeRegistries;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
@@ -99,7 +101,7 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
     private final List<BlockPos> previewPositions = new ArrayList<>();
     private final List<String> previewPalette = new ArrayList<>();
     private int[] previewIndices = new int[0];
-    private final int PREVIEW_LIMIT = 8192;
+    private final int PREVIEW_LIMIT = CrazyConfig.COMMON.AutobuilderPreviewLimit.get();
     private double requiredEnergyAE = 0.0D;
     private boolean energyPrepaid = false;
     private Direction sourceFacing = Direction.NORTH;
@@ -245,7 +247,7 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
             this.offset = BlockPos.of(tag.getLong("offset"));
         }
         this.previewEnabled = tag.getBoolean("previewEnabled");
-        this.energyPrepaid = tag.getBoolean("energyPrepaid"); // <---
+        this.energyPrepaid = tag.getBoolean("energyPrepaid");
 
         previewPositions.clear();
         if (tag.contains("previewPositions", Tag.TAG_LIST)) {
@@ -558,7 +560,7 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         double dy = target.getY() - worldPosition.getY();
         double dz = target.getZ() - worldPosition.getZ();
         double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-        return Math.pow(distance, 3) / 25.0;
+        return distance * CrazyConfig.COMMON.AutobuilderCostMult.get();
     }
 
 
@@ -598,6 +600,19 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
             }
         }
     }
+
+    private static int stepsFromCards(int cards, int configMax) {
+        int c = Mth.clamp(cards, 0, 6);
+        int max = Math.max(1, configMax);
+        return 1 + ((max - 1) * c) / 6;
+    }
+
+    private int calcStepsPerTick() {
+        int cards = upgrades.getInstalledUpgrades(AEItems.SPEED_CARD);
+        int maxFromConfig = CrazyConfig.COMMON.AutobuilderSpeed.get();
+        return stepsFromCards(cards, maxFromConfig);
+    }
+
 
     @Override
     public TickRateModulation tickingRequest(IGridNode node, int ticksSinceLastCall) {
@@ -646,12 +661,9 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
             return TickRateModulation.URGENT;
         }
 
-        int accelCount = upgrades.getInstalledUpgrades(AEItems.SPEED_CARD);
-        int maxSteps = (int) Math.max(1, Math.pow(accelCount, 4));
-
         boolean didWork = false;
 
-        for (int steps = 0; steps < maxSteps && currentInstruction < code.size(); steps++) {
+        for (int steps = 0; steps < calcStepsPerTick() && currentInstruction < code.size(); steps++) {
             String inst = code.get(currentInstruction);
 
             if (inst.startsWith("Z|")) {
@@ -669,23 +681,55 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
 
                 case "X" -> {
                     var grid = getMainNode().getGrid();
+                    boolean didDestroy = false;
+                    BlockPos pos = getGhostRenderPos();
+
                     if (grid != null) {
-                        if (isBreakable(level.getBlockState(getGhostRenderPos()), level, getGhostRenderPos())) {
-                            var drops = getSilkTouchDrops(level.getBlockState(getGhostRenderPos()), (ServerLevel) level, getGhostRenderPos());
+                        BlockState state = level.getBlockState(pos);
+                        if (!state.isAir() && isBreakable(state, level, pos)) {
+                            var drops = getSilkTouchDrops(state, (ServerLevel) level, pos);
+
                             long inserted = 0;
-                            for (var drop : drops){
-                                inserted += StorageHelper.poweredInsert(grid.getEnergyService(), grid.getStorageService().getInventory(), AEItemKey.of(drop.getItem()), 1, IActionSource.ofMachine(this), Actionable.MODULATE);
+                            for (var drop : drops) {
+                                inserted += StorageHelper.poweredInsert(
+                                        grid.getEnergyService(),
+                                        grid.getStorageService().getInventory(),
+                                        AEItemKey.of(drop.getItem()),
+                                        1,
+                                        IActionSource.ofMachine(this),
+                                        Actionable.MODULATE
+                                );
                             }
-                            if (inserted > 0){
-                                getLevel().destroyBlock(getGhostRenderPos(), false);
+
+                            if (inserted > 0 || drops.isEmpty()) {
+                                if (getLevel().destroyBlock(pos, false)) {
+                                    didDestroy = true;
+                                }
                             }
                         }
-                        if (!getLevel().getFluidState(getGhostRenderPos()).isEmpty()){
-                            if (getLevel().getFluidState(getGhostRenderPos()).isSource()){
-                                StorageHelper.poweredInsert(grid.getEnergyService(), grid.getStorageService().getInventory(), AEFluidKey.of(getLevel().getFluidState(getGhostRenderPos()).getType()), 1000, IActionSource.ofMachine(this), Actionable.MODULATE);
+
+                        var fs = getLevel().getFluidState(pos);
+                        if (!fs.isEmpty()) {
+                            if (fs.isSource()) {
+                                StorageHelper.poweredInsert(
+                                        grid.getEnergyService(),
+                                        grid.getStorageService().getInventory(),
+                                        AEFluidKey.of(fs.getType()),
+                                        1000,
+                                        IActionSource.ofMachine(this),
+                                        Actionable.MODULATE
+                                );
                             }
-                            getLevel().setBlock(getGhostRenderPos(), Blocks.AIR.defaultBlockState(), 3);
+                            if (getLevel().setBlock(pos, Blocks.AIR.defaultBlockState(), 3)) {
+                                didDestroy = true;
+                            }
                         }
+                    }
+
+                    if (didDestroy) {
+                        currentInstruction++;
+                        tickDelayLeft = Math.max(tickDelayLeft, CrazyConfig.COMMON.AutobuilderMineDelay.get());
+                        return TickRateModulation.URGENT;
                     }
                 }
                 default -> {

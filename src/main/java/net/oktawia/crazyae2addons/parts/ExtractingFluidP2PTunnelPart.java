@@ -20,10 +20,14 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.items.IItemHandler;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.mixins.P2PTunnelPartAccessor;
 import org.jetbrains.annotations.Nullable;
 
 public class ExtractingFluidP2PTunnelPart extends FluidP2PTunnelPart implements IGridTickable {
+
+    private final int speed = CrazyConfig.COMMON.Fluidp2pSpeed.get();
+
     public ExtractingFluidP2PTunnelPart(IPartItem<?> partItem) {
         super(partItem);
         getMainNode().addService(IGridTickable.class, this);
@@ -113,7 +117,7 @@ public class ExtractingFluidP2PTunnelPart extends FluidP2PTunnelPart implements 
 
         try (CapabilityGuard guard = this.getInputCapability()) {
             IFluidHandler input = guard.get();
-            int toDrain = 64000;
+            int toDrain = speed;
 
             for (int tank = 0; tank < input.getTanks() && toDrain > 0; tank++) {
                 FluidStack available = input.getFluidInTank(tank);

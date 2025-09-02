@@ -82,12 +82,6 @@ public class MobKey extends AEKey {
                 .orElse(null);
     }
 
-    @Nullable
-    public ItemStack getSpawnEgg() {
-        SpawnEggItem egg = ForgeSpawnEggItem.fromEntityType(this.entityType);
-        return egg != null ? new ItemStack(egg) : ItemStack.EMPTY;
-    }
-
     @Override
     public Object getPrimaryKey() {
         return ForgeRegistries.ENTITY_TYPES.getKey(this.entityType).getPath();

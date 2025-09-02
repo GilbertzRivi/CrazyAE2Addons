@@ -22,6 +22,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.energy.IEnergyStorage;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.mixins.P2PTunnelPartAccessor;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,6 +35,8 @@ public class ExtractingFEP2PTunnelPart extends CapabilityP2PTunnelPart<Extractin
 
     private static final IEnergyStorage NULL_ENERGY_STORAGE =
             new ExtractingFEP2PTunnelPart.NullEnergyStorage();
+
+    private final int speed = CrazyConfig.COMMON.FEp2pSpeed.get();
 
     public TickingRequest getTickingRequest(IGridNode node) {
         return new TickingRequest(1, 1, false, false);
@@ -50,7 +53,7 @@ public class ExtractingFEP2PTunnelPart extends CapabilityP2PTunnelPart<Extractin
             try (CapabilityGuard outGuard = target.getAdjacentCapability()) {
                 IEnergyStorage outCap = outGuard.get();
                 if (outCap != null && outCap.canReceive()) {
-                    totalCanReceive += outCap.receiveEnergy(Integer.MAX_VALUE, true);
+                    totalCanReceive += outCap.receiveEnergy(speed, true);
                 }
             }
         }
@@ -64,7 +67,7 @@ public class ExtractingFEP2PTunnelPart extends CapabilityP2PTunnelPart<Extractin
             if (inCap == null || !inCap.canExtract()) {
                 return TickRateModulation.IDLE;
             }
-            canGive = inCap.extractEnergy(Integer.MAX_VALUE, true);
+            canGive = inCap.extractEnergy(speed, true);
         }
         if (canGive <= 0) {
             return TickRateModulation.IDLE;

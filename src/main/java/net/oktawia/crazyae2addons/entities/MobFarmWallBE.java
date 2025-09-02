@@ -19,4 +19,8 @@ public class MobFarmWallBE extends AENetworkBlockEntity {
                         new ItemStack(CrazyBlockRegistrar.MOB_FARM_WALL.get().asItem())
                 );
     }
+
+    public void setController(MobFarmControllerBE mobFarmControllerBE) {
+        this.controller = mobFarmControllerBE;
+    }
 }

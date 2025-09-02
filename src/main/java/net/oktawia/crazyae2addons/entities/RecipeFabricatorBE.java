@@ -30,6 +30,7 @@ import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.items.IItemHandler;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
@@ -45,9 +46,8 @@ import java.util.Objects;
 public class RecipeFabricatorBE extends AENetworkInvBlockEntity implements MenuProvider, IGridTickable, IUpgradeableObject {
 
     private static final String NBT_KEYS = "keys";
-    private static final int FIXED_DURATION = 10; // zawsze 10 ticków
+    private static final int FIXED_DURATION = 10;
 
-    // 0: input, 1: drive, 2: output
     public final AppEngInternalInventory inv = new AppEngInternalInventory(this, 3);
     public final InternalInventory input  = inv.getSubInventory(0, 1);
     public final InternalInventory drive  = inv.getSubInventory(1, 2);
@@ -176,26 +176,36 @@ public class RecipeFabricatorBE extends AENetworkInvBlockEntity implements MenuP
     private FabricationRecipe findStartableRecipe() {
         if (level == null) return null;
         ItemStack in = input.getStackInSlot(0);
-        if (in.isEmpty()) return null;
+        if (in.isEmpty() && CrazyConfig.COMMON.ResearchRequired.get()) return null;
 
         var list = level.getRecipeManager().getAllRecipesFor(CrazyRecipes.FABRICATION_TYPE.get());
         for (FabricationRecipe r : list) {
             if (!r.matches(new SimpleContainer(in), level)) continue;
             if (in.getCount() < r.getInputCount()) continue;
-            if (r.getRequiredKey() != null && !driveHasKey(r.getRequiredKey())) continue;
+
+            if (CrazyConfig.COMMON.ResearchRequired.get() && r.getRequiredKey() != null && !driveHasKey(r.getRequiredKey())) {
+                continue;
+            }
+
             if (!hasOutputSpaceFor(r)) continue;
             return r;
         }
         return null;
     }
 
+
     private boolean stillValid(FabricationRecipe r) {
         ItemStack in = input.getStackInSlot(0);
         if (in.isEmpty() || in.getCount() < r.getInputCount()) return false;
         if (!r.matches(new SimpleContainer(in), level)) return false;
-        if (r.getRequiredKey() != null && !driveHasKey(r.getRequiredKey())) return false;
+
+        if (CrazyConfig.COMMON.ResearchRequired.get() && r.getRequiredKey() != null && !driveHasKey(r.getRequiredKey())) {
+            return false;
+        }
+
         return hasOutputSpaceFor(r);
     }
+
 
     private boolean hasOutputSpaceFor(FabricationRecipe r) {
         ItemStack out = output.getStackInSlot(0);

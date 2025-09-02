@@ -269,44 +269,6 @@ public class BlockDefs {
         );
 
         block(
-                CrazyBlockRegistrar.PATTERN_MANAGEMENT_UNIT_BLOCK.get(),
-                "LIL/ICI/LIL",
-                () -> Map.of(
-                        "L", AEItems.LOGIC_PROCESSOR.asItem(),
-                        "I", AEBlocks.INTERFACE.asItem(),
-                        "C", CrazyBlockRegistrar.CRAZY_PATTERN_PROVIDER_BLOCK.get().asItem()
-                )
-        );
-
-        block(
-                CrazyBlockRegistrar.PATTERN_MANAGEMENT_UNIT_FRAME_BLOCK.get(),
-                "QIQ/QIQ/QIQ",
-                () -> Map.of(
-                        "Q", Blocks.QUARTZ_BLOCK.asItem(),
-                        "I", AEItems.ENGINEERING_PROCESSOR.asItem()
-                )
-        );
-
-        block(
-                CrazyBlockRegistrar.PATTERN_MANAGEMENT_UNIT_WALL_BLOCK.get(),
-                "LIL/ICI/LIL",
-                () -> Map.of(
-                        "L", Blocks.QUARTZ_BLOCK.asItem(),
-                        "I", AEItems.ENGINEERING_PROCESSOR.asItem(),
-                        "C", AEBlocks.INTERFACE.asItem()
-                )
-        );
-
-        block(
-                CrazyBlockRegistrar.PATTERN_MANAGEMENT_UNIT_CONTROLLER_BLOCK.get(),
-                " I /ICI/ I ",
-                () -> Map.of(
-                        "I", CrazyBlockRegistrar.PATTERN_MANAGEMENT_UNIT_BLOCK.get().asItem(),
-                        "C", AEItems.ENGINEERING_PROCESSOR.asItem()
-                )
-        );
-
-        block(
                 CrazyBlockRegistrar.RESEARCH_STATION.get(),
                 " C /IKO/ E ",
                 () -> Map.of(

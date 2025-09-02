@@ -8,15 +8,16 @@
   "mixins": [
     "AAECraftingServiceMixin",
     "AAEExecutingCraftingJobAccessor",
-    "AEBaseMenuInvoker",
     "ExecutingCraftingJobAccessor",
     "MixinAAE",
     "MixinAAE2",
-    "MixinAbstractMonitorPart",
+    "MixinCPUSelectionList",
     "MixinCraftingCpuCluster",
+    "MixinCraftingCpuListEntryPrio",
     "MixinCraftingCpuLogic",
+    "MixinCraftingCPUMenu",
     "MixinCraftingService",
-    "MixinFilterSlot",
+    "MixinCraftingStatusMenu",
     "MixinGT",
     "MixinListCraftingInventory",
     "MixinMAE2",
@@ -28,11 +29,12 @@
     "PatternProviderBlockEntityAccessor",
     "PatternProviderMenuAccessor",
     "PatternProviderTargetCacheAccessor",
+    "PlayerDistanceMixin",
     "RestrictedInputSlotMixin",
     "SlotAccessor",
     "ViewCellItemMixin"
   ],
   "client": [
-    "AEBaseScreenInvoker"
+    "MixinCraftingCPUScreen"
   ]
 }

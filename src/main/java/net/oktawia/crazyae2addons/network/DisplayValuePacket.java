@@ -23,8 +23,10 @@ public class DisplayValuePacket {
     public final String variables;
     public final int fontSize;
     public final boolean mode;
+    public final boolean margin;
+    public final boolean center;
 
-    public DisplayValuePacket(BlockPos blockPos, String textValue, Direction side, byte spin, String variables, int fontSize, boolean mode) {
+    public DisplayValuePacket(BlockPos blockPos, String textValue, Direction side, byte spin, String variables, int fontSize, boolean mode, boolean margin, boolean center) {
         this.pos = blockPos;
         this.textValue = textValue;
         this.direction = side;
@@ -32,6 +34,8 @@ public class DisplayValuePacket {
         this.variables = variables == null ? "" : variables;
         this.fontSize = fontSize;
         this.mode = mode;
+        this.margin = margin;
+        this.center = center;
     }
 
     public static void encode(DisplayValuePacket packet, FriendlyByteBuf buf) {
@@ -42,6 +46,8 @@ public class DisplayValuePacket {
         buf.writeUtf(packet.variables);
         buf.writeBoolean(packet.mode);
         buf.writeInt(packet.fontSize);
+        buf.writeBoolean(packet.margin);
+        buf.writeBoolean(packet.center);
     }
 
     public static DisplayValuePacket decode(FriendlyByteBuf buf) {
@@ -52,11 +58,13 @@ public class DisplayValuePacket {
         String variables = buf.readUtf();
         boolean mode = buf.readBoolean();
         int fontSize = buf.readInt();
+        boolean margin = buf.readBoolean();
+        boolean center = buf.readBoolean();
 
         Direction dir = Direction.byName(dirName);
         if (dir == null) dir = Direction.SOUTH;
 
-        return new DisplayValuePacket(pos, textValue, dir, spin, variables, fontSize, mode);
+        return new DisplayValuePacket(pos, textValue, dir, spin, variables, fontSize, mode, margin, center);
     }
 
     public static void handle(DisplayValuePacket packet, Supplier<NetworkEvent.Context> ctxSupplier) {
@@ -72,6 +80,8 @@ public class DisplayValuePacket {
                         displayPart.spin = packet.spin;
                         displayPart.mode = packet.mode;
                         displayPart.fontSize = packet.fontSize;
+                        displayPart.margin = packet.margin;
+                        displayPart.center = packet.center;
 
                         if (packet.variables != null && !packet.variables.isEmpty()) {
                             HashMap<String, String> variablesMap = new HashMap<>();

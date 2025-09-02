@@ -20,10 +20,7 @@ public class MobFarmControllerScreen<C extends MobFarmControllerMenu> extends Up
     @Override
     protected void updateBeforeRender(){
         super.updateBeforeRender();
-        this.setTextContent("dmgblocks", Component.literal(String.format("Damage blocks: %s%%", getMenu().damageBlocks)));
         this.setTextContent("dmgitem", Component.literal("Item to use:"));
-        this.setTextContent("info1", Component.literal("Speed depends on cards"));
-        this.setTextContent("info2", Component.literal("inserted and blocks used"));
         setTextContent("prev", Component.literal("Preview: " + getMenu().preview));
     }
 }

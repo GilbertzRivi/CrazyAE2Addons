@@ -15,12 +15,14 @@ public class DisplayMenu extends AEBaseMenu {
     @GuiSync(29)
     public boolean mode;
     @GuiSync(31)
-    public int fontSize;
+    public boolean margin;
+    @GuiSync(32)
+    public boolean centerText;
 
     public String ACTION_SYNC_DISPLAY_VALUE = "syncDisplayValue";
     public String MODE = "changeMode";
-    public String CENTER = "changeCenter";
-    public String FONT = "changeFont";
+    public String MARGIN = "changeMargin";
+    public String CENTERTEXT = "changeCenter";
     public DisplayPart host;
 
     public DisplayMenu(int id, Inventory ip, DisplayPart host) {
@@ -28,10 +30,12 @@ public class DisplayMenu extends AEBaseMenu {
         this.host = host;
         this.displayValue = host.textValue;
         this.mode = host.mode;
-        this.fontSize = host.fontSize;
+        this.margin = host.margin;
+        this.centerText = host.center;
         registerClientAction(ACTION_SYNC_DISPLAY_VALUE, String.class, this::syncValue);
         registerClientAction(MODE, Boolean.class, this::changeMode);
-        registerClientAction(FONT, String.class, this::setFont);
+        registerClientAction(MARGIN, Boolean.class, this::changeMargin);
+        registerClientAction(CENTERTEXT, Boolean.class, this::changeCenter);
         createPlayerInventorySlots(ip);
     }
 
@@ -52,14 +56,19 @@ public class DisplayMenu extends AEBaseMenu {
         }
     }
 
-    public void setFont(String val) {
-        try {
-            var num = Integer.parseInt(val);
-            this.fontSize = num;
-            host.fontSize = num;
-            if (isClientSide()){
-                sendClientAction(FONT, val);
-            }
-        } catch (Exception ignored) {}
+    public void changeCenter(boolean btn) {
+        this.centerText = btn;
+        host.center = btn;
+        if (isClientSide()){
+            sendClientAction(CENTERTEXT, btn);
+        }
+    }
+
+    public void changeMargin(boolean btn) {
+        this.margin = btn;
+        host.margin = btn;
+        if (isClientSide()){
+            sendClientAction(MARGIN, btn);
+        }
     }
 }

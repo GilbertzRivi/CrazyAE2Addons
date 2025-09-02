@@ -6,9 +6,14 @@ import dev.emi.emi.api.EmiRegistry;
 import dev.emi.emi.api.recipe.EmiRecipeCategory;
 import dev.emi.emi.api.stack.EmiStack;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobCategory;
+import net.minecraftforge.registries.ForgeRegistries;
 import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
+import net.oktawia.crazyae2addons.mobstorage.MobKey;
+import net.oktawia.crazyae2addons.mobstorage.MobKeyIng;
 import net.oktawia.crazyae2addons.xei.common.CradleEntry;
 import net.oktawia.crazyae2addons.xei.common.CrazyEntry;
 import net.oktawia.crazyae2addons.xei.common.CrazyRecipes;
@@ -65,7 +70,6 @@ public class CrazyEmiPlugin implements EmiPlugin {
         registry.addWorkstation(researchCategory, EmiStack.of(CrazyBlockRegistrar.RESEARCH_STATION.get().asItem()));
         registry.addRecipeHandler(null, new ResearchEmiRecipeHandler());
 
-        // NEW: Fabrication
         EmiRecipeCategory fabricationCategory = new EmiRecipeCategory(
                 CrazyAddons.makeId("fabrication_recipes"),
                 EmiStack.of(CrazyBlockRegistrar.RECIPE_FABRICATOR_BLOCK.get().asItem())

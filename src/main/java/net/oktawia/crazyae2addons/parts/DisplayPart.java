@@ -1,31 +1,30 @@
 package net.oktawia.crazyae2addons.parts;
 
-import java.security.SecureRandom;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
+import appeng.api.networking.IGridNode;
+import appeng.api.networking.storage.IStorageService;
+import appeng.api.networking.ticking.IGridTickable;
+import appeng.api.networking.ticking.TickRateModulation;
+import appeng.api.networking.ticking.TickingRequest;
+import appeng.api.parts.IPartCollisionHelper;
+import appeng.api.parts.IPartItem;
+import appeng.api.parts.IPartModel;
 import appeng.api.stacks.AEFluidKey;
 import appeng.api.stacks.AEItemKey;
-import appeng.api.stacks.AEKey;
-import appeng.api.stacks.GenericStack;
-import appeng.blockentity.networking.CableBusBlockEntity;
+import appeng.api.util.AECableType;
+import appeng.items.parts.PartModels;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuLocators;
 import appeng.parts.AEBasePart;
 import appeng.parts.automation.PlaneModels;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.datafixers.util.Pair;
-import com.mojang.logging.LogUtils;
 import com.mojang.math.Axis;
-import it.unimi.dsi.fastutil.objects.Object2LongMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.Vec3i;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -35,11 +34,11 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -50,32 +49,24 @@ import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.entities.MEDataControllerBE;
 import net.oktawia.crazyae2addons.interfaces.VariableMachine;
 import net.oktawia.crazyae2addons.menus.DisplayMenu;
-import net.oktawia.crazyae2addons.network.NetworkHandler;
 import net.oktawia.crazyae2addons.network.DisplayValuePacket;
+import net.oktawia.crazyae2addons.network.NetworkHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import net.minecraft.world.entity.player.Player;
-import appeng.api.networking.IGridNode;
-import appeng.api.networking.ticking.IGridTickable;
-import appeng.api.networking.ticking.TickRateModulation;
-import appeng.api.networking.ticking.TickingRequest;
-import appeng.api.parts.IPartCollisionHelper;
-import appeng.api.parts.IPartItem;
-import appeng.api.parts.IPartModel;
-import appeng.api.util.AECableType;
-import appeng.items.parts.PartModels;
 import org.joml.Matrix4f;
+
+import java.security.SecureRandom;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickable, VariableMachine {
 
-    private static final PlaneModels MODELS = new PlaneModels("part/display_mon_off",
-            "part/display_mon_on");
-    private static final Pattern CLIENT_VAR_TOKEN =
-            Pattern.compile("&(s\\^[a-z0-9_\\.:]+(?:%\\d+)?|[A-Za-z0-9_]+)");
-    private static final Pattern CLIENT_STOCK_TOKEN =
-            Pattern.compile("&s\\^([a-z0-9_\\.:]+)(?:%(\\d+))?");
-    private static final Pattern CLIENT_ICON_TOKEN =
-            Pattern.compile("(?i)&ii?\\^([a-z0-9_\\.:]+)");
+    private static final PlaneModels MODELS = new PlaneModels("part/display_mon_off", "part/display_mon_on");
+
+    private static final Pattern CLIENT_VAR_TOKEN = Pattern.compile("&(s\\^[a-z0-9_\\.:]+(?:%\\d+)?|[A-Za-z0-9_]+)");
+    private static final Pattern CLIENT_STOCK_TOKEN = Pattern.compile("&s\\^([a-z0-9_\\.:]+)(?:%(\\d+))?");
 
     public byte spin = 0; // 0-3
     public String textValue = "";
@@ -84,6 +75,8 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
     public String identifier = randomHexId();
     public boolean mode = true;
     public int fontSize;
+    public boolean margin = false;
+    public boolean center = false;
 
     @PartModels
     public static List<IPartModel> getModels() {
@@ -114,18 +107,17 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
         this.variables.put(name, value);
         if (!getLevel().isClientSide()) {
             String packed;
-            if (this.getGridNode() != null && !this.getGridNode().getGrid().getMachines(MEDataControllerBE.class).isEmpty()){
+            if (this.getGridNode() != null && !this.getGridNode().getGrid().getMachines(MEDataControllerBE.class).isEmpty()) {
                 packed = this.variables.entrySet().stream()
                         .map(e -> e.getKey() + "=" + e.getValue())
-                        .collect(java.util.stream.Collectors.joining("|"));
+                        .collect(Collectors.joining("|"));
             } else {
                 packed = "";
             }
             NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(),
-                    new DisplayValuePacket(this.getBlockEntity().getBlockPos(), this.textValue, this.getSide(), this.spin, packed, this.fontSize, this.mode));
+                    new DisplayValuePacket(this.getBlockEntity().getBlockPos(), this.textValue, this.getSide(), this.spin, packed, this.fontSize, this.mode, this.margin, this.center));
         }
     }
-
 
     @Override
     public void getBoxes(IPartCollisionHelper bch) {
@@ -163,31 +155,21 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
     @Override
     public void readFromNBT(CompoundTag extra) {
         super.readFromNBT(extra);
-        if(extra.contains("textvalue")){
-            this.textValue = extra.getString("textvalue");
-        }
-        if(extra.contains("spin")){
-            this.spin = extra.getByte("spin");
-        }
-        if(extra.contains("ident")){
-            this.identifier = extra.getString("ident");
-        }
-        if(extra.contains("mode")){
-            this.mode = extra.getBoolean("mode");
-        }
-        if(extra.contains("font")){
-            this.fontSize = extra.getInt("font");
-        }
-        if(!isClientSide()){
+        if (extra.contains("textvalue")) this.textValue = extra.getString("textvalue");
+        if (extra.contains("spin")) this.spin = extra.getByte("spin");
+        if (extra.contains("ident")) this.identifier = extra.getString("ident");
+        if (extra.contains("mode")) this.mode = extra.getBoolean("mode");
+        if (extra.contains("margin")) this.margin = extra.getBoolean("margin");
+        if (extra.contains("center")) this.center = extra.getBoolean("center");
+
+        if (!isClientSide()) {
             String packed = this.variables.entrySet().stream()
                     .map(e -> e.getKey() + "=" + e.getValue())
-                    .collect(java.util.stream.Collectors.joining("|"));
+                    .collect(Collectors.joining("|"));
             NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(),
-                    new DisplayValuePacket(this.getBlockEntity().getBlockPos(), this.textValue, this.getSide(), this.spin, packed, fontSize, mode));
+                    new DisplayValuePacket(this.getBlockEntity().getBlockPos(), this.textValue, this.getSide(), this.spin, packed, fontSize, mode, margin, center));
         }
     }
-
-
 
     @Override
     public void writeToNBT(CompoundTag extra) {
@@ -196,7 +178,8 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
         extra.putByte("spin", this.spin);
         extra.putString("ident", this.identifier);
         extra.putBoolean("mode", this.mode);
-        extra.putInt("font", this.fontSize);
+        extra.putBoolean("margin", this.margin);
+        extra.putBoolean("center", this.center);
     }
 
     @Override
@@ -233,7 +216,9 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
                 try {
                     int pow = Integer.parseInt(token.substring(pct + 1));
                     if (pow > 0) divisor = (long) Math.pow(10, pow);
-                } catch (NumberFormatException ignored) { divisor = 1L; }
+                } catch (NumberFormatException ignored) {
+                    divisor = 1L;
+                }
             }
 
             if (!core.startsWith("s^")) continue;
@@ -264,12 +249,13 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
                             this.spin,
                             packed,
                             this.fontSize,
-                            this.mode
+                            this.mode,
+                            this.margin,
+                            this.center
                     )
             );
         }
     }
-
 
     private long getItemAmountInME(String id) {
         try {
@@ -278,7 +264,7 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
             var grid = node.getGrid();
             if (grid == null) return 0;
 
-            var storage = grid.getService(appeng.api.networking.storage.IStorageService.class);
+            var storage = grid.getService(IStorageService.class);
             if (storage == null) return 0;
 
             var rl = new ResourceLocation(id);
@@ -319,39 +305,22 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
         }
     }
 
-
-
     public void updateController(String value) {
         this.textValue = value;
 
         try {
             var node = this.getGridNode();
-            if (node == null) {
-                this.reRegister = true;
-                return;
-            }
+            if (node == null) { this.reRegister = true; return; }
             var grid = node.getGrid();
-            if (grid == null) {
-                this.reRegister = true;
-                return;
-            }
+            if (grid == null) { this.reRegister = true; return; }
 
             var machines = grid.getMachines(MEDataControllerBE.class);
-            if (machines == null || machines.isEmpty()) {
-                this.reRegister = true;
-                return;
-            }
+            if (machines == null || machines.isEmpty()) { this.reRegister = true; return; }
             var controller = machines.stream().findFirst().orElse(null);
-            if (controller == null) {
-                this.reRegister = true;
-                return;
-            }
+            if (controller == null) { this.reRegister = true; return; }
 
             int maxVars = controller.getMaxVariables();
-            if (maxVars <= 0) {
-                this.reRegister = true;
-                return;
-            }
+            if (maxVars <= 0) { this.reRegister = true; return; }
 
             controller.removeNotification(this.identifier);
 
@@ -373,8 +342,7 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
         }
     }
 
-    private record Transformation(float tx, float ty, float tz, float yRotation, float xRotation) {
-    }
+    private record Transformation(float tx, float ty, float tz, float yRotation, float xRotation) { }
 
     public boolean isStructureComplete(Set<DisplayPart> group) {
         if (group == null || group.isEmpty()) return false;
@@ -391,18 +359,9 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
             int col = 0, row = 0;
 
             switch (side) {
-                case NORTH, SOUTH -> {
-                    col = pos.getX();
-                    row = pos.getY();
-                }
-                case EAST, WEST -> {
-                    col = pos.getZ();
-                    row = pos.getY();
-                }
-                case UP, DOWN -> {
-                    col = pos.getX();
-                    row = pos.getZ();
-                }
+                case NORTH, SOUTH -> { col = pos.getX(); row = pos.getY(); }
+                case EAST, WEST -> { col = pos.getZ(); row = pos.getY(); }
+                case UP, DOWN -> { col = pos.getX(); row = pos.getZ(); }
             }
 
             coords.add(Pair.of(col, row));
@@ -414,15 +373,12 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
 
         for (int col = minCol; col <= maxCol; col++) {
             for (int row = minRow; row <= maxRow; row++) {
-                if (!coords.contains(Pair.of(col, row))) {
-                    return false;
-                }
+                if (!coords.contains(Pair.of(col, row))) return false;
             }
         }
 
         return true;
     }
-
 
     private void applyFacingTransform(PoseStack poseStack) {
         Transformation t = getFacingTransformation(getSide());
@@ -432,16 +388,15 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
         if (t.xRotation != 0) applySpinTransformation(poseStack, t.xRotation);
     }
 
-
     private Transformation getFacingTransformation(Direction facing) {
         float tx = 0, ty = 0, tz = 0, yRot = 0, xRot = 0;
         switch (facing) {
-            case SOUTH -> { tx = 0; ty = 1; tz = 0.5F; }
-            case WEST  -> { tx = 0.5F; ty = 1; tz = 0; yRot = -90F; }
-            case EAST  -> { tx = 0.5F; ty = 1; tz = 1; yRot = 90F; }
-            case NORTH -> { tx = 1; ty = 1; tz = 0.5F; yRot = 180F; }
-            case UP    -> { tx = 0; ty = 0.5F; tz = 0; xRot = -90F; }
-            case DOWN  -> { tx = 1; ty = 0.5F; tz = 0; xRot = 90F; }
+            case SOUTH -> { tx = 0;   ty = 1;   tz = 0.5F; }
+            case WEST  -> { tx = 0.5F;ty = 1;   tz = 0;    yRot = -90F; }
+            case EAST  -> { tx = 0.5F;ty = 1;   tz = 1;    yRot = 90F; }
+            case NORTH -> { tx = 1;   ty = 1;   tz = 0.5F; yRot = 180F; }
+            case UP    -> { tx = 0;   ty = 0.5F;tz = 0;    xRot = -90F; }
+            case DOWN  -> { tx = 1;   ty = 0.5F;tz = 0;    xRot = 90F; }
         }
         return new Transformation(tx, ty, tz, yRot, xRot);
     }
@@ -450,17 +405,17 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
         float theSpin = 0.0F;
         if (upRotation == 90F) {
             switch (this.spin) {
-                case 0 -> { theSpin = 0.0F; poseStack.translate(-1, 1, 0); }
-                case 1 -> { theSpin = 90.0F; poseStack.translate(-1, 0, 0); }
+                case 0 -> { theSpin = 0.0F;   poseStack.translate(-1, 1, 0); }
+                case 1 -> { theSpin = 90.0F;  poseStack.translate(-1, 0, 0); }
                 case 2 -> { theSpin = 180.0F; poseStack.translate(0, 0, 0); }
                 case 3 -> { theSpin = -90.0F; poseStack.translate(0, 1, 0); }
             }
         } else {
             switch (this.spin) {
-                case 0 -> { theSpin = 0.0F; poseStack.translate(0, 0, 0); }
+                case 0 -> { theSpin = 0.0F;   poseStack.translate(0, 0, 0); }
                 case 1 -> { theSpin = -90.0F; poseStack.translate(1, 0, 0); }
                 case 2 -> { theSpin = 180.0F; poseStack.translate(1, -1, 0); }
-                case 3 -> { theSpin = 90.0F; poseStack.translate(0, -1, 0); }
+                case 3 -> { theSpin = 90.0F;  poseStack.translate(0, -1, 0); }
             }
         }
         poseStack.mulPose(Axis.ZP.rotationDegrees(theSpin));
@@ -506,7 +461,7 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
             rowStart = rowStart.getNeighbor(Direction.UP);
         } while (rowStart != null && rowStart.getSide() == side && rowStart.isPowered() && rowStart.mode);
 
-        if (isStructureComplete(result)){
+        if (isStructureComplete(result)) {
             return result;
         } else {
             return Set.of(this);
@@ -517,7 +472,7 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
     public DisplayPart getNeighbor(Direction dir) {
         BlockPos neighborPos = getBlockEntity().getBlockPos().relative(dir);
         BlockEntity be = getLevel().getBlockEntity(neighborPos);
-        if (be instanceof CableBusBlockEntity cbbe &&
+        if (be instanceof appeng.blockentity.networking.CableBusBlockEntity cbbe &&
                 cbbe.getPart(getSide()) instanceof DisplayPart neighbor &&
                 neighbor.getSide() == this.getSide() &&
                 neighbor.isPowered()) {
@@ -527,7 +482,7 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
     }
 
     public boolean isRenderOrigin(Set<DisplayPart> group) {
-        return this == group.stream().toList().get(group.size()-1);
+        return this == group.stream().toList().get(group.size() - 1);
     }
 
     @Override
@@ -537,31 +492,28 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
 
     @Override
     public TickRateModulation tickingRequest(IGridNode node, int ticksSinceLastCall) {
-        if (this.getGridNode() == null || this.getGridNode().getGrid() == null || this.getGridNode().getGrid().getMachines(MEDataControllerBE.class).isEmpty()){
+        if (this.getGridNode() == null || this.getGridNode().getGrid() == null || this.getGridNode().getGrid().getMachines(MEDataControllerBE.class).isEmpty()) {
             this.reRegister = true;
         } else {
             MEDataControllerBE controller = getMainNode().getGrid().getMachines(MEDataControllerBE.class).stream().toList().get(0);
-            if (controller.getMaxVariables() <= 0){
+            if (controller.getMaxVariables() <= 0) {
                 this.reRegister = true;
-            } else if (this.reRegister){
+            } else if (this.reRegister) {
                 this.reRegister = false;
                 updateController(this.textValue);
             }
         }
 
-        if(!isClientSide()){
+        if (!isClientSide()) {
             recomputeStockVariablesAndNotify();
             String packed = this.variables.entrySet().stream()
                     .map(e -> e.getKey() + "=" + e.getValue())
                     .collect(Collectors.joining("|"));
             NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(),
-                    new DisplayValuePacket(this.getBlockEntity().getBlockPos(), this.textValue, this.getSide(), this.spin, packed, this.fontSize, this.mode));
+                    new DisplayValuePacket(this.getBlockEntity().getBlockPos(), this.textValue, this.getSide(), this.spin, packed, this.fontSize, this.mode, this.margin, this.center));
         }
         return TickRateModulation.IDLE;
     }
-
-
-
 
     public static Pair<Integer, Integer> getGridSize(List<DisplayPart> sorted, Direction side) {
         int minCol = Integer.MAX_VALUE, maxCol = Integer.MIN_VALUE;
@@ -572,18 +524,9 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
             int col = 0, row = 0;
 
             switch (side) {
-                case NORTH, SOUTH -> {
-                    col = pos.getX();
-                    row = pos.getY();
-                }
-                case EAST, WEST -> {
-                    col = pos.getZ();
-                    row = pos.getY();
-                }
-                case UP, DOWN -> {
-                    col = pos.getX();
-                    row = pos.getZ();
-                }
+                case NORTH, SOUTH -> { col = pos.getX(); row = pos.getY(); }
+                case EAST, WEST -> { col = pos.getZ(); row = pos.getY(); }
+                case UP, DOWN -> { col = pos.getX(); row = pos.getZ(); }
             }
 
             minCol = Math.min(minCol, col);
@@ -598,249 +541,7 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
         return Pair.of(width, height);
     }
 
-    private record IconSpan(int columnIndex, String itemId) {}
-    private record TokenizedLine(String textWithoutIcons, List<IconSpan> icons) {}
-
-    private TokenizedLine stripIconTokens(String rawLine) {
-        List<IconSpan> icons = new ArrayList<>();
-        StringBuilder out = new StringBuilder();
-
-        Matcher m = CLIENT_ICON_TOKEN.matcher(rawLine);
-        int last = 0;
-        while (m.find()) {
-            out.append(rawLine, last, m.start());
-            int column = out.length();
-
-            String itemId = m.group(1);
-            icons.add(new IconSpan(column, itemId));
-
-            out.append(' ');
-            last = m.end();
-        }
-        if (last < rawLine.length()) {
-            out.append(rawLine.substring(last));
-        }
-        return new TokenizedLine(out.toString(), icons);
-    }
-
-    private String replaceStockTokensForMeasure(String line) {
-        if (line == null || line.isEmpty()) return "";
-        StringBuffer out = new StringBuffer();
-        Matcher m = CLIENT_STOCK_TOKEN.matcher(line);
-        while (m.find()) {
-            String itemId = m.group(1);
-            String powStr = m.group(2);
-            String baseVal = this.variables.get("s^" + itemId);
-
-            String repl = "0";
-            if (baseVal != null) {
-                try {
-                    long amount = Long.parseLong(baseVal);
-                    long divisor = 1L;
-                    if (powStr != null) {
-                        int pow = Integer.parseInt(powStr);
-                        if (pow > 0) divisor = (long) Math.pow(10, pow);
-                    }
-                    long display = Math.round((double) amount / (double) divisor);
-                    repl = String.valueOf(display);
-                } catch (NumberFormatException ignored) {}
-            }
-
-            m.appendReplacement(out, Matcher.quoteReplacement(repl));
-        }
-        m.appendTail(out);
-        return out.toString();
-    }
-
-
-    private String resolveTokensClientSide(String input) {
-        if (input == null || input.isEmpty()) return "";
-
-        StringBuilder sb = new StringBuilder();
-        Matcher m = CLIENT_VAR_TOKEN.matcher(input);
-        while (m.find()) {
-            String key = m.group(1);         // np. s^minecraft:oak_log%1  |  foo
-            String withAmp = "&" + key;
-
-            String repl = this.variables.get(key); // dokładne trafienie
-            if (repl == null) {
-                Matcher sm = CLIENT_STOCK_TOKEN.matcher(withAmp);
-                if (sm.matches()) {
-                    String itemId = sm.group(1);                   // minecraft:oak_log
-                    String powStr = sm.group(2);                   // N lub null
-                    String baseVal = this.variables.get("s^" + itemId);
-                    if (baseVal != null) {
-                        try {
-                            long amount = Long.parseLong(baseVal);
-                            long divisor = 1L;
-                            if (powStr != null) {
-                                int pow = Integer.parseInt(powStr);
-                                if (pow > 0) divisor = (long) Math.pow(10, pow);
-                            }
-                            long display = Math.round((double) amount / (double) divisor);
-                            repl = String.valueOf(display);
-                        } catch (NumberFormatException ignored) {
-                        }
-                    }
-                }
-            }
-
-            if (repl == null) {
-                repl = this.variables.getOrDefault(key, withAmp);
-            }
-
-            m.appendReplacement(sb, Matcher.quoteReplacement(repl));
-        }
-        m.appendTail(sb);
-        return sb.toString();
-    }
-
-
-    @OnlyIn(Dist.CLIENT)
-    @Override
-    public void renderDynamic(float partialTicks, PoseStack poseStack, MultiBufferSource buffers, int light, int overlay) {
-        if (!isPowered() || textValue.isEmpty()) return;
-
-        Set<DisplayPart> group = getConnectedGrid();
-        if (group.isEmpty() || !isRenderOrigin(group)) return;
-
-        List<DisplayPart> sorted = new ArrayList<>(group);
-        sorted.sort(Comparator.comparingInt((DisplayPart dp) -> dp.getBlockEntity().getBlockPos().getY())
-                .thenComparingInt(dp -> dp.getBlockEntity().getBlockPos().getX()));
-
-        var dims = getGridSize(sorted, getSide());
-        int widthBlocks = dims.getFirst();
-        int heightBlocks = dims.getSecond();
-
-        Font font = Minecraft.getInstance().font;
-
-        String resolved = resolveTokensClientSide(this.textValue);
-
-        String[] rawLines = resolved.split("&nl");
-        List<TokenizedLine> tokenized = new ArrayList<>(rawLines.length);
-        for (String rl : rawLines) {
-            tokenized.add(stripIconTokens(rl));
-        }
-
-        StringBuilder withoutIconsAll = new StringBuilder();
-        for (int i = 0; i < tokenized.size(); i++) {
-            if (i > 0) withoutIconsAll.append("&nl");
-            withoutIconsAll.append(tokenized.get(i).textWithoutIcons());
-        }
-        TextWithColors parsed = parseStyledText(withoutIconsAll.toString());
-        List<Component> styledLines = parsed.lines();
-        Integer bgColor = parsed.backgroundColor();
-
-        int maxLineWidth = 1;
-        for (int i = 0; i < tokenized.size(); i++) {
-            TokenizedLine lineTok = tokenized.get(i);
-            String measuredText = replaceStockTokensForMeasure(lineTok.textWithoutIcons());
-
-            int widthPx = font.width(measuredText) + lineTok.icons().size() * font.lineHeight;
-            if (i < parsed.lines().size()) {
-                widthPx = Math.max(widthPx,
-                        font.width(parsed.lines().get(i)) + lineTok.icons().size() * font.lineHeight);
-            }
-            maxLineWidth = Math.max(maxLineWidth, widthPx);
-        }
-        int totalTextHeight = styledLines.size() * font.lineHeight;
-
-        float scale;
-        if (fontSize <= 0) {
-            float pxW = 64f * widthBlocks;
-            float pxH = 64f * heightBlocks;
-            float fitX = pxW / Math.max(1, maxLineWidth);
-            float fitY = pxH / Math.max(1, totalTextHeight);
-            scale = (1f / 64f) * Math.min(fitX, fitY);
-        } else {
-            scale = fontSize / (64f * 8f);
-        }
-
-        poseStack.pushPose();
-        applyFacingTransform(poseStack);
-        poseStack.translate(0, 0, 0.51f);
-        if (bgColor != null) {
-            drawBackground(poseStack, buffers, widthBlocks, heightBlocks, 0xFF000000 | bgColor);
-        }
-        poseStack.popPose();
-
-        poseStack.pushPose();
-        applyFacingTransform(poseStack);
-        poseStack.translate(0, 0, 0.52f);
-        poseStack.scale(scale, -scale, scale);
-
-        for (int i = 0; i < styledLines.size(); i++) {
-            if (i >= tokenized.size()) break;
-
-            TokenizedLine lineTok = tokenized.get(i);
-            Component styled = styledLines.get(i);
-
-            float y = i * font.lineHeight;
-
-            font.drawInBatch(styled, 0, y, 0xFFFFFF, false,
-                    poseStack.last().pose(), buffers, Font.DisplayMode.NORMAL, 0, light);
-
-            if (!lineTok.icons().isEmpty()) {
-                String printable = lineTok.textWithoutIcons();
-                for (IconSpan is : lineTok.icons()) {
-                    int col = Math.min(is.columnIndex(), printable.length());
-                    int xBefore = font.width(printable.substring(0, col));
-                    int charH = font.lineHeight;
-                    drawInlineIcon(poseStack, buffers, (float) xBefore, y, charH, charH, is.itemId(), overlay);
-                }
-            }
-        }
-
-        poseStack.popPose();
-    }
-
-    @OnlyIn(Dist.CLIENT)
-    private void drawInlineIcon(PoseStack poseStack, MultiBufferSource buffers, float x, float y, int w, int h, String itemId, int overlay) {
-        var item = ForgeRegistries.ITEMS.getValue(new ResourceLocation(itemId));
-        if (item == null || item == Items.AIR) return;
-
-        ItemStack stack = new ItemStack(item);
-
-        poseStack.pushPose();
-        poseStack.translate(x + w * 0.5f, y + h * 0.5f, 0.0f);
-        poseStack.scale(w * 0.9f, -h * 0.9f, 0.1f);
-
-        Minecraft.getInstance().getItemRenderer().renderStatic(
-                stack,
-                net.minecraft.world.item.ItemDisplayContext.GUI,
-                0xF000F0,
-                overlay,
-                poseStack,
-                buffers,
-                Minecraft.getInstance().level,
-                0
-        );
-
-        poseStack.popPose();
-    }
-
-
-
-    @OnlyIn(Dist.CLIENT)
-    private void drawBackground(PoseStack poseStack, MultiBufferSource buffers, int blocksWide, int blocksHigh, int color) {
-        var buffer = buffers.getBuffer(net.minecraft.client.renderer.RenderType.gui());
-        Matrix4f matrix = poseStack.last().pose();
-
-        float r = ((color >> 16) & 0xFF) / 255f;
-        float g = ((color >> 8) & 0xFF) / 255f;
-        float b = (color & 0xFF) / 255f;
-        float a = ((color >> 24) & 0xFF) / 255f;
-
-        float w = blocksWide;
-        float h = blocksHigh;
-
-        buffer.vertex(matrix, 0,   -h, 0).color(r, g, b, a).endVertex();
-        buffer.vertex(matrix, w,   -h, 0).color(r, g, b, a).endVertex();
-        buffer.vertex(matrix, w,    0, 0).color(r, g, b, a).endVertex();
-        buffer.vertex(matrix, 0,    0, 0).color(r, g, b, a).endVertex();
-    }
-
-    private record TextWithColors(List<Component> lines, @Nullable Integer backgroundColor) {}
+    private record TextWithColors(List<Component> lines, @Nullable Integer backgroundColor) { }
 
     private TextWithColors parseStyledText(String rawText) {
         List<Component> lines = new ArrayList<>();
@@ -869,7 +570,7 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
                 char bulletChar = '•';
                 Style bulletStyle = Style.EMPTY.withColor(0xAAAAAA);
                 lineComponent.append(Component.literal(" " + bulletChar + " ").withStyle(bulletStyle));
-                rawLine = rawLine.substring(2); // usuń "* " lub "- "
+                rawLine = rawLine.substring(2);
             }
 
             Matcher colorMatcher = colorPattern.matcher(rawLine);
@@ -905,7 +606,6 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
         return new TextWithColors(lines, bgColor);
     }
 
-
     private Component parseMarkdownSegment(String text, Style baseStyle) {
         Pattern pattern = Pattern.compile("(\\*\\*|\\*|__|~~|`)(.+?)\\1");
         Matcher matcher = pattern.matcher(text);
@@ -928,6 +628,7 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
                 case "*"  -> newStyle = baseStyle.withItalic(true);
                 case "__" -> newStyle = baseStyle.withUnderlined(true);
                 case "~~" -> newStyle = baseStyle.withStrikethrough(true);
+                // `content` -> traktujemy jako zwykły tekst z baseStyle
             }
 
             result.append(parseMarkdownSegment(content, newStyle));
@@ -942,5 +643,155 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
         return result;
     }
 
-}
+    private String resolveTokensClientSide(String input) {
+        if (input == null || input.isEmpty()) return "";
 
+        StringBuilder sb = new StringBuilder();
+        Matcher m = CLIENT_VAR_TOKEN.matcher(input);
+        while (m.find()) {
+            String key = m.group(1);
+            String withAmp = "&" + key;
+
+            String repl = this.variables.get(key);
+            if (repl == null) {
+                Matcher sm = CLIENT_STOCK_TOKEN.matcher(withAmp);
+                if (sm.matches()) {
+                    String itemId = sm.group(1);
+                    String powStr = sm.group(2);
+                    String baseVal = this.variables.get("s^" + itemId);
+                    if (baseVal != null) {
+                        try {
+                            long amount = Long.parseLong(baseVal);
+                            long divisor = 1L;
+                            if (powStr != null) {
+                                int pow = Integer.parseInt(powStr);
+                                if (pow > 0) divisor = (long) Math.pow(10, pow);
+                            }
+                            long display = Math.round((double) amount / (double) divisor);
+                            repl = String.valueOf(display);
+                        } catch (NumberFormatException ignored) { }
+                    }
+                }
+            }
+
+            if (repl == null) {
+                repl = this.variables.getOrDefault(key, withAmp);
+            }
+
+            m.appendReplacement(sb, Matcher.quoteReplacement(repl));
+        }
+        m.appendTail(sb);
+        return sb.toString();
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    @Override
+    public void renderDynamic(float partialTicks, PoseStack poseStack, MultiBufferSource buffers, int light, int overlay) {
+        if (!isPowered() || textValue.isEmpty()) return;
+
+        Set<DisplayPart> group = getConnectedGrid();
+        if (group.isEmpty() || !isRenderOrigin(group)) return;
+
+        List<DisplayPart> sorted = new ArrayList<>(group);
+        sorted.sort(Comparator.comparingInt((DisplayPart dp) -> dp.getBlockEntity().getBlockPos().getY())
+                .thenComparingInt(dp -> dp.getBlockEntity().getBlockPos().getX()));
+
+        var dims = getGridSize(sorted, getSide());
+        int widthBlocks = dims.getFirst();
+        int heightBlocks = dims.getSecond();
+
+        Font font = Minecraft.getInstance().font;
+
+        String resolved = resolveTokensClientSide(this.textValue);
+        String[] rawLines = resolved.split("&nl");
+
+        TextWithColors parsed = parseStyledText(String.join("&nl", rawLines));
+        List<Component> styledLines = parsed.lines();
+        Integer bgColor = parsed.backgroundColor();
+
+        int lineCount = styledLines.size();
+        int maxLineWidth = 1;
+        for (int i = 0; i < lineCount; i++) {
+            int textW = font.width(styledLines.get(i));
+            if (textW > maxLineWidth) maxLineWidth = textW;
+        }
+        int totalTextHeight = lineCount * font.lineHeight;
+
+        float pxW = 64f * widthBlocks;
+        float pxH = 64f * heightBlocks;
+
+        float marginFrac = this.margin ? 0.03f : 0.0f;
+        float marginX = pxW * marginFrac, marginY = pxH * marginFrac;
+        float usableW = pxW - 2f * marginX, usableH = pxH - 2f * marginY;
+
+        float scale;
+        if (fontSize <= 0) {
+            float fitX = usableW / Math.max(1, maxLineWidth);
+            float fitY = usableH / Math.max(1, totalTextHeight);
+            scale = (1f / 64f) * Math.min(fitX, fitY);
+        } else {
+            scale = fontSize / (64f * 8f);
+        }
+
+        int maxVisibleLines = (fontSize > 0)
+                ? Math.max(0, (int) Math.floor((usableH / 64f) / scale / font.lineHeight))
+                : lineCount;
+
+        poseStack.pushPose();
+        applyFacingTransform(poseStack);
+        poseStack.translate(0, 0, 0.51f);
+        if (bgColor != null) {
+            drawBackground(poseStack, buffers, widthBlocks, heightBlocks, 0xFF000000 | bgColor);
+        }
+        poseStack.popPose();
+
+        poseStack.pushPose();
+        applyFacingTransform(poseStack);
+        poseStack.translate(0, 0, 0.52f);
+
+        poseStack.translate(marginX / 64f, -marginY / 64f, 0);
+        poseStack.scale(scale, -scale, scale);
+
+        int linesToDraw = Math.min(lineCount, maxVisibleLines);
+
+        float availTextW = (usableW / 64f) / scale;
+        float availTextH = (usableH / 64f) / scale;
+
+        if (this.center) {
+            float drawnH = (fontSize <= 0 ? totalTextHeight : linesToDraw * font.lineHeight);
+            float extraY = Math.max(0f, (availTextH - drawnH) / 2f);
+            poseStack.translate(0, +extraY, 0);
+        }
+
+        for (int i = 0; i < linesToDraw; i++) {
+            Component styled = styledLines.get(i);
+            float y = i * font.lineHeight;
+
+            int lineTextW = font.width(styled);
+
+            float xOffset = 0f;
+            if (this.center) xOffset = Math.max(0f, (availTextW - lineTextW) / 2f);
+
+            font.drawInBatch(styled, xOffset, y, 0xFFFFFF, false,
+                    poseStack.last().pose(), buffers, Font.DisplayMode.NORMAL, 0, light);
+        }
+
+        poseStack.popPose();
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    private void drawBackground(PoseStack poseStack, MultiBufferSource buffers, int blocksWide, int blocksHigh, int color) {
+        var buffer = buffers.getBuffer(RenderType.gui());
+        Matrix4f matrix = poseStack.last().pose();
+
+        float r = ((color >> 16) & 0xFF) / 255f;
+        float g = ((color >> 8) & 0xFF) / 255f;
+        float b = (color & 0xFF) / 255f;
+        float a = ((color >> 24) & 0xFF) / 255f;
+
+        buffer.vertex(matrix, 0, -(float) blocksHigh, 0).color(r, g, b, a).endVertex();
+        buffer.vertex(matrix, (float) blocksWide, -(float) blocksHigh, 0).color(r, g, b, a).endVertex();
+        buffer.vertex(matrix, (float) blocksWide, 0, 0).color(r, g, b, a).endVertex();
+        buffer.vertex(matrix, 0, 0, 0).color(r, g, b, a).endVertex();
+    }
+}

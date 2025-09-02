@@ -10,13 +10,15 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.oktawia.crazyae2addons.blocks.EntropyCradle;
+import net.oktawia.crazyae2addons.blocks.EntropyCradleCapacitor;
 import net.oktawia.crazyae2addons.blocks.MobFarmWallBlock;
 import net.oktawia.crazyae2addons.blocks.SpawnerExtractorWallBlock;
-import net.oktawia.crazyae2addons.entities.MobFarmControllerBE;
-import net.oktawia.crazyae2addons.entities.MobFarmWallBE;
+import net.oktawia.crazyae2addons.entities.*;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,62 +28,86 @@ import java.util.Map;
 public class MobFarmValidator {
 
     private static final String STRUCTURE_JSON = """
-    {
-       "symbols": {
-         "W": ["crazyae2addons:mob_farm_wall"],
-         "L": ["crazyae2addons:mob_farm_collector"],
-         "D": [
-           "crazyae2addons:mob_farm_damage",
-           "crazyae2addons:mob_farm_wall"
-         ],
-         "I": ["crazyae2addons:mob_farm_input"],
-         "C": ["crazyae2addons:mob_farm_controller"]
-       },
-       "layers": [
-         [
-           "W W W W W",
-           "W W W W W",
-           "W W W W W",
-           "W W W W W",
-           "W W C W W"
-         ],
-         [
-           "W W W W W",
-           "W L L L W",
-           "W L L L W",
-           "W L L L W",
-           "W W W W W"
-         ],
-         [
-           "W W W W W",
-           "W D D D W",
-           "W D I D W",
-           "W D D D W",
-           "W W W W W"
-         ],
-         [
-           "W W W W W",
-           "W D D D W",
-           "W D I D W",
-           "W D D D W",
-           "W W W W W"
-         ],
-         [
-           "W W W W W",
-           "W L L L W",
-           "W L L L W",
-           "W L L L W",
-           "W W W W W"
-         ],
-         [
-           "W W W W W",
-           "W W W W W",
-           "W W W W W",
-           "W W W W W",
-           "W W W W W"
-         ]
-       ]
-     }
+{
+  "symbols": {
+    "A": [
+      "crazyae2addons:mob_farm_wall"
+    ],
+    "B": [
+      "crazyae2addons:mob_farm_collector"
+    ],
+    "C": [
+      "crazyae2addons:mob_farm_controller"
+    ],
+    "E": [
+      "ae2:quartz_glass"
+    ],
+    "F": [
+      "crazyae2addons:mob_farm_input"
+    ],
+    "G": [
+      "crazyae2addons:mob_farm_damage"
+    ]
+  },
+  "layers": [
+    [
+      "A A A A A",
+      "A A A A A",
+      "A A A A A",
+      "A A A A A",
+      "A A A A A"
+    ],
+    [
+      "A A A A A",
+      "A B B B A",
+      "A B B B A",
+      "A B B B A",
+      "A A C A A"
+    ],
+    [
+      "A E E E A",
+      "E . . . E",
+      "E . . . E",
+      "E . . . E",
+      "A E E E A"
+    ],
+    [
+      "A E E E A",
+      "E . . . E",
+      "E . . . E",
+      "E . . . E",
+      "A E E E A"
+    ],
+    [
+      "A F F F A",
+      "F G G G F",
+      "F G G G F",
+      "F G G G F",
+      "A F F F A"
+    ],
+    [
+      "A F F F A",
+      "F G G G F",
+      "F G G G F",
+      "F G G G F",
+      "A F F F A"
+    ],
+    [
+      "A F F F A",
+      "F G G G F",
+      "F G G G F",
+      "F G G G F",
+      "A F F F A"
+    ],
+    [
+      "A A A A A",
+      "A A A A A",
+      "A A A A A",
+      "A A A A A",
+      "A A A A A"
+    ]
+  ]
+}
     """;
 
     public Map<String, List<Block>> getSymbols() {
@@ -150,39 +176,6 @@ public class MobFarmValidator {
         }
     }
 
-    public int countBlockInStructure(Level level, BlockPos origin, BlockState state, Block targetBlock) {
-        Direction facing = state.getValue(BlockStateProperties.HORIZONTAL_FACING).getOpposite();
-        int count = 0;
-        int height = layers.size();
-        int sizeZ = layers.get(0).size();
-        int sizeX = layers.get(0).get(0).split(" ").length;
-
-        for (int y = 0; y < height; y++) {
-            List<String> layer = layers.get(y);
-            for (int z = 0; z < sizeZ; z++) {
-                String[] row = layer.get(z).split(" ");
-                for (int x = 0; x < sizeX; x++) {
-                    String symbol = row[x];
-                    if (symbol.equals(".")) continue;
-
-                    int relX = x - originInPatternX;
-                    int relZ = z - originInPatternZ;
-                    int relY = y - originInPatternY;
-
-                    BlockPos offset = rotateOffset(relX, relZ, facing);
-                    BlockPos checkPos = origin.offset(offset.getX(), relY, offset.getZ());
-                    BlockState blockState = level.getBlockState(checkPos);
-
-                    if (blockState.getBlock().equals(targetBlock)) {
-                        count++;
-                    }
-                }
-            }
-        }
-
-        return count;
-    }
-
     public boolean matchesStructure(Level level, BlockPos origin, BlockState state, MobFarmControllerBE controller) {
         Direction facing = state.getValue(BlockStateProperties.HORIZONTAL_FACING).getOpposite();
         int height = layers.size();
@@ -203,27 +196,22 @@ public class MobFarmValidator {
 
                     BlockPos offset = rotateOffset(relX, relZ, facing);
                     BlockPos checkPos = origin.offset(offset.getX(), relY, offset.getZ());
+
                     BlockState checkState = level.getBlockState(checkPos);
                     Block block = checkState.getBlock();
                     List<Block> allowed = symbols.get(symbol);
 
-                    if (allowed == null) {
-                        return false;
-                    }
-
-                    boolean match = allowed.contains(block);
-
-                    if (!match) {
-                        markWalls(level, origin, state, MobFarmWallBlock.FORMED, false, controller);
+                    if (allowed == null || !allowed.contains(block)) {
+                        markWalls(level, origin, state, EntropyCradle.FORMED, false, controller);
                         return false;
                     }
                 }
             }
         }
-        markWalls(level, origin, state, MobFarmWallBlock.FORMED, true, controller);
+
+        markWalls(level, origin, state, EntropyCradle.FORMED, true, controller);
         return true;
     }
-
 
     private BlockPos rotateOffset(int x, int z, Direction facing) {
         return switch (facing) {
@@ -235,7 +223,14 @@ public class MobFarmValidator {
         };
     }
 
-    public void markWalls(Level level, BlockPos origin, BlockState state, BooleanProperty formedProperty, boolean setState, MobFarmControllerBE controller) {
+    public void markWalls(
+            Level level,
+            BlockPos origin,
+            BlockState state,
+            BooleanProperty formedProperty,
+            boolean setState,
+            MobFarmControllerBE controller
+    ) {
         Direction facing = state.getValue(BlockStateProperties.HORIZONTAL_FACING).getOpposite();
         int height = layers.size();
         int sizeZ = layers.get(0).size();
@@ -246,8 +241,7 @@ public class MobFarmValidator {
             for (int z = 0; z < sizeZ; z++) {
                 String[] row = layer.get(z).split(" ");
                 for (int x = 0; x < sizeX; x++) {
-                    String symbol = row[x];
-                    if (!symbol.equals("W")) continue;
+                    if (!row[x].equals("A") && !row[x].equals("B")) continue;
 
                     int relX = x - originInPatternX;
                     int relZ = z - originInPatternZ;
@@ -255,14 +249,22 @@ public class MobFarmValidator {
 
                     BlockPos offset = rotateOffset(relX, relZ, facing);
                     BlockPos checkPos = origin.offset(offset.getX(), relY, offset.getZ());
-                    BlockState blockState = level.getBlockState(checkPos);
 
-                    if (blockState.hasProperty(formedProperty) && blockState.getValue(formedProperty) != setState) {
-                        level.setBlock(checkPos, blockState.setValue(formedProperty, setState), 3);
+                    BlockState bs = level.getBlockState(checkPos);
+                    if (row[x].equals("B")){
+                        if (bs.hasProperty(formedProperty) && bs.getValue(formedProperty) != setState) {
+                            level.setBlock(checkPos, bs.setValue(formedProperty, setState), 3);
+                        }
+                    } else if (row[x].equals("A")){
+                        if (bs.hasProperty(formedProperty) && bs.getValue(formedProperty) != setState) {
+                            level.setBlock(checkPos, bs.setValue(EntropyCradleCapacitor.FORMED, setState), 3);
+                        }
                     }
-                    if (level.getBlockEntity(checkPos) instanceof MobFarmWallBE mfw){
-                        mfw.controller = controller;
-                    }
+
+                    BlockEntity be = level.getBlockEntity(checkPos);
+                    if (be instanceof MobFarmWallBE wallBE) {
+                        wallBE.setController(setState ? controller : null);
+                    } 
                 }
             }
         }

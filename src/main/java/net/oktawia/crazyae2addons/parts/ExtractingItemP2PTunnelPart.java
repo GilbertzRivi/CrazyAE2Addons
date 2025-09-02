@@ -17,10 +17,14 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.items.IItemHandler;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.mixins.P2PTunnelPartAccessor;
 import org.jetbrains.annotations.Nullable;
 
 public class ExtractingItemP2PTunnelPart extends ItemP2PTunnelPart implements IGridTickable {
+
+    private final int speed = CrazyConfig.COMMON.Itemp2pSpeed.get();
+
     public ExtractingItemP2PTunnelPart(IPartItem<?> partItem) {
         super(partItem);
         getMainNode().addService(IGridTickable.class, this);
@@ -110,7 +114,7 @@ public class ExtractingItemP2PTunnelPart extends ItemP2PTunnelPart implements IG
 
         try (CapabilityGuard guard = this.getInputCapability()) {
             IItemHandler input = guard.get();
-            int toExtract = 64;
+            int toExtract = speed;
 
             for (int slot = 0; slot < input.getSlots() && toExtract > 0; slot++) {
                 ItemStack extracted = input.extractItem(slot, toExtract, true);

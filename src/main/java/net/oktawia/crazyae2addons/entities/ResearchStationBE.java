@@ -63,11 +63,11 @@ public class ResearchStationBE extends AENetworkInvBlockEntity implements Previe
     public static int MAX_ENERGY = 25_000;
 
     public AppEngInternalInventory inv = new AppEngInternalInventory(this, 19);
-    public InternalInventory input = inv.getSubInventory(0, 18);   // sloty [0..17]
-    public InternalInventory disk  = inv.getSubInventory(18, 19);  // slot [18] (end-exclusive)
+    public InternalInventory input = inv.getSubInventory(0, 18);
+    public InternalInventory disk  = inv.getSubInventory(18, 19);
 
     private long lastTankQueryGameTime = -100;
-    private int cachedWaterPct = 0; // trzymamy mB jako int (nazwa zostaje dla zgodności)
+    private int cachedWaterPct = 0;
 
     private PreviewInfo previewInfo = null;
     public boolean formed = false;
@@ -75,11 +75,10 @@ public class ResearchStationBE extends AENetworkInvBlockEntity implements Previe
     private int progressTicks = 0;
     @Nullable private ResearchRecipe activeRecipe = null;
 
-    // === NOWE: tryb kopiowania kluczy dysk→dysk ===
     private boolean copyingKeys = false;
-    private static final int COPY_DURATION_TICKS = 200;      // 10 s
-    private static final int COPY_ENERGY_PER_TICK = 50;      // 50 FE/t
-    private static final int COPY_FLUID_PER_TICK  = 25;      // 5 wiaderek / 200t = 25 mB/t
+    private static final int COPY_DURATION_TICKS = 200;
+    private static final int COPY_ENERGY_PER_TICK = 50;
+    private static final int COPY_FLUID_PER_TICK  = 25;
 
     public boolean preview = false;
 

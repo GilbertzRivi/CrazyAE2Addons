@@ -27,7 +27,7 @@ public class ImpulsedPatternProviderBE extends PatternProviderBlockEntity {
     }
 
     protected PatternProviderLogic createLogic() {
-        return new PatternProviderLogic(this.getMainNode(), this, 36);
+        return new PatternProviderLogic(this.getMainNode(), this, 9);
     }
 
     @Override

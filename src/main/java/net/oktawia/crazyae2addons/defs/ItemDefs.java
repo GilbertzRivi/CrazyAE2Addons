@@ -318,5 +318,14 @@ public class ItemDefs {
                         "D", Items.DIAMOND.asItem()
                 )
         );
+
+        item(
+                CrazyItemRegistrar.MOB_KEY_SELECTOR_ITEM.get(),
+                "CE",
+                Map.of(
+                        "C", CrazyItemRegistrar.CRAZY_PATTERN_MODIFIER_ITEM.get().asItem(),
+                        "E", AEItems.ENGINEERING_PROCESSOR.asItem()
+                )
+        );
     }
 }

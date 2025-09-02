@@ -72,9 +72,6 @@ public class CrazyMenuRegistrar {
                     ? reg(id("energy_exporter"), EnergyExporterMenu::new, GTEnergyExporterPart.class)
                     : reg(id("energy_exporter"), EnergyExporterMenu::new, EnergyExporterPart.class);
 
-    public static final RegistryObject<MenuType<RightClickProviderMenu>> RIGHT_CLICK_PROVIDER_MENU =
-            reg(id("rc_provider"), RightClickProviderMenu::new, RightClickProviderPart.class);
-
     public static final RegistryObject<MenuType<AmpereMeterMenu>> AMPERE_METER_MENU =
             ModList.get().isLoaded("gtceu")
                     ? reg(id("ampere_meter"), AmpereMeterMenu::new, GTAmpereMeterBE.class)
@@ -152,9 +149,6 @@ public class CrazyMenuRegistrar {
     public static final RegistryObject<MenuType<EntropyCradleControllerMenu>> ENTROPY_CRADLE_CONTROLLER_MENU =
             reg(id("entropy_cradle_controller"), EntropyCradleControllerMenu::new, EntropyCradleControllerBE.class);
 
-    public static final RegistryObject<MenuType<PatternManagementUnitControllerMenu>> PATTERN_MANAGEMENT_UNIT_CONTROLLER_MENU =
-            reg(id("pattern_management_unit_controller_menu"), PatternManagementUnitControllerMenu::new, PatternManagementUnitControllerBE.class);
-
     public static final RegistryObject<MenuType<PlayerDataExtractorMenu>> PLAYER_DATA_EXTRACTOR_MENU =
             reg(id("player_data_extractor_menu"), PlayerDataExtractorMenu::new, PlayerDataExtractorPart.class);
 
@@ -187,6 +181,9 @@ public class CrazyMenuRegistrar {
 
     public static final RegistryObject<MenuType<RecipeFabricatorMenu>> RECIPE_FABRICATOR_MENU =
             reg(id("recipe_fabricator_menu"), RecipeFabricatorMenu::new, RecipeFabricatorBE.class);
+
+    public static final RegistryObject<MenuType<MobKeySelectorMenu>> MOB_KEY_SELECTOR_MENU =
+            reg(id("mob_key_selector_menu"), MobKeySelectorMenu::new, MobKeySelectorHost.class);
 
     private CrazyMenuRegistrar() {}
 }

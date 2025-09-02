@@ -5,6 +5,7 @@ import appeng.menu.locator.MenuLocators;
 import appeng.util.InteractionUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
@@ -17,6 +18,7 @@ import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraftforge.network.PacketDistributor;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
 import net.oktawia.crazyae2addons.entities.CrazyPatternProviderBE;
 import net.oktawia.crazyae2addons.network.NetworkHandler;
@@ -51,7 +53,19 @@ public class CrazyPatternProviderBlock extends PatternProviderBlock {
         if (!heldItem.isEmpty() && heldItem.getItem() == CrazyItemRegistrar.CRAZY_UPGRADE.get().asItem()) {
             BlockEntity be = level.getBlockEntity(pos);
             if (be instanceof CrazyPatternProviderBE crazyProvider) {
-                crazyProvider.incrementAdded();
+                int maxAdd = CrazyConfig.COMMON.CrazyProviderMaxAddRows.get();
+                int cur = crazyProvider.getAdded();
+
+                if (cur >= maxAdd || maxAdd == -1) {
+                    player.displayClientMessage(
+                            Component.literal("Reached the max size of that pattern provider"),
+                            true
+                    );
+                    return InteractionResult.SUCCESS;
+                }
+
+                int next = cur + 1;
+                crazyProvider.setAdded(next);
                 int added = crazyProvider.getAdded();
 
                 CrazyPatternProviderBE newBe = crazyProvider.refreshLogic(added);

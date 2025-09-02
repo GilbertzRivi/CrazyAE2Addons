@@ -20,7 +20,11 @@ public final class CrazyCreativeTabRegistrar {
             .build();
 
     private static void populate(CreativeModeTab.ItemDisplayParameters ignored, CreativeModeTab.Output out) {
-        CrazyItemRegistrar.ITEMS.getEntries().forEach(ro -> push(out, ro.get()));
+        CrazyItemRegistrar.ITEMS.getEntries().forEach(ro -> {
+            if (!ro.get().equals(CrazyItemRegistrar.MOB_KEY_ITEM.get())){
+                push(out, ro.get());
+            }
+        });
         CrazyBlockRegistrar.BLOCK_ITEMS.getEntries().forEach(ro -> push(out, ro.get()));
         push(out, CrazyFluidRegistrar.RESEARCH_FLUID_BUCKET.get());
     }

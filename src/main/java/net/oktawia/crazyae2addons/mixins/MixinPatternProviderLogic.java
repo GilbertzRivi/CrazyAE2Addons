@@ -14,7 +14,6 @@ import appeng.blockentity.crafting.CraftingBlockEntity;
 import appeng.helpers.patternprovider.*;
 import appeng.me.cluster.implementations.CraftingCPUCluster;
 import appeng.util.ConfigManager;
-import appeng.util.inv.AppEngInternalInventory;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
@@ -24,10 +23,8 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.server.ServerLifecycleHooks;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
-import net.oktawia.crazyae2addons.entities.PatternManagementUnitControllerBE;
 import net.oktawia.crazyae2addons.interfaces.IAdvPatternProviderCpu;
 import net.oktawia.crazyae2addons.interfaces.IPatternProviderCpu;
 import net.oktawia.crazyae2addons.interfaces.IPatternProviderTargetCacheExt;
@@ -37,7 +34,6 @@ import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
@@ -115,58 +111,6 @@ public abstract class MixinPatternProviderLogic implements IPatternProviderCpu {
     @Unique
     private YesNo realRedstoneState = YesNo.NO;
 
-    @Mutable
-    @Shadow @Final private AppEngInternalInventory patternInventory;
-
-    private final List<ItemStack> externalPatterns = new ArrayList<>();
-
-    private boolean containsStack(List<ItemStack> list, ItemStack other) {
-        for (var s : list) {
-            if (ItemStack.isSameItemSameTags(s, other)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    @Redirect(
-            method = "updatePatterns",
-            at = @At(
-                    value = "FIELD",
-                    target = "Lappeng/helpers/patternprovider/PatternProviderLogic;patternInventory:Lappeng/util/inv/AppEngInternalInventory;"
-            ),
-            remap = false
-    )
-    private AppEngInternalInventory redirectPatternInventory(PatternProviderLogic instance) {
-        externalPatterns.clear();
-
-        if (getGrid() != null) {
-            var controllers = getGrid().getMachines(PatternManagementUnitControllerBE.class);
-            for (var controller : controllers) {
-                if (!controller.valid) continue;
-                controller.inv.forEach(stack -> {
-                    if (!stack.isEmpty() && !containsStack(externalPatterns, stack)) {
-                        externalPatterns.add(stack.copy());
-                    }
-                });
-            }
-        }
-
-        int totalSlots = this.patternInventory.size() + externalPatterns.size();
-        var tempInv = new AppEngInternalInventory(null, totalSlots);
-
-        this.patternInventory.forEach(stack -> {
-            if (!stack.isEmpty()) {
-                tempInv.addItems(stack);
-            }
-        });
-
-        for (ItemStack external : externalPatterns) {
-            tempInv.addItems(external);
-        }
-
-        return tempInv;
-    }
 
     @Inject(
             method = "pushPattern(Lappeng/api/crafting/IPatternDetails;[Lappeng/api/stacks/KeyCounter;)Z",

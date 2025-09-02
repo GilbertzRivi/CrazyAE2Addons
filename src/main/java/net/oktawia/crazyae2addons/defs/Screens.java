@@ -53,10 +53,6 @@ public final class Screens {
                 EnergyExporterScreen<EnergyExporterMenu>::new,
                 "/screens/energy_exporter.json");
 
-        InitScreens.register(CrazyMenuRegistrar.RIGHT_CLICK_PROVIDER_MENU.get(),
-                RightClickProviderScreen<RightClickProviderMenu>::new,
-                "/screens/right_click_provider.json");
-
         InitScreens.register(CrazyMenuRegistrar.AMPERE_METER_MENU.get(),
                 AmpereMeterScreen<AmpereMeterMenu>::new,
                 "/screens/ampere_meter.json");
@@ -202,12 +198,6 @@ public final class Screens {
         );
 
         InitScreens.register(
-                CrazyMenuRegistrar.PATTERN_MANAGEMENT_UNIT_CONTROLLER_MENU.get(),
-                PatternManagementUnitControllerScreen<PatternManagementUnitControllerMenu>::new,
-                "/screens/pattern_management_unit_controller.json"
-        );
-
-        InitScreens.register(
                 CrazyMenuRegistrar.PLAYER_DATA_EXTRACTOR_MENU.get(),
                 PlayerDataExtractorScreen<PlayerDataExtractorMenu>::new,
                 "/screens/player_data_extractor.json"
@@ -271,6 +261,12 @@ public final class Screens {
                 CrazyMenuRegistrar.RECIPE_FABRICATOR_MENU.get(),
                 RecipeFabricatorScreen<RecipeFabricatorMenu>::new,
                 "/screens/fabricator.json"
+        );
+
+        InitScreens.register(
+                CrazyMenuRegistrar.MOB_KEY_SELECTOR_MENU.get(),
+                MobKeySelectorScreen<MobKeySelectorMenu>::new,
+                "/screens/mob_key_selector.json"
         );
     }
 

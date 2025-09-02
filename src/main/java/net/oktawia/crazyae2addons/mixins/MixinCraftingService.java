@@ -9,9 +9,11 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.Set;
 
 @Mixin(value = CraftingService.class, remap = false)
@@ -38,5 +40,21 @@ public abstract class MixinCraftingService {
         }
 
         cir.setReturnValue(inserted);
+    }
+
+    @Redirect(
+            method = "onServerEndTick",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Ljava/util/Set;iterator()Ljava/util/Iterator;"
+            )
+    )
+    private Iterator<CraftingCPUCluster> sortedCpuIterator(Set<CraftingCPUCluster> self) {
+        var byPrioDesc = Comparator
+                .comparingInt((CraftingCPUCluster c) -> ((ICraftingClusterPrio) (Object) c).getPrio())
+                .reversed()
+                .thenComparingInt(System::identityHashCode);
+
+        return self.stream().sorted(byPrioDesc).iterator();
     }
 }

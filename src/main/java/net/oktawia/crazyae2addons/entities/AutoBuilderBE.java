@@ -14,24 +14,38 @@ import appeng.api.networking.security.IActionSource;
 import appeng.api.networking.ticking.IGridTickable;
 import appeng.api.networking.ticking.TickRateModulation;
 import appeng.api.networking.ticking.TickingRequest;
-import appeng.api.stacks.*;
+import appeng.api.stacks.AEFluidKey;
+import appeng.api.stacks.AEItemKey;
+import appeng.api.stacks.AEKey;
+import appeng.api.stacks.GenericStack;
 import appeng.api.storage.StorageHelper;
 import appeng.api.upgrades.IUpgradeInventory;
 import appeng.api.upgrades.IUpgradeableObject;
 import appeng.api.upgrades.UpgradeInventories;
-import appeng.blockentity.grid.AENetworkInvBlockEntity;
+import appeng.blockentity.grid.AENetworkedInvBlockEntity;
 import appeng.core.definitions.AEItems;
 import appeng.me.helpers.MachineSource;
 import appeng.menu.MenuOpener;
-import appeng.menu.locator.MenuLocator;
+import appeng.menu.locator.MenuHostLocator;
 import appeng.util.inv.AppEngInternalInventory;
 import appeng.util.inv.InternalInventoryHost;
 import appeng.util.inv.filter.IAEItemFilter;
+
 import com.google.common.collect.ImmutableSet;
 import com.mojang.logging.LogUtils;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.nbt.*;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.IntArrayTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.LongTag;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.Connection;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
@@ -50,17 +64,19 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.*;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.IntegerProperty;
+import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.level.storage.LevelResource;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.items.IItemHandler;
-import net.minecraftforge.registries.ForgeRegistries;
+
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.neoforge.items.IItemHandler;
+
 import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
@@ -69,6 +85,7 @@ import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.menus.AutoBuilderMenu;
 import net.oktawia.crazyae2addons.misc.ProgramExpander;
 import net.oktawia.crazyae2addons.renderer.preview.PreviewInfo;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -79,7 +96,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.Future;
 
-public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTickable, MenuProvider, InternalInventoryHost, IUpgradeableObject, ICraftingRequester {
+public class AutoBuilderBE extends AENetworkedInvBlockEntity implements IGridTickable, MenuProvider, InternalInventoryHost, IUpgradeableObject, ICraftingRequester {
 
     public IUpgradeInventory upgrades = UpgradeInventories.forMachine(CrazyBlockRegistrar.AUTO_BUILDER_BLOCK.get(), 7, this::setChanged);
     public Integer delay = 20;
@@ -178,49 +195,27 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         }
     }
 
-    @Override
-    public @NotNull <T> LazyOptional<T> getCapability(@NotNull Capability<T> cap, @Nullable Direction side) {
-        if (cap == ForgeCapabilities.ITEM_HANDLER && side != null) {
-            return LazyOptional.of(() -> new IItemHandler() {
-                @Override
-                public int getSlots() {
-                    return 2;
-                }
-
-                @Override
-                public @NotNull ItemStack getStackInSlot(int slot) {
-                    return inventory.getStackInSlot(slot);
-                }
-
-                @Override
-                public @NotNull ItemStack insertItem(int slot, @NotNull ItemStack stack, boolean simulate) {
-                    if (slot == 0 && inventory.getStackInSlot(0).isEmpty() && inventory.getStackInSlot(1).isEmpty() && stack.getItem() == CrazyItemRegistrar.BUILDER_PATTERN.get()) {
-                        return inventory.insertItem(0, stack, simulate);
-                    }
-                    return stack;
-                }
-
-                @Override
-                public @NotNull ItemStack extractItem(int slot, int amount, boolean simulate) {
-                    if (slot == 1 && !isRunning) {
-                        return inventory.extractItem(1, amount, simulate).copy();
-                    }
-                    return ItemStack.EMPTY;
-                }
-
-                @Override
-                public int getSlotLimit(int slot) {
-                    return 1;
-                }
-
-                @Override
-                public boolean isItemValid(int slot, @NotNull ItemStack stack) {
-                    return slot == 0 && stack.getItem() == CrazyItemRegistrar.BUILDER_PATTERN.get();
-                }
-            }).cast();
+    public final IItemHandler itemHandler = new IItemHandler() {
+        @Override public int getSlots() { return 2; }
+        @Override public @NotNull ItemStack getStackInSlot(int slot) { return inventory.getStackInSlot(slot); }
+        @Override public @NotNull ItemStack insertItem(int slot, @NotNull ItemStack stack, boolean simulate) {
+            if (slot == 0 && inventory.getStackInSlot(0).isEmpty() && inventory.getStackInSlot(1).isEmpty()
+                    && stack.getItem() == CrazyItemRegistrar.BUILDER_PATTERN.get()) {
+                return inventory.insertItem(0, stack, simulate);
+            }
+            return stack;
         }
-        return super.getCapability(cap, side);
-    }
+        @Override public @NotNull ItemStack extractItem(int slot, int amount, boolean simulate) {
+            if (slot == 1 && !isRunning) {
+                return inventory.extractItem(1, amount, simulate).copy();
+            }
+            return ItemStack.EMPTY;
+        }
+        @Override public int getSlotLimit(int slot) { return 1; }
+        @Override public boolean isItemValid(int slot, @NotNull ItemStack stack) {
+            return slot == 0 && stack.getItem() == CrazyItemRegistrar.BUILDER_PATTERN.get();
+        }
+    };
 
     @Nullable
     @Override
@@ -233,19 +228,18 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         return super.getSubInventory(id);
     }
 
+    // ==== NBT (1.21.1) ====
+
     @Override
-    public void loadTag(CompoundTag tag) {
-        super.loadTag(tag);
-        this.upgrades.readFromNBT(tag, "upgrades");
+    public void loadTag(CompoundTag tag, HolderLookup.Provider registries) {
+        super.loadAdditional(tag, registries);
+
+        this.upgrades.readFromNBT(tag, "upgrades", registries);
         this.currentInstruction = tag.getInt("currentInstruction");
         this.tickDelayLeft = tag.getInt("tickDelayLeft");
         this.isRunning = tag.getBoolean("isRunning");
-        if (tag.contains("GhostPos")) {
-            this.ghostRenderPos = BlockPos.of(tag.getLong("GhostPos"));
-        }
-        if (tag.contains("offset")){
-            this.offset = BlockPos.of(tag.getLong("offset"));
-        }
+        if (tag.contains("GhostPos")) this.ghostRenderPos = BlockPos.of(tag.getLong("GhostPos"));
+        if (tag.contains("offset")) this.offset = BlockPos.of(tag.getLong("offset"));
         this.previewEnabled = tag.getBoolean("previewEnabled");
         this.energyPrepaid = tag.getBoolean("energyPrepaid");
 
@@ -260,30 +254,28 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         previewPalette.clear();
         if (tag.contains("previewPalette", Tag.TAG_LIST)) {
             ListTag list = tag.getList("previewPalette", Tag.TAG_STRING);
-            for (int i = 0; i < list.size(); i++) {
-                previewPalette.add(list.getString(i));
-            }
+            for (int i = 0; i < list.size(); i++) previewPalette.add(list.getString(i));
         }
 
         if (tag.contains("previewIndices", Tag.TAG_INT_ARRAY)) {
-            previewIndices = tag.getIntArray(tag.contains("previewIndices") ? "previewIndices" : "");
+            previewIndices = tag.getIntArray("previewIndices");
         } else {
             previewIndices = new int[0];
         }
     }
 
     @Override
-    public void saveAdditional(CompoundTag tag) {
-        super.saveAdditional(tag);
-        this.upgrades.writeToNBT(tag, "upgrades");
+    public void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+        super.saveAdditional(tag, registries);
 
+        this.upgrades.writeToNBT(tag, "upgrades", registries);
         tag.putInt("currentInstruction", this.currentInstruction);
         tag.putInt("tickDelayLeft", this.tickDelayLeft);
         tag.putBoolean("isRunning", this.isRunning);
         tag.putLong("GhostPos", ghostRenderPos.asLong());
         tag.putLong("offset", this.offset.asLong());
         tag.putBoolean("previewEnabled", previewEnabled);
-        tag.putBoolean("energyPrepaid", energyPrepaid); // <---
+        tag.putBoolean("energyPrepaid", energyPrepaid);
 
         ListTag posList = new ListTag();
         for (int i = 0; i < Math.min(previewPositions.size(), PREVIEW_LIMIT); i++) {
@@ -298,22 +290,9 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         tag.put("previewIndices", new IntArrayTag(previewIndices));
     }
 
-
-    private void triggerRedstonePulse() {
-        redstonePulseTicks = 1;
-        if (!level.isClientSide) {
-            level.updateNeighborsAt(worldPosition, getBlockState().getBlock());
-        }
-    }
-
     @Override
-    public IUpgradeInventory getUpgrades() {
-        return this.upgrades;
-    }
-
-    @Override
-    public CompoundTag getUpdateTag() {
-        CompoundTag tag = super.getUpdateTag();
+    public @NotNull CompoundTag getUpdateTag(HolderLookup.Provider registries) {
+        CompoundTag tag = super.getUpdateTag(registries);
 
         tag.putLong("GhostPos", getGhostRenderPos() != null ? getGhostRenderPos().asLong() : BlockPos.ZERO.asLong());
         tag.putBoolean("previewEnabled", previewEnabled);
@@ -329,36 +308,28 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         tag.put("previewPalette", palList);
 
         tag.put("previewIndices", new IntArrayTag(previewIndices));
-
         tag.put("Inv", writeInventoryToTag());
 
         return tag;
     }
 
-
     @Override
-    public void handleUpdateTag(CompoundTag tag) {
-        super.handleUpdateTag(tag);
+    public void handleUpdateTag(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
+        super.handleUpdateTag(tag, registries);
 
-        if (tag.contains("GhostPos")) {
-            this.ghostRenderPos = BlockPos.of(tag.getLong("GhostPos"));
-        }
+        if (tag.contains("GhostPos")) this.ghostRenderPos = BlockPos.of(tag.getLong("GhostPos"));
         this.previewEnabled = tag.getBoolean("previewEnabled");
 
         previewPositions.clear();
         if (tag.contains("previewPositions", Tag.TAG_LIST)) {
             ListTag list = tag.getList("previewPositions", Tag.TAG_LONG);
-            for (int i = 0; i < list.size(); i++) {
-                previewPositions.add(BlockPos.of(((LongTag) list.get(i)).getAsLong()));
-            }
+            for (int i = 0; i < list.size(); i++) previewPositions.add(BlockPos.of(((LongTag) list.get(i)).getAsLong()));
         }
 
         previewPalette.clear();
         if (tag.contains("previewPalette", Tag.TAG_LIST)) {
             ListTag list = tag.getList("previewPalette", Tag.TAG_STRING);
-            for (int i = 0; i < list.size(); i++) {
-                previewPalette.add(list.getString(i));
-            }
+            for (int i = 0; i < list.size(); i++) previewPalette.add(list.getString(i));
         }
 
         if (tag.contains("previewIndices", Tag.TAG_INT_ARRAY)) {
@@ -375,18 +346,10 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         if (level != null && level.isClientSide) this.setPreviewInfo(null);
     }
 
-
     @Override
     public @Nullable ClientboundBlockEntityDataPacket getUpdatePacket() {
         return ClientboundBlockEntityDataPacket.create(this);
     }
-
-    @Override
-    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt) {
-        CompoundTag tag = pkt.getTag();
-        handleUpdateTag(tag);
-    }
-
 
     private static BlockPos stepLocal(BlockPos pos, char cmd) {
         return switch (cmd) {
@@ -512,7 +475,7 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
             if (!stack.isEmpty()) {
                 CompoundTag entry = new CompoundTag();
                 entry.putByte("Slot", (byte) i);
-                entry.put("Stack", stack.save(new CompoundTag()));
+                entry.put("Stack", stack.save(level.registryAccess(), new CompoundTag()));
                 list.add(entry);
             }
         }
@@ -531,7 +494,7 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         for (int i = 0; i < list.size(); i++) {
             CompoundTag entry = list.getCompound(i);
             int slot = entry.getByte("Slot") & 0xFF;
-            ItemStack stack = ItemStack.of(entry.getCompound("Stack"));
+            ItemStack stack = ItemStack.parse(level.registryAccess(), entry.getCompound("Stack")).get();
             if (slot >= 0 && slot < this.inventory.size()) {
                 this.inventory.setItemDirect(slot, stack);
             }
@@ -552,7 +515,7 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
 
     @Override
     public TickingRequest getTickingRequest(IGridNode node) {
-        return new TickingRequest(1, 1, false, false);
+        return new TickingRequest(1, 1, false, 1);
     }
 
     private double calcStepCostAE(BlockPos target) {
@@ -563,12 +526,10 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         return distance * CrazyConfig.COMMON.AutobuilderCostMult.get();
     }
 
-
     public double getRequiredEnergyAE() {
         recalculateRequiredEnergy();
         return requiredEnergyAE;
     }
-
 
     public void recalculateRequiredEnergy() {
         requiredEnergyAE = 0.0D;
@@ -612,7 +573,6 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         int maxFromConfig = CrazyConfig.COMMON.AutobuilderSpeed.get();
         return stepsFromCards(cards, maxFromConfig);
     }
-
 
     @Override
     public TickRateModulation tickingRequest(IGridNode node, int ticksSinceLastCall) {
@@ -753,7 +713,7 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
                                 blockIdClean = blockIdRaw;
                             }
 
-                            Block block = ForgeRegistries.BLOCKS.getValue(new ResourceLocation(blockIdClean));
+                            Block block = BuiltInRegistries.BLOCK.get(ResourceLocation.parse(blockIdClean));
                             if (block != null && block != Blocks.AIR) {
                                 var grid = getMainNode().getGrid();
                                 if (grid != null) {
@@ -791,7 +751,6 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
                                             }
                                         }
 
-                                        // NOWOŚĆ: obróć stan o różnicę (player-at-copy vs builder-now)
                                         int delta = Math.floorMod(yawStepsFromNorth(getFacing()) - yawStepsFromNorth(this.sourceFacing), 4);
                                         state = rotateStateByDelta(state, delta);
 
@@ -831,7 +790,12 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         return TickRateModulation.URGENT;
     }
 
-
+    private void triggerRedstonePulse() {
+        redstonePulseTicks = 1;
+        if (!level.isClientSide) {
+            level.updateNeighborsAt(worldPosition, getBlockState().getBlock());
+        }
+    }
 
     private BlockPos transformRelative(BlockPos local) {
         return getBlockPos().offset(localToWorldOffset(local));
@@ -890,7 +854,12 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
 
     public static List<ItemStack> getSilkTouchDrops(BlockState state, ServerLevel level, BlockPos pos) {
         ItemStack silkTool = new ItemStack(Items.DIAMOND_PICKAXE);
-        silkTool.enchant(Enchantments.SILK_TOUCH, 1);
+
+        var silkTouch = level.registryAccess()
+                .lookupOrThrow(Registries.ENCHANTMENT)
+                .getOrThrow(Enchantments.SILK_TOUCH);
+
+        silkTool.enchant(silkTouch, 1);
 
         var lootParams = new LootParams.Builder(level)
                 .withParameter(LootContextParams.TOOL, silkTool)
@@ -927,7 +896,7 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         return new AutoBuilderMenu(i, inventory, this);
     }
 
-    public void openMenu(Player player, MenuLocator locator) {
+    public void openMenu(Player player, MenuHostLocator locator) {
         MenuOpener.open(CrazyMenuRegistrar.AUTO_BUILDER_MENU.get(), player, locator);
     }
 
@@ -943,7 +912,7 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         var storage = getGridNode().getGrid().getStorageService().getInventory();
 
         for (Map.Entry<String, Integer> entry : requiredBlocks.entrySet()) {
-            Block block = ForgeRegistries.BLOCKS.getValue(new ResourceLocation(entry.getKey().split("\\[")[0]));
+            Block block = BuiltInRegistries.BLOCK.get(ResourceLocation.parse(entry.getKey().split("\\[")[0]));
             var stack = new ItemStack(block.asItem());
             var key = AEItemKey.of(stack);
             long left = 0;
@@ -976,9 +945,15 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
     }
 
     public static String loadProgramFromFile(ItemStack stack, MinecraftServer server) {
-        if (!stack.hasTag() || !stack.getTag().contains("program_id") || server == null) return "";
+        if (server == null) return "";
 
-        String id = stack.getTag().getString("program_id");
+        var custom = stack.get(DataComponents.CUSTOM_DATA);
+        if (custom == null) return "";
+
+        CompoundTag tag = custom.copyTag();
+        if (!tag.contains("program_id")) return "";
+
+        String id = tag.getString("program_id");
         Path file = server.getWorldPath(new LevelResource("serverdata"))
                 .resolve("autobuilder")
                 .resolve(id);
@@ -991,7 +966,8 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         }
     }
 
-    public void loadCode(){
+
+    public void loadCode() {
         ItemStack s = this.inventory.getStackInSlot(0);
         if (s.isEmpty()) s = this.inventory.getStackInSlot(1);
 
@@ -1000,27 +976,35 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
             return;
         }
 
-        var tag = s.getOrCreateTag();
-        if (tag.contains("code") && tag.getBoolean("code")){
-            var program = ProgramExpander.expand(loadProgramFromFile(s, getLevel().getServer()));
-            if (program.success){
-                this.code = program.program;
-            }
-        }
-        if (tag.contains("delay")){
-            this.delay = tag.getInt("delay");
+        CompoundTag tag = null;
+        var custom = s.get(DataComponents.CUSTOM_DATA);
+        if (custom != null) {
+            tag = custom.copyTag();
         }
 
-        // NOWOŚĆ: odczytaj orientację źródłową z patternu (fallback: NORTH)
-        if (tag.contains("srcFacing")) {
-            Direction d = Direction.byName(tag.getString("srcFacing"));
-            if (d != null) this.sourceFacing = d;
-            else this.sourceFacing = Direction.NORTH;
+        if (tag != null) {
+            if (tag.contains("code") && tag.getBoolean("code")) {
+                var srv = getLevel() != null ? getLevel().getServer() : null;
+                var program = ProgramExpander.expand(loadProgramFromFile(s, srv));
+                if (program.success) {
+                    this.code = program.program;
+                }
+            }
+
+            if (tag.contains("delay")) {
+                this.delay = tag.getInt("delay");
+            }
+
+            if (tag.contains("srcFacing")) {
+                Direction d = Direction.byName(tag.getString("srcFacing"));
+                this.sourceFacing = (d != null) ? d : Direction.NORTH;
+            } else {
+                this.sourceFacing = Direction.NORTH;
+            }
         } else {
             this.sourceFacing = Direction.NORTH;
         }
     }
-
 
     public void onRedstoneActivate(@Nullable GenericStack additional) {
         if (getLevel() == null) return;
@@ -1075,7 +1059,6 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         this.tickDelayLeft = 0;
     }
 
-
     @Override
     public InternalInventory getInternalInventory() {
         return this.inventory;
@@ -1090,19 +1073,22 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
     }
 
     @Override
-    public void onChangeInventory(InternalInventory inv, int slot) {
-        if (this.isPreviewEnabled()){
+    public void onChangeInventory(AppEngInternalInventory inv, int slot) {
+        if (this.isPreviewEnabled()) {
             this.togglePreview();
-            if (this.getMenu() != null){
+            if (this.getMenu() != null) {
                 this.getMenu().preview = false;
             }
         }
+
         this.setChanged();
         loadCode();
         recalculateRequiredEnergy();
-        if (getMenu() != null){
+
+        if (getMenu() != null) {
             getMenu().pushEnergyDisplay();
         }
+
         if (inventory.getStackInSlot(0).isEmpty() && inventory.getStackInSlot(1).isEmpty()) {
             isRunning = false;
             code = new ArrayList<>();
@@ -1113,7 +1099,6 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
             resetGhostToHome();
         }
     }
-
 
     @Override
     public ImmutableSet<ICraftingLink> getRequestedJobs() {
@@ -1174,7 +1159,6 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
     }
 
     private BlockState rotateStateByDelta(BlockState state, int steps) {
-        // 1) każde poziome DirectionProperty (np. facing)
         for (var p : state.getProperties()) {
             if (p instanceof DirectionProperty dp) {
                 Direction d = state.getValue(dp);
@@ -1183,7 +1167,6 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
                 }
             }
         }
-        // 2) osie poziome X<->Z przy 90°/270°
         if (state.hasProperty(BlockStateProperties.AXIS)) {
             var ax = state.getValue(BlockStateProperties.AXIS);
             if (ax.isHorizontal() && (steps % 2 != 0)) {
@@ -1196,7 +1179,6 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
                 state = state.setValue(BlockStateProperties.HORIZONTAL_AXIS, ax == Direction.Axis.X ? Direction.Axis.Z : Direction.Axis.X);
             }
         }
-        // 3) ROTATION_16 – +4 na każde 90°
         if (state.hasProperty(BlockStateProperties.ROTATION_16)) {
             int val = state.getValue(BlockStateProperties.ROTATION_16);
             val = (val + steps * 4) & 15;
@@ -1204,5 +1186,4 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         }
         return state;
     }
-
 }

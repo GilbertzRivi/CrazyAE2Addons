@@ -21,6 +21,7 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.oktawia.crazyae2addons.entities.AutoBuilderBE;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class AutoBuilderBlock extends AEBaseEntityBlock<AutoBuilderBE> {
@@ -51,13 +52,8 @@ public class AutoBuilderBlock extends AEBaseEntityBlock<AutoBuilderBE> {
     }
 
     @Override
-    public InteractionResult onActivated(
-            Level level,
-            BlockPos pos,
-            Player player,
-            InteractionHand hand,
-            @Nullable ItemStack heldItem,
-            BlockHitResult hit) {
+    protected @NotNull InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
+                                                        BlockHitResult hitResult) {
         if (InteractionUtil.isInAlternateUseMode(player)) {
             return InteractionResult.PASS;
         }

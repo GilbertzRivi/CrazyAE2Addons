@@ -20,19 +20,24 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.oktawia.crazyae2addons.IsModLoaded;
 import net.oktawia.crazyae2addons.compat.GregTech.GTAmpereMeterBE;
 import net.oktawia.crazyae2addons.entities.AmpereMeterBE;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class AmpereMeterBlock extends AEBaseEntityBlock<AmpereMeterBE> {
 
     public AmpereMeterBlock() {
-        super(Properties.of().strength(2f).mapColor(MapColor.METAL).sound(SoundType.METAL));
-        registerDefaultState(stateDefinition.any().setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH));
+        super(Properties.of()
+                .strength(2f)
+                .mapColor(MapColor.METAL)
+                .sound(SoundType.METAL));
+        registerDefaultState(stateDefinition.any()
+                .setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH));
     }
 
     @Nullable
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
-        if (IsModLoaded.isGTCEuLoaded()){
+        if (IsModLoaded.isGTCEuLoaded()) {
             return new GTAmpereMeterBE(pos, state);
         } else {
             return new AmpereMeterBE(pos, state);
@@ -46,26 +51,26 @@ public class AmpereMeterBlock extends AEBaseEntityBlock<AmpereMeterBE> {
 
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
-        return defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, context.getHorizontalDirection().getOpposite());
+        return defaultBlockState()
+                .setValue(BlockStateProperties.HORIZONTAL_FACING, context.getHorizontalDirection().getOpposite());
     }
 
     @Override
-    public InteractionResult use(
-            BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit
-    ) {
-        if (level.isClientSide() || player.isShiftKeyDown()) return InteractionResult.SUCCESS;
+    protected @NotNull InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
+                                                        BlockHitResult hit) {
+        if (level.isClientSide() || player.isShiftKeyDown()) {
+            return InteractionResult.SUCCESS;
+        }
 
         var be = level.getBlockEntity(pos);
 
-        if (be != null) {
+        if (be instanceof AmpereMeterBE meter) {
             if (!level.isClientSide()) {
-                ((AmpereMeterBE) be).openMenu(player, MenuLocators.forBlockEntity(be));
+                meter.openMenu(player, MenuLocators.forBlockEntity(be));
             }
-
             return InteractionResult.sidedSuccess(level.isClientSide());
         }
 
         return InteractionResult.PASS;
     }
-
 }

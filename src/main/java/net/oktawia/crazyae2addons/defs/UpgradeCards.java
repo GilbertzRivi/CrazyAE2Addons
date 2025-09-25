@@ -3,13 +3,12 @@ package net.oktawia.crazyae2addons.defs;
 import appeng.api.upgrades.Upgrades;
 import appeng.core.definitions.AEItems;
 import appeng.core.definitions.AEParts;
-import com.glodblock.github.appflux.common.AFItemAndBlock;
-import com.glodblock.github.appflux.common.items.ItemInductionCard;
-import de.mari_023.ae2wtlib.AE2wtlib;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import com.glodblock.github.appflux.common.AFSingletons;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.oktawia.crazyae2addons.IsModLoaded;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
+import de.mari_023.ae2wtlib.AE2wtlibItems;
 
 public class UpgradeCards {
     public UpgradeCards(final FMLCommonSetupEvent event) {
@@ -31,11 +30,11 @@ public class UpgradeCards {
             Upgrades.add(AEItems.ENERGY_CARD, CrazyItemRegistrar.WIRELESS_REDSTONE_TERMINAL.get(), 1, "group.wireless_redstone_terminal.name");
             Upgrades.add(AEItems.SPEED_CARD, CrazyBlockRegistrar.AUTO_BUILDER_BLOCK.get(), 6, "group.auto_builder.name");
             Upgrades.add(AEItems.CRAFTING_CARD, CrazyBlockRegistrar.AUTO_BUILDER_BLOCK.get(), 1, "group.auto_builder.name");
-            Upgrades.add(AE2wtlib.QUANTUM_BRIDGE_CARD, CrazyItemRegistrar.WIRELESS_REDSTONE_TERMINAL.get(), 1, "group.wireless_redstone_terminal.name");
+            Upgrades.add(AE2wtlibItems.QUANTUM_BRIDGE_CARD, CrazyItemRegistrar.WIRELESS_REDSTONE_TERMINAL.get(), 1, "group.wireless_redstone_terminal.name");
             Upgrades.add(AEItems.ENERGY_CARD, CrazyItemRegistrar.STRUCTURE_GADGET.get(), 4, "group.structure_gadget.name");
 
-            if (IsModLoaded.isAppFluxLoaded()){
-                Upgrades.add(AFItemAndBlock.INDUCTION_CARD, CrazyBlockRegistrar.CRAZY_PATTERN_PROVIDER_BLOCK.get(), 1, "group.crazy_pattern_provider.name");
+            if (IsModLoaded.isAppFluxLoaded()) {
+                Upgrades.add(AFSingletons.INDUCTION_CARD, CrazyBlockRegistrar.CRAZY_PATTERN_PROVIDER_BLOCK.get(), 1, "group.crazy_pattern_provider.name");
             }
         });
     }

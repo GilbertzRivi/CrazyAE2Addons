@@ -1,15 +1,22 @@
 package net.oktawia.crazyae2addons;
 
-import net.minecraftforge.fml.ModList;
+import net.neoforged.fml.loading.LoadingModList;
 
 public class IsModLoaded {
-    public static boolean isGTCEuLoaded() {
-        return ModList.get().isLoaded("gtceu");
-    }
-    public static boolean isApothLoaded() {
-        return ModList.get().isLoaded("apotheosis");
-    }
-    public static boolean isCCLoaded() { return ModList.get().isLoaded("computercraft"); }
-    public static boolean isAppFluxLoaded() { return ModList.get().isLoaded("appflux"); }
-}
 
+    public static boolean isGTCEuLoaded() {
+        return LoadingModList.get().getModFileById("gtceu") != null;
+    }
+
+    public static boolean isApothLoaded() {
+        return LoadingModList.get().getModFileById("apotheosis") != null;
+    }
+
+    public static boolean isCCLoaded() {
+        return LoadingModList.get().getModFileById("computercraft") != null;
+    }
+
+    public static boolean isAppFluxLoaded() {
+        return LoadingModList.get().getModFileById("appflux") != null;
+    }
+}

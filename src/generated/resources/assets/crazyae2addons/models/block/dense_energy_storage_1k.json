@@ -1,6 +1,0 @@
-{
-  "parent": "minecraft:block/cube_all",
-  "textures": {
-    "all": "crazyae2addons:block/dense_energy_storage_1k"
-  }
-}

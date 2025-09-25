@@ -1,62 +1,62 @@
 package net.oktawia.crazyae2addons;
 
-import net.minecraftforge.common.ForgeConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.List;
 
 public class CrazyConfig {
-    public static final ForgeConfigSpec COMMON_SPEC;
+    public static final ModConfigSpec COMMON_SPEC;
     public static final Common COMMON;
 
     static {
-        Pair<Common, ForgeConfigSpec> pair = new ForgeConfigSpec.Builder().configure(Common::new);
+        Pair<Common, ModConfigSpec> pair = new ModConfigSpec.Builder().configure(Common::new);
         COMMON = pair.getLeft();
         COMMON_SPEC = pair.getRight();
     }
 
     public static class Common {
 
-        public final ForgeConfigSpec.BooleanValue enableCPP;
-        public final ForgeConfigSpec.BooleanValue enablePeacefullSpawner;
-        public final ForgeConfigSpec.BooleanValue enableEntityTicker;
-        public final ForgeConfigSpec.IntValue     EntityTickerCost;
-        public final ForgeConfigSpec.ConfigValue<List<? extends String>> EntityTickerBlackList;
-        public final ForgeConfigSpec.BooleanValue NestedP2PWormhole;
+        public final ModConfigSpec.BooleanValue enableCPP;
+        public final ModConfigSpec.BooleanValue enablePeacefullSpawner;
+        public final ModConfigSpec.BooleanValue enableEntityTicker;
+        public final ModConfigSpec.IntValue     EntityTickerCost;
+        public final ModConfigSpec.ConfigValue<List<? extends String>> EntityTickerBlackList;
+        public final ModConfigSpec.BooleanValue NestedP2PWormhole;
 
-        public final ForgeConfigSpec.IntValue     AutoEnchanterCost;
-        public final ForgeConfigSpec.BooleanValue GregEnergyExporter;
+        public final ModConfigSpec.IntValue     AutoEnchanterCost;
+        public final ModConfigSpec.BooleanValue GregEnergyExporter;
 
-        public final ForgeConfigSpec.IntValue     AutobuilderCostMult;
-        public final ForgeConfigSpec.IntValue     AutobuilderMineDelay;
-        public final ForgeConfigSpec.IntValue     AutobuilderSpeed;
-        public final ForgeConfigSpec.IntValue     AutobuilderPreviewLimit;
+        public final ModConfigSpec.IntValue     AutobuilderCostMult;
+        public final ModConfigSpec.IntValue     AutobuilderMineDelay;
+        public final ModConfigSpec.IntValue     AutobuilderSpeed;
+        public final ModConfigSpec.IntValue     AutobuilderPreviewLimit;
 
-        public final ForgeConfigSpec.IntValue     CrazyProviderMaxAddRows;
+        public final ModConfigSpec.IntValue     CrazyProviderMaxAddRows;
 
-        public final ForgeConfigSpec.IntValue     CradleCapacity;
-        public final ForgeConfigSpec.IntValue     CradleCost;
-        public final ForgeConfigSpec.IntValue     CradleChargingSpeed;
+        public final ModConfigSpec.IntValue     CradleCapacity;
+        public final ModConfigSpec.IntValue     CradleCost;
+        public final ModConfigSpec.IntValue     CradleChargingSpeed;
 
-        public final ForgeConfigSpec.IntValue     PenroseGenT0;
-        public final ForgeConfigSpec.IntValue     PenroseGenT1;
-        public final ForgeConfigSpec.IntValue     PenroseGenT2;
-        public final ForgeConfigSpec.IntValue     PenroseGenT3;
-        public final ForgeConfigSpec.ConfigValue<List<? extends String>> PenroseGoodFuel;
-        public final ForgeConfigSpec.ConfigValue<List<? extends String>> PenroseBestFuel;
+        public final ModConfigSpec.IntValue     PenroseGenT0;
+        public final ModConfigSpec.IntValue     PenroseGenT1;
+        public final ModConfigSpec.IntValue     PenroseGenT2;
+        public final ModConfigSpec.IntValue     PenroseGenT3;
+        public final ModConfigSpec.ConfigValue<List<? extends String>> PenroseGoodFuel;
+        public final ModConfigSpec.ConfigValue<List<? extends String>> PenroseBestFuel;
 
-        public final ForgeConfigSpec.BooleanValue ResearchRequired;
+        public final ModConfigSpec.BooleanValue ResearchRequired;
 
-        public final ForgeConfigSpec.IntValue     NokiaCost;
+        public final ModConfigSpec.IntValue     NokiaCost;
 
-        public final ForgeConfigSpec.BooleanValue EnergyExporterEnabled;
-        public final ForgeConfigSpec.BooleanValue EnergyInterfaceEnabled;
+        public final ModConfigSpec.BooleanValue EnergyExporterEnabled;
+        public final ModConfigSpec.BooleanValue EnergyInterfaceEnabled;
 
-        public final ForgeConfigSpec.IntValue     FEp2pSpeed;
-        public final ForgeConfigSpec.IntValue     Fluidp2pSpeed;
-        public final ForgeConfigSpec.IntValue     Itemp2pSpeed;
+        public final ModConfigSpec.IntValue     FEp2pSpeed;
+        public final ModConfigSpec.IntValue     Fluidp2pSpeed;
+        public final ModConfigSpec.IntValue     Itemp2pSpeed;
 
-        public Common(ForgeConfigSpec.Builder builder) {
+        public Common(ModConfigSpec.Builder builder) {
             builder.comment("Crazy AE2 Addons - Config").push("general");
 
             builder.push("Features");

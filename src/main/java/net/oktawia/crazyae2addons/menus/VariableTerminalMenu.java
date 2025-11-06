@@ -43,7 +43,7 @@ public class VariableTerminalMenu extends AEBaseMenu {
             String name = parts[0];
             String value = parts[1];
             terminal.findController().ifPresent(controller -> {
-                controller.addVariable(VariableTerminalPart.hexId, VariableTerminalPart.class, VariableTerminalPart.hexId, name, value);
+                controller.addVariable(VariableTerminalPart.randomHexId(), VariableTerminalPart.class, VariableTerminalPart.hexId, name, value);
                 loadVariables();
             });
         }

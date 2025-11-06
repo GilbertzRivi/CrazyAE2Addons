@@ -20,9 +20,6 @@
     "MixinCraftingStatusMenu",
     "MixinGT",
     "MixinListCraftingInventory",
-    "MixinMAE2",
-    "MixinMAE22",
-    "MixinMAE23",
     "MixinPatternProviderLogic",
     "MixinPatternProviderTargetCache",
     "P2PTunnelPartAccessor",
@@ -32,7 +29,8 @@
     "PlayerDistanceMixin",
     "RestrictedInputSlotMixin",
     "SlotAccessor",
-    "ViewCellItemMixin"
+    "ViewCellItemMixin",
+    "MixinPatternP2PTunnelLogic"
   ],
   "client": [
     "MixinCraftingCPUScreen"

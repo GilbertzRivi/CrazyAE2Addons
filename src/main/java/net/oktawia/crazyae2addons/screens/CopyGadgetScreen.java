@@ -4,32 +4,27 @@ import appeng.client.gui.AEBaseScreen;
 import appeng.client.gui.Icon;
 import appeng.client.gui.style.ScreenStyle;
 import appeng.client.gui.widgets.UpgradesPanel;
-import appeng.menu.SlotSemantic;
 import appeng.menu.SlotSemantics;
 import com.lowdragmc.lowdraglib.gui.widget.SceneWidget;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
 import com.lowdragmc.lowdraglib.utils.TrackedDummyWorld;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Tooltip;
-import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.*;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraftforge.registries.ForgeRegistries;
+import net.oktawia.crazyae2addons.menus.CopyGadgetMenu;
 import net.oktawia.crazyae2addons.menus.GadgetMenu;
 import net.oktawia.crazyae2addons.misc.IconButton;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
-public class GadgetScreen<C extends GadgetMenu> extends AEBaseScreen<C> {
+public class CopyGadgetScreen<C extends CopyGadgetMenu> extends AEBaseScreen<C> {
     private IconButton flipHBtn, flipVBtn, rotateBtn;
     String program = "";
 
@@ -45,7 +40,7 @@ public class GadgetScreen<C extends GadgetMenu> extends AEBaseScreen<C> {
     private int lastSceneW = -1, lastSceneH = -1;
     private static final String SEP = "|";
 
-    public GadgetScreen(C menu, Inventory inv, Component title, ScreenStyle style) {
+    public CopyGadgetScreen(C menu, Inventory inv, Component title, ScreenStyle style) {
         super(menu, inv, title, style);
         setupGui();
 

@@ -254,6 +254,10 @@ public class CrazyItemRegistrar {
             ITEMS.register("mob_key_selector",
                     () -> new MobKeySelectorItem(new Item.Properties()));
 
+    public static final RegistryObject<SamsungGalaxyS6Item> SAMSUNG_GALAXY_S6 =
+            ITEMS.register("samsung_galaxy_s6",
+                    () -> new SamsungGalaxyS6Item(new Item.Properties()));
+
     private CrazyItemRegistrar() {}
 
 }

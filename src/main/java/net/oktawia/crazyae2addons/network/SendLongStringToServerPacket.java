@@ -5,6 +5,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.network.NetworkEvent;
 import net.oktawia.crazyae2addons.menus.BuilderPatternMenu;
+import net.oktawia.crazyae2addons.menus.CopyGadgetMenu;
 import net.oktawia.crazyae2addons.menus.GadgetMenu;
 import net.oktawia.crazyae2addons.menus.LuaPatternMenu;
 
@@ -39,6 +40,8 @@ public class SendLongStringToServerPacket {
             } else if (sender != null && sender.containerMenu instanceof GadgetMenu menu) {
                 menu.updateData(packet.data);
             } else if (sender != null && sender.containerMenu instanceof LuaPatternMenu menu) {
+                menu.updateData(packet.data);
+            } else if (sender != null && sender.containerMenu instanceof CopyGadgetMenu menu) {
                 menu.updateData(packet.data);
             }
         });

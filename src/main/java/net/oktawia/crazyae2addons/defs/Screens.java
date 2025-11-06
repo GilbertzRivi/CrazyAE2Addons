@@ -248,6 +248,12 @@ public final class Screens {
         );
 
         InitScreens.register(
+                CrazyMenuRegistrar.COPY_GADGET_MENU.get(),
+                CopyGadgetScreen<CopyGadgetMenu>::new,
+                "/screens/copy_gadget.json"
+        );
+
+        InitScreens.register(
                 CrazyMenuRegistrar.DATA_DRIVE_MENU.get(),
                 DataDriveScreen<DataDriveMenu>::new,
                 "/screens/data_drive.json"

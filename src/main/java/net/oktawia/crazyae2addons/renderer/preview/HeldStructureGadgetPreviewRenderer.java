@@ -18,6 +18,7 @@ import net.minecraftforge.client.event.RenderLevelStageEvent.Stage;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.oktawia.crazyae2addons.CrazyAddons;
+import net.oktawia.crazyae2addons.items.SamsungGalaxyS6Item;
 import net.oktawia.crazyae2addons.items.StructureGadgetItem;
 import net.oktawia.crazyae2addons.renderer.BuilderPreviewRenderer;
 
@@ -34,7 +35,7 @@ public class HeldStructureGadgetPreviewRenderer {
         if (mc.level == null || mc.player == null) return;
 
         ItemStack held = mc.player.getMainHandItem();
-        if (!(held.getItem() instanceof StructureGadgetItem)) return;
+        if (!(held.getItem() instanceof StructureGadgetItem) && !(held.getItem() instanceof SamsungGalaxyS6Item)) return;
 
         var tag = held.getTag();
         if (tag == null || !tag.getBoolean("code")) return;

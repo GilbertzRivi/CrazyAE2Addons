@@ -1,32 +1,53 @@
 package net.oktawia.crazyae2addons.items;
 
+import appeng.api.config.Actionable;
 import appeng.api.config.FuzzyMode;
+import appeng.api.implementations.blockentities.IWirelessAccessPoint;
 import appeng.api.implementations.menuobjects.IMenuItem;
 import appeng.api.implementations.menuobjects.ItemMenuHost;
+import appeng.api.networking.IGrid;
+import appeng.api.networking.IGridNode;
+import appeng.api.networking.crafting.CalculationStrategy;
+import appeng.api.networking.crafting.ICraftingLink;
+import appeng.api.networking.crafting.ICraftingPlan;
+import appeng.api.networking.security.IActionHost;
+import appeng.api.networking.security.IActionSource;
+import appeng.api.networking.storage.IStorageService;
+import appeng.api.networking.ticking.TickRateModulation;
 import appeng.api.stacks.AEItemKey;
+import appeng.api.stacks.GenericStack;
+import appeng.api.storage.MEStorage;
 import appeng.api.upgrades.IUpgradeInventory;
 import appeng.api.upgrades.UpgradeInventories;
 import appeng.core.definitions.AEItems;
 import appeng.items.AEBaseItem;
+import appeng.me.helpers.MachineSource;
+import appeng.me.helpers.PlayerSource;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuLocators;
+import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.GlobalPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.Property;
@@ -39,11 +60,12 @@ import net.minecraftforge.energy.IEnergyStorage;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
+import net.oktawia.crazyae2addons.entities.AutoBuilderBE;
 import net.oktawia.crazyae2addons.logic.BuildScheduler;
 import net.oktawia.crazyae2addons.logic.BuilderPatternHost;
+import net.oktawia.crazyae2addons.logic.CopyGadgetHost;
 import net.oktawia.crazyae2addons.logic.GadgetHost;
 import net.oktawia.crazyae2addons.misc.ProgramExpander;
-import net.oktawia.crazyae2addons.recipes.StructureSnapshot;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -52,8 +74,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.Future;
 
-public class StructureGadgetItem extends AEBaseItem implements IMenuItem {
+public class SamsungGalaxyS6Item extends AEBaseItem implements IMenuItem {
 
     private BlockPos cornerA = null;
     private BlockPos cornerB = null;
@@ -62,143 +85,230 @@ public class StructureGadgetItem extends AEBaseItem implements IMenuItem {
 
     private static final int BASE_ENERGY_CAPACITY = 200_000;
     private static final int ENERGY_CARD_BONUS    = 200_000;
-    private static final int ENERGY_CARD_SLOTS    = 4;
+    private static final int ENERGY_CARD_SLOTS    = 5;
     private static final int MAX_RECEIVE          = 25_000;
     private static final int MAX_EXTRACT          = Integer.MAX_VALUE;
 
     private static final String NBT_ENERGY        = "energy";
 
-    private static final String SEP = "|";
+    private static final String SEP               = "|";
 
-    public StructureGadgetItem(Properties props) {
+    private static final String NBT_LINKED_AP = "linked_ap";
+
+    private List<GenericStack> toCraft = new ArrayList<>();
+    public List<Future<ICraftingPlan>> toCraftPlans = new ArrayList<>();
+
+    public SamsungGalaxyS6Item(Properties props) {
         super(props.stacksTo(1));
     }
 
-    public static boolean hasStoredStructure(ItemStack stack) {
-        if (stack == null || stack.isEmpty() || !stack.hasTag()) return false;
-        CompoundTag tag = stack.getTag();
-        if (tag == null) return false;
-        if (!tag.getBoolean("code")) return false;
-        if (!tag.contains("program_id")) return false;
-        String id = tag.getString("program_id");
-        return id != null && !id.isEmpty();
+    public static void setLinkedAccessPoint(ItemStack stack, GlobalPos gp) {
+        CompoundTag tag = stack.getOrCreateTag();
+        CompoundTag c = new CompoundTag();
+        c.putString("dim", gp.dimension().location().toString());
+        c.putInt("x", gp.pos().getX());
+        c.putInt("y", gp.pos().getY());
+        c.putInt("z", gp.pos().getZ());
+        tag.put(NBT_LINKED_AP, c);
+    }
+
+    public static void clearLinkedAccessPoint(ItemStack stack) {
+        if (!stack.hasTag()) return;
+        stack.getTag().remove(NBT_LINKED_AP);
     }
 
     @Nullable
-    public static String getProgramIdOrNull(ItemStack stack) {
-        if (!hasStoredStructure(stack)) return null;
-        return stack.getTag().getString("program_id");
-    }
-
-    public static @Nullable StructureSnapshot loadSnapshot(ItemStack stack, @Nullable Level level) {
-        if (stack == null || stack.isEmpty() || !stack.hasTag()) return null;
+    private static GlobalPos getLinkedAccessPoint(ItemStack stack) {
+        if (!stack.hasTag()) return null;
         CompoundTag tag = stack.getTag();
-        if (tag == null) return null;
+        if (tag == null || !tag.contains(NBT_LINKED_AP)) return null;
 
-        if (!tag.contains("preview_palette") || !tag.contains("preview_positions") || !tag.contains("preview_indices"))
-            return null;
-
-        var palList = tag.getList("preview_palette", Tag.TAG_STRING);
-        if (palList.isEmpty()) return null;
-
-        List<BlockState> palette = new ArrayList<>(palList.size());
-        for (int i = 0; i < palList.size(); i++) {
-            String spec = palList.getString(i);
-            BlockState st = parseBlockStateSpecForSnapshot(spec);
-            if (st == null) return null;
-            palette.add(st);
-        }
-
-        int[] posArr = tag.getIntArray("preview_positions");
-        int[] idxArr = tag.getIntArray("preview_indices");
-        if (posArr.length == 0 || posArr.length % 3 != 0) return null;
-        int blocksN = posArr.length / 3;
-        if (idxArr.length != blocksN) return null;
-
-        // --- bounding box ---
-        int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE;
-        int maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
-        for (int i = 0; i < blocksN; i++) {
-            int x = posArr[i * 3];
-            int y = posArr[i * 3 + 1];
-            int z = posArr[i * 3 + 2];
-            if (x < minX) minX = x; if (x > maxX) maxX = x;
-            if (y < minY) minY = y; if (y > maxY) maxY = y;
-            if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
-        }
-
-        int sizeX = (maxX - minX) + 1;
-        int sizeY = (maxY - minY) + 1;
-        int sizeZ = (maxZ - minZ) + 1;
-
-        Map<BlockPos, BlockState> map = new HashMap<>(blocksN * 2);
-        for (int i = 0; i < blocksN; i++) {
-            int lx = posArr[i * 3]     - minX;
-            int ly = posArr[i * 3 + 1] - minY;
-            int lz = posArr[i * 3 + 2] - minZ;
-
-            int palIndex = idxArr[i];
-            if (palIndex < 0 || palIndex >= palette.size()) continue;
-            map.put(new BlockPos(lx, ly, lz), palette.get(palIndex));
-        }
-
-        return new StructureSnapshot(sizeX, sizeY, sizeZ, map);
-    }
-
-    private static @Nullable BlockState parseBlockStateSpecForSnapshot(String spec) {
-        String name = spec;
-        String props = null;
-        int br = spec.indexOf('[');
-        if (br >= 0 && spec.endsWith("]")) {
-            name = spec.substring(0, br);
-            props = spec.substring(br + 1, spec.length() - 1);
-        }
-        ResourceLocation rl = ResourceLocation.tryParse(name);
+        CompoundTag c = tag.getCompound(NBT_LINKED_AP);
+        var rl = ResourceLocation.tryParse(c.getString("dim"));
         if (rl == null) return null;
 
-        var block = ForgeRegistries.BLOCKS.getValue(rl);
-        if (block == null) return null;
-
-        BlockState state = block.defaultBlockState();
-        if (props == null || props.isEmpty()) return state;
-
-        StateDefinition<?, ?> def = block.getStateDefinition();
-        String[] pairs = props.split(",");
-        for (String pair : pairs) {
-            String[] kv = pair.split("=", 2);
-            if (kv.length != 2) continue;
-            String key = kv[0].trim();
-            String val = kv[1].trim();
-            Property<?> prop = def.getProperty(key);
-            if (prop == null) continue;
-
-            Optional<?> parsed = ((Property) prop).getValue(val);
-            if (parsed.isPresent()) {
-                state = setUnchecked(state, prop, (Comparable) parsed.get());
-            }
-        }
-        return state;
+        ResourceKey<Level> dimKey = ResourceKey.create(Registries.DIMENSION, rl);
+        BlockPos pos = new BlockPos(c.getInt("x"), c.getInt("y"), c.getInt("z"));
+        return GlobalPos.of(dimKey, pos);
     }
 
+    public static @Nullable IGrid getLinkedGrid(ItemStack item, Level level, @Nullable Player sendMessagesTo) {
+        if (!(level instanceof ServerLevel serverLevel)) {
+            return null;
+        }
+
+        GlobalPos linked = getLinkedAccessPoint(item);
+        if (linked == null) {
+            if (sendMessagesTo != null && !level.isClientSide())
+                sendMessagesTo.displayClientMessage(Component.literal("Not linked to any AE2 grid."), true);
+            return null;
+        }
+
+        ServerLevel targetLevel = serverLevel.getServer().getLevel(linked.dimension());
+        if (targetLevel == null) {
+            if (sendMessagesTo != null && !level.isClientSide())
+                sendMessagesTo.displayClientMessage(Component.literal("Linked dimension not found/loaded."), true);
+            return null;
+        }
+
+        BlockEntity be = targetLevel.getBlockEntity(linked.pos());
+        if (!(be instanceof IWirelessAccessPoint wap)) {
+            if (sendMessagesTo != null && !level.isClientSide())
+                sendMessagesTo.displayClientMessage(Component.literal("No Wireless Access Point at linked position."), true);
+            return null;
+        }
+
+        IGrid grid = wap.getGrid();
+        if (grid == null) {
+            if (sendMessagesTo != null && !level.isClientSide())
+                sendMessagesTo.displayClientMessage(Component.literal("AE2 grid not found."), true);
+            return null;
+        }
+
+        if (!grid.getEnergyService().isNetworkPowered()) {
+            if (sendMessagesTo != null && !level.isClientSide())
+                sendMessagesTo.displayClientMessage(Component.literal("AE2 grid is not powered."), true);
+            return null;
+        }
+
+        return grid;
+    }
+
+    private static Map<AEItemKey, Long> computeRequirements(Map<Integer, BlockState> palette, String body,
+                                                            Map<AEItemKey, ResourceLocation> nameMapOut) {
+        Map<AEItemKey, Long> needed = new LinkedHashMap<>();
+        BlockPos cursor = BlockPos.ZERO;
+        int i = 0, n = body.length();
+        while (i < n) {
+            char c = body.charAt(i);
+
+            if (c == 'H') { cursor = BlockPos.ZERO; i++; continue; }
+            if (c == 'F' || c == 'B' || c == 'L' || c == 'R' || c == 'U' || c == 'D') {
+                cursor = stepCursor(cursor, c); i++; continue;
+            }
+            if (c == 'P' && i + 1 < n && body.charAt(i + 1) == '(') {
+                int j = i + 2;
+                while (j < n && body.charAt(j) != ')') j++;
+                if (j < n) {
+                    String num = body.substring(i + 2, j);
+                    try {
+                        int id = Integer.parseInt(num);
+                        BlockState st = palette.get(id);
+                        if (st != null) {
+                            var item = st.getBlock().asItem();
+                            if (item != Items.AIR) {
+                                AEItemKey key = AEItemKey.of(item);
+                                needed.merge(key, 1L, Long::sum);
+                                nameMapOut.putIfAbsent(key, ForgeRegistries.ITEMS.getKey(item));
+                            }
+                        }
+                    } catch (NumberFormatException ignored) { }
+                    i = j + 1; continue;
+                }
+            }
+            i++;
+        }
+        return needed;
+    }
+
+
+    public void scheduleCrafts(IGrid grid, Level level, Player player) {
+        var builder = grid.getMachines(AutoBuilderBE.class).stream().findFirst();
+        if (builder.isEmpty()) {
+            if (!level.isClientSide()) {
+                player.displayClientMessage(Component.literal("Auto Builder not found. Can not schedule crafts."), true);
+            }
+            return;
+        }
+        for (GenericStack stack : toCraft) {
+                toCraftPlans.add(grid.getCraftingService().beginCraftingCalculation(
+                    level,
+                    () -> new MachineSource(builder.get()),
+                    stack.what(),
+                    stack.amount(),
+                    CalculationStrategy.REPORT_MISSING_ITEMS
+            ));
+        }
+        if (!level.isClientSide()) {
+            player.displayClientMessage(Component.literal("Scheduling crafts."), true);
+        }
+    }
+
+    private boolean checkAndExtractFromME(ItemStack stack, Level level, Player p,
+                                          Map<AEItemKey, Long> needed,
+                                          Map<AEItemKey, ResourceLocation> nameMap) {
+        var grid = getLinkedGrid(stack, level, p);
+        if (grid == null) {
+            return false;
+        }
+
+        IStorageService ss = grid.getStorageService();
+        MEStorage inv = ss.getInventory();
+        IActionSource src = IActionSource.ofPlayer(p);
+
+        Map<AEItemKey, Long> missing = new LinkedHashMap<>();
+        for (var e : needed.entrySet()) {
+            AEItemKey key = e.getKey();
+            long want = e.getValue();
+            long can = inv.extract(key, want, Actionable.SIMULATE, src);
+            if (can < want) {
+                missing.put(key, want - can);
+            }
+        }
+
+        if (!missing.isEmpty()) {
+            IUpgradeInventory upgrades = getUpgrades(stack);
+            int craftingCards = upgrades.getInstalledUpgrades(AEItems.CRAFTING_CARD);
+
+            if (craftingCards > 0) {
+                toCraft.clear();
+                for (var tc : missing.entrySet()){
+                    AEItemKey key = tc.getKey();
+                    long amount = tc.getValue();
+                    toCraft.add(new GenericStack(key, amount));
+                }
+                scheduleCrafts(grid, level, p);
+                return false;
+            }
+
+            StringBuilder sb = new StringBuilder("Missing: ");
+            int shown = 0;
+            for (var e : missing.entrySet()) {
+                if (shown++ > 0) sb.append(", ");
+                ResourceLocation rl = nameMap.getOrDefault(e.getKey(), new ResourceLocation("minecraft", "unknown"));
+                sb.append(rl.getPath()).append(" x").append(e.getValue());
+                if (shown >= 3 && missing.size() > shown) { sb.append(", ..."); break; }
+            }
+            if (!level.isClientSide()) {
+                p.displayClientMessage(Component.literal(sb.toString()), true);
+            }
+            return false;
+        }
+
+        for (var e : needed.entrySet()) {
+            AEItemKey key = e.getKey();
+            long want = e.getValue();
+            long got = inv.extract(key, want, Actionable.MODULATE, src);
+            if (got < want && !level.isClientSide()) {
+                ResourceLocation rl = nameMap.getOrDefault(key, new ResourceLocation("minecraft", "unknown"));
+                p.displayClientMessage(Component.literal("Couldn't extract: " + rl + " x" + (want - got)), true);
+                return false;
+            }
+        }
+        return true;
+    }
 
     @Override
     public @NotNull InteractionResultHolder<ItemStack> use(@NotNull Level level, @NotNull Player p, @NotNull InteractionHand hand) {
         ItemStack stack = p.getItemInHand(hand);
 
         if (!level.isClientSide() && p.isShiftKeyDown()) {
-            MenuOpener.open(CrazyMenuRegistrar.GADGET_MENU.get(), p, MenuLocators.forHand(p, hand));
+            MenuOpener.open(CrazyMenuRegistrar.COPY_GADGET_MENU.get(), p, MenuLocators.forHand(p, hand));
             return new InteractionResultHolder<>(InteractionResult.SUCCESS, stack);
         }
 
-        if (stack.hasTag() && stack.getTag().getBoolean("code")) {
-            if (level.isClientSide()) {
-                p.displayClientMessage(Component.literal("First paste your current structure"), true);
-            }
-            return new InteractionResultHolder<>(InteractionResult.sidedSuccess(level.isClientSide()), stack);
-        }
-
         if (!level.isClientSide() && cornerA != null && cornerB != null && origin != null) {
-            generateProgramAndCut(level, p, stack);
+            generateProgramAndCopy(level, p, stack);
             return InteractionResultHolder.success(stack);
         }
 
@@ -222,9 +332,7 @@ public class StructureGadgetItem extends AEBaseItem implements IMenuItem {
             return InteractionResult.SUCCESS;
         }
 
-        if (stack.hasTag() && stack.getTag().getBoolean("code")) {
-            player.displayClientMessage(Component.literal("Paste current structure first"), true);
-        } else if (cornerA == null) {
+        if (cornerA == null) {
             cornerA = clicked.immutable();
             CompoundTag tag = stack.getOrCreateTag();
             tag.putIntArray("selA", new int[]{cornerA.getX(), cornerA.getY(), cornerA.getZ()});
@@ -249,7 +357,7 @@ public class StructureGadgetItem extends AEBaseItem implements IMenuItem {
 
     @Override
     public @Nullable ItemMenuHost getMenuHost(Player player, int inventorySlot, ItemStack stack, @Nullable BlockPos pos) {
-        return new GadgetHost(player, inventorySlot, stack);
+        return new CopyGadgetHost(player, inventorySlot, stack);
     }
 
     private static int getEnergy(ItemStack stack) {
@@ -307,23 +415,52 @@ public class StructureGadgetItem extends AEBaseItem implements IMenuItem {
         int e = getEnergy(stack);
         int cap = getMaxEnergyCapacity(stack);
         tooltip.add(Component.literal(String.format("Energy: %,d / %,d FE", e, cap)));
-        IUpgradeInventory inv = UpgradeInventories.forItem(stack, ENERGY_CARD_SLOTS);
+
+        IUpgradeInventory inv = getUpgrades(stack);
         int cards = inv.getInstalledUpgrades(AEItems.ENERGY_CARD);
-        tooltip.add(Component.literal("Energy Cards: " + cards + " / " + ENERGY_CARD_SLOTS));
+        tooltip.add(Component.literal("Energy Cards: " + cards + " / " + (ENERGY_CARD_SLOTS - 1)));
+
+        GlobalPos gp = getLinkedAccessPoint(stack);
+        if (gp != null) {
+            tooltip.add(Component.literal(
+                    "Linked to: %d, %d, %d".formatted(
+                            gp.pos().getX(), gp.pos().getY(), gp.pos().getZ()
+                    )));
+        } else {
+            tooltip.add(Component.literal("Linked AP: <none>"));
+        }
         super.appendHoverText(stack, level, tooltip, flag);
     }
 
     @Override
-    public void inventoryTick(@NotNull ItemStack stack, @NotNull Level level, @NotNull net.minecraft.world.entity.Entity entity, int slot, boolean selected) {
+    public void inventoryTick(@NotNull ItemStack stack, @NotNull Level level, @NotNull Entity entity, int slot, boolean selected) {
         if (!level.isClientSide()) {
-            int cap = getMaxEnergyCapacity(stack);
-            if (getEnergy(stack) > cap) {
-                setEnergy(stack, cap);
-            }
+            getUpgrades(stack);
         }
         if (level.isClientSide() || !(entity instanceof Player player)) return;
-        if (getEnergy(stack) >= getMaxEnergyCapacity(stack)) return;
 
+        Iterator<Future<ICraftingPlan>> iterator = toCraftPlans.iterator();
+        while (iterator.hasNext()) {
+            Future<ICraftingPlan> craftingPlan = iterator.next();
+            if (craftingPlan.isDone()) {
+                try {
+                    if (!craftingPlan.get().missingItems().isEmpty()){
+                        this.toCraftPlans.clear();
+                        player.displayClientMessage(Component.literal("Can not craft all required items."), true);
+                        return;
+                    }
+                    var grid = getLinkedGrid(stack, level, null);
+                    if (grid == null) return;
+                    var result = grid.getCraftingService().submitJob(
+                            craftingPlan.get(), null, null, true, IActionSource.ofPlayer(player));
+                    if (result.successful()) {
+                        iterator.remove();
+                    }
+                } catch (Throwable ignored) {}
+            }
+        }
+
+        if (getEnergy(stack) >= getMaxEnergyCapacity(stack)) return;
         final int[] toFill = { Math.min(MAX_RECEIVE, getMaxEnergyCapacity(stack) - getEnergy(stack)) };
         var inv = player.getInventory();
         for (int i = 0; i < inv.getContainerSize() && toFill[0] > 0; i++) {
@@ -354,46 +491,7 @@ public class StructureGadgetItem extends AEBaseItem implements IMenuItem {
         return distance * CrazyConfig.COMMON.NokiaCost.get();
     }
 
-    public static int computeCutCostFE(Level level, BlockPos cornerA, BlockPos cornerB, BlockPos origin) {
-        if (level == null || cornerA == null || cornerB == null || origin == null) return 0;
-
-        BlockPos min = new BlockPos(
-                Math.min(cornerA.getX(), cornerB.getX()),
-                Math.min(cornerA.getY(), cornerB.getY()),
-                Math.min(cornerA.getZ(), cornerB.getZ())
-        );
-        BlockPos max = new BlockPos(
-                Math.max(cornerA.getX(), cornerB.getX()),
-                Math.max(cornerA.getY(), cornerB.getY()),
-                Math.max(cornerA.getZ(), cornerB.getZ())
-        );
-
-        double required = 0.0;
-        for (int y = min.getY(); y <= max.getY(); y++) {
-            for (int z = min.getZ(); z <= max.getZ(); z++) {
-                for (int x = min.getX(); x <= max.getX(); x++) {
-                    BlockPos wp = new BlockPos(x, y, z);
-                    BlockState state = level.getBlockState(wp);
-                    if (state.isAir()) continue;
-
-                    var id = ForgeRegistries.BLOCKS.getKey(state.getBlock());
-                    if (id == null) continue;
-
-                    var itemKey = AEItemKey.of(state.getBlock().asItem());
-                    if (itemKey.fuzzyEquals(AEItemKey.of(Blocks.AIR.asItem()), FuzzyMode.IGNORE_ALL)) continue;
-
-                    required += calcStepCostFE(origin, wp);
-                }
-            }
-        }
-        return (int) Math.ceil(required);
-    }
-
-    private void generateProgramAndCut(Level level, Player p, ItemStack stack) {
-        if (stack.hasTag() && stack.getTag().getBoolean("code")) {
-            p.displayClientMessage(Component.literal("Paste current structure first"), true);
-            return;
-        }
+    private void generateProgramAndCopy(Level level, Player p, ItemStack stack) {
         if (cornerA == null || cornerB == null || origin == null) {
             p.displayClientMessage(Component.literal("Select corners first"), true);
             return;
@@ -430,7 +528,7 @@ public class StructureGadgetItem extends AEBaseItem implements IMenuItem {
         }
         int needFE = (int) Math.ceil(required);
         if (extractEnergyFrom(stack, needFE, true) < needFE) {
-            p.displayClientMessage(Component.literal("Not enough energy (" + needFE + " FE) to cut."), true);
+            p.displayClientMessage(Component.literal("Not enough energy (" + needFE + " FE) to copy."), true);
             return;
         }
         extractEnergyFrom(stack, needFE, false);
@@ -442,10 +540,9 @@ public class StructureGadgetItem extends AEBaseItem implements IMenuItem {
         StringBuilder pattern = new StringBuilder("H");
         BlockPos cursorLocal = BlockPos.ZERO;
 
-        int cutCount = 0;
+        int copyCount = 0;
         List<BlockPos> previewPositions = new ArrayList<>();
         List<Integer> previewIndices = new ArrayList<>();
-        List<Runnable> cutOps = new ArrayList<>();
 
         for (int y = min.getY(); y <= max.getY(); y++) {
             for (int z = min.getZ(); z <= max.getZ(); z++) {
@@ -483,13 +580,7 @@ public class StructureGadgetItem extends AEBaseItem implements IMenuItem {
                     previewPositions.add(targetLocal);
                     previewIndices.add(blockMap.get(key) - 1);
 
-                    cutOps.add(() -> {
-                        if (level.hasChunkAt(wp)) {
-                            level.removeBlock(wp, false);
-                        }
-                    });
-
-                    cutCount++;
+                    copyCount++;
                 }
             }
         }
@@ -508,48 +599,35 @@ public class StructureGadgetItem extends AEBaseItem implements IMenuItem {
             return;
         }
 
-        p.displayClientMessage(Component.literal("Starting CUT: " + cutCount + " blocks"), true);
+        String programId = UUID.randomUUID().toString();
+        var tag = stack.getOrCreateTag();
+        tag.putBoolean("code", true);
+        tag.putString("program_id", programId);
+        tag.putInt("delay", 0);
+        tag.putString("src_facing", originFacing.getName());
 
-        if (level instanceof net.minecraft.server.level.ServerLevel sl) {
-            int finalCutCount = cutCount;
-            net.oktawia.crazyae2addons.logic.BuildScheduler.enqueue(
-                    sl,
-                    p.getUUID(),
-                    4,
-                    cutOps,
-                    () -> {
-                        // dopiero TERAZ zapisujemy program do NBT
-                        String programId = UUID.randomUUID().toString();
-                        var tag = stack.getOrCreateTag();
-                        tag.putBoolean("code", true);
-                        tag.putString("program_id", programId);
-                        tag.putInt("delay", 0);
-                        tag.putString("src_facing", originFacing.getName());
-
-                        var palList = new net.minecraft.nbt.ListTag();
-                        String[] idByIndex = new String[blockMap.size()];
-                        for (Map.Entry<String, Integer> e : blockMap.entrySet()) {
-                            idByIndex[e.getValue() - 1] = e.getKey();
-                        }
-                        for (String s : idByIndex) palList.add(net.minecraft.nbt.StringTag.valueOf(s));
-                        tag.put("preview_palette", palList);
-                        tag.putIntArray("preview_indices", previewIndices.stream().mapToInt(Integer::intValue).toArray());
-
-                        int[] posArr = new int[previewPositions.size() * 3];
-                        int k = 0;
-                        for (BlockPos lp : previewPositions) {
-                            posArr[k++] = lp.getX();
-                            posArr[k++] = lp.getY();
-                            posArr[k++] = lp.getZ();
-                        }
-                        tag.putIntArray("preview_positions", posArr);
-
-                        saveProgramToFile(programId, finalCode, p.getServer());
-                        p.displayClientMessage(Component.literal("CUT complete (" + finalCutCount + " blocks)"), true);
-                        cornerA = cornerB = origin = null;
-                    }
-            );
+        var palList = new net.minecraft.nbt.ListTag();
+        String[] idByIndex = new String[blockMap.size()];
+        for (Map.Entry<String, Integer> e : blockMap.entrySet()) {
+            idByIndex[e.getValue() - 1] = e.getKey();
         }
+        for (String s : idByIndex) palList.add(net.minecraft.nbt.StringTag.valueOf(s));
+        tag.put("preview_palette", palList);
+        tag.putIntArray("preview_indices", previewIndices.stream().mapToInt(Integer::intValue).toArray());
+
+        int[] posArr = new int[previewPositions.size() * 3];
+        int k = 0;
+        for (BlockPos lp : previewPositions) {
+            posArr[k++] = lp.getX();
+            posArr[k++] = lp.getY();
+            posArr[k++] = lp.getZ();
+        }
+        tag.putIntArray("preview_positions", posArr);
+
+        saveProgramToFile(programId, finalCode, p.getServer());
+        p.displayClientMessage(Component.literal("Copied structure (" + copyCount + " blocks)"), true);
+
+        cornerA = cornerB = origin = null;
     }
 
     private void pasteNow(Level level, Player p, ItemStack stack, BlockPos originWorld, Direction pasteFacing) {
@@ -585,27 +663,18 @@ public class StructureGadgetItem extends AEBaseItem implements IMenuItem {
             while (idx < n) {
                 char c = body.charAt(idx);
                 if (c == 'H') { cursor = BlockPos.ZERO; idx++; continue; }
-                if (c == 'F' || c == 'B' || c == 'L' || c == 'R' || c == 'U' || c == 'D') {
-                    cursor = stepCursor(cursor, c); idx++; continue;
-                }
+                if (c == 'F' || c == 'B' || c == 'L' || c == 'R' || c == 'U' || c == 'D') { cursor = stepCursor(cursor, c); idx++; continue; }
                 if (c == 'P' && idx + 1 < n && body.charAt(idx + 1) == '(') {
                     int j = idx + 2;
                     while (j < n && body.charAt(j) != ')') j++;
                     if (j < n) {
-                        String num = body.substring(idx + 2, j);
-                        try {
-                            int id = Integer.parseInt(num);
-                            BlockState st = palette.get(id);
-                            if (st != null) {
-                                BlockPos wp = localToWorld(cursor, originWorld, basis);
-                                BlockState cur = level.getBlockState(wp);
-                                if (!cur.canBeReplaced() || cur.equals(st)) {
-                                    p.displayClientMessage(Component.literal(
-                                            "Cant paste: collision on " + wp.getX() + "," + wp.getY() + "," + wp.getZ()), true);
-                                    return;
-                                }
-                            }
-                        } catch (NumberFormatException ignored) { }
+                        BlockPos wp = localToWorld(cursor, originWorld, basis);
+                        BlockState cur = level.getBlockState(wp);
+                        if (!cur.canBeReplaced()) {
+                            p.displayClientMessage(Component.literal(
+                                    "Cant paste: collision on " + wp.getX() + "," + wp.getY() + "," + wp.getZ()), true);
+                            return;
+                        }
                         idx = j + 1; continue;
                     }
                 }
@@ -620,9 +689,7 @@ public class StructureGadgetItem extends AEBaseItem implements IMenuItem {
             while (idx < n) {
                 char c = body.charAt(idx);
                 if (c == 'H') { cursor = BlockPos.ZERO; idx++; continue; }
-                if (c == 'F' || c == 'B' || c == 'L' || c == 'R' || c == 'U' || c == 'D') {
-                    cursor = stepCursor(cursor, c); idx++; continue;
-                }
+                if (c == 'F' || c == 'B' || c == 'L' || c == 'R' || c == 'U' || c == 'D') { cursor = stepCursor(cursor, c); idx++; continue; }
                 if (c == 'P' || c == 'X') {
                     BlockPos wp = localToWorld(cursor, originWorld, basis);
                     required += calcStepCostFE(originWorld, wp);
@@ -636,9 +703,15 @@ public class StructureGadgetItem extends AEBaseItem implements IMenuItem {
             p.displayClientMessage(Component.literal("Not enough energy (" + needFE + " FE) to paste."), true);
             return;
         }
-        extractEnergyFrom(stack, needFE, false);
 
-        clearStoredStructure(stack, p.getServer());
+        Map<AEItemKey, ResourceLocation> prettyNames = new LinkedHashMap<>();
+        Map<AEItemKey, Long> needed = computeRequirements(palette, body, prettyNames);
+        if (!needed.isEmpty()) {
+            boolean ok = checkAndExtractFromME(stack, level, p, needed, prettyNames);
+            if (!ok) return;
+        }
+
+        extractEnergyFrom(stack, needFE, false);
 
         BlockPos cursor = BlockPos.ZERO;
         List<Runnable> pasteOps = new ArrayList<>();
@@ -648,17 +721,15 @@ public class StructureGadgetItem extends AEBaseItem implements IMenuItem {
         while (idx < n) {
             char c = body.charAt(idx);
             if (c == 'H') { cursor = BlockPos.ZERO; idx++; continue; }
-            if (c == 'F' || c == 'B' || c == 'L' || c == 'R' || c == 'U' || c == 'D') {
-                cursor = stepCursor(cursor, c); idx++; continue;
-            }
+            if (c == 'F' || c == 'B' || c == 'L' || c == 'R' || c == 'U' || c == 'D') { cursor = stepCursor(cursor, c); idx++; continue; }
             if (c == 'P' && idx + 1 < n && body.charAt(idx + 1) == '(') {
                 int j = idx + 2;
                 while (j < n && body.charAt(j) != ')') j++;
                 if (j < n) {
                     String num = body.substring(idx + 2, j);
                     try {
-                        int id = Integer.parseInt(num);
-                        BlockState st = palette.get(id);
+                        int id2 = Integer.parseInt(num);
+                        BlockState st = palette.get(id2);
                         if (st != null) {
                             BlockPos wp = localToWorld(cursor, originWorld, basis);
                             pasteOps.add(() -> {
@@ -684,8 +755,6 @@ public class StructureGadgetItem extends AEBaseItem implements IMenuItem {
             idx++;
         }
 
-        p.displayClientMessage(Component.literal("Starting PASTE: " + pasteOps.size() + " blocks @ 4/tick"), true);
-
         if (level instanceof ServerLevel sl) {
             BuildScheduler.enqueue(
                     sl,
@@ -694,31 +763,6 @@ public class StructureGadgetItem extends AEBaseItem implements IMenuItem {
                     pasteOps,
                     () -> p.displayClientMessage(Component.literal("Pasted: " + placedCounter[0] + " blocks"), true)
             );
-        }
-    }
-
-
-    private static void clearStoredStructure(ItemStack stack, MinecraftServer server) {
-        if (!stack.hasTag()) return;
-        var tag = stack.getTag();
-
-        String programId = tag.contains("program_id") ? tag.getString("program_id") : null;
-
-        tag.remove("code");
-        tag.remove("program_id");
-        tag.remove("delay");
-        tag.remove("src_facing");
-        tag.remove("preview_palette");
-        tag.remove("preview_indices");
-        tag.remove("preview_positions");
-
-        if (server != null && programId != null && !programId.isEmpty()) {
-            try {
-                Path file = server.getWorldPath(new LevelResource("serverdata"))
-                        .resolve("autobuilder")
-                        .resolve(programId);
-                Files.deleteIfExists(file);
-            } catch (Exception ignored) { }
         }
     }
 
@@ -770,7 +814,7 @@ public class StructureGadgetItem extends AEBaseItem implements IMenuItem {
             Property<?> prop = def.getProperty(key);
             if (prop == null) continue;
 
-            java.util.Optional<?> parsed = ((Property) prop).getValue(val);
+            Optional<?> parsed = ((Property) prop).getValue(val);
             if (parsed.isPresent()) {
                 state = setUnchecked(state, prop, (Comparable) parsed.get());
             }
@@ -791,10 +835,6 @@ public class StructureGadgetItem extends AEBaseItem implements IMenuItem {
             Files.writeString(file, code, StandardCharsets.UTF_8);
         } catch (IOException ignored) { }
     }
-
-    // =========================================================
-    // Transformacje układu współrzędnych i narzędzia
-    // =========================================================
 
     public static class Basis {
         final int fx, fz;
@@ -903,130 +943,6 @@ public class StructureGadgetItem extends AEBaseItem implements IMenuItem {
         }
     }
 
-    public static void rebuildPreviewFromCode(ItemStack stack, @Nullable MinecraftServer server, String full) {
-        if (stack == null) return;
-        if (full == null) full = "";
-
-        CompoundTag tag = stack.getOrCreateTag();
-        tag.remove("preview_palette");
-        tag.remove("preview_indices");
-        tag.remove("preview_positions");
-        if (full.isEmpty()) return;
-
-        int sep = full.lastIndexOf(SEP);
-        String header = sep >= 0 ? full.substring(0, sep) : "";
-        String body   = sep >= 0 ? full.substring(sep + 1) : full;
-
-        Map<Integer, String> idToSpec = new HashMap<>();
-        if (!header.isEmpty()) {
-            List<String> tokens = new ArrayList<>();
-            StringBuilder cur = new StringBuilder();
-            int depth = 0;
-            for (int pos = 0; pos < header.length(); pos++) {
-                char ch = header.charAt(pos);
-                if (ch == '(') { depth++; cur.append(ch); }
-                else if (ch == ')') { depth = Math.max(0, depth - 1); cur.append(ch); }
-                else if (ch == ',' && depth == 0) {
-                    String t = cur.toString().trim();
-                    if (!t.isEmpty()) tokens.add(t);
-                    cur.setLength(0);
-                } else { cur.append(ch); }
-            }
-            String last = cur.toString().trim();
-            if (!last.isEmpty()) tokens.add(last);
-
-            java.util.regex.Pattern pat = java.util.regex.Pattern.compile("^\\s*(\\d+)\\s*\\((.*)\\)\\s*$");
-            for (String tok : tokens) {
-                String t = tok.trim();
-                if (t.isEmpty()) continue;
-                java.util.regex.Matcher m = pat.matcher(t);
-                if (!m.matches()) continue;
-                try {
-                    int id = Integer.parseInt(m.group(1));
-                    String spec = m.group(2).trim();
-                    if (!spec.isEmpty()) idToSpec.put(id, spec);
-                } catch (NumberFormatException ignored) { }
-            }
-        }
-        if (idToSpec.isEmpty()) return;
-
-        List<Integer> sortedIds = new ArrayList<>(idToSpec.keySet());
-        Collections.sort(sortedIds);
-        Map<Integer, Integer> idToIndex = new HashMap<>();
-        var palList = new net.minecraft.nbt.ListTag();
-        for (int i = 0; i < sortedIds.size(); i++) {
-            int id = sortedIds.get(i);
-            idToIndex.put(id, i);
-            palList.add(net.minecraft.nbt.StringTag.valueOf(idToSpec.get(id)));
-        }
-        tag.put("preview_palette", palList);
-
-        List<BlockPos> positions = new ArrayList<>();
-        List<Integer> indices = new ArrayList<>();
-        BlockPos cursor = BlockPos.ZERO;
-
-        int i = 0, n = body.length();
-        while (i < n) {
-            char c = body.charAt(i);
-
-            if (c == 'H') { cursor = BlockPos.ZERO; i++; continue; }
-
-            if (c == 'F' || c == 'B' || c == 'L' || c == 'R' || c == 'U' || c == 'D') {
-                cursor = stepCursor(cursor, c);
-                i++; continue;
-            }
-
-            if (c == 'Z' && i + 1 < n && body.charAt(i + 1) == '|') {
-                i += 2;
-                while (i < n && Character.isDigit(body.charAt(i))) i++;
-                continue;
-            }
-
-            if (c == 'P' && i + 1 < n && body.charAt(i + 1) == '(') {
-                int j = i + 2;
-                while (j < n && body.charAt(j) != ')') j++;
-                if (j < n) {
-                    String num = body.substring(i + 2, j);
-                    try {
-                        int id = Integer.parseInt(num);
-                        Integer palIdx = idToIndex.get(id);
-                        if (palIdx != null) {
-                            positions.add(cursor);
-                            indices.add(palIdx);
-                        }
-                    } catch (NumberFormatException ignored) { }
-                    i = j + 1;
-                    continue;
-                }
-            }
-
-            if (c == 'P' && i + 1 < n && body.charAt(i + 1) == '|') {
-                int j = i + 2;
-                while (j < n) {
-                    char cj = body.charAt(j);
-                    if (cj=='H'||cj=='Z'||cj=='P'||cj=='F'||cj=='B'||cj=='L'||cj=='R'||cj=='U'||cj=='D'||cj=='X' || cj=='\n' || cj=='\r') break;
-                    j++;
-                }
-                i = j; continue;
-            }
-
-            if (c == 'X') { i++; continue; }
-            i++;
-        }
-
-        int[] idxArr = indices.stream().mapToInt(Integer::intValue).toArray();
-        tag.putIntArray("preview_indices", idxArr);
-
-        int[] posArr = new int[positions.size() * 3];
-        int k = 0;
-        for (BlockPos bp : positions) {
-            posArr[k++] = bp.getX();
-            posArr[k++] = bp.getY();
-            posArr[k++] = bp.getZ();
-        }
-        tag.putIntArray("preview_positions", posArr);
-    }
-
     @Override
     public @Nullable ICapabilityProvider initCapabilities(ItemStack stack, @Nullable CompoundTag nbt) {
         return new EnergyCapProvider(stack);
@@ -1036,22 +952,22 @@ public class StructureGadgetItem extends AEBaseItem implements IMenuItem {
 
         @Override
         public int receiveEnergy(int maxReceive, boolean simulate) {
-            return StructureGadgetItem.receiveEnergyInto(stack, maxReceive, simulate);
+            return SamsungGalaxyS6Item.receiveEnergyInto(stack, maxReceive, simulate);
         }
 
         @Override
         public int extractEnergy(int maxExtract, boolean simulate) {
-            return StructureGadgetItem.extractEnergyFrom(stack, maxExtract, simulate);
+            return SamsungGalaxyS6Item.extractEnergyFrom(stack, maxExtract, simulate);
         }
 
         @Override
         public int getEnergyStored() {
-            return StructureGadgetItem.getEnergy(stack);
+            return SamsungGalaxyS6Item.getEnergy(stack);
         }
 
         @Override
         public int getMaxEnergyStored() {
-            return StructureGadgetItem.getMaxEnergyCapacity(stack);
+            return SamsungGalaxyS6Item.getMaxEnergyCapacity(stack);
         }
 
         @Override

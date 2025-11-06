@@ -174,6 +174,9 @@ public class CrazyMenuRegistrar {
     public static final RegistryObject<MenuType<GadgetMenu>> GADGET_MENU =
             reg(id("gadget_menu"), GadgetMenu::new, GadgetHost.class);
 
+    public static final RegistryObject<MenuType<CopyGadgetMenu>> COPY_GADGET_MENU =
+            reg(id("copy_gadget_menu"), CopyGadgetMenu::new, CopyGadgetHost.class);
+
     public static final RegistryObject<MenuType<DataDriveMenu>> DATA_DRIVE_MENU =
             reg(id("data_drive_menu"), DataDriveMenu::new, DataHost.class);
 

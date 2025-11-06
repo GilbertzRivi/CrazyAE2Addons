@@ -3,6 +3,7 @@ package net.oktawia.crazyae2addons.defs;
 import appeng.core.definitions.*;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
+import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
 
 import java.util.*;
@@ -316,6 +317,15 @@ public class ItemDefs {
                 Map.of(
                         "C", CrazyItemRegistrar.CRAZY_PATTERN_MODIFIER_ITEM.get().asItem(),
                         "E", AEItems.ENGINEERING_PROCESSOR.asItem()
+                )
+        );
+
+        item(
+                CrazyItemRegistrar.SAMSUNG_GALAXY_S6.get(),
+                "CE",
+                Map.of(
+                        "C", CrazyBlockRegistrar.AUTO_BUILDER_BLOCK.get().asItem(),
+                        "E", CrazyItemRegistrar.STRUCTURE_GADGET.get().asItem()
                 )
         );
     }

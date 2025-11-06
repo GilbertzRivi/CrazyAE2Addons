@@ -1,6 +1,7 @@
 package net.oktawia.crazyae2addons;
 
 import appeng.api.features.GridLinkables;
+import appeng.api.features.IGridLinkableHandler;
 import appeng.api.stacks.AEKeyTypes;
 import appeng.core.AELog;
 import appeng.items.tools.powered.WirelessTerminalItem;
@@ -10,8 +11,10 @@ import de.mari_023.ae2wtlib.wut.WUTHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.core.GlobalPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.client.event.ModelEvent;
@@ -32,6 +35,7 @@ import net.minecraftforge.registries.RegisterEvent;
 import net.oktawia.crazyae2addons.defs.Screens;
 import net.oktawia.crazyae2addons.defs.UpgradeCards;
 import net.oktawia.crazyae2addons.defs.regs.*;
+import net.oktawia.crazyae2addons.items.SamsungGalaxyS6Item;
 import net.oktawia.crazyae2addons.logic.WirelessRedstoneTerminalItemLogicHost;
 import net.oktawia.crazyae2addons.menus.WirelessRedstoneTerminalMenu;
 import net.oktawia.crazyae2addons.mobstorage.EntityTypeRenderer;
@@ -122,6 +126,22 @@ public class CrazyAddons {
             CrazyBlockEntityRegistrar.setupBlockEntityTypes();
             NetworkHandler.registerClientPackets();
             NetworkHandler.registerServerPackets();
+            GridLinkables.register(CrazyItemRegistrar.SAMSUNG_GALAXY_S6.get(), new IGridLinkableHandler() {
+                @Override
+                public boolean canLink(ItemStack stack) {
+                    return true;
+                }
+
+                @Override
+                public void link(ItemStack stack, GlobalPos pos) {
+                    SamsungGalaxyS6Item.setLinkedAccessPoint(stack, pos);
+                }
+
+                @Override
+                public void unlink(ItemStack stack) {
+                    SamsungGalaxyS6Item.clearLinkedAccessPoint(stack);
+                }
+            });
         });
     }
 

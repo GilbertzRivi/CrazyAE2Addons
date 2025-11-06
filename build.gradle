@@ -91,6 +91,7 @@ sourceSets {
 }
 
 repositories {
+    mavenCentral()
     maven {
         name "Modmaven"
         url "https://modmaven.dev/"
@@ -169,7 +170,8 @@ dependencies {
     compileOnly fg.deobf("appeng:appliedenergistics2-forge:15.4.5:api")
     compileOnly (annotationProcessor("io.github.llamalad7:mixinextras-common:0.4.1"))
     compileOnly jarJar("io.github.llamalad7:mixinextras-forge:0.4.1") { jarJar.ranged(it, "[0.4.1,)") }
-    implementation jarJar("org.luaj:luaj-jse:3.0.1") { jarJar.ranged(it, "[3.0.1)") }
+    implementation jarJar("org.luaj:luaj-jse:3.0.1") { jarJar.ranged(it, "[3.0.1,)") }
+    minecraftLibrary("org.luaj:luaj-jse:3.0.1")
     implementation fg.deobf('org.ow2.asm:asm:9.5')
     implementation fg.deobf("curse.maven:applied-energistics-2-wireless-terminals-459929:5217955")
     compileOnly fg.deobf("com.gregtechceu.gtceu:gtceu-1.20.1:1.6.4") { transitive = false }

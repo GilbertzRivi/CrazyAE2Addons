@@ -15,7 +15,7 @@ public final class CrazyCreativeTabRegistrar {
 
     public static final CreativeModeTab TAB = CreativeModeTab.builder()
             .title(Component.literal("Crazy AE2 Addons"))
-            .icon(() -> new ItemStack(CrazyBlockRegistrar.DATA_PROCESSOR_BLOCK.get()))
+            .icon(() -> new ItemStack(CrazyBlockRegistrar.CRAZY_PATTERN_PROVIDER_BLOCK.get()))
             .displayItems(CrazyCreativeTabRegistrar::populate)
             .build();
 

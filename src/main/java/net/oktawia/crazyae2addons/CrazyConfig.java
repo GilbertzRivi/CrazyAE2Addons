@@ -193,15 +193,15 @@ public class CrazyConfig {
             builder.push("P2PSpeeds");
             FEp2pSpeed = builder
                     .comment("Extract speed for FE P2P (FE/t)")
-                    .defineInRange("fep2pSpeed", 1_048_576, 0, Integer.MAX_VALUE);
+                    .defineInRange("fep2pSpeed", Integer.MAX_VALUE, 0, Integer.MAX_VALUE);
 
             Fluidp2pSpeed = builder
                     .comment("Extract speed for Fluid P2P (mB/t)")
-                    .defineInRange("fluidp2pSpeed", 1024, 0, Integer.MAX_VALUE);
+                    .defineInRange("fluidp2pSpeed", 250, 0, Integer.MAX_VALUE);
 
             Itemp2pSpeed = builder
                     .comment("Extract speed for Item P2P (items/t)")
-                    .defineInRange("itemp2pSpeed", 16, 0, Integer.MAX_VALUE);
+                    .defineInRange("itemp2pSpeed", 4, 0, Integer.MAX_VALUE);
             builder.pop();
 
             builder.pop();

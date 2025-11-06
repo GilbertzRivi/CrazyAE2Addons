@@ -19,6 +19,8 @@ import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.mixins.PatternProviderBlockEntityAccessor;
+import net.oktawia.crazyae2addons.network.NetworkHandler;
+import net.oktawia.crazyae2addons.network.SyncBlockClientPacket;
 
 import java.util.List;
 
@@ -61,18 +63,13 @@ public class CrazyPatternProviderBE extends PatternProviderBlockEntity {
         newBE.setChanged();
         if (!level.isClientSide) {
             level.sendBlockUpdated(pos, state, state, Block.UPDATE_ALL);
-            net.oktawia.crazyae2addons.network.NetworkHandler.INSTANCE.send(
+            NetworkHandler.INSTANCE.send(
                     net.minecraftforge.network.PacketDistributor.ALL.noArg(),
-                    new net.oktawia.crazyae2addons.network.SyncBlockClientPacket(pos, added)
+                    new SyncBlockClientPacket(pos, added)
             );
         }
 
         return newBE;
-    }
-
-
-    public void incrementAdded() {
-        added++;
     }
 
     public int getAdded() {

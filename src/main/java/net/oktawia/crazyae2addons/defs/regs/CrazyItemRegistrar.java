@@ -218,9 +218,9 @@ public class CrazyItemRegistrar {
             ITEMS.register("player_data_extractor",
                     () -> new PlayerDataExtractorPartItem(new Item.Properties()));
 
-    public static final RegistryObject<DataFlowPatternItem> DATAFLOW_PATTERN =
-            ITEMS.register("dataflow_pattern",
-                    () -> new DataFlowPatternItem(new Item.Properties()));
+    public static final RegistryObject<LuaPatternItem> LUA_PATTERN =
+            ITEMS.register("lua_pattern",
+                    () -> new LuaPatternItem(new Item.Properties()));
 
     public static final RegistryObject<NbtViewCellItem> NBT_VIEW_CELL =
             ITEMS.register("nbt_view_cell",

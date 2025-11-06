@@ -6,6 +6,7 @@ import net.minecraftforge.network.NetworkEvent;
 import net.oktawia.crazyae2addons.screens.BuilderPatternScreen;
 import net.oktawia.crazyae2addons.screens.CrazyPatternProviderScreen;
 import net.oktawia.crazyae2addons.screens.GadgetScreen;
+import net.oktawia.crazyae2addons.screens.LuaPatternScreen;
 
 import java.nio.charset.StandardCharsets;
 import java.util.function.Supplier;
@@ -35,6 +36,8 @@ public class SendLongStringToClientPacket {
             if (mc.screen instanceof BuilderPatternScreen<?> screen) {
                 screen.setProgram(packet.data);
             } else if (mc.screen instanceof GadgetScreen<?> screen) {
+                screen.setProgram(packet.data);
+            } else if (mc.screen instanceof LuaPatternScreen<?> screen) {
                 screen.setProgram(packet.data);
             }
         });

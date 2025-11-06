@@ -9,6 +9,7 @@ import appeng.blockentity.grid.AENetworkInvBlockEntity;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuLocator;
 import appeng.util.inv.AppEngInternalInventory;
+import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
@@ -252,11 +253,11 @@ public class ResearchStationBE extends AENetworkInvBlockEntity implements Previe
             if (r.requiresStabilizer && !validator.hasStabilizer(level, worldPosition)) continue;
 
             if (r.driveRequired) {
-                if (!hasDisk) continue;         // wymaga dysku → brak
-                if (diskHasKeyFor(r)) continue;  // już odblokowane → pomiń
+                if (!hasDisk) continue;
+                if (diskHasKeyFor(r)) continue;
             }
 
-            return r; // pierwsza realnie wykonalna
+            return r;
         }
         return null;
     }
@@ -310,15 +311,12 @@ public class ResearchStationBE extends AENetworkInvBlockEntity implements Previe
         return true;
     }
 
-    // === NOWE: pobór zasobów dla trybu kopiowania ===
     private boolean drainCopyPerTick(boolean simulate) {
-        // energia
         int needE = COPY_ENERGY_PER_TICK;
         int ext = storedEnergy.extractEnergy(needE, true);
         if (ext < needE) return false;
         if (!simulate) storedEnergy.extractEnergy(needE, false);
 
-        // płyn
         IFluidHandler fh = getExternalTank();
         if (fh == null) return false;
 

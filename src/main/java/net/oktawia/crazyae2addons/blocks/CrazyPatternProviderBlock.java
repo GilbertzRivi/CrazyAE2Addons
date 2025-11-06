@@ -56,7 +56,7 @@ public class CrazyPatternProviderBlock extends PatternProviderBlock {
                 int maxAdd = CrazyConfig.COMMON.CrazyProviderMaxAddRows.get();
                 int cur = crazyProvider.getAdded();
 
-                if (cur >= maxAdd || maxAdd == -1) {
+                if (cur >= maxAdd && maxAdd != -1) {
                     player.displayClientMessage(
                             Component.literal("Reached the max size of that pattern provider"),
                             true

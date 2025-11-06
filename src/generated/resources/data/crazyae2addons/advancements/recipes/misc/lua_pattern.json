@@ -15,7 +15,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "crazyae2addons:dataflow_pattern"
+        "recipe": "crazyae2addons:lua_pattern"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -28,7 +28,7 @@
   ],
   "rewards": {
     "recipes": [
-      "crazyae2addons:dataflow_pattern"
+      "crazyae2addons:lua_pattern"
     ]
   },
   "sends_telemetry_event": false

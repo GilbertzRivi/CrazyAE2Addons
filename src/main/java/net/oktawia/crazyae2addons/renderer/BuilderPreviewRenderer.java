@@ -4,6 +4,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
@@ -13,9 +14,12 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.client.ChunkRenderTypeSet;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.client.model.data.ModelData;
 import net.oktawia.crazyae2addons.renderer.preview.PreviewInfo;
@@ -51,7 +55,6 @@ public class BuilderPreviewRenderer {
 
         for (PreviewInfo.BlockInfo info : previewInfo.blockInfos) {
             BlockPos pos = info.pos();
-
             if (!mc.level.isLoaded(pos)) continue;
             if (pos.distSqr(mc.player.blockPosition()) > MAX_DIST_SQ) continue;
             if (!frustum.isVisible(new AABB(pos))) continue;
@@ -68,21 +71,34 @@ public class BuilderPreviewRenderer {
             poseStack.translate(pos.getX() + DELTA, pos.getY() + DELTA, pos.getZ() + DELTA);
             poseStack.scale(SCALE, SCALE, SCALE);
 
-            for (Direction dir : Direction.values()) {
-                for (BakedQuad quad : model.getQuads(state, dir, mc.level.random, ModelData.EMPTY, null)) {
+            RandomSource rand = RandomSource.create();
+
+            ChunkRenderTypeSet layers = ItemBlockRenderTypes.getRenderLayers(state);
+            if (!layers.iterator().hasNext()) {
+                layers = ChunkRenderTypeSet.of(RenderType.solid());
+            }
+
+            for (RenderType queryLayer : layers) {
+                rand.setSeed(Mth.getSeed(pos));
+
+                for (Direction dir : Direction.values()) {
+                    for (BakedQuad quad : model.getQuads(state, dir, rand, ModelData.EMPTY, queryLayer)) {
+                        translucentBuffer.putBulkData(
+                                poseStack.last(), quad,
+                                1f, 1f, 1f, BUILDER_ALPHA,
+                                0xF0F0F0, OverlayTexture.NO_OVERLAY, true
+                        );
+                    }
+                }
+
+                rand.setSeed(Mth.getSeed(pos));
+                for (BakedQuad quad : model.getQuads(state, null, rand, ModelData.EMPTY, queryLayer)) {
                     translucentBuffer.putBulkData(
                             poseStack.last(), quad,
                             1f, 1f, 1f, BUILDER_ALPHA,
                             0xF0F0F0, OverlayTexture.NO_OVERLAY, true
                     );
                 }
-            }
-            for (BakedQuad quad : model.getQuads(state, null, mc.level.random, ModelData.EMPTY, null)) {
-                translucentBuffer.putBulkData(
-                        poseStack.last(), quad,
-                        1f, 1f, 1f, BUILDER_ALPHA,
-                        0xF0F0F0, OverlayTexture.NO_OVERLAY, true
-                );
             }
 
             poseStack.popPose();

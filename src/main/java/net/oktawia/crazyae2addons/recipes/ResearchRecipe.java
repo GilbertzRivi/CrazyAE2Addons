@@ -1,6 +1,7 @@
 package net.oktawia.crazyae2addons.recipes;
 
 import com.google.gson.*;
+import com.mojang.logging.LogUtils;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
@@ -58,7 +59,6 @@ public class ResearchRecipe implements Recipe<Container> {
 
     @Override
     public boolean matches(@NotNull Container inv, @NotNull Level level) {
-        // 1) consumables
         for (Consumable c : this.consumables) {
             int have = 0;
             for (int i = 0; i < inv.getContainerSize(); i++) {
@@ -71,7 +71,6 @@ public class ResearchRecipe implements Recipe<Container> {
             if (have < c.count) return false;
         }
 
-        // 2) gadget / struktura
         ItemStack gadget = ItemStack.EMPTY;
         for (int i = 0; i < inv.getContainerSize(); i++) {
             ItemStack st = inv.getItem(i);
@@ -82,23 +81,16 @@ public class ResearchRecipe implements Recipe<Container> {
         }
         boolean hasGadget = !gadget.isEmpty();
 
-        // wymagany gadżet, ale brak
         if (this.gadgetRequired && !hasGadget) return false;
 
-        // Tryb NONE: brak wymaganej struktury -> jeśli nie ma gadżetu i nie jest wymagany, sama lista consumables wystarcza
         if (this.structure.mode == StructureMode.NONE) {
-            // jeśli gadżet jest (nieważne czy wymagany), i tak nie sprawdzamy żadnej struktury
             return true;
         }
 
-        // Struktura PATTERN/SIZE_ONLY:
-        // - jeżeli nie mamy gadżetu (i nie był wymagany), nie da się sprawdzić struktury → nie spełnia
         if (!hasGadget) return false;
 
-        // Mamy gadżet: ładujemy snapshot i sprawdzamy
         StructureSnapshot snap = StructureGadgetItem.loadSnapshot(gadget, level);
         if (snap == null) {
-            // gdy wymagany gadget – odpadnie; gdy niewymagany – i tak struktura jest wymagana, więc false
             return false;
         } else {
             ResearchStructureMatcher matcher = new ResearchStructureMatcher();

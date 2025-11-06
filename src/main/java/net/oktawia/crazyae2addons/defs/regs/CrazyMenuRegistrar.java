@@ -13,8 +13,6 @@ import net.oktawia.crazyae2addons.IsModLoaded;
 import net.oktawia.crazyae2addons.compat.CC.CCDataExtractorPart;
 import net.oktawia.crazyae2addons.compat.GregTech.GTAmpereMeterBE;
 import net.oktawia.crazyae2addons.compat.GregTech.GTEnergyExporterPart;
-import net.oktawia.crazyae2addons.items.CpuPrioTunerItem;
-import net.oktawia.crazyae2addons.items.TagViewCellItem;
 import net.oktawia.crazyae2addons.logic.*;
 import net.oktawia.crazyae2addons.mobstorage.MobExportBus;
 import net.oktawia.crazyae2addons.mobstorage.MobExportBusMenu;
@@ -152,8 +150,8 @@ public class CrazyMenuRegistrar {
     public static final RegistryObject<MenuType<PlayerDataExtractorMenu>> PLAYER_DATA_EXTRACTOR_MENU =
             reg(id("player_data_extractor_menu"), PlayerDataExtractorMenu::new, PlayerDataExtractorPart.class);
 
-    public static final RegistryObject<MenuType<DataflowPatternMenu>> DATAFLOW_PATTERN_MENU =
-            reg(id("dataflow_pattern_menu"), DataflowPatternMenu::new, DataflowPatternHost.class);
+    public static final RegistryObject<MenuType<LuaPatternMenu>> LUA_PATTERN_MENU =
+            reg(id("lua_pattern_menu"), LuaPatternMenu::new, LuaPatternHost.class);
 
     public static final RegistryObject<MenuType<DataProcessorMenu>> DATA_PROCESSOR_MENU =
             reg(id("data_processor_menu"), DataProcessorMenu::new, DataProcessorBE.class);

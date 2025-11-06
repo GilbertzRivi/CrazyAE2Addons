@@ -22,5 +22,19 @@
       "top": 59,
       "grid": "HORIZONTAL"
     }
+  },
+  "widgets": {
+    "watched_input": {
+      "left": 8,
+      "top": 20,
+      "width": 100,
+      "height": 12
+    },
+    "confirm": {
+      "left": 112,
+      "top": 18,
+      "width": 16,
+      "height": 16
+    }
   }
 }

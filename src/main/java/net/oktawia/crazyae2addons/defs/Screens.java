@@ -2,10 +2,6 @@ package net.oktawia.crazyae2addons.defs;
 
 import appeng.init.client.InitScreens;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
-import net.oktawia.crazyae2addons.entities.CrazyPatternProviderBE;
-import net.oktawia.crazyae2addons.entities.ReinforcedMatterCondenserBE;
-import net.oktawia.crazyae2addons.items.CrazyPatternModifierItem;
-import net.oktawia.crazyae2addons.items.NbtViewCellItem;
 import net.oktawia.crazyae2addons.menus.*;
 import net.oktawia.crazyae2addons.mobstorage.MobExportBusMenu;
 import net.oktawia.crazyae2addons.mobstorage.MobExportBusScreen;
@@ -204,9 +200,9 @@ public final class Screens {
         );
 
         InitScreens.register(
-                CrazyMenuRegistrar.DATAFLOW_PATTERN_MENU.get(),
-                DataflowPatternScreen<DataflowPatternMenu>::new,
-                "/screens/dataflow_pattern.json"
+                CrazyMenuRegistrar.LUA_PATTERN_MENU.get(),
+                LuaPatternScreen<LuaPatternMenu>::new,
+                "/screens/lua_pattern.json"
         );
 
         InitScreens.register(

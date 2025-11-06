@@ -23,7 +23,7 @@ public class AutoBuilderPreviewRenderer {
 
     @SubscribeEvent
     public static void onRender(RenderLevelStageEvent event) {
-        if (event.getStage() != Stage.AFTER_TRANSLUCENT_BLOCKS) return;
+        if (!isBlockLayerStage(event.getStage())) return;
 
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null || mc.player == null) return;
@@ -48,6 +48,15 @@ public class AutoBuilderPreviewRenderer {
             }
         }
     }
+
+    private static boolean isBlockLayerStage(Stage s) {
+        return s == Stage.AFTER_SOLID_BLOCKS
+                || s == Stage.AFTER_CUTOUT_BLOCKS
+                || s == Stage.AFTER_CUTOUT_MIPPED_BLOCKS_BLOCKS
+                || s == Stage.AFTER_TRIPWIRE_BLOCKS
+                || s == Stage.AFTER_TRANSLUCENT_BLOCKS;
+    }
+
 
     private static void rebuildCache(AutoBuilderBE be, Direction facing) {
         Minecraft mc = Minecraft.getInstance();

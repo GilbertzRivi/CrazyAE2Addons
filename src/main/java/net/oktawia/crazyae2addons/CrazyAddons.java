@@ -2,6 +2,7 @@ package net.oktawia.crazyae2addons;
 
 import appeng.api.features.GridLinkables;
 import appeng.api.stacks.AEKeyTypes;
+import appeng.core.AELog;
 import appeng.items.tools.powered.WirelessTerminalItem;
 import com.mojang.logging.LogUtils;
 import de.mari_023.ae2wtlib.terminal.IUniversalWirelessTerminalItem;
@@ -28,7 +29,6 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegisterEvent;
-import net.oktawia.crazyae2addons.datavariables.FlowNodeRegistry;
 import net.oktawia.crazyae2addons.defs.Screens;
 import net.oktawia.crazyae2addons.defs.UpgradeCards;
 import net.oktawia.crazyae2addons.defs.regs.*;
@@ -41,12 +41,14 @@ import net.oktawia.crazyae2addons.renderer.AutoBuilderBERenderer;
 import net.oktawia.crazyae2addons.renderer.PreviewTooltipRenderer;
 import net.oktawia.crazyae2addons.renderer.preview.*;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
 
 import java.util.Objects;
 
 @Mod(CrazyAddons.MODID)
 public class CrazyAddons {
     public static final String MODID = "crazyae2addons";
+    public static final Logger LOGGER = LogUtils.getLogger();
 
     public CrazyAddons() {
         LogUtils.getLogger().info("Loading Crazy AE2 Addons");
@@ -120,7 +122,6 @@ public class CrazyAddons {
             CrazyBlockEntityRegistrar.setupBlockEntityTypes();
             NetworkHandler.registerClientPackets();
             NetworkHandler.registerServerPackets();
-            FlowNodeRegistry.init();
         });
     }
 

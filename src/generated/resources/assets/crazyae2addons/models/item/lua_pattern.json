@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "crazyae2addons:item/dataflow_pattern"
+    "layer0": "crazyae2addons:item/lua_pattern"
   }
 }

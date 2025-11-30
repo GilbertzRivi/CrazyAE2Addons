@@ -56,6 +56,12 @@
       "top": 23,
       "width": 16,
       "height": 16
+    },
+    "amount": {
+      "left": 118,
+      "top": 5,
+      "width": 30,
+      "height": 16
     }
   }
 }

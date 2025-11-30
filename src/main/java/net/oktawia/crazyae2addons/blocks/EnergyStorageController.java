@@ -1,6 +1,5 @@
 package net.oktawia.crazyae2addons.blocks;
 
-import appeng.block.AEBaseBlock;
 import appeng.block.AEBaseEntityBlock;
 import appeng.menu.locator.MenuLocators;
 import appeng.util.InteractionUtil;
@@ -20,7 +19,6 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.phys.BlockHitResult;
-import net.oktawia.crazyae2addons.entities.DataProcessorBE;
 import net.oktawia.crazyae2addons.entities.EnergyStorageControllerBE;
 import org.jetbrains.annotations.Nullable;
 

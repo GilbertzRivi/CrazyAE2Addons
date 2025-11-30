@@ -2,14 +2,12 @@ package net.oktawia.crazyae2addons.menus;
 
 import appeng.api.crafting.IPatternDetails;
 import appeng.api.crafting.PatternDetailsHelper;
-import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.AEKey;
 import appeng.api.stacks.GenericStack;
 import appeng.core.definitions.AEItems;
 import appeng.menu.SlotSemantics;
 import appeng.menu.guisync.GuiSync;
 import appeng.menu.implementations.UpgradeableMenu;
-import appeng.menu.slot.AppEngSlot;
 import appeng.menu.slot.FakeSlot;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
@@ -27,15 +25,19 @@ public class EjectorMenu extends UpgradeableMenu<EjectorBE> {
 
     @GuiSync(82)
     public String cantCraft;
+    @GuiSync(21)
+    public String amount = "";
 
     public Player player;
     public String APPLY_PATTERN = "ActionPattern";
+    public String SET_MULT = "ActionSetMult";
 
     private final Int2IntMap configIndexBySlot = new Int2IntOpenHashMap();
 
     public EjectorMenu(int id, Inventory ip, EjectorBE host) {
         super(CrazyMenuRegistrar.EJECTOR_MENU.get(), id, ip, host);
         this.player = ip.player;
+        this.amount = String.valueOf(host.multiplier);
 
         this.addSlot(new AppEngFilteredSlot(host.pattern, 0, AEItems.PROCESSING_PATTERN.asItem()), SlotSemantics.ENCODED_PATTERN);
 
@@ -57,6 +59,7 @@ public class EjectorMenu extends UpgradeableMenu<EjectorBE> {
 
         host.setMenu(this);
         registerClientAction(APPLY_PATTERN, this::applyPatternToConfig);
+        registerClientAction(SET_MULT, String.class, this::setMultiplier);
     }
 
     @Contract("null -> false")
@@ -120,4 +123,12 @@ public class EjectorMenu extends UpgradeableMenu<EjectorBE> {
         }
     }
 
+    public void setMultiplier(String value) {
+        if (isClientSide()){
+            sendClientAction(SET_MULT, value);
+        }
+        if (!value.isBlank()){
+            getHost().multiplier = Integer.parseInt(value);
+        }
+    }
 }

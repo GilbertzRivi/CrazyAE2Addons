@@ -9,8 +9,6 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import net.oktawia.crazyae2addons.CrazyAddons;
-import net.oktawia.crazyae2addons.IsModLoaded;
-import net.oktawia.crazyae2addons.compat.CC.CCDataExtractorPart;
 import net.oktawia.crazyae2addons.compat.GregTech.GTAmpereMeterBE;
 import net.oktawia.crazyae2addons.compat.GregTech.GTEnergyExporterPart;
 import net.oktawia.crazyae2addons.logic.*;
@@ -53,14 +51,6 @@ public class CrazyMenuRegistrar {
 
     public static final RegistryObject<MenuType<DisplayMenu>> DISPLAY_MENU =
             reg(id("display"), DisplayMenu::new, DisplayPart.class);
-
-    public static final RegistryObject<MenuType<MEDataControllerMenu>> ME_DATA_CONTROLLER_MENU =
-            reg(id("me_data_controller"), MEDataControllerMenu::new, MEDataControllerBE.class);
-
-    public static final RegistryObject<MenuType<DataExtractorMenu>> DATA_EXTRACTOR_MENU =
-            IsModLoaded.isCCLoaded()
-                    ? reg(id("data_extractor"), DataExtractorMenu::new, CCDataExtractorPart.class)
-                    : reg(id("data_extractor"), DataExtractorMenu::new, DataExtractorPart.class);
 
     public static final RegistryObject<MenuType<ChunkyFluidP2PTunnelMenu>> CHUNKY_FLUID_P2P_TUNNEL_MENU =
             reg(id("chunky_p2p"), ChunkyFluidP2PTunnelMenu::new, ChunkyFluidP2PTunnelPart.class);
@@ -132,9 +122,6 @@ public class CrazyMenuRegistrar {
     public static final RegistryObject<MenuType<EnergyStorageControllerMenu>> ENERGY_STORAGE_CONTROLLER_MENU =
             reg(id("energy_storage_controller"), EnergyStorageControllerMenu::new, EnergyStorageControllerBE.class);
 
-    public static final RegistryObject<MenuType<VariableTerminalMenu>> VARIABLE_TERMINAL_MENU =
-            reg(id("variable_terminal"), VariableTerminalMenu::new, VariableTerminalPart.class);
-
     public static final RegistryObject<MenuType<AutoBuilderMenu>> AUTO_BUILDER_MENU =
             reg(id("auto_builder"), AutoBuilderMenu::new, AutoBuilderBE.class);
 
@@ -146,15 +133,6 @@ public class CrazyMenuRegistrar {
 
     public static final RegistryObject<MenuType<EntropyCradleControllerMenu>> ENTROPY_CRADLE_CONTROLLER_MENU =
             reg(id("entropy_cradle_controller"), EntropyCradleControllerMenu::new, EntropyCradleControllerBE.class);
-
-    public static final RegistryObject<MenuType<PlayerDataExtractorMenu>> PLAYER_DATA_EXTRACTOR_MENU =
-            reg(id("player_data_extractor_menu"), PlayerDataExtractorMenu::new, PlayerDataExtractorPart.class);
-
-    public static final RegistryObject<MenuType<LuaPatternMenu>> LUA_PATTERN_MENU =
-            reg(id("lua_pattern_menu"), LuaPatternMenu::new, LuaPatternHost.class);
-
-    public static final RegistryObject<MenuType<DataProcessorMenu>> DATA_PROCESSOR_MENU =
-            reg(id("data_processor_menu"), DataProcessorMenu::new, DataProcessorBE.class);
 
     public static final RegistryObject<MenuType<CrazyPatternModifierMenuPP>> CRAZY_PATTERN_MODIFIER_MENU_PP =
             reg(id("crazy_pattern_modifier_menu_pp"), CrazyPatternModifierMenuPP::new, CrazyPatternModifierHost.class);

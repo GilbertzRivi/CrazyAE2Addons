@@ -26,7 +26,7 @@ public abstract class MixinCraftingCPUScreen<T extends CraftingCPUMenu> extends 
         super.init();
 
         this.cancellAll = Button.builder(
-                Component.literal("Cancell All Crafting Jobs"),
+                Component.literal("Cancel All Crafting Jobs"),
                 btn -> NetworkHandler.INSTANCE.sendToServer(new CancellAllCraftingPacket())
         ).build();
 

@@ -41,7 +41,7 @@ public class Plugin implements IMixinConfigPlugin {
                  "net.oktawia.crazyae2addons.mixins.AAEExecutingCraftingJobAccessor",
                  "net.oktawia.crazyae2addons.mixins.AAECraftingServiceMixin" -> isModLoaded("advanced_ae");
             case "net.oktawia.crazyae2addons.mixins.MixinCraftingService" -> !isModLoaded("advanced_ae");
-            case "net.oktawia.crazyae2addons.mixins.MixinPatternP2PTunnelLogic" -> isModLoaded("mae2");
+            case "net.oktawia.crazyae2addons.mixins.MixinPatternP2PTunnelLogic" -> isModLoaded("mae2") && isModLoaded("gtceu");
             default -> true;
         };
     }

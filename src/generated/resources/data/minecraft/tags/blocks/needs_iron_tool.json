@@ -1,7 +1,5 @@
 {
   "values": [
-    "crazyae2addons:me_data_controller",
-    "crazyae2addons:data_processor",
     "crazyae2addons:ampere_meter",
     "crazyae2addons:impulsed_pattern_provider",
     "crazyae2addons:signalling_interface",

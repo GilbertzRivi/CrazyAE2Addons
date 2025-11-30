@@ -31,7 +31,7 @@ public class MixinCraftingCpuListEntryPrio implements ICpuPrio {
         buf.writeVarInt(prio);
     }
 
-    @Inject(method = "readFromPacket", at = @At("RETURN"))
+    @Inject(method = "readFromPacket", at = @At("TAIL"))
     private static void readPrio(FriendlyByteBuf buf,
                                                 CallbackInfoReturnable<CraftingCpuListEntry> cir) {
         var ret = cir.getReturnValue();

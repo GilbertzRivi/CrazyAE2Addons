@@ -22,7 +22,7 @@ public abstract class MixinCraftingService {
     @Shadow private Set<CraftingCPUCluster> craftingCPUClusters;
 
     @Inject(method = "insertIntoCpus", at = @At("HEAD"), cancellable = true)
-    private void crazy$prioritizedInsert(AEKey what, long amount, Actionable type,
+    private void prioritizedInsert(AEKey what, long amount, Actionable type,
                                          CallbackInfoReturnable<Long> cir) {
         long inserted = 0L;
 
@@ -35,7 +35,6 @@ public abstract class MixinCraftingService {
                 .toList();
 
         for (var cpu : sorted) {
-            if (inserted >= amount) break;
             inserted += cpu.craftingLogic.insert(what, amount - inserted, type);
         }
 

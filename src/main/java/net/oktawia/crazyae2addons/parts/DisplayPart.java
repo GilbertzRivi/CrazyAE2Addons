@@ -46,8 +46,6 @@ import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
-import net.oktawia.crazyae2addons.entities.MEDataControllerBE;
-import net.oktawia.crazyae2addons.interfaces.VariableMachine;
 import net.oktawia.crazyae2addons.menus.DisplayMenu;
 import net.oktawia.crazyae2addons.network.DisplayValuePacket;
 import net.oktawia.crazyae2addons.network.NetworkHandler;
@@ -61,7 +59,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickable, VariableMachine {
+public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickable {
 
     private static final PlaneModels MODELS = new PlaneModels("part/display_mon_off", "part/display_mon_on");
 
@@ -95,28 +93,6 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
         StringBuilder sb = new StringBuilder(4);
         for (int i = 0; i < 4; i++) sb.append(Integer.toHexString(rand.nextInt(16)).toUpperCase());
         return sb.toString();
-    }
-
-    @Override
-    public String getId() {
-        return this.identifier;
-    }
-
-    @Override
-    public void notifyVariable(String name, String value, MEDataControllerBE db) {
-        this.variables.put(name, value);
-        if (!getLevel().isClientSide()) {
-            String packed;
-            if (this.getGridNode() != null && !this.getGridNode().getGrid().getMachines(MEDataControllerBE.class).isEmpty()) {
-                packed = this.variables.entrySet().stream()
-                        .map(e -> e.getKey() + "=" + e.getValue())
-                        .collect(Collectors.joining("|"));
-            } else {
-                packed = "";
-            }
-            NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(),
-                    new DisplayValuePacket(this.getBlockEntity().getBlockPos(), this.textValue, this.getSide(), this.spin, packed, this.fontSize, this.mode, this.margin, this.center));
-        }
     }
 
     @Override
@@ -314,26 +290,6 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
             var grid = node.getGrid();
             if (grid == null) { this.reRegister = true; return; }
 
-            var machines = grid.getMachines(MEDataControllerBE.class);
-            if (machines == null || machines.isEmpty()) { this.reRegister = true; return; }
-            var controller = machines.stream().findFirst().orElse(null);
-            if (controller == null) { this.reRegister = true; return; }
-
-            int maxVars = controller.getMaxVariables();
-            if (maxVars <= 0) { this.reRegister = true; return; }
-
-            controller.removeNotification(this.identifier);
-
-            Pattern pattern = Pattern.compile("&\\w+");
-            Matcher matcher = pattern.matcher(value);
-            while (matcher.find()) {
-                String word = matcher.group();
-                String name = word.substring(1);
-                controller.registerNotification(this.identifier, name, this.identifier, this.getClass());
-            }
-
-            this.reRegister = false;
-
             if (!isClientSide()) {
                 recomputeStockVariablesAndNotify();
             }
@@ -492,17 +448,6 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
 
     @Override
     public TickRateModulation tickingRequest(IGridNode node, int ticksSinceLastCall) {
-        if (this.getGridNode() == null || this.getGridNode().getGrid() == null || this.getGridNode().getGrid().getMachines(MEDataControllerBE.class).isEmpty()) {
-            this.reRegister = true;
-        } else {
-            MEDataControllerBE controller = getMainNode().getGrid().getMachines(MEDataControllerBE.class).stream().toList().get(0);
-            if (controller.getMaxVariables() <= 0) {
-                this.reRegister = true;
-            } else if (this.reRegister) {
-                this.reRegister = false;
-                updateController(this.textValue);
-            }
-        }
 
         if (!isClientSide()) {
             recomputeStockVariablesAndNotify();

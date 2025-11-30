@@ -19,6 +19,8 @@ import appeng.api.stacks.GenericStack;
 import appeng.api.storage.MEStorage;
 import appeng.api.upgrades.IUpgradeInventory;
 import appeng.api.upgrades.UpgradeInventories;
+import appeng.blockentity.networking.ControllerBlockEntity;
+import appeng.blockentity.networking.WirelessAccessPointBlockEntity;
 import appeng.core.definitions.AEItems;
 import appeng.items.AEBaseItem;
 import appeng.me.helpers.MachineSource;
@@ -213,17 +215,17 @@ public class SamsungGalaxyS6Item extends AEBaseItem implements IMenuItem {
 
 
     public void scheduleCrafts(IGrid grid, Level level, Player player) {
-        var builder = grid.getMachines(AutoBuilderBE.class).stream().findFirst();
-        if (builder.isEmpty()) {
+        var requester = grid.getMachines(WirelessAccessPointBlockEntity.class).stream().findFirst();
+        if (requester.isEmpty()) {
             if (!level.isClientSide()) {
-                player.displayClientMessage(Component.literal("Auto Builder not found. Can not schedule crafts."), true);
+                player.displayClientMessage(Component.literal("ME controller. Can not schedule crafts."), true);
             }
             return;
         }
         for (GenericStack stack : toCraft) {
                 toCraftPlans.add(grid.getCraftingService().beginCraftingCalculation(
                     level,
-                    () -> new MachineSource(builder.get()),
+                    () -> new MachineSource(requester.get()),
                     stack.what(),
                     stack.amount(),
                     CalculationStrategy.REPORT_MISSING_ITEMS

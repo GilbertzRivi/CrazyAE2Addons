@@ -50,6 +50,5 @@ public class RedstoneEmitterScreen<C extends RedstoneEmitterMenu> extends AEBase
             Runnable setColorFunction = () -> this.name.setTextColor(0xFFFFFF);
             Utils.asyncDelay(setColorFunction, 1);
         }
-
     }
 }

@@ -40,12 +40,6 @@ public class CrazyBlockEntityRegistrar {
         });
     }
 
-    public static final RegistryObject<BlockEntityType<MEDataControllerBE>> ME_DATA_CONTROLLER_BE =
-            reg("me_data_controller_be", CrazyBlockRegistrar.ME_DATA_CONTROLLER_BLOCK, MEDataControllerBE::new, MEDataControllerBE.class);
-
-    public static final RegistryObject<BlockEntityType<DataProcessorBE>> DATA_PROCESSOR_BE =
-            reg("data_processor_be", CrazyBlockRegistrar.DATA_PROCESSOR_BLOCK, DataProcessorBE::new, DataProcessorBE.class);
-
     public static final RegistryObject<BlockEntityType<ImpulsedPatternProviderBE>> IMPULSED_PATTERN_PROVIDER_BE =
             reg("impulsed_pp_be", CrazyBlockRegistrar.IMPULSED_PATTERN_PROVIDER_BLOCK, ImpulsedPatternProviderBE::new, ImpulsedPatternProviderBE.class);
 

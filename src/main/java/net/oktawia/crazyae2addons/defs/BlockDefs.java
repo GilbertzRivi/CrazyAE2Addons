@@ -35,26 +35,6 @@ public class BlockDefs {
 
     public static void registerRecipes(){
         block(
-                CrazyBlockRegistrar.ME_DATA_CONTROLLER_BLOCK.get(),
-                "SLS/LCL/SLS",
-                () -> Map.of(
-                        "S", AEItems.SKY_DUST.asItem(),
-                        "L", CrazyItemRegistrar.LOGIC_CARD.get().asItem(),
-                        "C", AEBlocks.CONTROLLER.asItem()
-                )
-        );
-
-        block(
-                CrazyBlockRegistrar.DATA_PROCESSOR_BLOCK.get(),
-                " L /TST/ L ",
-                () -> Map.of(
-                        "S", AEBlocks.CONTROLLER.asItem(),
-                        "L", CrazyItemRegistrar.LOGIC_CARD.get().asItem(),
-                        "T", AEItems.ENGINEERING_PROCESSOR.asItem()
-                )
-        );
-
-        block(
                 CrazyBlockRegistrar.AMPERE_METER_BLOCK.get(),
                 "ICE",
                 () -> Map.of(

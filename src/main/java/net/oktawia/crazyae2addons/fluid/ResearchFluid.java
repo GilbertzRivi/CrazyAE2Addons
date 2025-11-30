@@ -18,7 +18,7 @@ public abstract class ResearchFluid extends ForgeFlowingFluid {
         Supplier<FlowingFluid> flowing = CrazyFluidRegistrar.RESEARCH_FLUID_FLOWING::get;
         Supplier<FlowingFluid> source  = CrazyFluidRegistrar.RESEARCH_FLUID_SOURCE::get;
 
-        ForgeFlowingFluid.Properties props = new ForgeFlowingFluid.Properties(type, flowing, source)
+        ForgeFlowingFluid.Properties props = new ForgeFlowingFluid.Properties(type, source, flowing)
                 .bucket(CrazyFluidRegistrar.RESEARCH_FLUID_BUCKET::get)
                 .block(CrazyFluidRegistrar.RESEARCH_FLUID_BLOCK::get);
         PROPERTIES = props;

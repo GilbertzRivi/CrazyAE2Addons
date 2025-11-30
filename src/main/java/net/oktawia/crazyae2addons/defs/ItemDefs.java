@@ -65,16 +65,7 @@ public class ItemDefs {
             "TL",
             Map.of(
                 "T", AEParts.SEMI_DARK_MONITOR.asItem(),
-                "L", CrazyItemRegistrar.LOGIC_CARD.get()
-            )
-        );
-
-        item(
-            CrazyItemRegistrar.DATA_EXTRACTOR_PART_ITEM.get(),
-            "IL",
-            Map.of(
-                "I", AEParts.IMPORT_BUS.asItem(),
-                "L", CrazyItemRegistrar.LOGIC_CARD.get()
+                "L", AEItems.ADVANCED_CARD.asItem()
             )
         );
 
@@ -253,34 +244,7 @@ public class ItemDefs {
                 "PPP/PDP/PPP",
                 Map.of(
                         "P", AEBlocks.PATTERN_PROVIDER.asItem(),
-                        "D", Items.DIAMOND.asItem()
-                )
-        );
-
-        item(
-                CrazyItemRegistrar.VARIABLE_TERMINAL.get(),
-                "RL",
-                Map.of(
-                        "R", CrazyItemRegistrar.REDSTONE_TERMINAL.get().asItem(),
-                        "L", CrazyItemRegistrar.LOGIC_CARD.get().asItem()
-                )
-        );
-
-        item(
-                CrazyItemRegistrar.PLAYER_DATA_EXTRACTOR.get(),
-                "DI",
-                Map.of(
-                        "D", CrazyItemRegistrar.DATA_EXTRACTOR_PART_ITEM.get().asItem(),
-                        "I", Items.NAME_TAG
-                )
-        );
-
-        item(
-                CrazyItemRegistrar.LUA_PATTERN.get(),
-                "DI",
-                Map.of(
-                        "D", CrazyItemRegistrar.BUILDER_PATTERN.get().asItem(),
-                        "I", CrazyItemRegistrar.LOGIC_CARD.get().asItem()
+                        "D", AEItems.ADVANCED_CARD.asItem()
                 )
         );
 

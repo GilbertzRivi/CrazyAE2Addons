@@ -1,9 +1,12 @@
 package net.oktawia.crazyae2addons.screens;
 
+import appeng.api.stacks.GenericStack;
 import appeng.client.gui.Icon;
 import appeng.client.gui.implementations.UpgradeableScreen;
 import appeng.client.gui.style.ScreenStyle;
+import appeng.client.gui.widgets.AETextField;
 import appeng.menu.SlotSemantics;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -15,9 +18,13 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.ForgeRegistry;
+import net.oktawia.crazyae2addons.Utils;
 import net.oktawia.crazyae2addons.menus.EjectorMenu;
 import net.oktawia.crazyae2addons.misc.IconButton;
+import net.oktawia.crazyae2addons.network.NetworkHandler;
+import net.oktawia.crazyae2addons.network.SetConfigAmountPacket;
 
+import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -26,10 +33,12 @@ public class EjectorScreen<C extends EjectorMenu> extends UpgradeableScreen<C> {
     private ItemStack missingIcon = ItemStack.EMPTY;
     private String missingCountText = "";
     private boolean parsedOk = false;
+    private AETextField amount;
 
     private static final int MISSING_ICON_X = 80;
     private static final int MISSING_ICON_Y = 22;
     private String lastCantCraft = null;
+    private boolean started = false;
 
     private static final Pattern AMOUNT_PREFIX =
             Pattern.compile("^\\s*([0-9][0-9_.,\\skKmMbBtT]*)\\s*[x×]\\s+", Pattern.CASE_INSENSITIVE);
@@ -39,8 +48,26 @@ public class EjectorScreen<C extends EjectorMenu> extends UpgradeableScreen<C> {
     public EjectorScreen(C menu, Inventory playerInventory, Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
 
-        var btn = new IconButton(Icon.ENTER, b -> getMenu().applyPatternToConfig());
+        var btn = new IconButton(Icon.ENTER, b -> {
+            getMenu().applyPatternToConfig();
+            if (this.amount.getValue().chars().allMatch(Character::isDigit)){
+                this.amount.setTextColor(0x00FF00);
+                Runnable setColorFunction = () -> this.amount.setTextColor(0xFFFFFF);
+                Utils.asyncDelay(setColorFunction, 1);
+                this.getMenu().setMultiplier(this.amount.getValue());
+            } else {
+                this.amount.setTextColor(0xFF0000);
+                Runnable setColorFunction = () -> this.amount.setTextColor(0xFFFFFF);
+                Utils.asyncDelay(setColorFunction, 1);
+            }
+        });
+        btn.setTooltip(Tooltip.create(Component.literal("Load settings from pattern")));
         this.widgets.add("load", btn);
+
+        this.amount = new AETextField(style, font, 0, 0, 0, 0);
+        amount.setTooltip(Tooltip.create(Component.literal("Multiplier applied to all items")));
+        amount.setBordered(false);
+        this.widgets.add("amount", amount);
 
         this.addRenderableOnly((gg, mouseX, mouseY, partialTicks) -> {
             if (parsedOk && !missingIcon.isEmpty()) {
@@ -57,6 +84,11 @@ public class EjectorScreen<C extends EjectorMenu> extends UpgradeableScreen<C> {
     @Override
     public void updateBeforeRender() {
         super.updateBeforeRender();
+
+        if (!this.started){
+            amount.setValue(getMenu().amount);
+            this.started = true;
+        }
 
         parseCantCraft(getMenu().cantCraft);
 
@@ -179,7 +211,7 @@ public class EjectorScreen<C extends EjectorMenu> extends UpgradeableScreen<C> {
         if (this.minecraft.options.keyPickItem.matchesMouse(button)) {
             var slot = this.getSlotUnderMouse();
             if (getMenu().canModifyAmountForSlot(slot)) {
-                var gs = appeng.api.stacks.GenericStack.fromItemStack(slot.getItem());
+                var gs = GenericStack.fromItemStack(slot.getItem());
                 if (gs != null) {
                     this.setSlotsHidden(SlotSemantics.CONFIG, true);
                     this.setSlotsHidden(SlotSemantics.PLAYER_HOTBAR, true);
@@ -189,11 +221,11 @@ public class EjectorScreen<C extends EjectorMenu> extends UpgradeableScreen<C> {
                             gs,
                             newStack -> {
                                 if (newStack == null) {
-                                    net.oktawia.crazyae2addons.network.NetworkHandler.INSTANCE.sendToServer(
-                                            new net.oktawia.crazyae2addons.network.SetConfigAmountPacket(slot.index, 0L));
+                                    NetworkHandler.INSTANCE.sendToServer(
+                                            new SetConfigAmountPacket(slot.index, 0L));
                                 } else {
-                                    net.oktawia.crazyae2addons.network.NetworkHandler.INSTANCE.sendToServer(
-                                            new net.oktawia.crazyae2addons.network.SetConfigAmountPacket(slot.index, newStack.amount()));
+                                    NetworkHandler.INSTANCE.sendToServer(
+                                            new SetConfigAmountPacket(slot.index, newStack.amount()));
                                 }
                                 this.setSlotsHidden(SlotSemantics.CONFIG, false);
                                 this.setSlotsHidden(SlotSemantics.PLAYER_HOTBAR, false);

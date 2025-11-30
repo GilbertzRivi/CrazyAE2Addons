@@ -33,14 +33,6 @@ public final class Screens {
                 DisplayScreen<DisplayMenu>::new,
                 "/screens/display.json");
 
-        InitScreens.register(CrazyMenuRegistrar.ME_DATA_CONTROLLER_MENU.get(),
-                MEDataControllerScreen<MEDataControllerMenu>::new,
-                "/screens/me_data_controller.json");
-
-        InitScreens.register(CrazyMenuRegistrar.DATA_EXTRACTOR_MENU.get(),
-                DataExtractorScreen<DataExtractorMenu>::new,
-                "/screens/data_extractor.json");
-
         InitScreens.register(CrazyMenuRegistrar.CHUNKY_FLUID_P2P_TUNNEL_MENU.get(),
                 ChunkyFluidP2PTunnelScreen<ChunkyFluidP2PTunnelMenu>::new,
                 "/screens/chunky_fluid_p2p_tunnel.json");
@@ -164,12 +156,6 @@ public final class Screens {
         );
 
         InitScreens.register(
-                CrazyMenuRegistrar.VARIABLE_TERMINAL_MENU.get(),
-                VariableTerminalScreen<VariableTerminalMenu>::new,
-                "/screens/variable_terminal.json"
-        );
-
-        InitScreens.register(
                 CrazyMenuRegistrar.AUTO_BUILDER_MENU.get(),
                 AutoBuilderScreen<AutoBuilderMenu>::new,
                 "/screens/auto_builder.json"
@@ -191,24 +177,6 @@ public final class Screens {
                 CrazyMenuRegistrar.ENTROPY_CRADLE_CONTROLLER_MENU.get(),
                 EntropyCradleControllerScreen<EntropyCradleControllerMenu>::new,
                 "/screens/entropy_cradle_controller.json"
-        );
-
-        InitScreens.register(
-                CrazyMenuRegistrar.PLAYER_DATA_EXTRACTOR_MENU.get(),
-                PlayerDataExtractorScreen<PlayerDataExtractorMenu>::new,
-                "/screens/player_data_extractor.json"
-        );
-
-        InitScreens.register(
-                CrazyMenuRegistrar.LUA_PATTERN_MENU.get(),
-                LuaPatternScreen<LuaPatternMenu>::new,
-                "/screens/lua_pattern.json"
-        );
-
-        InitScreens.register(
-                CrazyMenuRegistrar.DATA_PROCESSOR_MENU.get(),
-                DataProcessorScreen<DataProcessorMenu>::new,
-                "/screens/data_processor.json"
         );
 
         InitScreens.register(

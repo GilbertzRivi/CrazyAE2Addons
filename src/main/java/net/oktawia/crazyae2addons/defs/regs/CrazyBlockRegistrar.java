@@ -27,20 +27,6 @@ public class CrazyBlockRegistrar {
     public static final DeferredRegister<Item> BLOCK_ITEMS =
             DeferredRegister.create(ForgeRegistries.ITEMS, CrazyAddons.MODID);
 
-    public static final RegistryObject<MEDataControllerBlock> ME_DATA_CONTROLLER_BLOCK =
-            BLOCKS.register("me_data_controller", MEDataControllerBlock::new);
-
-    public static final RegistryObject<BlockItem> ME_DATA_CONTROLLER_BLOCK_ITEM =
-            BLOCK_ITEMS.register("me_data_controller",
-                    () -> new MEDataControllerBlockItem(ME_DATA_CONTROLLER_BLOCK.get(), new Item.Properties()));
-
-    public static final RegistryObject<DataProcessorBlock> DATA_PROCESSOR_BLOCK =
-            BLOCKS.register("data_processor", DataProcessorBlock::new);
-
-    public static final RegistryObject<BlockItem> DATA_PROCESSOR_BLOCK_ITEM =
-            BLOCK_ITEMS.register("data_processor",
-                    () -> new DataProcessorBlockItem(DATA_PROCESSOR_BLOCK.get(), new Item.Properties()));
-
     public static final RegistryObject<AmpereMeterBlock> AMPERE_METER_BLOCK =
             BLOCKS.register("ampere_meter", AmpereMeterBlock::new);
 

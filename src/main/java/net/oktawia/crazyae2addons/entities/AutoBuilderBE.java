@@ -106,10 +106,7 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
     private boolean energyPrepaid = false;
     private Direction sourceFacing = Direction.NORTH;
 
-    @OnlyIn(Dist.CLIENT)
     public static final java.util.List<AutoBuilderBE> CLIENT_INSTANCES = new java.util.concurrent.CopyOnWriteArrayList<>();
-
-    @OnlyIn(Dist.CLIENT)
     private PreviewInfo previewInfo;
 
     private boolean previewDirty = true;

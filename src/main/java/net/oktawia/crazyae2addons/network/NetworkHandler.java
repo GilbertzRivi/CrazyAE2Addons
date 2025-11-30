@@ -29,14 +29,6 @@ public class NetworkHandler {
         );
         INSTANCE.registerMessage(
                 id++,
-                DataValuesPacket.class,
-                DataValuesPacket::encode,
-                DataValuesPacket::decode,
-                DataValuesPacket::handle,
-                Optional.of(NetworkDirection.PLAY_TO_CLIENT)
-        );
-        INSTANCE.registerMessage(
-                id++,
                 UpdatePatternsPacket.class,
                 UpdatePatternsPacket::encode,
                 UpdatePatternsPacket::decode,

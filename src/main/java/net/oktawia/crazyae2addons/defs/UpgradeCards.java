@@ -20,7 +20,6 @@ public class UpgradeCards {
             Upgrades.add(AEItems.FUZZY_CARD, CrazyBlockRegistrar.SIGNALLING_INTERFACE_BLOCK_ITEM.get(), 1, "group.signalling_interface.name");
             Upgrades.add(AEItems.INVERTER_CARD, CrazyBlockRegistrar.SIGNALLING_INTERFACE_BLOCK_ITEM.get(), 1, "group.signalling_interface.name");
             Upgrades.add(CrazyItemRegistrar.CIRCUIT_UPGRADE_CARD_ITEM.get(), AEParts.STORAGE_BUS, 1, "group.storage_bus.name");
-            Upgrades.add(AEItems.CRAFTING_CARD, CrazyBlockRegistrar.EJECTOR_BLOCK_ITEM.get(), 1, "group.ejector.name");
             Upgrades.add(AEItems.INVERTER_CARD, CrazyItemRegistrar.MOB_FORMATION_PLANE.get(), 1, "group.mob_formation_plane.name");
             Upgrades.add(AEItems.CAPACITY_CARD, CrazyItemRegistrar.MOB_FORMATION_PLANE.get(), 4, "group.mob_formation_plane.name");
             Upgrades.add(AEItems.SPEED_CARD, CrazyBlockRegistrar.SPAWNER_EXTRACTOR_CONTROLLER.get(), 4, "group.spawner_extractor_controller.name");

@@ -11,7 +11,6 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.IsModLoaded;
-import net.oktawia.crazyae2addons.compat.CC.CCDataExtractorPartItem;
 import net.oktawia.crazyae2addons.compat.GregTech.*;
 import net.oktawia.crazyae2addons.items.*;
 import net.oktawia.crazyae2addons.mobstorage.*;
@@ -68,9 +67,6 @@ public class CrazyItemRegistrar {
             ITEMS.register("debug_structure_copy_thingy",
                     () -> new StructurePatternCopyItem(new Item.Properties()));
 
-    public static final RegistryObject<LogicCard> LOGIC_CARD = regCard(
-            "logic_card", () -> new LogicCard(new Item.Properties()));
-
     public static final RegistryObject<RRItemP2PTunnelPartItem> RR_ITEM_P2P_TUNNEL_PART =
             ITEMS.register("round_robin_item_p2p_tunnel",
                     () -> new RRItemP2PTunnelPartItem(new Item.Properties()));
@@ -86,13 +82,6 @@ public class CrazyItemRegistrar {
     public static final RegistryObject<DisplayPartItem> DISPLAY_MONITOR_PART_ITEM =
             ITEMS.register("display_monitor",
                     () -> new DisplayPartItem(new Item.Properties()));
-
-    public static final RegistryObject<PartItem<? extends DataExtractorPart>> DATA_EXTRACTOR_PART_ITEM =
-            ITEMS.register("data_extractor",
-                    () -> IsModLoaded.isCCLoaded()
-                            ? new CCDataExtractorPartItem(new Item.Properties())
-                            : new DataExtractorPartItem(new Item.Properties())
-                    );
 
     public static final RegistryObject<ChunkyFluidP2PTunnelPartItem> CHUNKY_FLUID_P2P_TUNNEL_PART =
             ITEMS.register("chunky_fluid_p2p_tunnel",
@@ -178,10 +167,6 @@ public class CrazyItemRegistrar {
             ITEMS.register("wireless_redstone_terminal",
                     WirelessRedstoneTerminal::new);
 
-    public static final RegistryObject<VariableTerminalPartItem> VARIABLE_TERMINAL =
-            ITEMS.register("variable_terminal",
-                    () -> new VariableTerminalPartItem(new Item.Properties()));
-
     public static final RegistryObject<SuperSingularityItem> SUPER_SINGULARITY =
             ITEMS.register("super_singularity",
                     () -> new SuperSingularityItem(new Item.Properties()));
@@ -213,14 +198,6 @@ public class CrazyItemRegistrar {
     public static final RegistryObject<CrazyUpgradeItem> CRAZY_UPGRADE =
             ITEMS.register("crazy_upgrade",
                     () -> new CrazyUpgradeItem(new Item.Properties()));
-
-    public static final RegistryObject<PlayerDataExtractorPartItem> PLAYER_DATA_EXTRACTOR =
-            ITEMS.register("player_data_extractor",
-                    () -> new PlayerDataExtractorPartItem(new Item.Properties()));
-
-    public static final RegistryObject<LuaPatternItem> LUA_PATTERN =
-            ITEMS.register("lua_pattern",
-                    () -> new LuaPatternItem(new Item.Properties()));
 
     public static final RegistryObject<NbtViewCellItem> NBT_VIEW_CELL =
             ITEMS.register("nbt_view_cell",

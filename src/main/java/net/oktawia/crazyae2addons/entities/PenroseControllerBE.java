@@ -18,6 +18,7 @@ import appeng.menu.locator.MenuLocator;
 import appeng.util.ConfigInventory;
 import appeng.util.inv.AppEngInternalInventory;
 import appeng.util.inv.filter.IAEItemFilter;
+import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -293,13 +294,12 @@ public class PenroseControllerBE extends AENetworkInvBlockEntity implements Prev
 
             if (config.getStack(0).what() instanceof AEItemKey itemKey){
                 var rs = ForgeRegistries.ITEMS.getKey(itemKey.getItem());
-                if (rs != null && CrazyConfig.COMMON.PenroseGoodFuel.get().contains(rs.toString())){
-                    generated *= 8;
-                }
-            } else if (config.getStack(0).what() instanceof AEItemKey itemKey){
-                var rs = ForgeRegistries.ITEMS.getKey(itemKey.getItem());
-                if (rs != null && CrazyConfig.COMMON.PenroseBestFuel.get().contains(rs.toString())){
-                    generated *= 64;
+                if (rs != null) {
+                    if (CrazyConfig.COMMON.PenroseGoodFuel.get().contains(rs.toString())){
+                        generated *= 8;
+                    } else if (CrazyConfig.COMMON.PenroseBestFuel.get().contains(rs.toString())){
+                        generated *= 64;
+                    }
                 }
             }
             if (!energyMode){

@@ -34,8 +34,6 @@ public class SendLongStringToClientPacket {
                 screen.setProgram(packet.data);
             } else if (mc.screen instanceof GadgetScreen<?> screen) {
                 screen.setProgram(packet.data);
-            } else if (mc.screen instanceof LuaPatternScreen<?> screen) {
-                screen.setProgram(packet.data);
             } else if (mc.screen instanceof CopyGadgetScreen<?> screen) {
                 screen.setProgram(packet.data);
             }

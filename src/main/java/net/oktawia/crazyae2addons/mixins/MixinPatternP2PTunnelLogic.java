@@ -54,7 +54,7 @@ public abstract class MixinPatternP2PTunnelLogic {
     )
     private boolean afterAcceptsAll(PatternProviderTarget target, KeyCounter[] inputHolder) {
         boolean ok = PatternP2PTunnelLogic.targetAcceptsAll(target, inputHolder);
-        if (ok && pattern != null) {
+        if (ok && pattern != null && capturedOutput != null) {
             CompoundTag tag = pattern.getDefinition().getTag();
             int c = (tag != null && tag.contains("circuit")) ? tag.getInt("circuit") : -1;
             if (c != -1) {
@@ -70,6 +70,7 @@ public abstract class MixinPatternP2PTunnelLogic {
             at = @At("HEAD")
     )
     private void beforePushPattern(IPatternDetails pattern, KeyCounter[] ingredients, Direction ejectionDirection, CallbackInfoReturnable<Boolean> cir) {
+        this.capturedOutput = null;
         this.pattern = pattern;
         this.direction = ejectionDirection;
     }

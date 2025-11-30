@@ -25,6 +25,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraftforge.server.ServerLifecycleHooks;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
+import net.oktawia.crazyae2addons.entities.EjectorBE;
 import net.oktawia.crazyae2addons.interfaces.IAdvPatternProviderCpu;
 import net.oktawia.crazyae2addons.interfaces.IPatternProviderCpu;
 import net.oktawia.crazyae2addons.interfaces.IPatternProviderTargetCacheExt;
@@ -111,6 +112,15 @@ public abstract class MixinPatternProviderLogic implements IPatternProviderCpu {
     @Unique
     private YesNo realRedstoneState = YesNo.NO;
 
+    @Inject(
+            method = "onPushPatternSuccess(Lappeng/api/crafting/IPatternDetails;)V",
+            at = @At("HEAD"),
+            remap = false
+    ) private void beforePushPatternSuccess(IPatternDetails pattern, CallbackInfo ci){
+        if (host.getBlockEntity() instanceof EjectorBE ejectorBE){
+            ejectorBE.cancelCraft();
+        }
+    }
 
     @Inject(
             method = "pushPattern(Lappeng/api/crafting/IPatternDetails;[Lappeng/api/stacks/KeyCounter;)Z",
@@ -252,10 +262,7 @@ public abstract class MixinPatternProviderLogic implements IPatternProviderCpu {
             remap = false
     )
     private boolean onPatternsContains(boolean originalResult, IPatternDetails pd) {
-        if (pd.getClass() == PatternDetailsSerializer.PatternDetails.class) {
-            return true;
-        }
-        return originalResult;
+        return pd.getClass() == PatternDetailsSerializer.PatternDetails.class || originalResult;
     }
 
     @ModifyExpressionValue(

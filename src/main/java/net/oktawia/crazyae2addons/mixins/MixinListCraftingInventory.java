@@ -24,7 +24,12 @@ public class MixinListCraftingInventory implements IIgnoreNBT {
     )
     private long redirectGet(KeyCounter instance, AEKey key) {
         if (getIgnoreNBT()) {
-            return instance.findFuzzy(key, FuzzyMode.IGNORE_ALL).size();
+            var counter = instance.findFuzzy(key, FuzzyMode.IGNORE_ALL);
+            if (!counter.isEmpty()){
+                return counter.iterator().next().getLongValue();
+            } else {
+                return 0;
+            }
         } else {
             return instance.get(key);
         }

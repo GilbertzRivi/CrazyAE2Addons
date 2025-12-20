@@ -12,7 +12,7 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.oktawia.crazyae2addons.CrazyAddons;
-import net.oktawia.crazyae2addons.items.StructureGadgetItem;
+import net.oktawia.crazyae2addons.items.PortableSpatialStorage;
 
 @Mod.EventBusSubscriber(modid = CrazyAddons.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class GadgetCostPreviewClient {
@@ -30,9 +30,9 @@ public class GadgetCostPreviewClient {
         if (player == null || level == null) return;
 
         ItemStack held = player.getItemInHand(InteractionHand.MAIN_HAND);
-        if (!(held.getItem() instanceof StructureGadgetItem)) {
+        if (!(held.getItem() instanceof PortableSpatialStorage)) {
             held = player.getItemInHand(InteractionHand.OFF_HAND);
-            if (!(held.getItem() instanceof StructureGadgetItem)) return;
+            if (!(held.getItem() instanceof PortableSpatialStorage)) return;
         }
 
         HitResult hr = mc.hitResult;
@@ -50,7 +50,7 @@ public class GadgetCostPreviewClient {
                 BlockPos cornerB = lookAt;
                 BlockPos origin = lookAt;
 
-                int cost = StructureGadgetItem.computeCutCostFE(level, cornerA, cornerB, origin);
+                int cost = PortableSpatialStorage.computeCutCostFE(level, cornerA, cornerB, origin);
                 showCostWithTTL("Cut: %,d FE", cost, energy);
                 return;
             }
@@ -59,14 +59,14 @@ public class GadgetCostPreviewClient {
         if (held.hasTag() && held.getTag().getBoolean("code")) {
             BlockPos originWorld = lookAt.relative(face);
             Direction pasteFacing = player.getDirection();
-            StructureGadgetItem.Basis basis = StructureGadgetItem.Basis.forFacing(pasteFacing);
+            PortableSpatialStorage.Basis basis = PortableSpatialStorage.Basis.forFacing(pasteFacing);
 
-            int[] posArr = held.getTag().getIntArray("preview_positions"); // lokalne pozycje z CUT
+            int[] posArr = held.getTag().getIntArray("preview_positions");
             double req = 0.0;
             for (int i = 0; i + 2 < posArr.length; i += 3) {
                 BlockPos local = new BlockPos(posArr[i], posArr[i + 1], posArr[i + 2]);
-                BlockPos world = StructureGadgetItem.localToWorld(local, originWorld, basis);
-                req += StructureGadgetItem.calcStepCostFE(originWorld, world);
+                BlockPos world = PortableSpatialStorage.localToWorld(local, originWorld, basis);
+                req += PortableSpatialStorage.calcStepCostFE(originWorld, world);
             }
             int cost = (int) Math.ceil(req);
             showCostWithTTL("Paste: %,d FE", cost, energy);
@@ -81,6 +81,6 @@ public class GadgetCostPreviewClient {
 
     private static int readEnergyFromNBT(ItemStack stack) {
         if (!stack.hasTag()) return 0;
-        return stack.getTag().getInt("energy");
+        return stack.getTag().getInt("internalCurrentPower") * 2;
     }
 }

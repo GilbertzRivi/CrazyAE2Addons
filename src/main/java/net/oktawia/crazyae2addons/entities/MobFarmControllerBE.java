@@ -115,8 +115,6 @@ public class MobFarmControllerBE extends AENetworkBlockEntity implements Preview
         CLIENT_INSTANCES.remove(this);
     }
 
-
-
     public MobFarmControllerBE(BlockPos pos, BlockState blockState) {
         super(CrazyBlockEntityRegistrar.MOB_FARM_CONTROLLER_BE.get(), pos, blockState);
         validator = new MobFarmValidator();
@@ -167,7 +165,7 @@ public class MobFarmControllerBE extends AENetworkBlockEntity implements Preview
 
     @Override
     public Component getDisplayName() {
-        return Component.literal("Mob Farm Controller");
+        return Component.translatable("block.crazyae2addons.mob_farm_controller");
     }
 
     public void openMenu(Player player, MenuLocator locator) {

@@ -32,7 +32,7 @@ public class SetConfigAmountScreen<C extends EjectorMenu>
 
         widgets.addButton("save", GuiText.Set.text(), this::confirm);
 
-        var icon = getMenu().getHost().getMainMenuIcon();
+        var icon = getMenu().host.getMainMenuIcon();
         var button = new TabButton(icon, icon.getHoverName(), btn -> {
             returnToParent();
         });

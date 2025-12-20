@@ -29,7 +29,7 @@ public class CradleCategory extends ModularUIRecipeCategory<CradleWrapper> {
 
     @Override
     public Component getTitle() {
-        return Component.literal("Entropy Cradle");
+        return Component.translatable("jei.crazyae2addons.category_cradle");
     }
 
     @Override

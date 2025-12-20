@@ -1,103 +1,25 @@
 {
   "type": "crazyae2addons:research",
-  "duration": 18000,
+  "duration": 3456000,
   "energy_per_tick": 500,
-  "fluid": "crazyae2addons:researchfluid",
-  "fluid_per_tick": 8,
-  "requires_stabilizer": true,
   "gadget": true,
   "consumables": [
-    { "item": "minecraft:emerald", "count": 384 }
+    { "item": "minecraft:emerald",     "count": 32, "computation": 128 },
+    { "item": "minecraft:emerald",     "count": 32, "computation": 128 },
+
+    { "item": "minecraft:soul_sand",   "count": 16, "computation": 256 },
+    { "item": "minecraft:soul_sand",   "count": 16, "computation": 256 },
+
+    { "item": "minecraft:obsidian",    "count": 16, "computation": 96 },
+    { "item": "minecraft:obsidian",    "count": 16, "computation": 96 },
+
+    { "item": "minecraft:glowstone",   "count": 8,  "computation": 256 },
+    { "item": "minecraft:glowstone",   "count": 8,  "computation": 256 }
   ],
   "drive": true,
-  "structure": {
-    "mode": "pattern",
-    "size": [7, 7, 7],
-  "symbols": {
-    "A": [
-      "minecraft:nether_bricks"
-    ],
-    "B": [
-      "minecraft:obsidian"
-    ],
-    "D": [
-      "minecraft:iron_block"
-    ],
-    "E": [
-      "minecraft:soul_sand"
-    ],
-    "F": [
-      "minecraft:glowstone"
-    ]
-  },
-  "layers": [
-    [
-      "A A A A A A A",
-      "A A A A A A A",
-      "A A A A A A A",
-      "A A A A A A A",
-      "A A A A A A A",
-      "A A A A A A A",
-      "A A A A A A A"
-    ],
-    [
-      "B B B D B B B",
-      "B E E E E E B",
-      "B E E E E E B",
-      "B E E E E E B",
-      "B E E E E E B",
-      "B E E E E E B",
-      "B B B B B B B"
-    ],
-    [
-      "B B B D B B B",
-      "B E E E E E B",
-      "B E E E E E B",
-      "B E E E E E B",
-      "B E E E E E B",
-      "B E E E E E B",
-      "B B B B B B B"
-    ],
-    [
-      "D D D D D D D",
-      "D . . . . . D",
-      "D . . . . . D",
-      "D . . . . . D",
-      "D . . . . . D",
-      "D . . . . . D",
-      "D D D D D D D"
-    ],
-    [
-      "B B B B B B B",
-      "B F F F F F B",
-      "B F F F F F B",
-      "B F F F F F B",
-      "B F F F F F B",
-      "B F F F F F B",
-      "B B B B B B B"
-    ],
-    [
-      "B B B B B B B",
-      "B F F F F F B",
-      "B F F F F F B",
-      "B F F F F F B",
-      "B F F F F F B",
-      "B F F F F F B",
-      "B B B B B B B"
-    ],
-    [
-      "A A A A A A A",
-      "A A A A A A A",
-      "A A A A A A A",
-      "A A A A A A A",
-      "A A A A A A A",
-      "A A A A A A A",
-      "A A A A A A A"
-    ]
-  ]
-},
   "unlock": {
     "key": "crazyae2addons:mob_cell_research",
-    "label": "Mob Storage"
+    "label": "Mob Storage",
+    "item": "crazyae2addons:mob_cell_housing"
   }
 }

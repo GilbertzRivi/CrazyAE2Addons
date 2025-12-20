@@ -1,0 +1,67 @@
+{
+  "$schema": "schema.json",
+  "includes": ["common/common.json", "common/player_inventory.json"],
+  "background": {
+    "texture": "guis/research_unit.png",
+    "srcRect": [0, 0, 176, 205]
+  },
+  "text": {
+    "dialog_title": {
+      "text": {
+        "translate": "block.crazyae2addons.research_unit"
+      },
+      "position": {
+        "left": 8,
+        "top": 6
+      }
+    },
+    "prev": {
+      "position": {
+        "right": 8,
+        "top": 24
+      },
+      "align": "RIGHT"
+    },
+    "computation": {
+      "position": {
+        "left": 12,
+        "top": 48
+      },
+      "align": "LEFT"
+    },
+    "coolant": {
+      "position": {
+        "left": 12,
+        "top": 60
+      },
+      "align": "LEFT"
+    },
+    "power": {
+      "position": {
+        "left": 12,
+        "top": 72
+      },
+      "align": "LEFT"
+    }
+  },
+  "images": {
+    "progressCoolant": {
+      "texture": "guis/research_unit.png",
+      "srcRect": [177, 0, 50, 6]
+    }
+  },
+  "widgets": {
+    "prevbtn": {
+      "right": 24,
+      "top": 8,
+      "width": 16,
+      "height": 16
+    },
+    "coolantBar": {
+      "left": 12,
+      "top": 30,
+      "width": 50,
+      "height": 6
+    }
+  }
+}

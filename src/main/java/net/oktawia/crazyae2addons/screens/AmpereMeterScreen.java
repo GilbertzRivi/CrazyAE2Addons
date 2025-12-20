@@ -35,8 +35,8 @@ public class AmpereMeterScreen<C extends AmpereMeterMenu> extends AEBaseScreen<C
     public AmpereMeterScreen(C menu, Inventory playerInventory, Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
         direction = new ToggleButton(Icon.ARROW_RIGHT, Icon.ARROW_LEFT, this::toggleDirection);
-        direction.setTooltipOn(List.of(Component.literal("Send power from left to right")));
-        direction.setTooltipOff(List.of(Component.literal("Send power from right to left")));
+        direction.setTooltipOn(List.of(Component.translatable("gui.crazyae2addons.ampere_meter_1")));
+        direction.setTooltipOff(List.of(Component.translatable("gui.crazyae2addons.ampere_meter_2")));
         this.widgets.add("direction", direction);
     }
 

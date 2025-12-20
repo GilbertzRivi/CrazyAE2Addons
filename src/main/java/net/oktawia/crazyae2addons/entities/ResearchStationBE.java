@@ -9,7 +9,6 @@ import appeng.blockentity.grid.AENetworkInvBlockEntity;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuLocator;
 import appeng.util.inv.AppEngInternalInventory;
-import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
@@ -18,7 +17,6 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -27,63 +25,62 @@ import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.energy.EnergyStorage;
 import net.minecraftforge.energy.IEnergyStorage;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
-import net.oktawia.crazyae2addons.defs.regs.CrazyFluidRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
-import net.oktawia.crazyae2addons.items.StructureGadgetItem;
+import net.oktawia.crazyae2addons.items.PortableSpatialStorage;
 import net.oktawia.crazyae2addons.menus.ResearchStationMenu;
-import net.oktawia.crazyae2addons.misc.ResearchStationValidator;
 import net.oktawia.crazyae2addons.recipes.ResearchRecipe;
 import net.oktawia.crazyae2addons.recipes.ResearchRecipeType;
-import net.oktawia.crazyae2addons.renderer.preview.PreviewInfo;
-import net.oktawia.crazyae2addons.renderer.preview.Previewable;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.Set;
 
-public class ResearchStationBE extends AENetworkInvBlockEntity implements Previewable, IGridTickable, MenuProvider {
+public class ResearchStationBE extends AENetworkInvBlockEntity implements IGridTickable, MenuProvider {
 
-    public ResearchStationValidator validator;
     public static int MAX_ENERGY = 25_000;
 
-    public AppEngInternalInventory inv = new AppEngInternalInventory(this, 19);
-    public InternalInventory input = inv.getSubInventory(0, 18);
-    public InternalInventory disk  = inv.getSubInventory(18, 19);
-
-    private long lastTankQueryGameTime = -100;
-    private int cachedWaterPct = 0;
-
-    private PreviewInfo previewInfo = null;
-    public boolean formed = false;
+    public AppEngInternalInventory inv = new AppEngInternalInventory(this, 1);
+    public InternalInventory disk = inv.getSubInventory(0, 1);
 
     private int progressTicks = 0;
-    @Nullable private ResearchRecipe activeRecipe = null;
+
+    @Nullable
+    private ResearchRecipe activeRecipe = null;
 
     private boolean copyingKeys = false;
     private static final int COPY_DURATION_TICKS = 200;
     private static final int COPY_ENERGY_PER_TICK = 50;
-    private static final int COPY_FLUID_PER_TICK  = 25;
 
     public boolean preview = false;
 
     public static final Set<ResearchStationBE> CLIENT_INSTANCES = new HashSet<>();
+
+    private static class PedestalUse {
+        final BlockPos topPos;
+        final BlockPos bottomPos;
+        int used; // ile itemów trzeba skonsumować z tego pedestału
+
+        PedestalUse(BlockPos topPos, BlockPos bottomPos, int used) {
+            this.topPos = topPos.immutable();
+            this.bottomPos = bottomPos.immutable();
+            this.used = used;
+        }
+    }
+
+    private final List<PedestalUse> activePedestals = new ArrayList<>();
 
     private final EnergyStorage storedEnergy = new EnergyStorage(MAX_ENERGY, 500, 500, 0) {
         @Override
@@ -92,6 +89,7 @@ public class ResearchStationBE extends AENetworkInvBlockEntity implements Previe
             setChanged();
             return received;
         }
+
         @Override
         public int extractEnergy(int maxExtract, boolean simulate) {
             int extracted = super.extractEnergy(maxExtract, simulate);
@@ -162,42 +160,23 @@ public class ResearchStationBE extends AENetworkInvBlockEntity implements Previe
         if (data.contains("inv")) {
             this.inv.readFromNBT(data, "inv");
         }
+        if (data.contains("pwr")) {
+            this.storedEnergy.deserializeNBT(data.get("pwr"));
+        }
     }
 
     @Override
     public void saveAdditional(CompoundTag data) {
         super.saveAdditional(data);
         this.inv.writeToNBT(data, "inv");
+        data.put("pwr", this.storedEnergy.serializeNBT());
     }
 
     public ResearchStationBE(BlockPos pos, BlockState blockState) {
         super(CrazyBlockEntityRegistrar.RESEARCH_STATION_BE.get(), pos, blockState);
-        validator = new ResearchStationValidator();
         this.getMainNode()
                 .addService(IGridTickable.class, this)
                 .setVisualRepresentation(new ItemStack(CrazyBlockRegistrar.RESEARCH_STATION.get().asItem()));
-    }
-
-    @Override
-    @OnlyIn(Dist.CLIENT)
-    public PreviewInfo getPreviewInfo() { return previewInfo; }
-
-    @Override
-    @OnlyIn(Dist.CLIENT)
-    public void setPreviewInfo(PreviewInfo info) { this.previewInfo = info; }
-
-    @Override
-    public void onLoad() {
-        super.onLoad();
-        if (level != null && level.isClientSide) {
-            CLIENT_INSTANCES.add(this);
-        }
-    }
-
-    @Override
-    public void setRemoved() {
-        super.setRemoved();
-        CLIENT_INSTANCES.remove(this);
     }
 
     @Override
@@ -221,7 +200,7 @@ public class ResearchStationBE extends AENetworkInvBlockEntity implements Previe
 
     @Override
     public Component getDisplayName() {
-        return Component.literal("Research Station");
+        return Component.translatable("block.crazyae2addons.research_station");
     }
 
     @Override
@@ -232,17 +211,188 @@ public class ResearchStationBE extends AENetworkInvBlockEntity implements Previe
     private void hardReset() {
         this.progressTicks = 0;
         this.activeRecipe = null;
-        this.copyingKeys = false; // reset także trybu kopiowania
+        this.copyingKeys = false;
+        this.activePedestals.clear();
         setChanged();
+    }
+
+    private List<ItemStack> gatherPedestalStacksForMatching() {
+        List<ItemStack> result = new ArrayList<>();
+        if (level == null) {
+            return result;
+        }
+
+        BlockPos base = this.worldPosition;
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+
+        for (int dx = -3; dx <= 3; dx++) {
+            for (int dz = -3; dz <= 3; dz++) {
+                pos.set(base.getX() + dx, base.getY() + 1, base.getZ() + dz);
+                BlockEntity be = level.getBlockEntity(pos);
+                if (be instanceof ResearchPedestalTopBE top) {
+                    ItemStack stored = top.getStoredStack();
+                    if (!stored.isEmpty()) {
+                        result.add(stored.copy());
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Przypisuje konkretne pedestały do poszczególnych consumables:
+     * - każdy wpis consumable = dokładnie JEDEN pedestal,
+     * - c.count = minimalna ilość itemów na tym pedestale,
+     * - c.computation = minimalne getConnectedComputation() wymagane dla tego pedestału.
+     */
+    @Nullable
+    private List<PedestalUse> allocatePedestalsFor(ResearchRecipe rr) {
+        if (level == null || rr == null) {
+            return null;
+        }
+
+        BlockPos base = this.worldPosition;
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+
+        List<BlockPos> topPositions = new ArrayList<>();
+        List<BlockPos> bottomPositions = new ArrayList<>();
+        List<ItemStack> stacks = new ArrayList<>();
+        List<Integer> computations = new ArrayList<>();
+
+        // Zczytujemy wszystkie potencjalne pedestały (top + bottom + stack + computation)
+        for (int dx = -3; dx <= 3; dx++) {
+            for (int dz = -3; dz <= 3; dz++) {
+                pos.set(base.getX() + dx, base.getY() + 1, base.getZ() + dz);
+                BlockEntity be = level.getBlockEntity(pos);
+                if (!(be instanceof ResearchPedestalTopBE top)) {
+                    continue;
+                }
+
+                ItemStack stored = top.getStoredStack();
+                if (stored.isEmpty()) {
+                    continue;
+                }
+
+                BlockPos bottomPos = pos.below();
+                BlockEntity beBottom = level.getBlockEntity(bottomPos);
+                if (!(beBottom instanceof ResearchPedestalBottomBE bottom)) {
+                    continue;
+                }
+
+                int computation = bottom.getConnectedComputation();
+
+                topPositions.add(pos.immutable());
+                bottomPositions.add(bottomPos.immutable());
+                stacks.add(stored.copy());
+                computations.add(computation);
+            }
+        }
+
+        if (topPositions.isEmpty()) {
+            return null;
+        }
+
+        int n = topPositions.size();
+        boolean[] usedPedestal = new boolean[n];
+        List<PedestalUse> result = new ArrayList<>();
+
+        // sortujemy consumables po wymaganej komputacji (najpierw te "cięższe")
+        List<ResearchRecipe.Consumable> consumables = new ArrayList<>(rr.consumables);
+        consumables.sort(Comparator.comparingInt((ResearchRecipe.Consumable c) -> c.computation).reversed());
+
+        // każdy consumable musi dostać dokładnie jeden pedestal
+        for (ResearchRecipe.Consumable c : consumables) {
+            if (c.count <= 0) continue;
+
+            boolean assigned = false;
+
+            for (int i = 0; i < n; i++) {
+                if (usedPedestal[i]) continue;
+
+                ItemStack st = stacks.get(i);
+                if (st.isEmpty()) continue;
+                if (st.getItem() != c.item) continue;
+                if (st.getCount() < c.count) continue;
+
+                int availableComputation = computations.get(i);
+                if (availableComputation < c.computation) continue;
+
+                usedPedestal[i] = true;
+
+                BlockPos topPos = topPositions.get(i);
+                BlockPos bottomPos = bottomPositions.get(i);
+
+                // użyjemy z tego pedestału dokładnie c.count itemów
+                result.add(new PedestalUse(topPos, bottomPos, c.count));
+                assigned = true;
+                break;
+            }
+
+            if (!assigned) {
+                // nie udało się znaleźć pedestału dla jednego z consumables -> całość nie jest valid
+                return null;
+            }
+        }
+
+        if (result.isEmpty()) {
+            return null;
+        }
+
+        return result;
+    }
+
+    private boolean doPedestalsWork() {
+        if (level == null) {
+            return false;
+        }
+        if (activePedestals.isEmpty()) {
+            return false;
+        }
+
+        for (PedestalUse use : activePedestals) {
+            BlockEntity beBottom = level.getBlockEntity(use.bottomPos);
+            if (!(beBottom instanceof ResearchPedestalBottomBE bottom)) {
+                return false;
+            }
+
+            if (!bottom.doWork()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private int getTickComputation() {
+        if (level == null || activePedestals.isEmpty()) {
+            return 0;
+        }
+        int sum = 0;
+        for (PedestalUse use : activePedestals) {
+            BlockEntity beBottom = level.getBlockEntity(use.bottomPos);
+            if (beBottom instanceof ResearchPedestalBottomBE bottom) {
+                int c = bottom.getConnectedComputation();
+                if (c > 0) {
+                    sum += c;
+                }
+            }
+        }
+        return sum;
     }
 
     @Nullable
     private ResearchRecipe findMatchingRecipe() {
         if (level == null) return null;
 
-        SimpleContainer cont = new SimpleContainer(input.size());
-        for (int i = 0; i < input.size(); i++) {
-            cont.setItem(i, input.getStackInSlot(i).copy());
+        List<ItemStack> pedestalStacks = gatherPedestalStacksForMatching();
+
+        int totalSize = pedestalStacks.size();
+        SimpleContainer cont = new SimpleContainer(totalSize);
+
+        for (int i = 0; i < pedestalStacks.size(); i++) {
+            cont.setItem(i, pedestalStacks.get(i));
         }
 
         boolean hasDisk = !disk.getStackInSlot(0).isEmpty();
@@ -250,12 +400,19 @@ public class ResearchStationBE extends AENetworkInvBlockEntity implements Previe
         var all = level.getRecipeManager().getAllRecipesFor(ResearchRecipeType.INSTANCE);
         for (ResearchRecipe r : all) {
             if (!r.matches(cont, level)) continue;
-            if (r.requiresStabilizer && !validator.hasStabilizer(level, worldPosition)) continue;
 
             if (r.driveRequired) {
                 if (!hasDisk) continue;
                 if (diskHasKeyFor(r)) continue;
             }
+
+            List<PedestalUse> pedestals = allocatePedestalsFor(r);
+            if (pedestals == null || pedestals.isEmpty()) {
+                continue;
+            }
+
+            this.activePedestals.clear();
+            this.activePedestals.addAll(pedestals);
 
             return r;
         }
@@ -264,17 +421,18 @@ public class ResearchStationBE extends AENetworkInvBlockEntity implements Previe
 
     public int getProgressPct() {
         if (activeRecipe == null && !copyingKeys) return 0;
-        int dur = activeRecipe != null ? Math.max(1, activeRecipe.duration) : COPY_DURATION_TICKS;
-        int pct = (int) Math.round(1000.0 * this.progressTicks / dur);
+
+        int dur = activeRecipe != null
+                ? Math.max(1, activeRecipe.duration)
+                : COPY_DURATION_TICKS;
+
+        int pct = (int) Math.round(1000.0 * this.progressTicks / (double) dur);
         return Math.max(0, Math.min(1000, pct));
     }
 
     private boolean canWork(@Nullable ResearchRecipe rr) {
         if (rr == null) return false;
         if (level == null) return false;
-        if (!this.formed) return false;
-
-        if (rr.requiresStabilizer && !validator.hasStabilizer(level, worldPosition)) return false;
 
         if (rr.driveRequired) {
             ItemStack driveStack = disk.getStackInSlot(0);
@@ -282,12 +440,26 @@ public class ResearchStationBE extends AENetworkInvBlockEntity implements Previe
             if (diskHasKeyFor(rr)) return false;
         }
 
-        SimpleContainer cont = new SimpleContainer(input.size());
-        for (int i = 0; i < input.size(); i++) {
-            cont.setItem(i, input.getStackInSlot(i).copy());
+        List<ItemStack> pedestalStacks = gatherPedestalStacksForMatching();
+        int totalSize = pedestalStacks.size();
+        SimpleContainer cont = new SimpleContainer(totalSize);
+
+        for (int i = 0; i < pedestalStacks.size(); i++) {
+            cont.setItem(i, pedestalStacks.get(i));
         }
 
-        return rr.matches(cont, level);
+        if (!rr.matches(cont, level)) {
+            return false;
+        }
+
+        List<PedestalUse> pedestals = allocatePedestalsFor(rr);
+        if (pedestals == null || pedestals.isEmpty()) {
+            return false;
+        }
+        this.activePedestals.clear();
+        this.activePedestals.addAll(pedestals);
+
+        return true;
     }
 
     private boolean drainPerTick(ResearchRecipe rr, boolean simulate) {
@@ -297,34 +469,6 @@ public class ResearchStationBE extends AENetworkInvBlockEntity implements Previe
             if (ext < needE) return false;
             if (!simulate) storedEnergy.extractEnergy(needE, false);
         }
-
-        int needW = Math.max(0, rr.fluidPerTick);
-        if (needW > 0) {
-            IFluidHandler fh = getExternalTank();
-            if (fh == null) return false;
-
-            FluidStack req = new FluidStack(CrazyFluidRegistrar.RESEARCH_FLUID_SOURCE.get(), needW);
-            FluidStack drainedSim = fh.drain(req, IFluidHandler.FluidAction.SIMULATE);
-            if (drainedSim.getAmount() < needW) return false;
-            if (!simulate) fh.drain(req, IFluidHandler.FluidAction.EXECUTE);
-        }
-        return true;
-    }
-
-    private boolean drainCopyPerTick(boolean simulate) {
-        int needE = COPY_ENERGY_PER_TICK;
-        int ext = storedEnergy.extractEnergy(needE, true);
-        if (ext < needE) return false;
-        if (!simulate) storedEnergy.extractEnergy(needE, false);
-
-        IFluidHandler fh = getExternalTank();
-        if (fh == null) return false;
-
-        FluidStack req = new FluidStack(CrazyFluidRegistrar.RESEARCH_FLUID_SOURCE.get(), COPY_FLUID_PER_TICK);
-        FluidStack drainedSim = fh.drain(req, IFluidHandler.FluidAction.SIMULATE);
-        if (drainedSim.getAmount() < COPY_FLUID_PER_TICK) return false;
-        if (!simulate) fh.drain(req, IFluidHandler.FluidAction.EXECUTE);
-
         return true;
     }
 
@@ -337,131 +481,37 @@ public class ResearchStationBE extends AENetworkInvBlockEntity implements Previe
         }
     }
 
+    /**
+     * Konsumuje itemy z pedestałów zgodnie z `PedestalUse.used`
+     * (czyli tyle ile podała recepta w `Consumable.count`).
+     */
     private void consumeInputsFor(ResearchRecipe rr) {
-        if (rr == null) return;
+        if (rr == null || level == null) return;
 
-        Map<Item, Integer> left = new HashMap<>();
-        for (ResearchRecipe.Consumable c : rr.consumables) {
-            left.merge(c.item, Math.max(0, c.count), Integer::sum);
-        }
+        List<PedestalUse> uses = !activePedestals.isEmpty() ? activePedestals : allocatePedestalsFor(rr);
+        if (uses == null) return;
 
-        int gadgetSlot = -1;
-        for (int i = 0; i < input.size(); i++) {
-            ItemStack st = input.getStackInSlot(i);
-            if (!st.isEmpty() && st.getItem() instanceof StructureGadgetItem) {
-                gadgetSlot = i;
-                break;
+        for (PedestalUse use : uses) {
+            if (use.used <= 0) continue;
+
+            BlockEntity beTop = level.getBlockEntity(use.topPos);
+            if (!(beTop instanceof ResearchPedestalTopBE top)) {
+                continue;
             }
-        }
-        if (!left.isEmpty()) {
-            for (int i = 0; i < input.size(); i++) {
-                ItemStack st = input.getStackInSlot(i);
-                if (st.isEmpty()) continue;
-                if (st.getItem() instanceof StructureGadgetItem) continue;
 
-                Item it = st.getItem();
-                Integer need = left.get(it);
-                if (need == null || need <= 0) continue;
+            int toConsume = use.used;
 
-                int take = Math.min(need, st.getCount());
-                if (take > 0) {
-                    st.shrink(take);
-                    input.setItemDirect(i, st.isEmpty() ? ItemStack.EMPTY : st);
-                    left.put(it, need - take);
-                }
+            ItemStack stack = top.takeStoredStack();
+            if (stack.isEmpty()) continue;
+
+            if (stack.getCount() > toConsume) {
+                stack.shrink(toConsume);
+                top.setStoredStack(stack);
             }
-        }
-        if (gadgetSlot >= 0) {
-            ItemStack gadget = input.getStackInSlot(gadgetSlot);
-            var tag = new CompoundTag();
-            tag.putInt("energy", gadget.getOrCreateTag().getInt("energy"));
-            gadget.setTag(tag);
-            input.setItemDirect(gadgetSlot, gadget);
+            // jeśli <= toConsume, zjadamy cały stack – pedestal zostaje pusty
         }
 
         setChanged();
-    }
-
-    // === NOWE: logika wyszukiwania źródłowego dysku w inputach i scalania kluczy ===
-
-    /** Zwraca indeks slotu w inputach, w którym leży dysk zawierający listę kluczy (NBT "keys"). */
-    private int findSourceDriveSlot() {
-        for (int i = 0; i < input.size(); i++) {
-            ItemStack st = input.getStackInSlot(i);
-            if (st.isEmpty()) continue;
-            CompoundTag tag = st.getTag();
-            if (tag != null && tag.contains(NBT_KEYS, Tag.TAG_LIST)) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    /** Zbiera klucze z podanego ItemStacka (jeśli ma listę "keys"). */
-    private Set<String> readKeys(ItemStack stack) {
-        Set<String> out = new HashSet<>();
-        if (stack.isEmpty()) return out;
-        CompoundTag tag = stack.getTag();
-        if (tag == null || !tag.contains(NBT_KEYS, Tag.TAG_LIST)) return out;
-        ListTag list = tag.getList(NBT_KEYS, Tag.TAG_STRING);
-        for (int i = 0; i < list.size(); i++) out.add(list.getString(i));
-        return out;
-    }
-
-    /** Sprawdza czy istnieje praca kopiowania: mamy dysk w out, dysk w input, i są jakieś brakujące klucze. */
-    private boolean hasCopyJobAvailable() {
-        ItemStack outDrive = disk.getStackInSlot(0);
-        if (outDrive.isEmpty()) return false;
-
-        int srcSlot = findSourceDriveSlot();
-        if (srcSlot < 0) return false;
-
-        Set<String> src = readKeys(input.getStackInSlot(srcSlot));
-        if (src.isEmpty()) return false;
-
-        Set<String> dst = readKeys(outDrive);
-        // czy są klucze, których nie ma na dysku wyjściowym?
-        for (String k : src) {
-            if (!dst.contains(k)) return true;
-        }
-        return false;
-    }
-
-    /** Wykonuje faktyczne dopisanie brakujących kluczy z dysku źródłowego w inputach do dysku w slocie dysku. */
-    private void performCopyKeys() {
-        ItemStack outDrive = disk.getStackInSlot(0);
-        if (outDrive.isEmpty()) return;
-
-        int srcSlot = findSourceDriveSlot();
-        if (srcSlot < 0) return;
-
-        ItemStack inDrive = input.getStackInSlot(srcSlot);
-        if (inDrive.isEmpty()) return;
-
-        Set<String> src = readKeys(inDrive);
-
-        CompoundTag tag = outDrive.getOrCreateTag();
-        ListTag list = tag.contains(NBT_KEYS, Tag.TAG_LIST)
-                ? tag.getList(NBT_KEYS, Tag.TAG_STRING)
-                : new ListTag();
-
-        Set<String> existing = new HashSet<>();
-        for (int i = 0; i < list.size(); i++) existing.add(list.getString(i));
-
-        boolean changed = false;
-        for (String k : src) {
-            if (existing.add(k)) {
-                list.add(StringTag.valueOf(k));
-                changed = true;
-            }
-        }
-
-        if (changed) {
-            tag.put(NBT_KEYS, list);
-            outDrive.setTag(tag);
-            disk.setItemDirect(0, outDrive);
-            setChanged();
-        }
     }
 
     @Override
@@ -470,61 +520,22 @@ public class ResearchStationBE extends AENetworkInvBlockEntity implements Previe
             return TickRateModulation.IDLE;
         }
 
-        if (!validator.matchesStructure(getLevel(), getBlockPos(), getBlockState())) {
-            this.formed = false;
-            hardReset();
-            return TickRateModulation.IDLE;
-        } else {
-            this.formed = true;
-        }
-
-        // 1) jeżeli nie trwa żaden proces, spróbuj zacząć receptę lub kopiowanie kluczy
         if (activeRecipe == null && !copyingKeys) {
             activeRecipe = findMatchingRecipe();
             progressTicks = 0;
 
             if (activeRecipe == null) {
-                // brak przepisu – sprawdź tryb kopiowania dysk→dysk
-                if (hasCopyJobAvailable()) {
-                    copyingKeys = true;
-                    progressTicks = 0;
-                    setChanged();
-                } else {
-                    setChanged();
-                    return TickRateModulation.IDLE;
-                }
+                setChanged();
+                return TickRateModulation.IDLE;
             }
         }
 
-        // 2) obsługa kopiowania dysk→dysk
-        if (copyingKeys) {
-            // warunki nadal spełnione?
-            if (!formed || !hasCopyJobAvailable()) {
-                hardReset();
-                return TickRateModulation.IDLE;
-            }
-
-            if (!drainCopyPerTick(true)) {
-                hardReset();
-                return TickRateModulation.IDLE;
-            }
-            drainCopyPerTick(false);
-
-            progressTicks++;
-
-            if (progressTicks >= COPY_DURATION_TICKS) {
-                performCopyKeys(); // tylko dopisuje brakujące
-                finishedEffect();
-                hardReset();
-                return TickRateModulation.IDLE;
-            }
-
-            setChanged();
-            return TickRateModulation.URGENT;
-        }
-
-        // 3) standardowa logika przepisu
         if (!canWork(activeRecipe)) {
+            hardReset();
+            return TickRateModulation.IDLE;
+        }
+
+        if (!doPedestalsWork()) {
             hardReset();
             return TickRateModulation.IDLE;
         }
@@ -535,7 +546,13 @@ public class ResearchStationBE extends AENetworkInvBlockEntity implements Previe
         }
         drainPerTick(activeRecipe, false);
 
-        progressTicks++;
+        int tickComp = getTickComputation();
+        if (tickComp <= 0) {
+            hardReset();
+            return TickRateModulation.IDLE;
+        }
+
+        progressTicks += tickComp;
 
         if (progressTicks >= activeRecipe.duration) {
             final ResearchRecipe done = activeRecipe;
@@ -560,7 +577,8 @@ public class ResearchStationBE extends AENetworkInvBlockEntity implements Previe
     public void onChangeInventory(InternalInventory inv, int slot) {
         this.activeRecipe = null;
         this.progressTicks = 0;
-        this.copyingKeys = false; // przerwij kopiowanie przy zmianie zawartości
+        this.copyingKeys = false;
+        this.activePedestals.clear();
         setChanged();
     }
 
@@ -573,62 +591,6 @@ public class ResearchStationBE extends AENetworkInvBlockEntity implements Previe
         MenuOpener.open(CrazyMenuRegistrar.RESEARCH_STATION_MENU.get(), player, locator);
     }
 
-    private Direction getFacing() {
-        var state = getBlockState();
-        if (state.hasProperty(BlockStateProperties.HORIZONTAL_FACING)) {
-            return state.getValue(BlockStateProperties.HORIZONTAL_FACING);
-        }
-        if (state.hasProperty(BlockStateProperties.FACING)) {
-            return state.getValue(BlockStateProperties.FACING);
-        }
-        return Direction.NORTH;
-    }
-
-    @Nullable
-    private IFluidHandler getExternalTank() {
-        if (level == null) return null;
-        BlockPos pos = worldPosition.relative(getFacing().getOpposite(), 4);
-        var be = level.getBlockEntity(pos);
-        if (be == null) return null;
-
-        Direction sideFromTankTowardController = getFacing();
-        var cap = be.getCapability(ForgeCapabilities.FLUID_HANDLER, sideFromTankTowardController);
-        if (cap.isPresent()) return cap.orElse(null);
-
-        return be.getCapability(ForgeCapabilities.FLUID_HANDLER, null).orElse(null);
-    }
-
-    /** Zwraca rzeczywistą ilość naszego płynu w mB (nie procent). */
-    public int getWaterPct() {
-        if (level == null) return 0;
-        if (!this.formed) return 0;
-
-        long gt = level.getGameTime();
-        if (gt - lastTankQueryGameTime < 10) {
-            return cachedWaterPct;
-        }
-        lastTankQueryGameTime = gt;
-
-        IFluidHandler fh = getExternalTank();
-        if (fh == null) {
-            cachedWaterPct = 0;
-            return 0;
-        }
-
-        long water = 0;
-        int tanks = fh.getTanks();
-        for (int i = 0; i < tanks; i++) {
-            FluidStack fs = fh.getFluidInTank(i);
-            if (fs.getFluid() == CrazyFluidRegistrar.RESEARCH_FLUID_SOURCE.get()) {
-                water += fs.getAmount();
-            }
-        }
-
-        cachedWaterPct = (int) Math.min(Integer.MAX_VALUE, water); // mB
-        return cachedWaterPct;
-    }
-
-    /** Zwraca rzeczywistą ilość FE w buforze (nie procent). */
     public int getEnergyPct() {
         return storedEnergy.getEnergyStored();
     }
@@ -661,5 +623,4 @@ public class ResearchStationBE extends AENetworkInvBlockEntity implements Previe
         disk.setItemDirect(0, driveStack);
         setChanged();
     }
-
 }

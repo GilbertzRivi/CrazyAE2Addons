@@ -12,15 +12,18 @@ public class CradleRecipe implements Recipe<CradleContext> {
     private final ResourceLocation id;
     private final CradlePattern pattern;
     private final Block resultBlock;
+    private final String description;
 
-    public CradleRecipe(ResourceLocation id, CradlePattern pattern, Block resultBlock) {
+    public CradleRecipe(ResourceLocation id, CradlePattern pattern, Block resultBlock, String description) {
         this.id = id;
         this.pattern = pattern;
         this.resultBlock = resultBlock;
+        this.description = description;
     }
 
     public CradlePattern pattern() { return pattern; }
     public Block resultBlock() { return resultBlock; }
+    public String description() { return description; }
 
     @Override public boolean matches(CradleContext ctx, Level level) {
         return pattern.matches(level, ctx.origin(), ctx.facing());

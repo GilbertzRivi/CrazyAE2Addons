@@ -1,0 +1,12 @@
+{
+  "parent": "block/cube",
+  "textures": {
+    "particle": "crazyae2addons:block/research_unit_frame",
+    "down": "crazyae2addons:block/research_unit_frame",
+    "up": "crazyae2addons:block/research_unit_frame",
+    "north": "crazyae2addons:block/research_unit",
+    "south": "crazyae2addons:block/research_unit_frame",
+    "east": "crazyae2addons:block/research_unit_frame",
+    "west": "crazyae2addons:block/research_unit_frame"
+  }
+}

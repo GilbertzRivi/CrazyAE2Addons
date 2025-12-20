@@ -9,6 +9,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.level.block.Block;
 import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.util.GsonHelper; // Opcjonalnie, do bezpieczniejszego parsowania JSON
 
 public class CradleRecipeSerializer implements RecipeSerializer<CradleRecipe> {
     public static final CradleRecipeSerializer INSTANCE = new CradleRecipeSerializer();
@@ -17,10 +18,17 @@ public class CradleRecipeSerializer implements RecipeSerializer<CradleRecipe> {
     @Override
     public CradleRecipe fromJson(ResourceLocation id, JsonObject json) {
         CradlePattern pattern = CradlePattern.fromJson(json.getAsJsonObject("pattern"));
+
         Block resultBlock = ForgeRegistries.BLOCKS.getValue(
                 new ResourceLocation(json.get("result_block").getAsString())
         );
-        return new CradleRecipe(id, pattern, resultBlock);
+
+        String description = "";
+        if (json.has("description")) {
+            description = json.get("description").getAsString();
+        }
+
+        return new CradleRecipe(id, pattern, resultBlock, description);
     }
 
     @Override
@@ -32,7 +40,9 @@ public class CradleRecipeSerializer implements RecipeSerializer<CradleRecipe> {
         ResourceLocation blockId = buf.readResourceLocation();
         Block resultBlock = ForgeRegistries.BLOCKS.getValue(blockId);
 
-        return new CradleRecipe(id, pattern, resultBlock);
+        String description = buf.readUtf();
+
+        return new CradleRecipe(id, pattern, resultBlock, description);
     }
 
     @Override
@@ -41,5 +51,7 @@ public class CradleRecipeSerializer implements RecipeSerializer<CradleRecipe> {
         buf.writeUtf(patternStr);
 
         buf.writeResourceLocation(ForgeRegistries.BLOCKS.getKey(recipe.resultBlock()));
+
+        buf.writeUtf(recipe.description());
     }
 }

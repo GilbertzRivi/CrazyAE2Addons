@@ -1,7 +1,8 @@
 {
   "type": "crazyae2addons:cradle",
-  "result_block": "crazyae2addons:dense_energy_storage_16k",
+  "result_block": "crazyae2addons:energy_storage_16m",
   "preview_nbt": "crazyae2addons:16k_storage_dense.nbt",
+  "description": "ec.dense.16k",
   "pattern": {
     "symbols": {
       "A": [

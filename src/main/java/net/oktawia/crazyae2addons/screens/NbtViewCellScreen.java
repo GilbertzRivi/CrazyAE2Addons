@@ -41,7 +41,7 @@ public class NbtViewCellScreen<C extends NbtViewCellMenu> extends AEBaseScreen<C
     public NbtViewCellScreen(C menu, Inventory playerInventory, Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
         setupGui();
-        setTextContent("dialog_title", Component.literal("NBT View Cell"));
+        setTextContent("dialog_title", Component.translatable("gui.crazyae2addons.nbt_view_cell_title"));
         this.widgets.add("confirm", confirm);
         this.widgets.add("data", input);
         this.widgets.add("scroll", scrollbar);
@@ -78,11 +78,11 @@ public class NbtViewCellScreen<C extends NbtViewCellMenu> extends AEBaseScreen<C
 
     private void setupGui() {
         confirm = new IconButton(Icon.ENTER, (btn) -> getMenu().updateData(input.getValue()));
-        confirm.setTooltip(Tooltip.create(Component.literal("Confirm")));
+        confirm.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.nbt_view_cell_confirm")));
 
         input = new MultilineTextFieldWidget(
                 font, 0, 0, 145, 80,
-                Component.literal("Input filter"));
+                Component.translatable("gui.crazyae2addons.nbt_view_cell_input"));
 
         scrollbar = new Scrollbar();
         updateScrollbarRangeFromInput();

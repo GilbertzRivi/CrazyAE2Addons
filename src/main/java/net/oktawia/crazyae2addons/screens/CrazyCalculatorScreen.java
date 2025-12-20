@@ -28,11 +28,11 @@ public class CrazyCalculatorScreen<C extends CrazyCalculatorMenu> extends AEBase
         this.equation = new AETextField(style, Minecraft.getInstance().font, 0,0,0,0);
         this.equation.setBordered(false);
         this.equation.setMaxLength(50);
-        this.equation.setPlaceholder(Component.literal("Equation"));
+        this.equation.setPlaceholder(Component.translatable("gui.crazyae2addons.calculator_equation"));
         this.result = new AETextField(style, Minecraft.getInstance().font, 0,0,0,0);
         this.result.setBordered(false);
         this.result.setMaxLength(50);
-        this.result.setPlaceholder(Component.literal("Result"));
+        this.result.setPlaceholder(Component.translatable("gui.crazyae2addons.calculator_result"));
         this.widgets.add("confirm", this.confirm);
         this.widgets.add("equation", this.equation);
         this.widgets.add("result", this.result);

@@ -47,7 +47,10 @@ public class GTEnergyExporterPart extends EnergyExporterPart {
         } else if (tier == GTItems.BATTERY_UV_NAQUADRIA.asItem()){
             voltage = (int) Math.pow(2, 19);
         } else {
-            voltage = 8;
+            this.greg = false;
+            if (this.getMenu() != null){
+                this.getMenu().greg = this.greg;
+            }
         }
         if (this.getMenu() != null){
             this.getMenu().voltage = this.voltage;

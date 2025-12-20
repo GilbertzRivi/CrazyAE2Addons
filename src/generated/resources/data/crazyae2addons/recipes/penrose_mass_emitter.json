@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "C": {
+      "item": "crazyae2addons:penrose_frame"
+    },
+    "E": {
+      "item": "ae2:level_emitter"
+    },
+    "S": {
+      "item": "crazyae2addons:super_singularity"
+    }
+  },
+  "pattern": [
+    "ECS"
+  ],
+  "result": {
+    "item": "crazyae2addons:penrose_mass_emitter"
+  },
+  "show_notification": true
+}

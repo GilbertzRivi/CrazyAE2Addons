@@ -30,8 +30,8 @@ public class CrazyEmitterMultiplierScreen<C extends CrazyEmitterMultiplierMenu> 
         this.value = new AETextField(style, Minecraft.getInstance().font, 0,0,0,0);
         this.value.setBordered(false);
         this.value.setMaxLength(50);
-        this.value.setPlaceholder(Component.literal("Multiplier"));
-        this.mult = new AECheckbox(0, 0, 0,0, style, Component.literal("Multiply instead of set value"));
+        this.value.setPlaceholder(Component.translatable("gui.crazyae2addons.emiter_mult"));
+        this.mult = new AECheckbox(0, 0, 0,0, style, Component.translatable("gui.crazyae2addons.emiter_mult_checkbox"));
         this.widgets.add("confirm", this.confirm);
         this.widgets.add("value", this.value);
         this.widgets.add("mult", this.mult);

@@ -1,6 +1,5 @@
 package net.oktawia.crazyae2addons.renderer.preview;
 
-import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.api.distmarker.Dist;
@@ -23,6 +22,5 @@ public class PreviewInfo {
         this.lastTick = 0.0f;
     }
 
-    public record BlockInfo(BlockPos pos, BlockState state, BakedModel model) {
-    }
+    public record BlockInfo(BlockPos pos, BlockState state) {}
 }

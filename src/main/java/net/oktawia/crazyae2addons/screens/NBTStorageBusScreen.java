@@ -4,16 +4,12 @@ import appeng.api.config.*;
 import appeng.client.gui.Icon;
 import appeng.client.gui.implementations.UpgradeableScreen;
 import appeng.client.gui.style.ScreenStyle;
-import appeng.client.gui.widgets.AECheckbox;
 import appeng.client.gui.widgets.Scrollbar;
 import appeng.client.gui.widgets.ServerSettingToggleButton;
 import appeng.client.gui.widgets.SettingToggleButton;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.client.gui.components.Tooltip;
-import net.minecraft.nbt.TagParser;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
-import net.oktawia.crazyae2addons.Utils;
 import net.oktawia.crazyae2addons.menus.NBTStorageBusMenu;
 import net.oktawia.crazyae2addons.misc.IconButton;
 import net.oktawia.crazyae2addons.misc.MultilineTextFieldWidget;
@@ -78,12 +74,15 @@ public class NBTStorageBusScreen<C extends NBTStorageBusMenu> extends Upgradeabl
 
     private void setupGui(){
         confirm = new IconButton(Icon.ENTER, (btn) -> getMenu().updateData(input.getValue()));
-        confirm.setTooltip(Tooltip.create(Component.literal("Confirm")));
+        confirm.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.nbt_storage_confirm")));
+
         input = new MultilineTextFieldWidget(
                 font, 0, 0, 110, 100,
-                Component.literal("Input filter"));
+                Component.translatable("gui.crazyae2addons.nbt_storage_input"));
+
         load = new IconButton(Icon.ENTER, (x) -> getMenu().loadNBT());
-        load.setTooltip(Tooltip.create(Component.literal("Load selected item's NBT")));
+        load.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.nbt_storage_load")));
+
         scrollbar = new Scrollbar();
         scrollbar.setSize(16, 64);
         scrollbar.setRange(0, 64, 4);

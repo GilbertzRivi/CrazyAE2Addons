@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "facing=north": { "model": "crazyae2addons:block/research_pedestal_bottom" },
+    "facing=south": { "model": "crazyae2addons:block/research_pedestal_bottom", "y": 180 },
+    "facing=west":  { "model": "crazyae2addons:block/research_pedestal_bottom", "y": 270 },
+    "facing=east":  { "model": "crazyae2addons:block/research_pedestal_bottom", "y": 90 },
+    "facing=up":    { "model": "crazyae2addons:block/research_pedestal_bottom", "x": 270 },
+    "facing=down":  { "model": "crazyae2addons:block/research_pedestal_bottom", "x": 90 }
+  }
+}

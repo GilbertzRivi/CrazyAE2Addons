@@ -1,0 +1,11 @@
+{
+  "type": "ae2wtlib:combine",
+  "terminalA": {
+    "item": "crazyae2addons:wireless_notification_terminal"
+  },
+  "terminalB": {
+    "item": "ae2wtlib:wireless_pattern_encoding_terminal"
+  },
+  "terminalAName": "wireless_notification_terminal",
+  "terminalBName": "pattern_encoding"
+}

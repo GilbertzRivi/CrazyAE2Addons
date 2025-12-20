@@ -17,7 +17,7 @@ public class CradleEmiRecipe extends ModularEmiRecipe<WidgetGroup> {
 
     public CradleEmiRecipe(CradleEntry entry, EmiRecipeCategory category) {
         super(() -> new CradlePreview(
-                entry.structureId(), entry.inputs(), entry.output()
+                entry.structureId(), entry.inputs(), entry.output(), entry.description()
         ));
         this.category = category;
         this.entry = entry;

@@ -26,11 +26,11 @@ public abstract class MixinCraftingCPUScreen<T extends CraftingCPUMenu> extends 
         super.init();
 
         this.cancellAll = Button.builder(
-                Component.literal("Cancel All Crafting Jobs"),
+                Component.translatable("gui.crazyae2addons.cancel_all_crafting"),
                 btn -> NetworkHandler.INSTANCE.sendToServer(new CancellAllCraftingPacket())
         ).build();
 
-        this.cancellAll.setPosition(getGuiLeft() + 8, getGuiTop() + getYSize() - 25);
+        this.cancellAll.setPosition(getGuiLeft() + 8, getGuiTop() + getYSize() + 5);
         this.cancellAll.setWidth(140);
         this.cancellAll.setHeight(20);
 

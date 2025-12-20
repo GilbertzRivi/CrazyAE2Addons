@@ -1,8 +1,6 @@
 package net.oktawia.crazyae2addons.renderer.preview;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.block.BlockRenderDispatcher;
-import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.state.BlockState;
@@ -57,11 +55,7 @@ public class AutoBuilderPreviewRenderer {
                 || s == Stage.AFTER_TRANSLUCENT_BLOCKS;
     }
 
-
     private static void rebuildCache(AutoBuilderBE be, Direction facing) {
-        Minecraft mc = Minecraft.getInstance();
-        BlockRenderDispatcher dispatcher = mc.getBlockRenderer();
-
         var positions = be.getPreviewPositions();
         var palette   = be.getPreviewPalette();
         var indices   = be.getPreviewIndices();
@@ -74,8 +68,8 @@ public class AutoBuilderPreviewRenderer {
             BlockState state = AutoBuilderPreviewStateCache.parseBlockState(palette.get(palIndex));
             if (state == null) continue;
 
-            BakedModel model = dispatcher.getBlockModel(state);
-            list.add(new PreviewInfo.BlockInfo(positions.get(i), state, model));
+            // Nowa sygnatura BlockInfo: tylko pos + state
+            list.add(new PreviewInfo.BlockInfo(positions.get(i), state));
         }
 
         be.setPreviewInfo(new PreviewInfo(list));

@@ -37,7 +37,7 @@ public class MobKeySelectorScreen<C extends MobKeySelectorMenu> extends AEBaseSc
         this.filtered = allIds;
 
         AETextField search = new AETextField(this.style, Minecraft.getInstance().font, 0, 0, 0, 0);
-        search.setPlaceholder(Component.literal("Search mob..."));
+        search.setPlaceholder(Component.translatable("gui.crazyae2addons.mob_key_search"));
         search.setResponder(q -> {
             String s = q.toLowerCase().trim();
             this.filtered = s.isEmpty()
@@ -86,7 +86,7 @@ public class MobKeySelectorScreen<C extends MobKeySelectorMenu> extends AEBaseSc
                 String id = filtered.get(idx);
                 b.active = true;
                 b.setMessage(Component.literal(id));
-                b.setTooltip(id.equals(menu.selectedKey) ? Tooltip.create(Component.literal("Selected")) : null);
+                b.setTooltip(id.equals(menu.selectedKey) ? Tooltip.create(Component.translatable("gui.crazyae2addons.mob_key_selected")) : null);
             } else {
                 b.active = false;
                 b.setMessage(Component.empty());

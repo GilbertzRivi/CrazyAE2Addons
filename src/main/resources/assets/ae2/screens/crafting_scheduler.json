@@ -16,7 +16,9 @@
       }
     },
     "info1": {
-      "text":  "Thing to craft",
+      "text": {
+        "translate": "gui.crazyae2addons.crafting_scheduler_target"
+      },
       "position": {
         "top": 40,
         "left": 88

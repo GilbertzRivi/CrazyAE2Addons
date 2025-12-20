@@ -3,16 +3,20 @@
   "category": "misc",
   "key": {
     "C": {
-      "item": "ae2:interface"
+      "item": "crazyae2addons:energy_interface"
     },
     "E": {
       "item": "ae2:export_bus"
     },
     "I": {
       "item": "ae2:import_bus"
+    },
+    "L": {
+      "item": "crazyae2addons:crazy_calculator"
     }
   },
   "pattern": [
+    " L ",
     "ICE"
   ],
   "result": {

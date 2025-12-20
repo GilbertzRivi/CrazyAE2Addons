@@ -40,7 +40,7 @@ public class CpuPrioScreen<C extends CpuPrioMenu> extends AEBaseScreen<C> {
         });
         this.widgets.add("priorityInput", priority);
         this.widgets.add("priorityInputInput", priorityInput);
-        this.widgets.addButton("save", Component.literal("Save"), btn->confirm());
+        this.widgets.addButton("save", Component.translatable("gui.crazyae2addons.cpu_prio_save"), btn->confirm());
     }
 
 

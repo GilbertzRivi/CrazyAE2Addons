@@ -11,6 +11,23 @@ import java.util.stream.StreamSupport;
 
 public class Utils {
 
+    public static double erf(double x) {
+        int sign = (x < 0) ? -1 : 1;
+        x = Math.abs(x);
+
+        double t = 1.0 / (1.0 + 0.3275911 * x);
+        double a1 = 0.254829592;
+        double a2 = -0.284496736;
+        double a3 = 1.421413741;
+        double a4 = -1.453152027;
+        double a5 = 1.061405429;
+
+        double poly = (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t;
+        double y = 1.0 - poly * Math.exp(-x * x);
+
+        return sign * y;
+    }
+
     public static NavigableMap<Long, String> voltagesMap = new TreeMap<>(Map.ofEntries(
             Map.entry((long) Math.pow(2, 3), "ULV"),
             Map.entry((long) Math.pow(2, 5), "LV"),

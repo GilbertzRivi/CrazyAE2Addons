@@ -30,6 +30,7 @@ public class CraftingSchedulerMenu extends AEBaseMenu {
 
     public void save(Integer amount) {
         this.host.amount = amount;
+        this.host.setChanged();
         if (isClientSide()){
             sendClientAction(SAVE, amount);
         }

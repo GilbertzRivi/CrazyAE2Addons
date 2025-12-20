@@ -16,7 +16,9 @@
       }
     },
     "info0": {
-      "text": "Speed depends on the amount",
+      "text": {
+        "translate": "gui.crazyae2addons.spawner_info_speed"
+      },
       "position": {
         "left": 88,
         "top": 50
@@ -24,7 +26,9 @@
       "align": "CENTER"
     },
     "info1": {
-      "text": "of acceleration cards installed",
+      "text": {
+        "translate": "gui.crazyae2addons.spawner_info_cards"
+      },
       "position": {
         "left": 88,
         "top": 60

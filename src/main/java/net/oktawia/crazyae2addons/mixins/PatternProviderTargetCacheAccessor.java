@@ -17,4 +17,6 @@ public interface PatternProviderTargetCacheAccessor {
     PatternProviderTarget callFind();
     @Accessor("direction")
     Direction getDirection();
+    @Accessor("cache")
+    BlockApiCache<?> getCache();
 }

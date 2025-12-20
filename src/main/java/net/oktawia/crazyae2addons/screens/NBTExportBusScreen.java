@@ -4,11 +4,9 @@ import appeng.client.gui.AEBaseScreen;
 import appeng.client.gui.Icon;
 import appeng.client.gui.style.ScreenStyle;
 import appeng.client.gui.widgets.Scrollbar;
-import com.lowdragmc.lowdraglib.gui.editor.Icons;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
-import net.oktawia.crazyae2addons.Utils;
 import net.oktawia.crazyae2addons.menus.NBTExportBusMenu;
 import net.oktawia.crazyae2addons.misc.IconButton;
 import net.oktawia.crazyae2addons.misc.MultilineTextFieldWidget;
@@ -57,12 +55,15 @@ public class NBTExportBusScreen<C extends NBTExportBusMenu> extends AEBaseScreen
 
     private void setupGui(){
         confirm = new IconButton(Icon.ENTER, (btn) -> getMenu().updateData(input.getValue()));
-        confirm.setTooltip(Tooltip.create(Component.literal("Confirm")));
+        confirm.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.nbt_export_confirm")));
+
         input = new MultilineTextFieldWidget(
                 font, 0, 0, 110, 100,
-                Component.literal("Input filter"));
+                Component.translatable("gui.crazyae2addons.nbt_export_input"));
+
         load = new IconButton(Icon.ENTER, (x) -> getMenu().loadNBT());
-        load.setTooltip(Tooltip.create(Component.literal("Load selected item's NBT")));
+        load.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.nbt_export_load")));
+
         scrollbar = new Scrollbar();
         scrollbar.setSize(16, 64);
         scrollbar.setRange(0, 64, 4);

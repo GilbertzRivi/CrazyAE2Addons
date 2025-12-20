@@ -8,7 +8,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.IsModLoaded;
-import net.oktawia.crazyae2addons.blocks.EnergyStorageFrame;
+import net.oktawia.crazyae2addons.blocks.EnergyStorage1k;
 import net.oktawia.crazyae2addons.compat.Apotheosis.ApothAutoEnchanterBE;
 import net.oktawia.crazyae2addons.compat.GregTech.*;
 import net.oktawia.crazyae2addons.entities.*;
@@ -82,15 +82,6 @@ public class CrazyBlockEntityRegistrar {
     public static final RegistryObject<BlockEntityType<CrazyPatternProviderBE>> CRAZY_PATTERN_PROVIDER_BE =
             reg("crazy_pattern_provider_be", CrazyBlockRegistrar.CRAZY_PATTERN_PROVIDER_BLOCK, CrazyPatternProviderBE::new, CrazyPatternProviderBE.class);
 
-    public static final RegistryObject<BlockEntityType<EnergyStorageControllerBE>> ENERGY_STORAGE_CONTROLLER_BE =
-            reg("energy_storage_controller_be", CrazyBlockRegistrar.ENERGY_STORAGE_CONTROLLER_BLOCK, EnergyStorageControllerBE::new, EnergyStorageControllerBE.class);
-
-    public static final RegistryObject<BlockEntityType<EnergyStorageFrameBE>> ENERGY_STORAGE_FRAME_BE =
-            reg("energy_storage_frame_be", CrazyBlockRegistrar.ENERGY_STORAGE_FRAME_BLOCK, EnergyStorageFrameBE::new, EnergyStorageFrameBE.class);
-
-    public static final RegistryObject<BlockEntityType<EnergyStoragePortBE>> ENERGY_STORAGE_PORT_BE =
-            reg("energy_storage_port_be", CrazyBlockRegistrar.ENERGY_STORAGE_PORT_BLOCK, EnergyStoragePortBE::new, EnergyStoragePortBE.class);
-
     public static final RegistryObject<BlockEntityType<AutoBuilderBE>> AUTO_BUILDER_BE =
             reg("auto_builder_be", CrazyBlockRegistrar.AUTO_BUILDER_BLOCK, AutoBuilderBE::new, AutoBuilderBE.class);
 
@@ -117,6 +108,63 @@ public class CrazyBlockEntityRegistrar {
 
     public static final RegistryObject<BlockEntityType<RecipeFabricatorBE>> RECIPE_FABRICATOR_BE =
             reg("recipe_fabricator", CrazyBlockRegistrar.RECIPE_FABRICATOR_BLOCK, RecipeFabricatorBE::new, RecipeFabricatorBE.class);
+
+    public static final RegistryObject<BlockEntityType<EnergyStorage1kBE>> ENERGY_STORAGE_1K =
+            reg("energy_storage_1k", CrazyBlockRegistrar.ENERGY_STORAGE_1K_BLOCK, EnergyStorage1kBE::new, EnergyStorage1kBE.class);
+
+    public static final RegistryObject<BlockEntityType<EnergyStorage1mBE>> ENERGY_STORAGE_1M =
+            reg("energy_storage_1m", CrazyBlockRegistrar.DENSE_ENERGY_STORAGE_1K_BLOCK, EnergyStorage1mBE::new, EnergyStorage1mBE.class);
+
+    public static final RegistryObject<BlockEntityType<EnergyStorage4kBE>> ENERGY_STORAGE_4K =
+            reg("energy_storage_4k", CrazyBlockRegistrar.ENERGY_STORAGE_4K_BLOCK, EnergyStorage4kBE::new, EnergyStorage4kBE.class);
+
+    public static final RegistryObject<BlockEntityType<EnergyStorage4mBE>> ENERGY_STORAGE_4M =
+            reg("energy_storage_4m", CrazyBlockRegistrar.DENSE_ENERGY_STORAGE_4K_BLOCK, EnergyStorage4mBE::new, EnergyStorage4mBE.class);
+
+    public static final RegistryObject<BlockEntityType<EnergyStorage16kBE>> ENERGY_STORAGE_16K =
+            reg("energy_storage_16k", CrazyBlockRegistrar.ENERGY_STORAGE_16K_BLOCK, EnergyStorage16kBE::new, EnergyStorage16kBE.class);
+
+    public static final RegistryObject<BlockEntityType<EnergyStorage16mBE>> ENERGY_STORAGE_16M =
+            reg("energy_storage_16m", CrazyBlockRegistrar.DENSE_ENERGY_STORAGE_16K_BLOCK, EnergyStorage16mBE::new, EnergyStorage16mBE.class);
+
+    public static final RegistryObject<BlockEntityType<EnergyStorage64kBE>> ENERGY_STORAGE_64K =
+            reg("energy_storage_64k", CrazyBlockRegistrar.ENERGY_STORAGE_64K_BLOCK, EnergyStorage64kBE::new, EnergyStorage64kBE.class);
+
+    public static final RegistryObject<BlockEntityType<EnergyStorage64mBE>> ENERGY_STORAGE_64M =
+            reg("energy_storage_64m", CrazyBlockRegistrar.DENSE_ENERGY_STORAGE_64K_BLOCK, EnergyStorage64mBE::new, EnergyStorage64mBE.class);
+
+    public static final RegistryObject<BlockEntityType<EnergyStorage256kBE>> ENERGY_STORAGE_256K =
+            reg("energy_storage_256k", CrazyBlockRegistrar.ENERGY_STORAGE_256K_BLOCK, EnergyStorage256kBE::new, EnergyStorage256kBE.class);
+
+    public static final RegistryObject<BlockEntityType<EnergyStorage256mBE>> ENERGY_STORAGE_256M =
+            reg("energy_storage_256m", CrazyBlockRegistrar.DENSE_ENERGY_STORAGE_256K_BLOCK, EnergyStorage256mBE::new, EnergyStorage256mBE.class);
+
+    public static final RegistryObject<BlockEntityType<ResearchPedestalBottomBE>> RESEARCH_PEDESTAL_BOTTOM_BE =
+            reg("research_pedestal_bottom", CrazyBlockRegistrar.RESEARCH_PEDESTAL_BOTTOM, ResearchPedestalBottomBE::new, ResearchPedestalBottomBE.class);
+
+    public static final RegistryObject<BlockEntityType<ResearchPedestalTopBE>> RESEARCH_PEDESTAL_TOP_BE =
+            reg("research_pedestal_top", CrazyBlockRegistrar.RESEARCH_PEDESTAL_TOP, ResearchPedestalTopBE::new, ResearchPedestalTopBE.class);
+
+    public static final RegistryObject<BlockEntityType<ResearchUnitFrameBE>> RESEARCH_UNIT_FRAME_BE =
+            reg("research_unit_frame", CrazyBlockRegistrar.RESEARCH_UNIT_FRAME, ResearchUnitFrameBE::new, ResearchUnitFrameBE.class);
+
+    public static final RegistryObject<BlockEntityType<ResearchUnitBE>> RESEARCH_UNIT_BE =
+            reg("research_unit", CrazyBlockRegistrar.RESEARCH_UNIT, ResearchUnitBE::new, ResearchUnitBE.class);
+
+    public static final RegistryObject<BlockEntityType<PenroseMassEmitterBE>> PENROSE_MASS_EMITTER_BE =
+            reg("penrose_mass_emitter", CrazyBlockRegistrar.PENROSE_MASS_EMITTER, PenroseMassEmitterBE::new, PenroseMassEmitterBE.class);
+
+    public static final RegistryObject<BlockEntityType<PenroseHeatEmitterBE>> PENROSE_HEAT_EMITTER_BE =
+            reg("penrose_heat_emitter", CrazyBlockRegistrar.PENROSE_HEAT_EMITTER, PenroseHeatEmitterBE::new, PenroseHeatEmitterBE.class);
+
+    public static final RegistryObject<BlockEntityType<PenroseInjectionPortBE>> PENROSE_INJECTION_PORT_BE =
+            reg("penrose_injection_port", CrazyBlockRegistrar.PENROSE_INJECTION_PORT, PenroseInjectionPortBE::new, PenroseInjectionPortBE.class);
+
+    public static final RegistryObject<BlockEntityType<PenroseHeatVentBE>> PENROSE_HEAT_VENT_BE =
+            reg("penrose_heat_vent", CrazyBlockRegistrar.PENROSE_HEAT_VENT, PenroseHeatVentBE::new, PenroseHeatVentBE.class);
+
+    public static final RegistryObject<BlockEntityType<PenroseHawkingVentBE>> PENROSE_HAWKING_VENT_BE =
+            reg("penrose_hawking_vent", CrazyBlockRegistrar.PENROSE_HAWKING_VENT, PenroseHawkingVentBE::new, PenroseHawkingVentBE.class);
 
     public static final RegistryObject<BlockEntityType<? extends AmpereMeterBE>> AMPERE_METER_BE =
             BLOCK_ENTITIES.register("ampere_meter_be", () -> {

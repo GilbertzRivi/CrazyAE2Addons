@@ -9,14 +9,15 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.oktawia.crazyae2addons.entities.ImpulsedPatternProviderBE;
 import org.jetbrains.annotations.Nullable;
 
-
 public class ImpulsedPatternProviderBlock extends PatternProviderBlock {
+
     public ImpulsedPatternProviderBlock() {
         super();
     }
@@ -35,6 +36,7 @@ public class ImpulsedPatternProviderBlock extends PatternProviderBlock {
             InteractionHand hand,
             @Nullable ItemStack heldItem,
             BlockHitResult hit) {
+
         if (InteractionUtil.isInAlternateUseMode(player)) {
             return InteractionResult.PASS;
         }
@@ -45,10 +47,31 @@ public class ImpulsedPatternProviderBlock extends PatternProviderBlock {
             if (!level.isClientSide()) {
                 be.openMenu(player, MenuLocators.forBlockEntity(be));
             }
-
             return InteractionResult.sidedSuccess(level.isClientSide());
         }
 
         return InteractionResult.PASS;
+    }
+
+    @Override
+    public void neighborChanged(
+            BlockState state,
+            Level level,
+            BlockPos pos,
+            Block neighborBlock,
+            BlockPos neighborPos,
+            boolean isMoving) {
+
+        super.neighborChanged(state, level, pos, neighborBlock, neighborPos, isMoving);
+
+        if (level.isClientSide()) {
+            return;
+        }
+
+        BlockEntity be = level.getBlockEntity(pos);
+        if (be instanceof ImpulsedPatternProviderBE ipp) {
+            boolean powered = level.hasNeighborSignal(pos);
+            ipp.onRedstoneUpdate(powered);
+        }
     }
 }

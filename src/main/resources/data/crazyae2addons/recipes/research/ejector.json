@@ -1,61 +1,16 @@
 {
   "type": "crazyae2addons:research",
-  "duration": 3600,
+  "duration": 57600,
   "energy_per_tick": 180,
-  "fluid": "crazyae2addons:researchfluid",
-  "fluid_per_tick": 5,
-  "requires_stabilizer": false,
   "gadget": true,
   "consumables": [
-    { "item": "ae2:pattern_provider", "count": 16 }
+    { "item": "ae2:pattern_provider", "count": 8, "computation": 32 },
+    { "item": "ae2:pattern_provider", "count": 8, "computation": 32 }
   ],
   "drive": true,
-  "structure": {
-    "mode": "pattern",
-    "size": [4, 4, 4],
-  "symbols": {
-    "A": [
-      "minecraft:deepslate"
-    ],
-    "B": [
-      "minecraft:oak_planks"
-    ],
-    "D": [
-      "minecraft:piston"
-    ],
-    "E": [
-      "minecraft:chest"
-    ]
-  },
-  "layers": [
-    [
-      "A A A A",
-      "A B B A",
-      "A B B A",
-      "A A A A"
-    ],
-    [
-      "A D D A",
-      "B E E B",
-      "B E E B",
-      "A B B A"
-    ],
-    [
-      "A D D A",
-      "B E E B",
-      "B E E B",
-      "A B B A"
-    ],
-    [
-      "A A A A",
-      "A B B A",
-      "A B B A",
-      "A A A A"
-    ]
-  ]
-},
   "unlock": {
     "key": "crazyae2addons:ejector_research",
-    "label": "Ejector"
+    "label": "Ejector",
+    "item": "crazyae2addons:ejector"
   }
 }

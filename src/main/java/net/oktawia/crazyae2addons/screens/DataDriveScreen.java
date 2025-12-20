@@ -3,7 +3,6 @@ package net.oktawia.crazyae2addons.screens;
 import appeng.client.gui.AEBaseScreen;
 import appeng.client.gui.style.ScreenStyle;
 import appeng.client.gui.widgets.Scrollbar;
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -21,26 +20,32 @@ import net.oktawia.crazyae2addons.recipes.ResearchRecipe;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 
 public class DataDriveScreen<C extends DataDriveMenu> extends AEBaseScreen<C> {
 
     private final Scrollbar pageScroll;
+
     private final ResearchCardWidget card1 = new ResearchCardWidget();
     private final ResearchCardWidget card2 = new ResearchCardWidget();
+    private final ResearchCardWidget card3 = new ResearchCardWidget();
+    private final ResearchCardWidget card4 = new ResearchCardWidget();
 
     private final List<Entry> entries = new ArrayList<>();
     private boolean initialized = false;
 
-    private static final int CARDS_PER_PAGE = 2;
+    private static final int CARDS_PER_PAGE = 4;
 
     public DataDriveScreen(C menu, net.minecraft.world.entity.player.Inventory inv, Component title, ScreenStyle style) {
         super(menu, inv, title, style);
+
         pageScroll = new Scrollbar();
         widgets.add("page_scroll", pageScroll);
+
         widgets.add("card1", card1);
         widgets.add("card2", card2);
+        widgets.add("card3", card3);
+        widgets.add("card4", card4);
     }
 
     @Override
@@ -60,6 +65,8 @@ public class DataDriveScreen<C extends DataDriveMenu> extends AEBaseScreen<C> {
     }
 
     private void buildOnce() {
+        entries.clear();
+
         ItemStack drive = menu.host.getItemStack();
         Set<ResourceLocation> unlocked = DataDrive.getUnlocked(drive);
 
@@ -74,8 +81,6 @@ public class DataDriveScreen<C extends DataDriveMenu> extends AEBaseScreen<C> {
             Entry e = new Entry();
             e.key = r.unlock.key;
             e.label = r.unlock.label == null ? "" : r.unlock.label;
-            e.totalEnergy = r.totalEnergy();
-            e.totalFluid = r.totalFluid();
             e.unlocked = unlocked.contains(e.key);
             entries.add(e);
         }
@@ -97,18 +102,21 @@ public class DataDriveScreen<C extends DataDriveMenu> extends AEBaseScreen<C> {
     }
 
     private void fillFrom(int start) {
-        card1.clear();
-        card2.clear();
+        ResearchCardWidget[] cards = { card1, card2, card3, card4 };
 
-        if (start < entries.size()) card1.set(entries.get(start));
-        if (start + 1 < entries.size()) card2.set(entries.get(start + 1));
+        for (var c : cards) c.clear();
+
+        for (int i = 0; i < CARDS_PER_PAGE; i++) {
+            int idx = start + i;
+            if (idx < entries.size()) {
+                cards[i].set(entries.get(idx));
+            }
+        }
     }
 
     private static final class Entry {
         ResourceLocation key;
         String label;
-        long totalEnergy;
-        long totalFluid;
         boolean unlocked;
     }
 
@@ -116,7 +124,6 @@ public class DataDriveScreen<C extends DataDriveMenu> extends AEBaseScreen<C> {
 
         private String title = "";
         private int titleColor = 0xFF000000;
-        private String reqLine = "";
         private boolean empty = true;
 
         ResearchCardWidget() {
@@ -127,7 +134,6 @@ public class DataDriveScreen<C extends DataDriveMenu> extends AEBaseScreen<C> {
         void clear() {
             empty = true;
             title = "";
-            reqLine = "";
             titleColor = 0xFF000000;
         }
 
@@ -138,17 +144,17 @@ public class DataDriveScreen<C extends DataDriveMenu> extends AEBaseScreen<C> {
             if (e.unlocked) {
                 title = "\u2714 " + name;
                 titleColor = 0xFF20C020;
-                reqLine = "";
             } else {
                 title = "\u2716 " + name;
                 titleColor = 0xFFE04A4A;
-                reqLine = "mB: " + fmt(e.totalFluid) + "  FE: " + fmt(e.totalEnergy);
             }
         }
 
         @Override
         protected void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
             int x1 = getX(), y1 = getY(), x2 = x1 + getWidth(), y2 = y1 + getHeight();
+
+            // tło + ramka
             g.fill(x1, y1, x2, y2, 0x7F101010);
             g.fill(x1, y1, x2, y1 + 1, 0xFF606060);
             g.fill(x1, y2 - 1, x2, y2, 0xFF606060);
@@ -159,21 +165,12 @@ public class DataDriveScreen<C extends DataDriveMenu> extends AEBaseScreen<C> {
 
             var font = Minecraft.getInstance().font;
             int x = x1 + 6;
-            int y = y1 + 6;
+            int y = y1 + 4;
             g.drawString(font, title, x, y, titleColor, false);
-
-            if (!reqLine.isEmpty()) {
-                g.drawString(font, reqLine, x, y + 12, 0xFFB0B0B0, false);
-            }
         }
 
         @Override
-        protected void updateWidgetNarration(NarrationElementOutput pNarrationElementOutput) {
-
-        }
-
-        private static String fmt(long n) {
-            return String.format(Locale.ROOT, "%,d", n).replace(',', ' ');
+        protected void updateWidgetNarration(NarrationElementOutput out) {
         }
     }
 }

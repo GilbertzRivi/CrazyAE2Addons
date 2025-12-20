@@ -31,7 +31,9 @@
       }
     },
     "info1": {
-      "text": "Pattern",
+      "text": {
+        "translate": "gui.crazyae2addons.auto_builder_pattern"
+      },
       "position": {
         "left": 128,
         "top": 64
@@ -39,7 +41,9 @@
       "align": "CENTER"
     },
     "info2": {
-      "text": "Offset",
+      "text": {
+        "translate": "gui.crazyae2addons.auto_builder_offset"
+      },
       "position": {
         "left": 44,
         "top": 50
@@ -54,7 +58,9 @@
       "align": "CENTER"
     },
     "missing2": {
-      "text": "Missing:",
+      "text": {
+        "translate": "gui.crazyae2addons.auto_builder_missing_label"
+      },
       "position": {
         "left": 88,
         "top": 16

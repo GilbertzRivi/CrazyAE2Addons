@@ -9,6 +9,7 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import net.oktawia.crazyae2addons.CrazyAddons;
+import net.oktawia.crazyae2addons.blocks.ResearchUnit;
 import net.oktawia.crazyae2addons.compat.GregTech.GTAmpereMeterBE;
 import net.oktawia.crazyae2addons.compat.GregTech.GTEnergyExporterPart;
 import net.oktawia.crazyae2addons.logic.*;
@@ -34,6 +35,9 @@ public class CrazyMenuRegistrar {
 
     public static final RegistryObject<MenuType<WirelessRedstoneTerminalMenu>> WIRELESS_REDSTONE_TERMINAL_MENU =
             MENU_TYPES.register(id("wireless_redstone_terminal"), () -> WirelessRedstoneTerminalMenu.TYPE);
+
+    public static final RegistryObject<MenuType<WirelessNotificationTerminalMenu>> WIRELESS_NOTIFICATION_TERMINAL_MENU =
+            MENU_TYPES.register(id("wireless_notification_terminal"), () -> WirelessNotificationTerminalMenu.TYPE);
 
     private static String id(String s) { return s; }
 
@@ -119,9 +123,6 @@ public class CrazyMenuRegistrar {
     public static final RegistryObject<MenuType<CrazyPatternProviderMenu>> CRAZY_PATTERN_PROVIDER_MENU =
             reg(id("crazy_pattern_provider"), CrazyPatternProviderMenu::new, PatternProviderLogicHost.class);
 
-    public static final RegistryObject<MenuType<EnergyStorageControllerMenu>> ENERGY_STORAGE_CONTROLLER_MENU =
-            reg(id("energy_storage_controller"), EnergyStorageControllerMenu::new, EnergyStorageControllerBE.class);
-
     public static final RegistryObject<MenuType<AutoBuilderMenu>> AUTO_BUILDER_MENU =
             reg(id("auto_builder"), AutoBuilderMenu::new, AutoBuilderBE.class);
 
@@ -149,11 +150,11 @@ public class CrazyMenuRegistrar {
     public static final RegistryObject<MenuType<ResearchStationMenu>> RESEARCH_STATION_MENU =
             reg(id("research_station_menu"), ResearchStationMenu::new, ResearchStationBE.class);
 
-    public static final RegistryObject<MenuType<GadgetMenu>> GADGET_MENU =
-            reg(id("gadget_menu"), GadgetMenu::new, GadgetHost.class);
+    public static final RegistryObject<MenuType<PortableSpatialStorageMenu>> GADGET_MENU =
+            reg(id("gadget_menu"), PortableSpatialStorageMenu::new, GadgetHost.class);
 
-    public static final RegistryObject<MenuType<CopyGadgetMenu>> COPY_GADGET_MENU =
-            reg(id("copy_gadget_menu"), CopyGadgetMenu::new, CopyGadgetHost.class);
+    public static final RegistryObject<MenuType<PortableAutobuilderMenu>> COPY_GADGET_MENU =
+            reg(id("copy_gadget_menu"), PortableAutobuilderMenu::new, CopyGadgetHost.class);
 
     public static final RegistryObject<MenuType<DataDriveMenu>> DATA_DRIVE_MENU =
             reg(id("data_drive_menu"), DataDriveMenu::new, DataHost.class);
@@ -163,6 +164,27 @@ public class CrazyMenuRegistrar {
 
     public static final RegistryObject<MenuType<MobKeySelectorMenu>> MOB_KEY_SELECTOR_MENU =
             reg(id("mob_key_selector_menu"), MobKeySelectorMenu::new, MobKeySelectorHost.class);
+
+    public static final RegistryObject<MenuType<ResearchUnitMenu>> RESEARCH_UNIT_MENU =
+            reg(id("research_unit_menu"), ResearchUnitMenu::new, ResearchUnitBE.class);
+
+    public static final RegistryObject<MenuType<ResearchPedestalMenu>> RESEARCH_PEDESTAL_MENU =
+            reg(id("research_pedestal_menu"), ResearchPedestalMenu::new, ResearchPedestalBottomBE.class);
+
+    public static final RegistryObject<MenuType<PenroseMassEmitterMenu>> PENROSE_MASS_EMITTER_MENU =
+            reg(id("penrose_mass_emitter_menu"), PenroseMassEmitterMenu::new, PenroseMassEmitterBE.class);
+
+    public static final RegistryObject<MenuType<PenroseHeatEmitterMenu>> PENROSE_HEAT_EMITTER_MENU =
+            reg(id("penrose_heat_emitter_menu"), PenroseHeatEmitterMenu::new, PenroseHeatEmitterBE.class);
+
+    public static final RegistryObject<MenuType<PenroseInjectionPortMenu>> PENROSE_INJECTION_PORT_MENU =
+            reg(id("penrose_injection_port_menu"), PenroseInjectionPortMenu::new, PenroseInjectionPortBE.class);
+
+    public static final RegistryObject<MenuType<PenroseHeatVentMenu>> PENROSE_HEAT_VENT_MENU =
+            reg(id("penrose_heat_vent_menu"), PenroseHeatVentMenu::new, PenroseHeatVentBE.class);
+
+    public static final RegistryObject<MenuType<PenroseHawkingVentMenu>> PENROSE_HAWKING_VENT_MENU =
+            reg(id("penrose_hawking_vent_menu"), PenroseHawkingVentMenu::new, PenroseHawkingVentBE.class);
 
     private CrazyMenuRegistrar() {}
 }

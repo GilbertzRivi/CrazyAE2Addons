@@ -24,7 +24,7 @@ public class RedstoneEmitterScreen<C extends RedstoneEmitterMenu> extends AEBase
         this.name = new AETextField(style, Minecraft.getInstance().font, 0,0,0,0);
         this.name.setBordered(false);
         this.name.setMaxLength(16);
-        this.name.setPlaceholder(Component.literal("Name"));
+        this.name.setPlaceholder(Component.translatable("gui.crazyae2addons.redstone_emitter_name"));
         this.confirm = new IconButton(Icon.ENTER, x -> save());
         this.widgets.add("name", this.name);
         this.widgets.add("confirm", this.confirm);

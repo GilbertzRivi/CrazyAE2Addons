@@ -37,7 +37,7 @@ public class CrazyPatternProviderBlockItem extends AEBaseBlockItem {
         if (filled > totalSlots) filled = totalSlots;
         int percent = totalSlots > 0 ? (int)Math.round(100.0 * filled / (double) totalSlots) : 0;
 
-        tooltip.add(Component.literal("Capacity: " + totalSlots)
+        tooltip.add(Component.translatable("gui.crazyae2addons.crazy_provider_capacity_tooltip").append(String.valueOf(totalSlots))
                 .withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.literal("(" + percent + "%)")
                 .withStyle(ChatFormatting.AQUA));

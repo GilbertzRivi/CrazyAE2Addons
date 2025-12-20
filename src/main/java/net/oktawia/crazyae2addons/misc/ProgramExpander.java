@@ -229,7 +229,7 @@ public class ProgramExpander {
             for (String token : tokens) {
                 if (token.startsWith("P|")) {
                     String block = token.substring(2);
-                    usage.put(block, usage.getOrDefault(block, 0) + 1);
+                    usage.put(block.split("\\[")[0], usage.getOrDefault(block.split("\\[")[0], 0) + 1);
                 }
             }
         } catch (Exception e) {

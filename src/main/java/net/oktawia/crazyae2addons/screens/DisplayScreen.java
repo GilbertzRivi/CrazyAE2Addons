@@ -2,25 +2,15 @@ package net.oktawia.crazyae2addons.screens;
 
 import appeng.client.gui.AEBaseScreen;
 import appeng.client.gui.Icon;
-import appeng.client.gui.implementations.UpgradeableScreen;
 import appeng.client.gui.style.ScreenStyle;
-import appeng.client.gui.widgets.AECheckbox;
-import appeng.client.gui.widgets.AETextField;
 import appeng.client.gui.widgets.Scrollbar;
 import appeng.client.gui.widgets.ToggleButton;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.PlainTextButton;
 import net.minecraft.client.gui.components.Tooltip;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.TagParser;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
-import net.oktawia.crazyae2addons.Utils;
 import net.oktawia.crazyae2addons.menus.DisplayMenu;
-import net.oktawia.crazyae2addons.menus.EntityTickerMenu;
-import net.oktawia.crazyae2addons.menus.NBTExportBusMenu;
 import net.oktawia.crazyae2addons.misc.IconButton;
 import net.oktawia.crazyae2addons.misc.MultilineTextFieldWidget;
 import net.oktawia.crazyae2addons.misc.SyntaxHighlighter;
@@ -63,16 +53,21 @@ public class DisplayScreen<C extends DisplayMenu> extends AEBaseScreen<C> {
         scrollbar = new Scrollbar();
         scrollbar.setSize(12, 100);
         scrollbar.setRange(0, 100, 4);
-        value = new MultilineTextFieldWidget(Minecraft.getInstance().font, 15, 15, 202, 135, Component.literal("Type here"));
+
+        value = new MultilineTextFieldWidget(Minecraft.getInstance().font, 15, 15, 202, 135, Component.translatable("gui.crazyae2addons.display_type_here"));
         value.setTokenizer(SyntaxHighlighter::colorizeMarkdown);
+
         confirm = new IconButton(Icon.ENTER, btn -> save());
-        confirm.setTooltip(Tooltip.create(Component.literal("Submit")));
+        confirm.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.display_submit")));
+
         mode = new ToggleButton(Icon.VALID, Icon.INVALID, this::changeMode);
-        mode.setTooltip(Tooltip.create(Component.literal("Join with adjacent displays")));
+        mode.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.display_join")));
+
         center = new ToggleButton(Icon.VALID, Icon.INVALID, this::changeCenter);
-        center.setTooltip(Tooltip.create(Component.literal("Center text")));
+        center.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.display_center")));
+
         margin = new ToggleButton(Icon.VALID, Icon.INVALID, this::changeMargin);
-        margin.setTooltip(Tooltip.create(Component.literal("3% margin around the text")));
+        margin.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.display_margin")));
     }
 
     private void changeMode(boolean b) {

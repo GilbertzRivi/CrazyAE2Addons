@@ -73,7 +73,7 @@ public class WirelessRedstoneTerminalScreen<C extends WirelessRedstoneTerminalMe
         var search = new AETextField(this.style, Minecraft.getInstance().font, 0, 0, 0, 0);
         search.setBordered(false);
         search.setMaxLength(99);
-        search.setPlaceholder(Component.literal("Search"));
+        search.setPlaceholder(Component.translatable("gui.crazyae2addons.wireless_redstone_search"));
         search.setResponder(newVal -> {
             this.search = newVal;
             this.getMenu().search(newVal);

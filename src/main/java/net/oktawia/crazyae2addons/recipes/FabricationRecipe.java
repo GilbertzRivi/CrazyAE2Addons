@@ -9,36 +9,90 @@ import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
+import net.minecraftforge.fluids.FluidStack;
 import net.oktawia.crazyae2addons.defs.regs.CrazyRecipes;
+
+import java.util.Collections;
+import java.util.List;
 
 public class FabricationRecipe implements Recipe<SimpleContainer> {
 
-    private final ResourceLocation id;
-    final Ingredient input;
-    final int inputCount;
-    final ItemStack output;
-    final String requiredKey;
-
-    public FabricationRecipe(ResourceLocation id, Ingredient input, int inputCount,
-                             ItemStack output, String requiredKey) {
-        this.id = id;
-        this.input = input;
-        this.inputCount = Math.max(1, inputCount);
-        this.output = output;
-        this.requiredKey = requiredKey;
+    public record Entry(Ingredient ingredient, int count) {
+        public Entry(Ingredient ingredient, int count) {
+            this.ingredient = ingredient;
+            this.count = Math.max(1, count);
+        }
     }
 
-    // === GETTERS ===
-    public Ingredient getInput() { return input; }
+    private final ResourceLocation id;
+    private final List<Entry> inputs;
+    private final int inputCount;
+
+    private final ItemStack output;
+
+    private final String requiredKey;
+
+    private final FluidStack fluidInput;
+    private final FluidStack fluidOutput;
+
+    public FabricationRecipe(ResourceLocation id,
+                             List<Entry> inputs,
+                             ItemStack output,
+                             String requiredKey) {
+        this(id, inputs, output, requiredKey, FluidStack.EMPTY, FluidStack.EMPTY);
+    }
+
+    public FabricationRecipe(ResourceLocation id,
+                             List<Entry> inputs,
+                             ItemStack output,
+                             String requiredKey,
+                             FluidStack fluidInput,
+                             FluidStack fluidOutput) {
+        this.id = id;
+        this.inputs = Collections.unmodifiableList(inputs);
+
+        int total = 0;
+        for (Entry e : inputs) total += e.count();
+        this.inputCount = Math.max(1, total);
+
+        this.output = output == null ? ItemStack.EMPTY : output;
+        this.requiredKey = requiredKey;
+
+        this.fluidInput = fluidInput == null ? FluidStack.EMPTY : fluidInput.copy();
+        this.fluidOutput = fluidOutput == null ? FluidStack.EMPTY : fluidOutput.copy();
+    }
+
+    public List<Entry> getInputs() { return inputs; }
     public int getInputCount() { return inputCount; }
+
     public ItemStack getOutput() { return output; }
     public String getRequiredKey() { return requiredKey; }
 
-    // === Recipe API ===
+    public FluidStack getFluidInput() { return fluidInput.copy(); }
+    public FluidStack getFluidOutput() { return fluidOutput.copy(); }
+
     @Override
     public boolean matches(SimpleContainer container, Level level) {
-        ItemStack st = container.getItem(0);
-        return !st.isEmpty() && input.test(st);
+        if (inputs.isEmpty()) return false;
+
+        for (Entry entry : inputs) {
+            int needed = entry.count();
+            int found = 0;
+
+            for (int i = 0; i < container.getContainerSize(); i++) {
+                ItemStack st = container.getItem(i);
+                if (st.isEmpty()) continue;
+
+                if (entry.ingredient().test(st)) {
+                    found += st.getCount();
+                    if (found >= needed) break;
+                }
+            }
+
+            if (found < needed) return false;
+        }
+
+        return true;
     }
 
     @Override
@@ -47,7 +101,9 @@ public class FabricationRecipe implements Recipe<SimpleContainer> {
     }
 
     @Override
-    public boolean canCraftInDimensions(int w, int h) { return true; }
+    public boolean canCraftInDimensions(int w, int h) {
+        return true;
+    }
 
     @Override
     public ItemStack getResultItem(RegistryAccess ra) {

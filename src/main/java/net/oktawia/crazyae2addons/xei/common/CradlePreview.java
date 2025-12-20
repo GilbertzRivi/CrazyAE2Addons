@@ -8,22 +8,19 @@ import com.lowdragmc.lowdraglib.utils.BlockInfo;
 import com.lowdragmc.lowdraglib.utils.TrackedDummyWorld;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.*;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.oktawia.crazyae2addons.Utils;
 import net.oktawia.crazyae2addons.blocks.EntropyCradle;
 import net.oktawia.crazyae2addons.blocks.EntropyCradleCapacitor;
 import net.oktawia.crazyae2addons.defs.regs.CrazyRecipes;
-import net.oktawia.crazyae2addons.recipes.CradlePattern;
 import net.oktawia.crazyae2addons.recipes.CradleRecipe;
 import org.jetbrains.annotations.NotNull;
 
@@ -47,7 +44,7 @@ public class CradlePreview extends WidgetGroup {
     private Map<BlockPos, BlockInfo> cradleBlocks = null;
     private Map<BlockPos, BlockInfo> baseBlocks = new HashMap<>();
 
-    public CradlePreview(ResourceLocation structureId, List<ItemStack> inputs, ItemStack output) {
+    public CradlePreview(ResourceLocation structureId, List<ItemStack> inputs, ItemStack output, String description) {
         super(0, 0, WIDTH, HEIGHT);
         setClientSideWidget();
         this.structureId = structureId;
@@ -66,15 +63,23 @@ public class CradlePreview extends WidgetGroup {
         sceneWidgetLayer.setVisible(false);
 
         addWidget(new ButtonWidget(sceneX + sceneSize - 25, sceneY, 20, 20,
-                new TextTexture("L").setSupplier(() -> layer >= 0 ? "L:" + layer : "ALL"),
-                b -> switchLayer()).appendHoverTooltips("Change layer visibility"));
+                new TextTexture("L").setSupplier(() -> layer >= 0
+                        ? Component.translatable("gui.crazyae2addons.cradle_layer_prefix").getString() + layer
+                        : Component.translatable("gui.crazyae2addons.cradle_layer_all").getString()),
+                b -> switchLayer())
+                .appendHoverTooltips(Component.translatable("gui.crazyae2addons.cradle_layer_tooltip")));
+
         addWidget(new ButtonWidget(sceneX + sceneSize - 50, sceneY, 20, 20,
-                new TextTexture("Cradle").setSupplier(() -> showCradle ? "ON" : "OFF"),
-                b -> toggleCradle()).appendHoverTooltips("Toggle cradle visibility"));
+                new TextTexture(Component.translatable("gui.crazyae2addons.cradle_toggle_label").getString())
+                        .setSupplier(() -> showCradle
+                                ? Component.translatable("gui.crazyae2addons.cradle_on").getString()
+                                : Component.translatable("gui.crazyae2addons.cradle_off").getString()),
+                b -> toggleCradle())
+                .appendHoverTooltips(Component.translatable("gui.crazyae2addons.cradle_toggle_tooltip")));
 
         int inputX = 125;
         int inputY = 20;
-        addWidget(new LabelWidget(inputX - 8, inputY - 15, "Inputs"));
+        addWidget(new LabelWidget(inputX - 8, inputY - 15, Component.translatable("gui.crazyae2addons.cradle_inputs").getString()));
 
         for (ItemStack stack : inputs) {
             addWidget(new SlotWidget(new ItemStackTransfer(stack), 0, inputX, inputY, false, false)
@@ -85,47 +90,24 @@ public class CradlePreview extends WidgetGroup {
 
         int outputSlotX = sceneX + sceneSize / 2 - 9;
         int outputSlotY = sceneY + sceneSize + 15;
-        addWidget(new LabelWidget(outputSlotX - 8, outputSlotY - 12, "Output"));
+        addWidget(new LabelWidget(outputSlotX - 8, outputSlotY - 12, Component.translatable("gui.crazyae2addons.cradle_output").getString()));
         addWidget(new SlotWidget(new ItemStackTransfer(output), 0, outputSlotX, outputSlotY, false, false)
                 .setBackgroundTexture(SlotWidget.ITEM_SLOT_TEXTURE)
                 .setIngredientIO(IngredientIO.OUTPUT));
 
         loadStructure();
 
-        try {
-            var otp = String.valueOf(output.getItem());
-            boolean dense = false;
-            if (otp.contains("dense")) {
-                dense = true;
-            }
-            var split = otp.split("_");
-            int base = Integer.parseInt((split[split.length - 1]).substring(0, (split[split.length - 1].length() - 1)));
-            long cost = 1024L * 1024 * 8 * base;
-            if (dense) cost *= 1024;
-            String line1 = dense ? "%sk Dense Energy Cell can hold".formatted(base) : "%sk Energy Cell can hold".formatted(base);
-            String line2 = "up to %s AE".formatted(Utils.shortenNumber(cost));
-            String line3 = "or %s FE".formatted(Utils.shortenNumber(cost * 2));
-
-            int textHeight = Minecraft.getInstance().font.lineHeight * 2 + 2;
-            int cx1 = (WIDTH - Minecraft.getInstance().font.width(line1)) / 2;
-            int cx2 = (WIDTH - Minecraft.getInstance().font.width(line2)) / 2;
-            int cx3 = (WIDTH - Minecraft.getInstance().font.width(line3)) / 2;
-            int cy = (HEIGHT - textHeight) / 2 + 60;
-
-            addWidget(new LabelWidget(cx1, cy, line1));
-            addWidget(new LabelWidget(cx2, cy + Minecraft.getInstance().font.lineHeight + 2, line2));
-            addWidget(new LabelWidget(cx3, cy + (Minecraft.getInstance().font.lineHeight + 2) * 2, line3));
-        } catch (Exception ignored) {
-            String line1 = "Quite a lot for one block,";
-            String line2 = "and don't you need 1600?";
-
-            int textHeight = Minecraft.getInstance().font.lineHeight * 2 + 2;
-            int cx1 = (WIDTH - Minecraft.getInstance().font.width(line1)) / 2;
-            int cx2 = (WIDTH - Minecraft.getInstance().font.width(line2)) / 2;
-            int cy = (HEIGHT - textHeight) / 2 + 60;
-
-            addWidget(new LabelWidget(cx1, cy, line1));
-            addWidget(new LabelWidget(cx2, cy + Minecraft.getInstance().font.lineHeight + 2, line2));
+        var font = Minecraft.getInstance().font;
+        int lineHeight = font.lineHeight;
+        int spacing = 2;
+        String[] lines = Component.translatable(description).getString().split("\n");
+        int totalTextHeight = (lines.length * lineHeight) + ((lines.length - 1) * spacing);
+        int cy = (HEIGHT - totalTextHeight) / 2 + 60;
+        for (int i = 0; i < lines.length; i++) {
+            String line = lines[i];
+            int cx = (WIDTH - font.width(line)) / 2;
+            int currentY = cy + (i * (lineHeight + spacing));
+            addWidget(new LabelWidget(cx, currentY, line));
         }
     }
 

@@ -34,18 +34,18 @@ import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.menus.CraftingSchedulerMenu;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.Future;
 
 public class CraftingSchedulerBE extends AENetworkBlockEntity implements MenuProvider, ICraftingRequester, IGridTickable {
 
     public ConfigInventory inv = ConfigInventory.configTypes(what -> true, 1, () -> {});
-    public Integer amount = 0;
-    public HashSet<ICraftingLink> craftingJobs = new HashSet<>();
-    public List<Future<ICraftingPlan>> toCraftPlans = new ArrayList<>();
+    public int amount = 0;
+
+    @Nullable
+    private ICraftingLink activeJob;
+
+    @Nullable
+    private Future<ICraftingPlan> pendingPlan;
 
     public CraftingSchedulerBE(BlockPos pos, BlockState blockState) {
         super(CrazyBlockEntityRegistrar.CRAFTING_SHEDULER_BE.get(), pos, blockState);
@@ -53,9 +53,7 @@ public class CraftingSchedulerBE extends AENetworkBlockEntity implements MenuPro
                 .setIdlePowerUsage(1.0F)
                 .setFlags(GridFlags.REQUIRE_CHANNEL)
                 .addService(IGridTickable.class, this)
-                .setVisualRepresentation(
-                        new ItemStack(CrazyBlockRegistrar.CRAFTING_SCHEDULER_BLOCK.get().asItem())
-                );
+                .setVisualRepresentation(new ItemStack(CrazyBlockRegistrar.CRAFTING_SCHEDULER_BLOCK.get().asItem()));
     }
 
     @Override
@@ -65,22 +63,25 @@ public class CraftingSchedulerBE extends AENetworkBlockEntity implements MenuPro
 
     @Override
     public Component getDisplayName() {
-        return Component.literal("Crafting Sheduler");
+        return Component.translatable("block.crazyae2addons.crafting_scheduler");
     }
 
     public void openMenu(Player player, MenuLocator locator) {
         MenuOpener.open(CrazyMenuRegistrar.CRAFTING_SCHEDULER_MENU.get(), player, locator);
     }
 
+    // ===== ICraftingRequester =====
+
     @Override
     public ImmutableSet<ICraftingLink> getRequestedJobs() {
-        return ImmutableSet.copyOf(this.craftingJobs);
+        return this.activeJob != null ? ImmutableSet.of(this.activeJob) : ImmutableSet.of();
     }
 
     @Override
     public long insertCraftedItems(ICraftingLink link, AEKey what, long amount, Actionable mode) {
         var grid = this.getMainNode().getGrid();
         if (grid == null) return 0;
+
         var energy = grid.getEnergyService();
         var storage = grid.getStorageService().getInventory();
         return StorageHelper.poweredInsert(energy, storage, what, amount, IActionSource.ofMachine(this), mode);
@@ -88,41 +89,86 @@ public class CraftingSchedulerBE extends AENetworkBlockEntity implements MenuPro
 
     @Override
     public void jobStateChange(ICraftingLink link) {
-        this.craftingJobs.remove(link);
+        if (this.activeJob != null && this.activeJob.getCraftingID().equals(link.getCraftingID())) {
+            this.activeJob = null;
+            this.setChanged();
+        }
     }
+
+    // ===== NBT =====
 
     @Override
     public void loadTag(CompoundTag data) {
         super.loadTag(data);
+
         if (data.contains("config")) {
             this.inv.readFromChildTag(data, "config");
         }
         if (data.contains("amount")) {
             this.amount = data.getInt("amount");
         }
+
+        if (data.contains("activeJob")) {
+            try {
+                var tag = data.getCompound("activeJob");
+                var loaded = StorageHelper.loadCraftingLink(tag, this);
+                if (loaded != null && !loaded.isDone() && !loaded.isCanceled()) {
+                    this.activeJob = loaded;
+                } else {
+                    this.activeJob = null;
+                }
+            } catch (Throwable ignored) {
+                this.activeJob = null;
+            }
+        }
     }
 
     @Override
     public void saveAdditional(CompoundTag data) {
         super.saveAdditional(data);
+
         this.inv.writeToChildTag(data, "config");
         data.putInt("amount", this.amount);
+
+        if (this.activeJob != null && !this.activeJob.isDone() && !this.activeJob.isCanceled()) {
+            CompoundTag jobTag = new CompoundTag();
+            this.activeJob.writeToNBT(jobTag);
+            data.put("activeJob", jobTag);
+        } else {
+            data.remove("activeJob");
+        }
     }
 
     public void doWork() {
+        if (this.pendingPlan != null || this.activeJob != null) return;
+
         var grid = this.getMainNode().getGrid();
         if (grid == null) return;
-        var aviableCpus = grid.getCraftingService().getCpus().stream().filter(cpu -> !cpu.isBusy()).count();
-        if (grid.getCraftingService().isCraftable(inv.getKey(0)) && aviableCpus > this.toCraftPlans.size()){
-            this.toCraftPlans.add(getGridNode().getGrid().getCraftingService().beginCraftingCalculation(
-                    getLevel(),
-                    () -> new MachineSource(this),
-                    inv.getKey(0),
-                    amount,
-                    CalculationStrategy.REPORT_MISSING_ITEMS
-            ));
-        }
+
+        if (this.amount <= 0) return;
+
+        var key = this.inv.getKey(0);
+        if (key == null) return;
+
+        var crafting = grid.getCraftingService();
+
+        if (!crafting.isCraftable(key)) return;
+
+        boolean hasFreeCpu = crafting.getCpus().stream().anyMatch(cpu -> !cpu.isBusy());
+        if (!hasFreeCpu) return;
+
+        this.pendingPlan = crafting.beginCraftingCalculation(
+                getLevel(),
+                () -> new MachineSource(this),
+                key,
+                this.amount,
+                CalculationStrategy.REPORT_MISSING_ITEMS
+        );
+
+        this.setChanged();
     }
+
+    // ===== IGridTickable =====
 
     @Override
     public TickingRequest getTickingRequest(IGridNode node) {
@@ -131,22 +177,35 @@ public class CraftingSchedulerBE extends AENetworkBlockEntity implements MenuPro
 
     @Override
     public TickRateModulation tickingRequest(IGridNode node, int ticksSinceLastCall) {
-        Iterator<Future<ICraftingPlan>> iterator = toCraftPlans.iterator();
-        while (iterator.hasNext()) {
-            Future<ICraftingPlan> craftingPlan = iterator.next();
-            if (craftingPlan.isDone()) {
-                try {
-                    if (getGridNode() == null) return TickRateModulation.IDLE;
-                    var result = getGridNode().getGrid().getCraftingService().submitJob(
-                            craftingPlan.get(), this, null, true, IActionSource.ofMachine(this));
-                    if (result.successful() && result.link() != null) {
-                        this.craftingJobs.add(result.link());
-                        iterator.remove();
-                    }
-                } catch (Throwable ignored) {
-                }
-            }
+        if (this.pendingPlan == null) {
+            return TickRateModulation.IDLE;
         }
+
+        if (!this.pendingPlan.isDone()) {
+            return TickRateModulation.IDLE;
+        }
+
+        try {
+            var grid = node.getGrid();
+            if (grid == null) {
+                this.pendingPlan = null;
+                return TickRateModulation.IDLE;
+            }
+
+            var plan = this.pendingPlan.get();
+            this.pendingPlan = null;
+
+            if (this.activeJob != null) return TickRateModulation.IDLE;
+
+            var result = grid.getCraftingService().submitJob(plan, this, null, true, IActionSource.ofMachine(this));
+            if (result.successful() && result.link() != null) {
+                this.activeJob = result.link();
+                this.setChanged();
+            }
+        } catch (Throwable ignored) {
+            this.pendingPlan = null;
+        }
+
         return TickRateModulation.IDLE;
     }
 }

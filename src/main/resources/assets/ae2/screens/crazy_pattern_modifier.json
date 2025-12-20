@@ -27,7 +27,11 @@
     }
   },
   "widgets": {
-    "nbt": { "left": 100, "top": 42, "width": 16, "height": 16 },
+    "div2":  { "left": 52, "top": 42, "width": 24, "height": 16 },
+    "mult2": { "left": 100, "top": 42, "width": 24, "height": 16 },
+
+    "nbt": { "left": 128, "top": 42, "width": 16, "height": 16 },
+
     "circ": { "left": 65, "top": 74, "width": 30, "height": 16 },
     "confirmcirc": { "left": 100, "top": 72, "width": 16, "height": 16 },
 

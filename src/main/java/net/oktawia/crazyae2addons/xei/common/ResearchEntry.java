@@ -9,8 +9,6 @@ public record ResearchEntry(
         ResourceLocation recipeId,
         List<ItemStack> inputs,
         ItemStack driveOrOutput,
-        boolean requiresStabilizer,
-        int[] size,
         String label,
         ResourceLocation unlockKey
 ) {}

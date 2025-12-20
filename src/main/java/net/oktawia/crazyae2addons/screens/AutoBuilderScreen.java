@@ -6,6 +6,7 @@ import appeng.client.gui.style.ScreenStyle;
 import appeng.client.gui.widgets.AECheckbox;
 import appeng.client.gui.widgets.AETextField;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
@@ -45,24 +46,24 @@ public class AutoBuilderScreen<C extends AutoBuilderMenu> extends UpgradeableScr
 
     public AutoBuilderScreen(C menu, Inventory playerInventory, Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
-        skipMissing = new AECheckbox(0,0,0,0, style, Component.literal("Skip"));
-        skipMissing.setTooltip(Tooltip.create(Component.literal("Start building even if not all blocks are available")));
+        skipMissing = new AECheckbox(0,0,0,0, style, Component.translatable("gui.crazyae2addons.builder_skip"));
+        skipMissing.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.builder_skip_tooltip")));
         skipMissing.setChangeListener(() -> getMenu().updateMissing(skipMissing.isSelected()));
 
         var front = new IconButton(Icon.ARROW_UP, btn -> changeForward(1));
-        front.setTooltip(Tooltip.create(Component.literal("Add 1 offset to FRONT")));
+        front.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.builder_offset_front")));
         var back = new IconButton(Icon.ARROW_DOWN, btn -> changeForward(-1));
-        back.setTooltip(Tooltip.create(Component.literal("Add 1 offset to BACK")));
+        back.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.builder_offset_back")));
 
         var right = new IconButton(Icon.ARROW_UP, btn -> changeRight(1));
-        right.setTooltip(Tooltip.create(Component.literal("Add 1 offset to RIGHT")));
+        right.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.builder_offset_right")));
         var left = new IconButton(Icon.ARROW_DOWN, btn -> changeRight(-1));
-        left.setTooltip(Tooltip.create(Component.literal("Add 1 offset to LEFT")));
+        left.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.builder_offset_left")));
 
         var up = new IconButton(Icon.ARROW_UP, btn -> changey(1));
-        up.setTooltip(Tooltip.create(Component.literal("Add 1 offset UP")));
+        up.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.builder_offset_up")));
         var down = new IconButton(Icon.ARROW_DOWN, btn -> changey(-1));
-        down.setTooltip(Tooltip.create(Component.literal("Add 1 offset DOWN")));
+        down.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.builder_offset_down")));
 
         this.xlabel = new AETextField(style, Minecraft.getInstance().font, 0, 0, 0, 0);
         this.ylabel = new AETextField(style, Minecraft.getInstance().font, 0, 0, 0, 0);
@@ -105,7 +106,7 @@ public class AutoBuilderScreen<C extends AutoBuilderMenu> extends UpgradeableScr
     }
 
     @Override
-    protected void renderTooltip(net.minecraft.client.gui.GuiGraphics gg, int mouseX, int mouseY) {
+    protected void renderTooltip(GuiGraphics gg, int mouseX, int mouseY) {
         if (parsedOk && !missingIcon.isEmpty() && isMouseOverMissingIcon(mouseX, mouseY)) {
             gg.renderTooltip(this.font, missingIcon, mouseX, mouseY);
             return;
@@ -148,7 +149,7 @@ public class AutoBuilderScreen<C extends AutoBuilderMenu> extends UpgradeableScr
 
         boolean on = getMenu().preview;
         this.previewBtn.setTooltip(Tooltip.create(
-                Component.literal(on ? "Hide preview" : "Show preview")
+                Component.translatable(on ? "gui.crazyae2addons.builder_preview_hide" : "gui.crazyae2addons.builder_preview_show")
         ));
 
         if (parsedOk && !missingIcon.isEmpty()) {
@@ -166,7 +167,7 @@ public class AutoBuilderScreen<C extends AutoBuilderMenu> extends UpgradeableScr
             zlabel.setValue(String.valueOf(getMenu().zax));
             this.skipMissing.setSelected(getMenu().skipEmpty);
             this.previewBtn.setTooltip(Tooltip.create(
-                    Component.literal(getMenu().preview ? "Hide preview" : "Show preview")
+                    Component.translatable(getMenu().preview ? "gui.crazyae2addons.builder_preview_hide" : "gui.crazyae2addons.builder_preview_show")
             ));
             initialized = true;
         }

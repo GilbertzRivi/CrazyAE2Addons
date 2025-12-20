@@ -8,18 +8,25 @@
   "mixins": [
     "AAECraftingServiceMixin",
     "AAEExecutingCraftingJobAccessor",
+    "BlockApiCacheAccessor",
+    "CraftingCalculationAccessor",
+    "CraftingCPURecordAccessor",
+    "CraftingTreeNodeMixin",
     "ExecutingCraftingJobAccessor",
     "MixinAAE",
     "MixinAAE2",
     "MixinCPUSelectionList",
     "MixinCraftingCpuCluster",
+    "MixinCraftingCPUCycler",
     "MixinCraftingCpuListEntryPrio",
-    "MixinCraftingCpuLogic",
+    "MixinCraftingCpuLogicAE2",
+    "MixinCraftingCpuLogicAE2CL",
     "MixinCraftingCPUMenu",
     "MixinCraftingService",
     "MixinCraftingStatusMenu",
     "MixinGT",
     "MixinListCraftingInventory",
+    "MixinPatternP2PTunnelLogic",
     "MixinPatternProviderLogic",
     "MixinPatternProviderTargetCache",
     "P2PTunnelPartAccessor",
@@ -30,7 +37,7 @@
     "RestrictedInputSlotMixin",
     "SlotAccessor",
     "ViewCellItemMixin",
-    "MixinPatternP2PTunnelLogic"
+    "WidgetContainerAccessor"
   ],
   "client": [
     "MixinCraftingCPUScreen"

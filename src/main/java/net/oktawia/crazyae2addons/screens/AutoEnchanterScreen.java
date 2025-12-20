@@ -31,24 +31,24 @@ public class AutoEnchanterScreen<C extends AutoEnchanterMenu> extends Upgradeabl
         this.opt2 = new IconButton(Icon.ENTER, (x) -> {this.getMenu().syncOption(2);});
         this.opt3 = new IconButton(Icon.ENTER, (x) -> {this.getMenu().syncOption(3);});
         this.autoSupplyLapis = new ToggleButton(Icon.VALID, Icon.INVALID, this::toggleSupplyLapis);
-        this.autoSupplyLapis.setTooltipOn(List.of(Component.literal("Automatic lapis supply: Enabled")));
-        this.autoSupplyLapis.setTooltipOff(List.of(Component.literal("Automatic lapis supply: Disabled")));
+        this.autoSupplyLapis.setTooltipOn(List.of(Component.translatable("gui.crazyae2addons.enchanter_lapis_on")));
+        this.autoSupplyLapis.setTooltipOff(List.of(Component.translatable("gui.crazyae2addons.enchanter_lapis_off")));
         this.autoSupplyLapis.setState(getMenu().autoSupplyLapis);
         this.autoSupplyBooks = new ToggleButton(Icon.VALID, Icon.INVALID, this::toggleSupplyBooks);
-        this.autoSupplyBooks.setTooltipOn(List.of(Component.literal("Automatic books supply: Enabled")));
-        this.autoSupplyBooks.setTooltipOff(List.of(Component.literal("Automatic books supply: Disabled")));
+        this.autoSupplyBooks.setTooltipOn(List.of(Component.translatable("gui.crazyae2addons.enchanter_book_on")));
+        this.autoSupplyBooks.setTooltipOff(List.of(Component.translatable("gui.crazyae2addons.enchanter_book_off")));
         this.autoSupplyBooks.setState(getMenu().autoSupplyBooks);
 
         this.opt1.setTooltip(Tooltip.create(
-                Component.literal("Cheap enchantment\nApply low-level enchant (cost: 1)")
+                Component.translatable("gui.crazyae2addons.enchanter_cheap")
         ));
 
         this.opt2.setTooltip(Tooltip.create(
-                Component.literal("Medium enchantment\nApply mid-level enchant (cost: 2)")
+                Component.literal("gui.crazyae2addons.enchanter_medium")
         ));
 
         this.opt3.setTooltip(Tooltip.create(
-                Component.literal("Expensive enchantment\nApply powerful enchant (cost: 3)")
+                Component.literal("gui.crazyae2addons.enchanter_exp")
         ));
 
         this.widgets.add("opt1", this.opt1);
@@ -76,7 +76,7 @@ public class AutoEnchanterScreen<C extends AutoEnchanterMenu> extends Upgradeabl
             case 3 -> "Exp";
             default -> "None";
         };
-        this.setTextContent("option", Component.literal("Selected option: " + label));
+        this.setTextContent("option", Component.literal("> " + label + " <"));
         this.setTextContent("xpval", Component.literal(Utils.shortenNumber(getMenu().xp)));
         this.setTextContent("estval", Component.literal(String.format("~Required: %s", getMenu().levelCost)));
         this.autoSupplyLapis.setState(getMenu().autoSupplyLapis);

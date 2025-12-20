@@ -2,10 +2,6 @@ package net.oktawia.crazyae2addons.entities;
 
 import appeng.api.networking.GridHelper;
 import appeng.api.networking.IGridConnection;
-import appeng.api.networking.IGridNode;
-import appeng.api.networking.ticking.IGridTickable;
-import appeng.api.networking.ticking.TickRateModulation;
-import appeng.api.networking.ticking.TickingRequest;
 import appeng.blockentity.grid.AENetworkBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -20,54 +16,134 @@ import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import org.jetbrains.annotations.NotNull;
 
-public class PenrosePortBE extends AENetworkBlockEntity implements IGridTickable {
+
+public class PenrosePortBE extends AENetworkBlockEntity {
 
     private PenroseControllerBE controller;
 
     private final LazyOptional<IEnergyStorage> energyCap = LazyOptional.of(() -> new IEnergyStorage() {
-        @Override public int getEnergyStored() {
-            return controller != null ? controller.energyStorage.getEnergyStored() : 0;
+        @Override
+        public int getEnergyStored() {
+            if (controller == null) return 0;
+            var srcOpt = controller.getCapability(ForgeCapabilities.ENERGY, null);
+            IEnergyStorage src = srcOpt.orElse(null);
+            return src != null ? src.getEnergyStored() : 0;
         }
-        @Override public int getMaxEnergyStored() {
-            return controller != null ? controller.energyStorage.getMaxEnergyStored() : 0;
+
+        @Override
+        public int getMaxEnergyStored() {
+            if (controller == null) return 0;
+            var srcOpt = controller.getCapability(ForgeCapabilities.ENERGY, null);
+            IEnergyStorage src = srcOpt.orElse(null);
+            return src != null ? src.getMaxEnergyStored() : 0;
         }
-        @Override public boolean canExtract() {
+
+        @Override
+        public boolean canExtract() {
             return controller != null;
         }
-        @Override public int extractEnergy(int maxExtract, boolean simulate) {
-            return controller != null
-                    ? controller.energyStorage.extractEnergy(maxExtract, simulate)
-                    : 0;
+
+        @Override
+        public int extractEnergy(int maxExtract, boolean simulate) {
+            if (controller == null || maxExtract <= 0) return 0;
+            var srcOpt = controller.getCapability(ForgeCapabilities.ENERGY, null);
+            IEnergyStorage src = srcOpt.orElse(null);
+            if (src == null) return 0;
+            return src.extractEnergy(maxExtract, simulate);
         }
-        @Override public boolean canReceive() {
+
+        @Override
+        public boolean canReceive() {
             return false;
         }
-        @Override public int receiveEnergy(int maxReceive, boolean simulate) {
+
+        @Override
+        public int receiveEnergy(int maxReceive, boolean simulate) {
             return 0;
         }
     });
 
-    public PenrosePortBE(BlockPos pos, BlockState blockState) {
-        super(CrazyBlockEntityRegistrar.PENROSE_PORT_BE.get(), pos, blockState);
+    public PenrosePortBE(BlockPos pos, BlockState state) {
+        super(CrazyBlockEntityRegistrar.PENROSE_PORT_BE.get(), pos, state);
         this.getMainNode()
                 .setIdlePowerUsage(2.0F)
-                .addService(IGridTickable.class, this)
                 .setVisualRepresentation(
                         new ItemStack(CrazyBlockRegistrar.PENROSE_PORT.get().asItem())
                 );
     }
 
     public void setController(PenroseControllerBE controller) {
+        if (this.controller == controller) return;
+
+        if (this.controller != null) {
+            this.controller.unregisterPort(this);
+        }
+
         this.controller = controller;
-        if (this.controller != null){
-            if (getMainNode().getNode().getConnections().stream()
-                    .noneMatch(x -> (x.a() == this.controller.getMainNode().getNode() || x.b() == this.controller.getMainNode().getNode()))){
+
+        if (this.controller != null) {
+            this.controller.registerPort(this);
+            if (getMainNode().getNode() != null
+                    && this.controller.getMainNode().getNode() != null
+                    && getMainNode().getNode().getConnections().stream()
+                    .noneMatch(x -> (x.a() == this.controller.getMainNode().getNode()
+                            || x.b() == this.controller.getMainNode().getNode()))) {
                 GridHelper.createConnection(getMainNode().getNode(), this.controller.getMainNode().getNode());
             }
-        } else {
+        } else if (getMainNode().getNode() != null) {
             getMainNode().getNode().getConnections().stream()
                     .filter(x -> (!x.isInWorld()))
                     .forEach(IGridConnection::destroy);
+        }
+    }
+
+    public void tickPort() {
+        if (controller == null || level == null) {
+            return;
+        }
+
+        IEnergyStorage source = controller.getCapability(ForgeCapabilities.ENERGY, null)
+                .orElse(null);
+        if (source == null) {
+            return;
+        }
+
+        for (Direction dir : Direction.values()) {
+            BlockEntity neighbor = level.getBlockEntity(worldPosition.relative(dir));
+            if (neighbor == null
+                    || neighbor instanceof PenroseFrameBE
+                    || neighbor instanceof PenroseCoilBE
+                    || neighbor instanceof PenroseControllerBE
+                    || neighbor instanceof PenrosePortBE) {
+                continue;
+            }
+
+            LazyOptional<IEnergyStorage> cap =
+                    neighbor.getCapability(ForgeCapabilities.ENERGY, dir.getOpposite());
+
+            cap.ifPresent(target -> {
+                int available = source.getEnergyStored();
+                if (available <= 0) return;
+
+                int maxAccept = target.receiveEnergy(available, true);
+                if (maxAccept <= 0) return;
+
+                int toSend = Math.min(available, maxAccept);
+
+                int extracted = source.extractEnergy(toSend, false);
+                if (extracted > 0) {
+                    target.receiveEnergy(extracted, false);
+                }
+            });
+        }
+    }
+
+    @Override
+    public void setRemoved() {
+        super.setRemoved();
+        if (controller != null) {
+            controller.unregisterPort(this);
+            controller = null;
         }
     }
 
@@ -85,34 +161,5 @@ public class PenrosePortBE extends AENetworkBlockEntity implements IGridTickable
             return energyCap.cast();
         }
         return super.getCapability(cap);
-    }
-
-    @Override
-    public TickingRequest getTickingRequest(IGridNode node) {
-        return new TickingRequest(1, 1, false, false);
-    }
-
-    @Override
-    public TickRateModulation tickingRequest(IGridNode node, int ticksSinceLastCall) {
-        if (controller == null || level == null) return TickRateModulation.IDLE;
-        for (Direction dir : Direction.values()) {
-            BlockEntity neighbor = level.getBlockEntity(worldPosition.relative(dir));
-            if (neighbor == null || neighbor instanceof PenroseFrameBE || neighbor instanceof PenroseCoilBE) continue;
-
-            LazyOptional<IEnergyStorage> cap = neighbor.getCapability(ForgeCapabilities.ENERGY, dir.getOpposite());
-
-            cap.ifPresent(target -> {
-                int available = controller.energyStorage.getEnergyStored();
-                if (available <= 0) return;
-
-                int maxAccept = target.receiveEnergy(available, true);
-                int toExtract = Math.min(available, maxAccept);
-                if (toExtract > 0) {
-                    int extracted = controller.energyStorage.extractEnergy(toExtract, false);
-                    target.receiveEnergy(extracted, false);
-                }
-            });
-        }
-        return TickRateModulation.IDLE;
     }
 }

@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "C": {
+      "item": "crazyae2addons:research_unit_frame"
+    },
+    "T": {
+      "item": "ae2:controller"
+    }
+  },
+  "pattern": [
+    "CT"
+  ],
+  "result": {
+    "item": "crazyae2addons:research_unit"
+  },
+  "show_notification": true
+}

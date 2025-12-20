@@ -1,7 +1,0 @@
-{
-  "type": "crazyae2addons:fabrication",
-  "input": { "item": "minecraft:iron_block" },
-  "input_count": 1,
-  "output": { "item": "crazyae2addons:stabilizer_block", "count": 1 },
-  "required_key": "crazyae2addons:stabilizer_research"
-}

@@ -34,7 +34,7 @@ public class MobKeyType extends AEKeyType {
     public static final AEKeyType TYPE = new MobKeyType();
 
     private MobKeyType() {
-        super(CrazyAddons.makeId("mob"), MobKey.class, Component.literal("mobs"));
+        super(CrazyAddons.makeId("mob"), MobKey.class, Component.translatable("gui.crazyae2addons.mob_key"));
     }
 
     @Nullable

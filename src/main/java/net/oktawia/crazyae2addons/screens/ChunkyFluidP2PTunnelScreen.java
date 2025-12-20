@@ -35,14 +35,14 @@ public class ChunkyFluidP2PTunnelScreen<C extends ChunkyFluidP2PTunnelMenu> exte
     }
 
     private void setupGui(){
-        this.setTextContent("info1", Component.literal("Set chunk size in mB"));
+        this.setTextContent("info1", Component.translatable("gui.crazyae2addons.chunky_p2p_desc"));
         value = new AETextField(
                 style, Minecraft.getInstance().font, 0, 0, 0, 0
         );
         value.setBordered(false);
         value.setMaxLength(9999);
         confirm = new PlainTextButton(
-                0,0,0,0, Component.literal("Save"), btn -> {save();}, Minecraft.getInstance().font);
+                0,0,0,0, Component.translatable("gui.crazyae2addons.chunky_p2p_save"), btn -> {save();}, Minecraft.getInstance().font);
     }
 
     private void save(){

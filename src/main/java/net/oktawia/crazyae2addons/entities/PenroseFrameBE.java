@@ -20,24 +20,43 @@ public class PenroseFrameBE extends AENetworkBlockEntity {
     public PenroseControllerBE controller;
 
     private final LazyOptional<IEnergyStorage> energyCap = LazyOptional.of(() -> new IEnergyStorage() {
-        @Override public int getEnergyStored() {
-            return controller != null ? controller.energyStorage.getEnergyStored() : 0;
+        @Override
+        public int getEnergyStored() {
+            if (controller == null) return 0;
+            var srcOpt = controller.getCapability(ForgeCapabilities.ENERGY, null);
+            IEnergyStorage src = srcOpt.orElse(null);
+            return src != null ? src.getEnergyStored() : 0;
         }
-        @Override public int getMaxEnergyStored() {
-            return controller != null ? controller.energyStorage.getMaxEnergyStored() : 0;
+
+        @Override
+        public int getMaxEnergyStored() {
+            if (controller == null) return 0;
+            var srcOpt = controller.getCapability(ForgeCapabilities.ENERGY, null);
+            IEnergyStorage src = srcOpt.orElse(null);
+            return src != null ? src.getMaxEnergyStored() : 0;
         }
-        @Override public boolean canExtract() {
+
+        @Override
+        public boolean canExtract() {
             return controller != null;
         }
-        @Override public int extractEnergy(int maxExtract, boolean simulate) {
-            return controller != null
-                    ? controller.energyStorage.extractEnergy(maxExtract, simulate)
-                    : 0;
+
+        @Override
+        public int extractEnergy(int maxExtract, boolean simulate) {
+            if (controller == null || maxExtract <= 0) return 0;
+            var srcOpt = controller.getCapability(ForgeCapabilities.ENERGY, null);
+            IEnergyStorage src = srcOpt.orElse(null);
+            if (src == null) return 0;
+            return src.extractEnergy(maxExtract, simulate);
         }
-        @Override public boolean canReceive() {
+
+        @Override
+        public boolean canReceive() {
             return false;
         }
-        @Override public int receiveEnergy(int maxReceive, boolean simulate) {
+
+        @Override
+        public int receiveEnergy(int maxReceive, boolean simulate) {
             return 0;
         }
     });
@@ -53,10 +72,11 @@ public class PenroseFrameBE extends AENetworkBlockEntity {
 
     public void setController(PenroseControllerBE controller) {
         this.controller = controller;
-        if (getMainNode().getNode() != null){
-            if (this.controller != null && this.controller.getMainNode().getNode() != null){
+        if (getMainNode().getNode() != null) {
+            if (this.controller != null && this.controller.getMainNode().getNode() != null) {
                 if (getMainNode().getNode().getConnections().stream()
-                        .noneMatch(x -> (x.a() == this.controller.getMainNode().getNode() || x.b() == this.controller.getMainNode().getNode()))){
+                        .noneMatch(x -> (x.a() == this.controller.getMainNode().getNode()
+                                || x.b() == this.controller.getMainNode().getNode()))) {
                     GridHelper.createConnection(getMainNode().getNode(), this.controller.getMainNode().getNode());
                 }
             } else {

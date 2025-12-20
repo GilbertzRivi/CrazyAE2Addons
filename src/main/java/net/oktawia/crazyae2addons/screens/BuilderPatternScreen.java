@@ -35,7 +35,7 @@ public class BuilderPatternScreen<C extends BuilderPatternMenu> extends AEBaseSc
         delay.setBordered(false);
         delay.setValue(String.valueOf(getMenu().delay));
         delay.setMaxLength(5);
-        delay.setTooltip(Tooltip.create(Component.literal("Amount of ticks to wait after each action")));
+        delay.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.builder_pattern_delay")));
         setupGui();
         this.widgets.add("confirm", confirm);
         this.widgets.add("data", input);
@@ -95,7 +95,7 @@ public class BuilderPatternScreen<C extends BuilderPatternMenu> extends AEBaseSc
             String text = input.getValue();
             ProgramExpander.Result result = ProgramExpander.expand(text);
             if (result.success) {
-                confirm.setTooltip(Tooltip.create(Component.literal("Confirm")));
+                confirm.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.builder_pattern_confirm")));
             } else {
                 confirm.setTooltip(wrapErrorText("Syntax error: " + result.error));
             }
@@ -106,11 +106,11 @@ public class BuilderPatternScreen<C extends BuilderPatternMenu> extends AEBaseSc
                 getMenu().updateDelay(0);
             }
         });
-        confirm.setTooltip(Tooltip.create(Component.literal("Confirm")));
+        confirm.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.builder_pattern_confirm")));
 
         input = new MultilineTextFieldWidget(
                 font, 0, 0, 202, 135,
-                Component.literal("Input program")
+                Component.translatable("gui.crazyae2addons.builder_pattern_program")
         );
         input.setTokenizer(SyntaxHighlighter::tokenize);
 
@@ -122,19 +122,19 @@ public class BuilderPatternScreen<C extends BuilderPatternMenu> extends AEBaseSc
             this.input.setValue("");
             getMenu().flipH();
         });
-        flipHBtn.setTooltip(Tooltip.create(Component.literal("Horizontal flip")));
+        flipHBtn.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.builder_pattern_flip_h")));
 
         flipVBtn = new IconButton(Icon.ARROW_UP, (btn) -> {
             this.input.setValue("");
             getMenu().flipV();
         });
-        flipVBtn.setTooltip(Tooltip.create(Component.literal("Vertical flip")));
+        flipVBtn.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.builder_pattern_flip_v")));
 
         rotateBtn = new IconButton(Icon.SCHEDULING_DEFAULT, (btn) -> {
             this.input.setValue("");
             getMenu().rotateCW(1);
         });
-        rotateBtn.setTooltip(Tooltip.create(Component.literal("Rotate by 90 deg")));
+        rotateBtn.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.builder_pattern_rotate")));
     }
 
     @Override

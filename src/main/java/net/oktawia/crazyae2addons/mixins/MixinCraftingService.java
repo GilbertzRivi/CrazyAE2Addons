@@ -1,9 +1,11 @@
 package net.oktawia.crazyae2addons.mixins;
 
 import appeng.api.config.Actionable;
+import appeng.api.networking.crafting.ICraftingCPU;
 import appeng.api.stacks.AEKey;
 import appeng.me.cluster.implementations.CraftingCPUCluster;
 import appeng.me.service.CraftingService;
+import com.google.common.collect.ImmutableSet;
 import net.oktawia.crazyae2addons.interfaces.ICraftingClusterPrio;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -55,5 +57,27 @@ public abstract class MixinCraftingService {
                 .thenComparingInt(System::identityHashCode);
 
         return self.stream().sorted(byPrioDesc).iterator();
+    }
+
+    @Inject(method = "getCpus", at = @At("HEAD"), cancellable = true)
+    private void getCpusSortedByPriority(CallbackInfoReturnable<ImmutableSet<ICraftingCPU>> cir) {
+        var byPrioDesc = Comparator
+                .comparingInt((CraftingCPUCluster c) -> {
+                    if ((Object) c instanceof ICraftingClusterPrio prio) {
+                        return prio.getPrio();
+                    }
+                    return 0;
+                })
+                .reversed()
+                .thenComparingInt(System::identityHashCode);
+
+        var builder = ImmutableSet.<ICraftingCPU>builder();
+
+        this.craftingCPUClusters.stream()
+                .filter(cpu -> cpu.isActive() && !cpu.isDestroyed())
+                .sorted(byPrioDesc)
+                .forEach(builder::add);
+
+        cir.setReturnValue(builder.build());
     }
 }

@@ -1,6 +1,11 @@
 package net.oktawia.crazyae2addons.entities;
 
+import appeng.api.inventories.ISegmentedInventory;
+import appeng.api.inventories.InternalInventory;
 import appeng.api.stacks.AEItemKey;
+import appeng.api.upgrades.IUpgradeInventory;
+import appeng.api.upgrades.IUpgradeableObject;
+import appeng.api.upgrades.UpgradeInventories;
 import appeng.blockentity.crafting.PatternProviderBlockEntity;
 import appeng.helpers.patternprovider.PatternProviderLogic;
 import appeng.menu.ISubMenu;
@@ -9,25 +14,29 @@ import appeng.menu.locator.MenuLocator;
 import appeng.util.inv.AppEngInternalInventory;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.storage.loot.LootParams;
+import net.oktawia.crazyae2addons.IsModLoaded;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.mixins.PatternProviderBlockEntityAccessor;
 import net.oktawia.crazyae2addons.network.NetworkHandler;
 import net.oktawia.crazyae2addons.network.SyncBlockClientPacket;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public class CrazyPatternProviderBE extends PatternProviderBlockEntity {
+public class CrazyPatternProviderBE extends PatternProviderBlockEntity implements IUpgradeableObject {
 
     private int added = 0;
     private CompoundTag nbt;
+    public IUpgradeInventory upgrades = UpgradeInventories.forMachine(CrazyBlockRegistrar.CRAZY_PATTERN_PROVIDER_BLOCK.get(), IsModLoaded.isAppFluxLoaded() ? 2 : 1, this::saveChanges);
 
     public CrazyPatternProviderBE(BlockPos pos, BlockState blockState) {
         this(pos, blockState, 9 * 8);
@@ -89,6 +98,7 @@ public class CrazyPatternProviderBE extends PatternProviderBlockEntity {
         data.putInt("added", added);
         getLogic().writeToNBT(data);
         ((AppEngInternalInventory) getLogic().getPatternInv()).writeToNBT(data, "dainv");
+        this.upgrades.writeToNBT(data, "upgrades");
     }
 
     @Override
@@ -96,6 +106,24 @@ public class CrazyPatternProviderBE extends PatternProviderBlockEntity {
         super.loadTag(data);
         added = data.getInt("added");
         this.nbt = data;
+        if (data.contains("upgrades")) {
+            this.upgrades.readFromNBT(data, "upgrades");
+        }
+    }
+
+
+    @Nullable
+    @Override
+    public InternalInventory getSubInventory(ResourceLocation id) {
+        if (id.equals(ISegmentedInventory.UPGRADES)) {
+            return this.upgrades;
+        }
+        return super.getSubInventory(id);
+    }
+
+    @Override
+    public IUpgradeInventory getUpgrades() {
+        return this.upgrades;
     }
 
     @Override

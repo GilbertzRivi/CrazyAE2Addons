@@ -58,7 +58,7 @@ public class CrazyPatternProviderBlock extends PatternProviderBlock {
 
                 if (cur >= maxAdd && maxAdd != -1) {
                     player.displayClientMessage(
-                            Component.literal("Reached the max size of that pattern provider"),
+                            Component.translatable("gui.crazyae2addons.provider_max"),
                             true
                     );
                     return InteractionResult.SUCCESS;
@@ -109,6 +109,7 @@ public class CrazyPatternProviderBlock extends PatternProviderBlock {
             appeng.util.inv.AppEngInternalInventory inv =
                     (appeng.util.inv.AppEngInternalInventory) myBe.getLogic().getPatternInv();
             inv.writeToNBT(tag, "dainv");
+            myBe.getUpgrades().writeToNBT(tag, "upgrades");
             stack.setTag(tag);
             myBe.getLogic().getPatternInv().clear();
             return List.of(stack);

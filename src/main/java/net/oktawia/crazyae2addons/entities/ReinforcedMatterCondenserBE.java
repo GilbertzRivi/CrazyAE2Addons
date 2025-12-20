@@ -150,7 +150,7 @@ public class ReinforcedMatterCondenserBE extends AEBaseInvBlockEntity implements
 
     @Override
     public @NotNull Component getDisplayName() {
-        return Component.literal("Reinforced Matter Condenser");
+        return Component.translatable("block.crazyae2addons.reinforced_matter_condenser");
     }
 
     @Override

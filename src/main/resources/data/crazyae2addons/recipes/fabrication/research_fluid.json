@@ -1,0 +1,9 @@
+{
+  "type": "crazyae2addons:fabrication",
+  "input": [
+    { "item": "minecraft:lapis_lazuli", "count": 1 },
+    { "item": "minecraft:redstone", "count": 1 }
+  ],
+  "fluid_input": { "fluid": "minecraft:water", "amount": 1000 },
+  "fluid_output": { "fluid": "crazyae2addons:research_fluid", "amount": 1000 }
+}

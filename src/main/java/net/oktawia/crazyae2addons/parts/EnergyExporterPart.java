@@ -137,6 +137,8 @@ public class EnergyExporterPart extends UpgradeablePart implements
             case 2 -> maxAmps = 4;
             case 3 -> maxAmps = 8;
             case 4 -> maxAmps = 16;
+            case 5 -> maxAmps = 64;
+            case 6 -> maxAmps = 256;
             default -> maxAmps = 1;
         }
         if (this.getMenu() != null){

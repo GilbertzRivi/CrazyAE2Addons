@@ -10,8 +10,7 @@
     }
   },
   "pattern": [
-    "T",
-    "R"
+    "TR"
   ],
   "result": {
     "item": "crazyae2addons:redstone_terminal"

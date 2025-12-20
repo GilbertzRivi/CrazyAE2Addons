@@ -85,7 +85,7 @@ public class AutoBuilderBlock extends AEBaseEntityBlock<AutoBuilderBE> {
         if (!wasPowered && isPoweredNow) {
             BlockEntity be = level.getBlockEntity(pos);
             if (be instanceof AutoBuilderBE myBE) {
-                myBE.onRedstoneActivate(null);
+                myBE.onRedstoneActivate();
             }
             level.setBlock(pos, state.setValue(POWERED, true), 3);
         } else if (wasPowered && !isPoweredNow) {

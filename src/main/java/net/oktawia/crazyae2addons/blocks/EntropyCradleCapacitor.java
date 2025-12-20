@@ -9,11 +9,9 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.level.material.MapColor;
-import net.oktawia.crazyae2addons.entities.EntropyCradleBE;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.entities.EntropyCradleCapacitorBE;
-import net.oktawia.crazyae2addons.items.EntropyCradleCapacitorItem;
 import org.jetbrains.annotations.Nullable;
 
 public class EntropyCradleCapacitor extends AEBaseEntityBlock<EntropyCradleCapacitorBE> {
@@ -48,7 +46,7 @@ public class EntropyCradleCapacitor extends AEBaseEntityBlock<EntropyCradleCapac
     @Override
     public int getAnalogOutputSignal(BlockState state, Level level, BlockPos pos) {
         BlockEntity be = level.getBlockEntity(pos);
-        if (be instanceof EntropyCradleCapacitorBE cradle && cradle.getStoredEnergy() >= 600_000_000) {
+        if (be instanceof EntropyCradleCapacitorBE cradle && cradle.getStoredEnergy() >= CrazyConfig.COMMON.CradleCapacity.get()) {
             return 15;
         }
         return 0;

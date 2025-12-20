@@ -15,9 +15,6 @@ import appeng.api.networking.ticking.TickRateModulation;
 import appeng.api.networking.ticking.TickingRequest;
 import appeng.api.stacks.*;
 import appeng.api.storage.AEKeyFilter;
-import appeng.api.upgrades.IUpgradeInventory;
-import appeng.api.upgrades.IUpgradeableObject;
-import appeng.api.upgrades.UpgradeInventories;
 import appeng.blockentity.grid.AENetworkBlockEntity;
 import appeng.core.definitions.AEItems;
 import appeng.crafting.pattern.EncodedPatternItem;
@@ -51,6 +48,8 @@ import net.oktawia.crazyae2addons.blocks.EjectorBlock;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
+import net.oktawia.crazyae2addons.interfaces.IHackedProvider;
+import net.oktawia.crazyae2addons.logic.HackedPatternProviderLogic;
 import net.oktawia.crazyae2addons.menus.EjectorMenu;
 import org.jetbrains.annotations.Nullable;
 
@@ -58,11 +57,7 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-public class EjectorBE extends AENetworkBlockEntity implements MenuProvider, IUpgradeableObject, IGridTickable, PatternProviderLogicHost, ICraftingRequester {
-
-    private final List<GenericStack> leftoversToInsert = new ArrayList<>();
-
-    private static final double ENERGY_PER_ITEM = 0.5;
+public class EjectorBE extends AENetworkBlockEntity implements MenuProvider, IGridTickable, PatternProviderLogicHost, ICraftingRequester, IHackedProvider {
 
     public ConfigInventory config = ConfigInventory.configStacks(
             AEKeyFilter.none(),
@@ -88,7 +83,7 @@ public class EjectorBE extends AENetworkBlockEntity implements MenuProvider, IUp
 
     public EjectorBE(BlockPos pos, BlockState blockState) {
         super(CrazyBlockEntityRegistrar.EJECTOR_BE.get(), pos, blockState);
-        this.logic = new PatternProviderLogic(getMainNode(), this, 1);
+        this.logic = new HackedPatternProviderLogic(getMainNode(), this);
         this.getConfigManager().registerSetting(Settings.FUZZY_MODE, FuzzyMode.IGNORE_ALL);
         this.getConfigManager().registerSetting(Settings.REDSTONE_CONTROLLED, RedstoneMode.IGNORE);
         this.getMainNode()
@@ -144,7 +139,7 @@ public class EjectorBE extends AENetworkBlockEntity implements MenuProvider, IUp
 
     @Override
     public Component getDisplayName() {
-        return Component.literal("Ejector");
+        return Component.translatable("block.crazyae2addons.ejector");
     }
 
     @Override
@@ -179,6 +174,7 @@ public class EjectorBE extends AENetworkBlockEntity implements MenuProvider, IUp
         for (var stack : this.config.getAvailableStacks()){
             input.add(new GenericStack(stack.getKey(), stack.getLongValue() * this.multiplier));
         }
+        if (input.isEmpty()) return;
 
         var pattern = PatternDetailsHelper.encodeProcessingPattern(input.toArray(new GenericStack[0]), new GenericStack[]{target});
         this.getLogic().getPatternInv().setItemDirect(0, pattern);

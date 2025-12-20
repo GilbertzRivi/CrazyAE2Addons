@@ -16,7 +16,9 @@
       }
     },
     "name": {
-      "text": "Name",
+      "text": {
+        "translate": "gui.crazyae2addons.redstone_emitter_label_name"
+      },
       "position": {
         "left": 88,
         "top": 25

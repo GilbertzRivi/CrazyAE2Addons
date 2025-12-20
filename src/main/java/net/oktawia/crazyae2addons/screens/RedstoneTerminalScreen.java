@@ -63,7 +63,7 @@ public class RedstoneTerminalScreen<C extends RedstoneTerminalMenu> extends Upgr
         var search = new AETextField(this.style, Minecraft.getInstance().font, 0, 0, 0, 0);
         search.setBordered(false);
         search.setMaxLength(99);
-        search.setPlaceholder(Component.literal("Search"));
+        search.setPlaceholder(Component.translatable("gui.crazyae2addons.redstone_terminal_search"));
         search.setResponder(newVal -> {
             this.search = newVal;
             this.getMenu().search(newVal);
@@ -81,7 +81,7 @@ public class RedstoneTerminalScreen<C extends RedstoneTerminalMenu> extends Upgr
             IconButton state = new IconButton(Icon.REDSTONE_LOW, x -> {});
             state.active = false;
 
-            Button toggle = Button.builder(Component.literal(""), btn -> {
+            Button toggle = Button.builder(Component.empty(), btn -> {
                 int index = getOffset() + rowIndex;
                 List<RedstoneTerminalMenu.EmitterInfo> emitters = getEmitters();
                 if (index < emitters.size()) {

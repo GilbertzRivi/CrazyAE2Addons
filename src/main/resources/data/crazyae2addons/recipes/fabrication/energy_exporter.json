@@ -1,7 +1,14 @@
 {
   "type": "crazyae2addons:fabrication",
-  "input": { "item": "ae2:export_bus" },
-  "input_count": 1,
-  "output": { "item": "crazyae2addons:energy_exporter", "count": 1 },
+  "input": [
+    { "item": "ae2:export_bus",          "count": 1 },
+    { "item": "ae2:dense_energy_cell",   "count": 1 },
+    { "item": "ae2:speed_card",   "count": 2 },
+    { "item": "ae2:fe_p2p_tunnel", "count": 1 }
+  ],
+  "output": {
+    "item": "crazyae2addons:energy_exporter",
+    "count": 1
+  },
   "required_key": "crazyae2addons:energy_exporter_research"
 }

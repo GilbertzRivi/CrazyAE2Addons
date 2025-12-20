@@ -6,14 +6,9 @@ import dev.emi.emi.api.EmiRegistry;
 import dev.emi.emi.api.recipe.EmiRecipeCategory;
 import dev.emi.emi.api.stack.EmiStack;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.MobCategory;
-import net.minecraftforge.registries.ForgeRegistries;
 import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
-import net.oktawia.crazyae2addons.mobstorage.MobKey;
-import net.oktawia.crazyae2addons.mobstorage.MobKeyIng;
 import net.oktawia.crazyae2addons.xei.common.CradleEntry;
 import net.oktawia.crazyae2addons.xei.common.CrazyEntry;
 import net.oktawia.crazyae2addons.xei.common.CrazyRecipes;
@@ -29,7 +24,7 @@ public class CrazyEmiPlugin implements EmiPlugin {
                 CrazyAddons.makeId("emi_multiblocks"),
                 EmiStack.of(CrazyItemRegistrar.SUPER_SINGULARITY.get())
         ){
-            @Override public Component getName(){ return Component.literal("Crazy Multiblocks"); }
+            @Override public Component getName(){ return Component.translatable("emi.crazyae2addons.category_multiblocks"); }
         };
         registry.addCategory(multiblocksCategory);
 
@@ -44,7 +39,7 @@ public class CrazyEmiPlugin implements EmiPlugin {
                 CrazyAddons.makeId("cradle_recipes"),
                 EmiStack.of(CrazyBlockRegistrar.ENTROPY_CRADLE.get().asItem().getDefaultInstance())
         ){
-            @Override public Component getName(){ return Component.literal("Entropy Cradle Recipes"); }
+            @Override public Component getName(){ return Component.translatable("emi.crazyae2addons.category_cradle"); }
         };
         registry.addCategory(cradleCategory);
 
@@ -59,7 +54,7 @@ public class CrazyEmiPlugin implements EmiPlugin {
                 CrazyAddons.makeId("research_recipes"),
                 EmiStack.of(CrazyItemRegistrar.DATA_DRIVE.get())
         ){
-            @Override public Component getName() { return Component.literal("Research Station"); }
+            @Override public Component getName() { return Component.translatable("emi.crazyae2addons.category_research"); }
         };
         registry.addCategory(researchCategory);
 
@@ -74,7 +69,7 @@ public class CrazyEmiPlugin implements EmiPlugin {
                 CrazyAddons.makeId("fabrication_recipes"),
                 EmiStack.of(CrazyBlockRegistrar.RECIPE_FABRICATOR_BLOCK.get().asItem())
         ){
-            @Override public Component getName() { return Component.literal("Recipe Fabricator"); }
+            @Override public Component getName() { return Component.translatable("emi.crazyae2addons.category_fabrication"); }
         };
         registry.addCategory(fabricationCategory);
 

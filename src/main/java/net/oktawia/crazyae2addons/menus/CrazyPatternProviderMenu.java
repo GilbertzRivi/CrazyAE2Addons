@@ -1,13 +1,16 @@
 package net.oktawia.crazyae2addons.menus;
 
 import appeng.helpers.patternprovider.PatternProviderLogicHost;
+import appeng.menu.SlotSemantics;
 import appeng.menu.guisync.GuiSync;
 import appeng.menu.implementations.PatternProviderMenu;
+import appeng.menu.slot.RestrictedInputSlot;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.network.PacketDistributor;
+import net.oktawia.crazyae2addons.IsModLoaded;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.entities.CrazyPatternProviderBE;
 import net.oktawia.crazyae2addons.network.NetworkHandler;
@@ -22,7 +25,7 @@ public class CrazyPatternProviderMenu extends PatternProviderMenu {
     private static final int COLS = 9;
     private static final int VISIBLE_ROWS = 4;
 
-    private final PatternProviderLogicHost host;
+    public final PatternProviderLogicHost host;
     private final Player player;
 
     @GuiSync(38)
@@ -40,6 +43,17 @@ public class CrazyPatternProviderMenu extends PatternProviderMenu {
         }
 
         registerClientAction(SYNC, Integer.class, this::handleRequestUpdate);
+
+        if (!IsModLoaded.isAppFluxLoaded()){
+            if (host.getBlockEntity() instanceof CrazyPatternProviderBE cpp){
+
+                for (int i = 0; i < cpp.getUpgrades().size(); i++) {
+                    var slot = new RestrictedInputSlot(RestrictedInputSlot.PlacableItemType.UPGRADES, cpp.getUpgrades(), i);
+                    slot.setNotDraggable();
+                    this.addSlot(slot, SlotSemantics.UPGRADE);
+                }
+            }
+        }
     }
 
     private void handleRequestUpdate(int startRow) {

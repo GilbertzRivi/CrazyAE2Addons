@@ -2,6 +2,7 @@ package net.oktawia.crazyae2addons.entities;
 
 import appeng.api.config.Actionable;
 import appeng.api.config.PowerMultiplier;
+import appeng.api.crafting.PatternDetailsHelper;
 import appeng.api.inventories.ISegmentedInventory;
 import appeng.api.inventories.InternalInventory;
 import appeng.api.networking.GridFlags;
@@ -21,6 +22,8 @@ import appeng.api.upgrades.IUpgradeableObject;
 import appeng.api.upgrades.UpgradeInventories;
 import appeng.blockentity.grid.AENetworkInvBlockEntity;
 import appeng.core.definitions.AEItems;
+import appeng.helpers.patternprovider.PatternProviderLogic;
+import appeng.helpers.patternprovider.PatternProviderLogicHost;
 import appeng.me.helpers.MachineSource;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuLocator;
@@ -29,6 +32,8 @@ import appeng.util.inv.InternalInventoryHost;
 import appeng.util.inv.filter.IAEItemFilter;
 import com.google.common.collect.ImmutableSet;
 import com.mojang.logging.LogUtils;
+import it.unimi.dsi.fastutil.objects.Object2LongMap;
+import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.*;
@@ -62,10 +67,13 @@ import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.oktawia.crazyae2addons.CrazyConfig;
+import net.oktawia.crazyae2addons.blocks.EjectorBlock;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
+import net.oktawia.crazyae2addons.interfaces.IHackedProvider;
+import net.oktawia.crazyae2addons.logic.HackedPatternProviderLogic;
 import net.oktawia.crazyae2addons.menus.AutoBuilderMenu;
 import net.oktawia.crazyae2addons.misc.ProgramExpander;
 import net.oktawia.crazyae2addons.renderer.preview.PreviewInfo;
@@ -79,7 +87,8 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.Future;
 
-public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTickable, MenuProvider, InternalInventoryHost, IUpgradeableObject, ICraftingRequester {
+public class AutoBuilderBE extends AENetworkInvBlockEntity implements
+        IGridTickable, MenuProvider, InternalInventoryHost, IUpgradeableObject, ICraftingRequester, PatternProviderLogicHost, IHackedProvider {
 
     public IUpgradeInventory upgrades = UpgradeInventories.forMachine(CrazyBlockRegistrar.AUTO_BUILDER_BLOCK.get(), 7, this::setChanged);
     public Integer delay = 20;
@@ -91,10 +100,10 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
     private boolean isRunning = false;
     public AppEngInternalInventory inventory = new AppEngInternalInventory(this, 2);
     public int redstonePulseTicks = 0;
-    public List<Future<ICraftingPlan>> toCraftPlans = new ArrayList<>();
-    public List<ICraftingLink> craftingLinks = new ArrayList<>();
+
+    // true = czekamy na craft (pushPattern dostarczy inputy)
     private boolean isCrafting = false;
-    private List<GenericStack> toCraft = new ArrayList<>();
+
     public GenericStack missingItems = GenericStack.fromItemStack(ItemStack.EMPTY);
     public boolean skipEmpty = false;
     private boolean previewEnabled = false;
@@ -111,21 +120,54 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
 
     private boolean previewDirty = true;
     private AutoBuilderMenu menu;
+    private ICraftingLink craftingLink;
+    private PatternProviderLogic logic;
+    private GenericStack target;
+    private Future<ICraftingPlan> toCraftPlan;
+
+    // ------------------------------
+    // Infinite temp buffer (reserved build storage) + flush state
+    // ------------------------------
+    private static final String NBT_BUILD_BUFFER = "BuildBuffer";
+
+    private final Object2LongOpenHashMap<AEItemKey> buildBuffer = new Object2LongOpenHashMap<>();
+
+    // Jeśli true -> próbujemy opróżnić bufor do ME. Dopóki nie opróżnione: nie wolno requestować/pobierać.
+    private boolean flushPending = false;
+    private int flushTickAcc = 0; // retry co sekundę (20 ticków)
 
     @OnlyIn(Dist.CLIENT)
-    public PreviewInfo getPreviewInfo() { return previewInfo; }
+    public PreviewInfo getPreviewInfo() {
+        return previewInfo;
+    }
 
     @OnlyIn(Dist.CLIENT)
-    public void setPreviewInfo(PreviewInfo info) { this.previewInfo = info; }
+    public void setPreviewInfo(PreviewInfo info) {
+        this.previewInfo = info;
+    }
 
-    public boolean isPreviewEnabled() { return previewEnabled; }
-    public List<BlockPos> getPreviewPositions() { return previewPositions; }
-    public List<String> getPreviewPalette() { return previewPalette; }
-    public int[] getPreviewIndices() { return previewIndices; }
+    public boolean isPreviewEnabled() {
+        return previewEnabled;
+    }
 
+    public List<BlockPos> getPreviewPositions() {
+        return previewPositions;
+    }
+
+    public List<String> getPreviewPalette() {
+        return previewPalette;
+    }
+
+    public int[] getPreviewIndices() {
+        return previewIndices;
+    }
 
     public AutoBuilderBE(BlockPos pos, BlockState state) {
         super(CrazyBlockEntityRegistrar.AUTO_BUILDER_BE.get(), pos, state);
+        this.logic = new HackedPatternProviderLogic(getMainNode(), this);
+
+        buildBuffer.defaultReturnValue(0L);
+
         getMainNode()
                 .addService(IGridTickable.class, this)
                 .setFlags(GridFlags.REQUIRE_CHANNEL)
@@ -133,6 +175,7 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
                 .setVisualRepresentation(
                         new ItemStack(CrazyBlockRegistrar.AUTO_BUILDER_BLOCK.get().asItem())
                 );
+
         this.inventory.setFilter(new IAEItemFilter() {
             @Override
             public boolean allowInsert(InternalInventory inv, int slot, ItemStack stack) {
@@ -173,6 +216,9 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
                 drops.add(stack);
             }
         }
+
+        // (opcjonalnie) bufor też mógłby dropić, ale to akurat "tymczasowy" magazyn – ja go ZAWSZE flushuję
+        // więc nie dodaję dropsów z bufora.
     }
 
     @Override
@@ -240,11 +286,14 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         if (tag.contains("GhostPos")) {
             this.ghostRenderPos = BlockPos.of(tag.getLong("GhostPos"));
         }
-        if (tag.contains("offset")){
+        if (tag.contains("offset")) {
             this.offset = BlockPos.of(tag.getLong("offset"));
         }
         this.previewEnabled = tag.getBoolean("previewEnabled");
         this.energyPrepaid = tag.getBoolean("energyPrepaid");
+        this.isCrafting = tag.getBoolean("isCrafting");
+        this.flushPending = tag.getBoolean("flushPending");
+        this.flushTickAcc = tag.getInt("flushTickAcc");
 
         previewPositions.clear();
         if (tag.contains("previewPositions", Tag.TAG_LIST)) {
@@ -267,6 +316,31 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         } else {
             previewIndices = new int[0];
         }
+
+        buildBuffer.clear();
+        if (tag.contains(NBT_BUILD_BUFFER, Tag.TAG_LIST)) {
+            ListTag list = tag.getList(NBT_BUILD_BUFFER, Tag.TAG_COMPOUND);
+            for (int i = 0; i < list.size(); i++) {
+                CompoundTag e = list.getCompound(i);
+                if (!e.contains("Stack", Tag.TAG_COMPOUND)) continue;
+
+                ItemStack s = ItemStack.of(e.getCompound("Stack"));
+                if (s.isEmpty()) continue;
+
+                long amt = e.getLong("Amount");
+                if (amt <= 0) continue;
+
+                AEItemKey key = AEItemKey.of(s);
+                if (key == null) continue;
+
+                buildBuffer.put(key, amt);
+            }
+        }
+
+        if (!buildBuffer.isEmpty() && !isRunning && !isCrafting) {
+            flushPending = true;
+            flushTickAcc = 0;
+        }
     }
 
     @Override
@@ -280,7 +354,10 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         tag.putLong("GhostPos", ghostRenderPos.asLong());
         tag.putLong("offset", this.offset.asLong());
         tag.putBoolean("previewEnabled", previewEnabled);
-        tag.putBoolean("energyPrepaid", energyPrepaid); // <---
+        tag.putBoolean("energyPrepaid", energyPrepaid);
+        tag.putBoolean("isCrafting", isCrafting);
+        tag.putBoolean("flushPending", flushPending);
+        tag.putInt("flushTickAcc", flushTickAcc);
 
         ListTag posList = new ListTag();
         for (int i = 0; i < Math.min(previewPositions.size(), PREVIEW_LIMIT); i++) {
@@ -293,8 +370,20 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         tag.put("previewPalette", palList);
 
         tag.put("previewIndices", new IntArrayTag(previewIndices));
-    }
 
+        // Save build buffer
+        ListTag buf = new ListTag();
+        for (Object2LongMap.Entry<AEItemKey> e : buildBuffer.object2LongEntrySet()) {
+            if (e.getLongValue() <= 0) continue;
+
+            CompoundTag t = new CompoundTag();
+            ItemStack s = e.getKey().toStack(1);
+            t.put("Stack", s.save(new CompoundTag()));
+            t.putLong("Amount", e.getLongValue());
+            buf.add(t);
+        }
+        tag.put(NBT_BUILD_BUFFER, buf);
+    }
 
     private void triggerRedstonePulse() {
         redstonePulseTicks = 1;
@@ -308,9 +397,20 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         return this.upgrades;
     }
 
+    private boolean hasCreativeSupply() {
+        var node = getMainNode();
+        if (node == null) return false;
+        var grid = node.getGrid();
+        if (grid == null) return false;
+        return !grid.getMachines(AutoBuilderCreativeSupplyBE.class).isEmpty();
+    }
+
+
     @Override
     public CompoundTag getUpdateTag() {
         CompoundTag tag = super.getUpdateTag();
+
+        tag.remove(NBT_BUILD_BUFFER);
 
         tag.putLong("GhostPos", getGhostRenderPos() != null ? getGhostRenderPos().asLong() : BlockPos.ZERO.asLong());
         tag.putBoolean("previewEnabled", previewEnabled);
@@ -372,7 +472,6 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         if (level != null && level.isClientSide) this.setPreviewInfo(null);
     }
 
-
     @Override
     public @Nullable ClientboundBlockEntityDataPacket getUpdatePacket() {
         return ClientboundBlockEntityDataPacket.create(this);
@@ -384,21 +483,25 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         handleUpdateTag(tag);
     }
 
-
     private static BlockPos stepLocal(BlockPos pos, char cmd) {
         return switch (cmd) {
-            case 'F' -> pos.offset(0, 0,  1);
+            case 'F' -> pos.offset(0, 0, 1);
             case 'B' -> pos.offset(0, 0, -1);
-            case 'R' -> pos.offset(1, 0,  0);
-            case 'L' -> pos.offset(-1,0,  0);
-            case 'U' -> pos.offset(0, 1,  0);
-            case 'D' -> pos.offset(0,-1,  0);
-            default  -> pos;
+            case 'R' -> pos.offset(1, 0, 0);
+            case 'L' -> pos.offset(-1, 0, 0);
+            case 'U' -> pos.offset(0, 1, 0);
+            case 'D' -> pos.offset(0, -1, 0);
+            default -> pos;
         };
     }
 
-    public boolean isPreviewDirty() { return previewDirty; }
-    public void setPreviewDirty(boolean dirty) { this.previewDirty = dirty; }
+    public boolean isPreviewDirty() {
+        return previewDirty;
+    }
+
+    public void setPreviewDirty(boolean dirty) {
+        this.previewDirty = dirty;
+    }
 
     private void rebuildPreviewFromCode() {
         previewPositions.clear();
@@ -440,9 +543,7 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
                     idx = previewPalette.size() - 1;
                 }
                 paletteIndex = idx;
-            }
-
-            else if (inst.startsWith("P(") && inst.endsWith(")")) {
+            } else if (inst.startsWith("P(") && inst.endsWith(")")) {
                 try {
                     int id = Integer.parseInt(inst.substring(2, inst.length() - 1));
                     if (id >= 1 && id <= previewPalette.size()) {
@@ -560,12 +661,10 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         return distance * CrazyConfig.COMMON.AutobuilderCostMult.get();
     }
 
-
     public double getRequiredEnergyAE() {
         recalculateRequiredEnergy();
         return requiredEnergyAE;
     }
-
 
     public void recalculateRequiredEnergy() {
         requiredEnergyAE = 0.0D;
@@ -610,31 +709,228 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         return stepsFromCards(cards, maxFromConfig);
     }
 
+    // ------------------------------
+    // Buffer helpers + flush logic
+    // ------------------------------
+    private long bufferGet(AEItemKey key) {
+        return buildBuffer.getOrDefault(key, 0L);
+    }
+
+    private void bufferAdd(AEItemKey key, long amount) {
+        if (amount <= 0) return;
+        buildBuffer.put(key, bufferGet(key) + amount);
+        setChanged();
+    }
+
+    private long bufferExtract(AEItemKey key, long amount) {
+        if (amount <= 0) return 0;
+        long have = bufferGet(key);
+        long take = Math.min(have, amount);
+        if (take <= 0) return 0;
+
+        long left = have - take;
+        if (left <= 0) buildBuffer.removeLong(key);
+        else buildBuffer.put(key, left);
+
+        setChanged();
+        return take;
+    }
+
+    private void beginFlushBuffer() {
+        if (buildBuffer.isEmpty()) {
+            flushPending = false;
+            return;
+        }
+
+        // Stop wszystkiego
+        this.isRunning = false;
+        this.isCrafting = false;
+        this.energyPrepaid = false;
+        this.tickDelayLeft = 0;
+
+        // Anuluj craft kalkulacje/linki
+        if (this.toCraftPlan != null) this.toCraftPlan = null;
+        if (this.craftingLink != null) {
+            try { this.craftingLink.cancel(); } catch (Throwable ignored) {}
+            this.craftingLink = null;
+        }
+
+        flushPending = true;
+        flushTickAcc = 0;
+        setChanged();
+    }
+
+    private boolean flushBufferOnce() {
+        var node = getMainNode();
+        if (node == null || node.getGrid() == null) return false;
+
+        var grid = node.getGrid();
+        var inv = grid.getStorageService().getInventory();
+        var es = grid.getEnergyService();
+        var src = IActionSource.ofMachine(this);
+
+        boolean allMoved = true;
+
+        var it = buildBuffer.object2LongEntrySet().iterator();
+        while (it.hasNext()) {
+            var e = it.next();
+            var key = e.getKey();
+            long amt = e.getLongValue();
+            if (amt <= 0) {
+                it.remove();
+                continue;
+            }
+
+            long inserted = StorageHelper.poweredInsert(es, inv, key, amt, src, Actionable.MODULATE);
+            if (inserted >= amt) {
+                it.remove();
+            } else {
+                e.setValue(amt - inserted);
+                allMoved = false;
+            }
+        }
+
+        return allMoved || buildBuffer.isEmpty();
+    }
+
+    private void reserveFromNetwork(Map<String, Integer> requiredBlocks) {
+        if (getGridNode() == null || getGridNode().getGrid() == null) return;
+
+        if (hasCreativeSupply()) return;
+
+        var grid = getGridNode().getGrid();
+        var storage = grid.getStorageService().getInventory();
+        var es = grid.getEnergyService();
+        var src = IActionSource.ofMachine(this);
+
+        for (var entry : requiredBlocks.entrySet()) {
+            Block block = ForgeRegistries.BLOCKS.getValue(new ResourceLocation(entry.getKey().split("\\[")[0]));
+            if (block == null || block == Blocks.AIR) continue;
+
+            var key = AEItemKey.of(block.asItem());
+            long need = (long) entry.getValue() - bufferGet(key);
+            if (need <= 0) continue;
+
+            long pulled = StorageHelper.poweredExtraction(es, storage, key, need, src, Actionable.MODULATE);
+            if (pulled > 0) bufferAdd(key, pulled);
+        }
+    }
+
+    private List<GenericStack> computeMissingAfterReserve(Map<String, Integer> requiredBlocks) {
+        if (hasCreativeSupply()) return new ArrayList<>();
+
+        List<GenericStack> missing = new ArrayList<>();
+        for (var entry : requiredBlocks.entrySet()) {
+            Block block = ForgeRegistries.BLOCKS.getValue(new ResourceLocation(entry.getKey().split("\\[")[0]));
+            if (block == null || block == Blocks.AIR) continue;
+
+            var key = AEItemKey.of(block.asItem());
+            long need = (long) entry.getValue() - bufferGet(key);
+            if (need > 0) missing.add(new GenericStack(key, need));
+        }
+        return missing;
+    }
+
+
+    public void addToBuildBuffer(AEItemKey key, long amount) {
+        if (amount <= 0) return;
+        if (flushPending && getMainNode() != null && getMainNode().getGrid() != null) {
+            var grid = getMainNode().getGrid();
+            long inserted = StorageHelper.poweredInsert(
+                    grid.getEnergyService(),
+                    grid.getStorageService().getInventory(),
+                    key,
+                    amount,
+                    IActionSource.ofMachine(this),
+                    Actionable.MODULATE
+            );
+            long left = amount - inserted;
+            if (left > 0) bufferAdd(key, left);
+            return;
+        }
+
+        bufferAdd(key, amount);
+    }
+
+    public void cancelCraftNoFlush() {
+        if (this.craftingLink != null) {
+            try { this.craftingLink.cancel(); } catch (Throwable ignored) {}
+        }
+        this.getLogic().getPatternInv().clear();
+        this.getLogic().updatePatterns();
+        this.craftingLink = null;
+        this.toCraftPlan = null;
+        this.isCrafting = false;
+    }
 
     @Override
     public TickRateModulation tickingRequest(IGridNode node, int ticksSinceLastCall) {
 
-        Iterator<Future<ICraftingPlan>> iterator = toCraftPlans.iterator();
-        while (iterator.hasNext()) {
-            Future<ICraftingPlan> craftingPlan = iterator.next();
-            if (craftingPlan.isDone()) {
-                try {
-                    if (this.craftingLinks.isEmpty()){
-                        if (getGridNode() == null) return TickRateModulation.IDLE;
-                        if (!craftingPlan.get().missingItems().isEmpty()) {
-                            this.craftingLinks.clear();
-                            this.toCraftPlans.clear();
-                            this.missingItems = new GenericStack(craftingPlan.get().finalOutput().what(), craftingPlan.get().finalOutput().amount());
-                            return TickRateModulation.IDLE;
+        if (!isRunning && !isCrafting && !buildBuffer.isEmpty() && !flushPending) {
+            beginFlushBuffer();
+        }
+
+        if (flushPending) {
+            flushTickAcc += ticksSinceLastCall;
+            if (flushTickAcc >= 20) {
+                flushTickAcc = 0;
+                boolean done = flushBufferOnce();
+                if (done) {
+                    flushPending = false;
+                }
+            }
+            return TickRateModulation.URGENT;
+        }
+
+        // 3) Obsługa ukończonej kalkulacji crafta (submitJob)
+        if (this.toCraftPlan != null && this.toCraftPlan.isDone()) {
+            try {
+                var plan = this.toCraftPlan.get();
+                this.toCraftPlan = null;
+
+                var grid = getGridNode() != null ? getGridNode().getGrid() : null;
+                if (grid == null) {
+                    this.isCrafting = false;
+                    beginFlushBuffer();
+                    return TickRateModulation.URGENT;
+                }
+
+                var result = grid.getCraftingService().submitJob(
+                        plan, this, null, true, IActionSource.ofMachine(this)
+                );
+
+                if (result.successful() && result.link() != null) {
+                    this.craftingLink = result.link();
+                } else {
+                    this.getLogic().getPatternInv().setItemDirect(0, ItemStack.EMPTY);
+                    this.getLogic().updatePatterns();
+
+                    Object2LongMap.Entry<AEKey> firstMissing = null;
+                    try {
+                        KeyCounter missing = plan.missingItems();
+                        if (missing != null && !missing.isEmpty()) {
+                            firstMissing = missing.iterator().next();
                         }
-                        var result = getGridNode().getGrid().getCraftingService().submitJob(
-                                craftingPlan.get(), this, null, true, IActionSource.ofMachine(this));
-                        if (result.successful() && result.link() != null) {
-                            this.craftingLinks.add(result.link());
-                            iterator.remove();
+                        if (firstMissing != null) {
+                            this.missingItems = new GenericStack(firstMissing.getKey(), firstMissing.getLongValue());
+                        } else {
+                            this.missingItems = GenericStack.fromItemStack(ItemStack.EMPTY);
                         }
+                    } catch (Throwable ignored) {
+                        this.missingItems = GenericStack.fromItemStack(ItemStack.EMPTY);
                     }
-                } catch (Throwable ignored) {}
+
+                    this.isCrafting = false;
+                    if (this.craftingLink != null) {
+                        try { this.craftingLink.cancel(); } catch (Throwable ignored) {}
+                        this.craftingLink = null;
+                    }
+                    beginFlushBuffer();
+                }
+            } catch (Exception ignored) {
+                this.toCraftPlan = null;
+                this.isCrafting = false;
+                beginFlushBuffer();
             }
         }
 
@@ -644,12 +940,14 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
 
         if (!energyPrepaid) {
             isRunning = false;
+            beginFlushBuffer();
             return TickRateModulation.URGENT;
         }
 
         if (inventory.getStackInSlot(0).isEmpty()) {
             isRunning = false;
             resetGhostToHome();
+            beginFlushBuffer();
             return TickRateModulation.URGENT;
         }
 
@@ -672,7 +970,8 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
             didWork = true;
 
             switch (inst) {
-                case "F", "B", "L", "R", "U", "D" -> setGhostRenderPos(stepRelative(getGhostRenderPos(), inst.charAt(0)));
+                case "F", "B", "L", "R", "U", "D" ->
+                        setGhostRenderPos(stepRelative(getGhostRenderPos(), inst.charAt(0)));
 
                 case "H" -> resetGhostToHome();
 
@@ -759,8 +1058,15 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
                                     if (isBreakable(level.getBlockState(getGhostRenderPos()), level, getGhostRenderPos())) {
                                         var drops = getSilkTouchDrops(level.getBlockState(getGhostRenderPos()), (ServerLevel) level, getGhostRenderPos());
                                         long inserted = 0;
-                                        for (var drop : drops){
-                                            inserted += StorageHelper.poweredInsert(grid.getEnergyService(), grid.getStorageService().getInventory(), AEItemKey.of(drop.getItem()), 1, IActionSource.ofMachine(this), Actionable.MODULATE);
+                                        for (var drop : drops) {
+                                            inserted += StorageHelper.poweredInsert(
+                                                    grid.getEnergyService(),
+                                                    grid.getStorageService().getInventory(),
+                                                    AEItemKey.of(drop.getItem()),
+                                                    1,
+                                                    IActionSource.ofMachine(this),
+                                                    Actionable.MODULATE
+                                            );
                                         }
                                         if (inserted <= 0 && !drops.isEmpty()) {
                                             currentInstruction++;
@@ -768,16 +1074,24 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
                                         }
                                     }
 
+                                    boolean creative = !getMainNode().getGrid().getMachines(AutoBuilderCreativeSupplyBE.class).isEmpty();
+
                                     long extracted = 0;
-                                    if (getMainNode().getGrid().getMachines(AutoBuilderCreativeSupplyBE.class).isEmpty()){
-                                        extracted = StorageHelper.poweredExtraction(
-                                                grid.getEnergyService(),
-                                                grid.getStorageService().getInventory(),
-                                                AEItemKey.of(block.asItem()),
-                                                1, IActionSource.ofMachine(this), Actionable.MODULATE);
+                                    if (!creative) {
+                                        AEItemKey key = AEItemKey.of(block.asItem());
+
+                                        // BUILD STRICT: tylko bufor. Jeśli brak -> stop + flush.
+                                        extracted = bufferExtract(key, 1);
+                                        if (extracted <= 0) {
+                                            this.missingItems = new GenericStack(key, 1);
+                                            this.isRunning = false;
+                                            this.energyPrepaid = false;
+                                            beginFlushBuffer();
+                                            return TickRateModulation.URGENT;
+                                        }
                                     }
 
-                                    if (extracted > 0 || !getMainNode().getGrid().getMachines(AutoBuilderCreativeSupplyBE.class).isEmpty()) {
+                                    if (extracted > 0 || creative) {
                                         BlockState state = block.defaultBlockState();
                                         if (!props.isEmpty()) {
                                             for (Map.Entry<String, String> entry : props.entrySet()) {
@@ -788,7 +1102,6 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
                                             }
                                         }
 
-                                        // NOWOŚĆ: obróć stan o różnicę (player-at-copy vs builder-now)
                                         int delta = Math.floorMod(yawStepsFromNorth(getFacing()) - yawStepsFromNorth(this.sourceFacing), 4);
                                         state = rotateStateByDelta(state, delta);
 
@@ -796,7 +1109,8 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
                                     }
                                 }
                             }
-                        } catch (Exception ignored) {}
+                        } catch (Exception ignored) {
+                        }
                     }
                 }
             }
@@ -807,16 +1121,25 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         if (currentInstruction >= code.size()) {
             isRunning = false;
             energyPrepaid = false;
+
             ItemStack pattern = inventory.getStackInSlot(0);
             if (!pattern.isEmpty()) {
                 inventory.setItemDirect(0, ItemStack.EMPTY);
                 inventory.setItemDirect(1, pattern.copyWithCount(1));
             }
+
             resetGhostToHome();
             triggerRedstonePulse();
+
+            // Jak coś zostało w buforze (np craft “wyszedł więcej”) -> flush
+            if (!buildBuffer.isEmpty()) {
+                beginFlushBuffer();
+            }
+
         } else if (didWork) {
             tickDelayLeft = this.delay;
         }
+
         if (redstonePulseTicks > 0) {
             redstonePulseTicks -= ticksSinceLastCall;
             if (redstonePulseTicks <= 0) {
@@ -827,8 +1150,6 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         }
         return TickRateModulation.URGENT;
     }
-
-
 
     private BlockPos transformRelative(BlockPos local) {
         return getBlockPos().offset(localToWorldOffset(local));
@@ -846,10 +1167,30 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         Direction f = getFacing();
         int fx, fz, rx, rz;
         switch (f) {
-            case SOUTH -> { fx =  0; fz =  1; rx = -1; rz =  0; }
-            case EAST  -> { fx =  1; fz =  0; rx =  0; rz =  1; }
-            case WEST  -> { fx = -1; fz =  0; rx =  0; rz = -1; }
-            default    -> { fx =  0; fz = -1; rx =  1; rz =  0; }
+            case SOUTH -> {
+                fx = 0;
+                fz = 1;
+                rx = -1;
+                rz = 0;
+            }
+            case EAST -> {
+                fx = 1;
+                fz = 0;
+                rx = 0;
+                rz = 1;
+            }
+            case WEST -> {
+                fx = -1;
+                fz = 0;
+                rx = 0;
+                rz = -1;
+            }
+            default -> {
+                fx = 0;
+                fz = -1;
+                rx = 1;
+                rz = 0;
+            }
         }
         int wx = local.getX() * rx + local.getZ() * fx;
         int wy = local.getY();
@@ -865,10 +1206,30 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         Direction f = getFacing();
         int fx, fz, rx, rz;
         switch (f) {
-            case SOUTH -> { fx =  0; fz =  1; rx = -1; rz =  0; }
-            case EAST  -> { fx =  1; fz =  0; rx =  0; rz =  1; }
-            case WEST  -> { fx = -1; fz =  0; rx =  0; rz = -1; }
-            default    -> { fx =  0; fz = -1; rx =  1; rz =  0; } // NORTH
+            case SOUTH -> {
+                fx = 0;
+                fz = 1;
+                rx = -1;
+                rz = 0;
+            }
+            case EAST -> {
+                fx = 1;
+                fz = 0;
+                rx = 0;
+                rz = 1;
+            }
+            case WEST -> {
+                fx = -1;
+                fz = 0;
+                rx = 0;
+                rz = -1;
+            }
+            default -> {
+                fx = 0;
+                fz = -1;
+                rx = 1;
+                rz = 0;
+            }
         }
         return switch (cmd) {
             case 'F' -> pos.offset(fx, 0, fz);
@@ -877,7 +1238,7 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
             case 'L' -> pos.offset(-rx, 0, -rz);
             case 'U' -> pos.offset(0, 1, 0);
             case 'D' -> pos.offset(0, -1, 0);
-            default  -> pos;
+            default -> pos;
         };
     }
 
@@ -911,7 +1272,8 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
             if (value.isPresent()) {
                 return state.setValue(property, value.get());
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
         return state;
     }
 
@@ -924,52 +1286,28 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         return new AutoBuilderMenu(i, inventory, this);
     }
 
+    @Override
+    public PatternProviderLogic getLogic() {
+        return this.logic;
+    }
+
+    @Override
+    public EnumSet<Direction> getTargets() {
+        return EnumSet.allOf(Direction.class);
+    }
+
     public void openMenu(Player player, MenuLocator locator) {
         MenuOpener.open(CrazyMenuRegistrar.AUTO_BUILDER_MENU.get(), player, locator);
     }
 
     @Override
+    public AEItemKey getTerminalIcon() {
+        return AEItemKey.of(CrazyBlockRegistrar.AUTO_BUILDER_BLOCK.get());
+    }
+
+    @Override
     public Component getDisplayName() {
         return super.getDisplayName();
-    }
-
-    public void checkBlocksInStorage(Map<String, Integer> requiredBlocks, @Nullable GenericStack additional) {
-        this.toCraft.clear();
-        if (getGridNode() == null || getGridNode().getGrid() == null) return;
-
-        var storage = getGridNode().getGrid().getStorageService().getInventory();
-
-        for (Map.Entry<String, Integer> entry : requiredBlocks.entrySet()) {
-            Block block = ForgeRegistries.BLOCKS.getValue(new ResourceLocation(entry.getKey().split("\\[")[0]));
-            var stack = new ItemStack(block.asItem());
-            var key = AEItemKey.of(stack);
-            long left = 0;
-            try {
-                if (additional != null && key.toStack().getItem() == additional.what().wrapForDisplayOrFilter().getItem()){
-                    left = storage.getAvailableStacks().get(key) + additional.amount() - entry.getValue();
-                } else {
-                    left = storage.getAvailableStacks().get(key) - entry.getValue();
-                }
-            } catch (Exception ignored) {
-                LogUtils.getLogger().info(block.toString());
-            }
-
-            if (left < 0) {
-                this.toCraft.add(new GenericStack(key, Math.abs(left)));
-            }
-        }
-    }
-
-    public void scheduleCrafts() {
-        for (GenericStack stack : toCraft) {
-            toCraftPlans.add(getGridNode().getGrid().getCraftingService().beginCraftingCalculation(
-                    getLevel(),
-                    () -> new MachineSource(this),
-                    stack.what(),
-                    stack.amount(),
-                    CalculationStrategy.REPORT_MISSING_ITEMS
-            ));
-        }
     }
 
     public static String loadProgramFromFile(ItemStack stack, MinecraftServer server) {
@@ -988,7 +1326,7 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         }
     }
 
-    public void loadCode(){
+    public void loadCode() {
         ItemStack s = this.inventory.getStackInSlot(0);
         if (s.isEmpty()) s = this.inventory.getStackInSlot(1);
 
@@ -998,17 +1336,16 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         }
 
         var tag = s.getOrCreateTag();
-        if (tag.contains("code") && tag.getBoolean("code")){
+        if (tag.contains("code") && tag.getBoolean("code")) {
             var program = ProgramExpander.expand(loadProgramFromFile(s, getLevel().getServer()));
-            if (program.success){
+            if (program.success) {
                 this.code = program.program;
             }
         }
-        if (tag.contains("delay")){
+        if (tag.contains("delay")) {
             this.delay = tag.getInt("delay");
         }
 
-        // NOWOŚĆ: odczytaj orientację źródłową z patternu (fallback: NORTH)
         if (tag.contains("srcFacing")) {
             Direction d = Direction.byName(tag.getString("srcFacing"));
             if (d != null) this.sourceFacing = d;
@@ -1018,26 +1355,59 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         }
     }
 
-
-    public void onRedstoneActivate(@Nullable GenericStack additional) {
+    public void onRedstoneActivate() {
         if (getLevel() == null) return;
-
+        if (flushPending) return;
         if (inventory.getStackInSlot(0).isEmpty() && !inventory.getStackInSlot(1).isEmpty()) {
             inventory.setItemDirect(0, inventory.getStackInSlot(1).copyWithCount(1));
             inventory.setItemDirect(1, ItemStack.EMPTY);
         }
-        loadCode();
-        if (this.code.isEmpty()) return;
 
-        checkBlocksInStorage(ProgramExpander.countUsedBlocks(String.join("/", this.code)), additional);
-        if (!this.toCraft.isEmpty() && getMainNode().getGrid().getMachines(AutoBuilderCreativeSupplyBE.class).isEmpty() && !skipEmpty){
-            if (isUpgradedWith(AEItems.CRAFTING_CARD)){
-                scheduleCrafts();
-                isCrafting = true;
-            } else {
-                this.missingItems = new GenericStack(toCraft.get(0).what(), toCraft.get(0).amount());
-            }
+        loadCode();
+        if (this.code.isEmpty()) {
+            if (!buildBuffer.isEmpty()) beginFlushBuffer();
             return;
+        }
+        var required = ProgramExpander.countUsedBlocks(String.join("/", this.code));
+        if (!hasCreativeSupply()) {
+            reserveFromNetwork(required);
+            var missing = computeMissingAfterReserve(required);
+
+            if (!missing.isEmpty() && isUpgradedWith(AEItems.CRAFTING_CARD) && !isClientSide()) {
+                var tag = new CompoundTag();
+                tag.putString("id", UUID.randomUUID().toString());
+                this.target = new GenericStack(AEItemKey.of(CrazyBlockRegistrar.AUTO_BUILDER_BLOCK.get(), tag), 1);
+
+                var pattern = PatternDetailsHelper.encodeProcessingPattern(
+                        missing.toArray(new GenericStack[0]),
+                        new GenericStack[]{target}
+                );
+
+                this.getLogic().getPatternInv().setItemDirect(0, pattern);
+                this.getLogic().updatePatterns();
+
+                this.toCraftPlan = getGridNode().getGrid().getCraftingService().beginCraftingCalculation(
+                        getLevel(),
+                        () -> new MachineSource(this),
+                        target.what(),
+                        target.amount(),
+                        CalculationStrategy.REPORT_MISSING_ITEMS
+                );
+
+                this.isCrafting = true;
+                this.isRunning = false;
+                this.energyPrepaid = false;
+                return;
+            }
+
+            if (!missing.isEmpty()) {
+                this.missingItems = missing.get(0);
+                beginFlushBuffer();
+                return;
+            }
+        } else {
+            this.missingItems = GenericStack.fromItemStack(ItemStack.EMPTY);
+            this.isCrafting = false;
         }
 
         recalculateRequiredEnergy();
@@ -1048,6 +1418,7 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
             this.isCrafting = false;
             this.isRunning = false;
             this.energyPrepaid = false;
+            beginFlushBuffer();
             return;
         }
 
@@ -1059,6 +1430,7 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
             this.isCrafting = false;
             this.isRunning = false;
             this.energyPrepaid = false;
+            beginFlushBuffer();
             return;
         }
 
@@ -1072,36 +1444,37 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         this.tickDelayLeft = 0;
     }
 
-
     @Override
     public InternalInventory getInternalInventory() {
         return this.inventory;
     }
 
-    public void setMenu(AutoBuilderMenu menu){
+    public void setMenu(AutoBuilderMenu menu) {
         this.menu = menu;
     }
 
-    public AutoBuilderMenu getMenu(){
+    public AutoBuilderMenu getMenu() {
         return this.menu;
     }
 
     @Override
     public void onChangeInventory(InternalInventory inv, int slot) {
-        if (this.isPreviewEnabled()){
+        if (this.isPreviewEnabled()) {
             this.togglePreview();
-            if (this.getMenu() != null){
+            if (this.getMenu() != null) {
                 this.getMenu().preview = false;
             }
         }
         this.setChanged();
         loadCode();
         recalculateRequiredEnergy();
-        if (getMenu() != null){
+        if (getMenu() != null) {
             getMenu().pushEnergyDisplay();
         }
+
         if (inventory.getStackInSlot(0).isEmpty() && inventory.getStackInSlot(1).isEmpty()) {
             isRunning = false;
+            isCrafting = false;
             code = new ArrayList<>();
             currentInstruction = 0;
             tickDelayLeft = 0;
@@ -1109,53 +1482,19 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
             requiredEnergyAE = 0.0D;
             resetGhostToHome();
         }
-    }
 
-
-    @Override
-    public ImmutableSet<ICraftingLink> getRequestedJobs() {
-        return ImmutableSet.copyOf(this.craftingLinks);
-    }
-
-    @Override
-    public long insertCraftedItems(ICraftingLink link, AEKey what, long amount, Actionable mode) {
-        this.craftingLinks.remove(link);
-
-        if (getGridNode() == null || getGridNode().getGrid() == null || !getMainNode().isActive()) {
-            return 0;
-        }
-        var grid = getGridNode().getGrid();
-        var inserted = StorageHelper.poweredInsert(grid.getEnergyService(), grid.getStorageService().getInventory(), what, amount, IActionSource.ofMachine(this), mode);
-
-        checkBlocksInStorage(ProgramExpander.countUsedBlocks(String.join("/", this.code)), new GenericStack(what, amount));
-        if (this.toCraft.isEmpty()){
-            this.isCrafting = false;
-            onRedstoneActivate(new GenericStack(what, amount));
-        }
-        return inserted;
-    }
-
-    @Override
-    public void jobStateChange(ICraftingLink link) {
-        if (link.isCanceled() || link.isDone()) {
-            this.craftingLinks.remove(link);
-        }
-        if (link.isCanceled()){
-            var iterator = craftingLinks.iterator();
-            while (iterator.hasNext()){
-                iterator.next().cancel();
-                iterator.remove();
-            }
+        if (!isRunning && !isCrafting && !buildBuffer.isEmpty()) {
+            beginFlushBuffer();
         }
     }
 
     private static int yawStepsFromNorth(Direction d) {
         return switch (d) {
             case NORTH -> 0;
-            case EAST  -> 1;
+            case EAST -> 1;
             case SOUTH -> 2;
-            case WEST  -> 3;
-            default    -> 0;
+            case WEST -> 3;
+            default -> 0;
         };
     }
 
@@ -1171,7 +1510,6 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
     }
 
     private BlockState rotateStateByDelta(BlockState state, int steps) {
-        // 1) każde poziome DirectionProperty (np. facing)
         for (var p : state.getProperties()) {
             if (p instanceof DirectionProperty dp) {
                 Direction d = state.getValue(dp);
@@ -1180,7 +1518,6 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
                 }
             }
         }
-        // 2) osie poziome X<->Z przy 90°/270°
         if (state.hasProperty(BlockStateProperties.AXIS)) {
             var ax = state.getValue(BlockStateProperties.AXIS);
             if (ax.isHorizontal() && (steps % 2 != 0)) {
@@ -1193,7 +1530,6 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
                 state = state.setValue(BlockStateProperties.HORIZONTAL_AXIS, ax == Direction.Axis.X ? Direction.Axis.Z : Direction.Axis.X);
             }
         }
-        // 3) ROTATION_16 – +4 na każde 90°
         if (state.hasProperty(BlockStateProperties.ROTATION_16)) {
             int val = state.getValue(BlockStateProperties.ROTATION_16);
             val = (val + steps * 4) & 15;
@@ -1202,4 +1538,28 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements IGridTicka
         return state;
     }
 
+    @Override
+    public ImmutableSet<ICraftingLink> getRequestedJobs() {
+        return ImmutableSet.of(this.craftingLink);
+    }
+
+    @Override
+    public long insertCraftedItems(ICraftingLink link, AEKey what, long amount, Actionable mode) {
+        return 0;
+    }
+
+    @Override
+    public void jobStateChange(ICraftingLink link) {
+    }
+
+    @Override
+    public ItemStack getMainMenuIcon() {
+        return CrazyBlockRegistrar.AUTO_BUILDER_BLOCK.get().asItem().getDefaultInstance();
+    }
+
+    @Override
+    public void cancelCraft() {
+        cancelCraftNoFlush();
+        beginFlushBuffer();
+    }
 }

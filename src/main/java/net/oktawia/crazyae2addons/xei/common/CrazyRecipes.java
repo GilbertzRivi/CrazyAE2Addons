@@ -2,11 +2,12 @@ package net.oktawia.crazyae2addons.xei.common;
 
 import appeng.core.definitions.AEBlocks;
 import appeng.core.definitions.AEItems;
+import com.lowdragmc.lowdraglib.side.fluid.FluidStack;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
+import net.minecraftforge.registries.ForgeRegistries;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
 import net.oktawia.crazyae2addons.recipes.ResearchRecipe;
@@ -27,24 +28,11 @@ public class CrazyRecipes {
                         Component.literal("Penrose Sphere"),
                         List.of(
                                 new ItemStack(CrazyBlockRegistrar.PENROSE_FRAME.get()).copyWithCount(1298),
-                                new ItemStack(CrazyBlockRegistrar.PENROSE_COIL.get()).copyWithCount(307),
-                                new ItemStack(CrazyBlockRegistrar.PENROSE_PORT.get()).copyWithCount(4),
+                                new ItemStack(CrazyBlockRegistrar.PENROSE_COIL.get()).copyWithCount(310),
+                                new ItemStack(CrazyBlockRegistrar.PENROSE_PORT.get()).copyWithCount(1),
                                 new ItemStack(CrazyBlockRegistrar.PENROSE_CONTROLLER.get()).copyWithCount(1)
                         ),
                         new ItemStack(CrazyBlockRegistrar.PENROSE_CONTROLLER.get()).copyWithCount(1)
-                ),
-
-                new CrazyEntry(
-                        new ResourceLocation("crazyae2addons", "energy_storage.nbt"),
-                        Component.literal("Energy Storage"),
-                        List.of(
-                                new ItemStack(CrazyBlockRegistrar.DENSE_ENERGY_STORAGE_256K_BLOCK.get()).copyWithCount(279),
-                                new ItemStack(AEBlocks.QUARTZ_VIBRANT_GLASS).copyWithCount(216),
-                                new ItemStack(CrazyBlockRegistrar.ENERGY_STORAGE_FRAME_BLOCK.get()).copyWithCount(202),
-                                new ItemStack(CrazyBlockRegistrar.ENERGY_STORAGE_PORT_BLOCK.get()).copyWithCount(3),
-                                new ItemStack(CrazyBlockRegistrar.ENERGY_STORAGE_CONTROLLER_BLOCK.get()).copyWithCount(1)
-                        ),
-                        new ItemStack(CrazyBlockRegistrar.ENERGY_STORAGE_CONTROLLER_BLOCK.get()).copyWithCount(1)
                 ),
 
                 new CrazyEntry(
@@ -96,7 +84,8 @@ public class CrazyRecipes {
                 .map(r -> new CradleEntry(
                         r.getId(),
                         buildInputsFromPattern(r.pattern()),
-                        new ItemStack(r.resultBlock().asItem())
+                        new ItemStack(r.resultBlock().asItem()),
+                        r.description()
                 ))
                 .sorted(Comparator.comparing(e ->
                         e.output().getItem().builtInRegistryHolder().key().location().toString()))
@@ -137,7 +126,6 @@ public class CrazyRecipes {
         return stacks;
     }
 
-
     public static List<ReinforcedCondenserEntry> getCondenserEntried() {
         return List.of(
                 new ReinforcedCondenserEntry(
@@ -160,8 +148,6 @@ public class CrazyRecipes {
                         r.getId(),
                         buildInputsFromResearch(r),
                         buildDriveOrOutput(r),
-                        r.requiresStabilizer,
-                        new int[]{r.structure.size[0], r.structure.size[1], r.structure.size[2]},
                         (r.unlock.label == null || r.unlock.label.isEmpty()) ? r.unlock.key.toString() : r.unlock.label,
                         r.unlock.key
                 ))
@@ -171,11 +157,6 @@ public class CrazyRecipes {
 
     private static List<ItemStack> buildInputsFromResearch(ResearchRecipe r) {
         java.util.List<ItemStack> stacks = new java.util.ArrayList<>();
-
-        if (r.gadgetRequired) {
-            stacks.add(new ItemStack(CrazyItemRegistrar.STRUCTURE_GADGET.get()).copyWithCount(1));
-        }
-
         for (var c : r.consumables) {
             stacks.add(new ItemStack(c.item).copyWithCount(Math.max(1, c.count)));
         }
@@ -183,11 +164,14 @@ public class CrazyRecipes {
     }
 
     private static ItemStack buildDriveOrOutput(ResearchRecipe r) {
-        if (r.driveRequired) {
-            return new ItemStack(CrazyItemRegistrar.DATA_DRIVE.get()).copyWithCount(1);
-        }
-        return ItemStack.EMPTY;
+        return new ItemStack(ForgeRegistries.ITEMS.getValue(ResourceLocation.parse(r.unlock.item)));
     }
+
+    private static FluidStack toLDFluid(net.minecraftforge.fluids.FluidStack fs) {
+        if (fs == null || fs.isEmpty()) return FluidStack.empty();
+        return FluidStack.create(fs.getFluid(), (long) fs.getAmount(), fs.getTag());
+    }
+
     public static java.util.List<FabricationEntry> getFabricationEntries() {
         var mc = net.minecraft.client.Minecraft.getInstance();
         var level = mc.level;
@@ -202,14 +186,21 @@ public class CrazyRecipes {
                 ));
 
         var rm = level.getRecipeManager();
-        var recipes = rm.getAllRecipesFor(net.oktawia.crazyae2addons.defs.regs.CrazyRecipes.FABRICATION_TYPE.get());
+        var recipes = rm.getAllRecipesFor(
+                net.oktawia.crazyae2addons.defs.regs.CrazyRecipes.FABRICATION_TYPE.get()
+        );
 
         return recipes.stream()
                 .map(r -> {
-                    var choices = r.getInput().getItems();
-                    net.minecraft.world.item.ItemStack in =
-                            choices.length > 0 ? choices[0].copy() : net.minecraft.world.item.ItemStack.EMPTY;
-                    if (!in.isEmpty()) in.setCount(Math.max(1, r.getInputCount()));
+                    java.util.List<net.minecraft.world.item.ItemStack> inputs = new java.util.ArrayList<>();
+
+                    for (net.oktawia.crazyae2addons.recipes.FabricationRecipe.Entry entry : r.getInputs()) {
+                        var choices = entry.ingredient().getItems();
+                        net.minecraft.world.item.ItemStack in =
+                                choices.length > 0 ? choices[0].copy() : net.minecraft.world.item.ItemStack.EMPTY;
+                        if (!in.isEmpty()) in.setCount(Math.max(1, entry.count()));
+                        inputs.add(in);
+                    }
 
                     net.minecraft.resources.ResourceLocation keyRL = null;
                     String label = null;
@@ -218,16 +209,28 @@ public class CrazyRecipes {
                         label = labelByKey.getOrDefault(keyRL, keyRL.toString());
                     }
 
+                    FluidStack fin = toLDFluid(r.getFluidInput());
+                    FluidStack fout = toLDFluid(r.getFluidOutput());
+
                     return new FabricationEntry(
                             r.getId(),
-                            in,
+                            java.util.List.copyOf(inputs),
                             r.getOutput().copy(),
+                            fin,
+                            fout,
                             keyRL,
                             label
                     );
                 })
-                .sorted(java.util.Comparator.comparing(e ->
-                        e.output().getItem().builtInRegistryHolder().key().location().toString()))
+                .sorted(java.util.Comparator.comparing(e -> {
+                    if (!e.output().isEmpty()) {
+                        return e.output().getItem().builtInRegistryHolder().key().location().toString();
+                    }
+                    if (!e.fluidOutput().isEmpty()) {
+                        return e.fluidOutput().getFluid().builtInRegistryHolder().key().location().toString();
+                    }
+                    return e.id().toString();
+                }))
                 .toList();
     }
 }

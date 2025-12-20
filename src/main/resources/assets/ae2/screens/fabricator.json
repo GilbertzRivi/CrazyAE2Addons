@@ -10,9 +10,27 @@
       "text": {"translate": "block.crazyae2addons.recipe_fabricator"},
       "position": {"left": 8, "top": 6}
     },
-    "lbl_input": { "text": "Input",  "position": {"left": 21, "top": 23}, "align": "CENTER"  },
-    "lbl_drive": { "text": "Drive",  "position": {"left": 39, "top": 63}, "align": "CENTER"  },
-    "lbl_output": { "text": "Output", "position": {"right": 8, "top": 23}, "align": "RIGHT" },
+    "lbl_input": {
+      "text": {
+        "translate": "gui.crazyae2addons.fabricator_input"
+      },
+      "position": {"left": 20, "top": 23},
+      "align": "CENTER"
+    },
+    "lbl_drive": {
+      "text": {
+        "translate": "gui.crazyae2addons.fabricator_drive"
+      },
+      "position": {"left": 20, "top": 100},
+      "align": "CENTER"
+    },
+    "lbl_output": {
+      "text": {
+        "translate": "gui.crazyae2addons.fabricator_output"
+      },
+      "position": {"right": 8, "top": 23},
+      "align": "RIGHT"
+    },
     "progress": {
       "position": {"right": 8, "top": 63},
       "align": "RIGHT"
@@ -20,6 +38,7 @@
   },
   "slots": {
     "MACHINE_INPUT": { "left": 12, "top": 38, "grid": "BREAK_AFTER_3COLS" },
-    "MACHINE_OUTPUT": { "right": 24, "top": 38, "grid": "BREAK_AFTER_3COLS" }
+    "CONFIG": { "left": 48, "top": 80, "grid": "BREAK_AFTER_3COLS" },
+    "MACHINE_OUTPUT": { "right": 42, "top": 38, "grid": "BREAK_AFTER_3COLS" }
   }
 }

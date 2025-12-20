@@ -3,14 +3,19 @@ package net.oktawia.crazyae2addons.screens;
 import appeng.client.gui.implementations.PatternProviderScreen;
 import appeng.client.gui.style.ScreenStyle;
 import appeng.client.gui.widgets.Scrollbar;
+import appeng.client.gui.widgets.UpgradesPanel;
 import appeng.menu.SlotSemantics;
 import appeng.menu.slot.AppEngSlot;
+import com.mojang.logging.LogUtils;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
+import net.oktawia.crazyae2addons.IsModLoaded;
+import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.interfaces.IMovableSlot;
 import net.oktawia.crazyae2addons.menus.CrazyPatternProviderMenu;
+import net.oktawia.crazyae2addons.mixins.WidgetContainerAccessor;
 
 import java.util.List;
 
@@ -25,6 +30,9 @@ public class CrazyPatternProviderScreen<C extends CrazyPatternProviderMenu> exte
         super(menu, playerInventory, title, style);
         scrollbar.setRange(0, Math.max(0, (getMenu().slotNum / COLS) - VISIBLE_ROWS), 1);
         this.widgets.add("scrollbar", scrollbar);
+        if (!((WidgetContainerAccessor)this.widgets).getCompositeWidgets().containsKey("upgrades")) {
+            this.widgets.add("upgrades", new UpgradesPanel(getMenu().getSlots(SlotSemantics.UPGRADE)));
+        }
     }
 
     public void updateBeforeRender() {

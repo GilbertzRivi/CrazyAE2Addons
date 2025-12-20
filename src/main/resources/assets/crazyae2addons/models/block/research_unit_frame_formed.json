@@ -1,0 +1,16 @@
+{
+  "loader": "fusion:model",
+  "type": "connecting",
+  "parent": "block/cube_all",
+  "textures": {
+    "all": "crazyae2addons:block/research_unit_frame_formed"
+  },
+  "connections": [
+    {
+      "type": "is_same_block"
+    },
+    {
+      "type": "is_same_state"
+    }
+  ]
+}

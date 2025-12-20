@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "C": {
+      "item": "crazyae2addons:research_cable"
+    },
+    "S": {
+      "item": "ae2:smooth_sky_stone_block"
+    }
+  },
+  "pattern": [
+    "SC"
+  ],
+  "result": {
+    "item": "crazyae2addons:research_pedestal_bottom"
+  },
+  "show_notification": true
+}

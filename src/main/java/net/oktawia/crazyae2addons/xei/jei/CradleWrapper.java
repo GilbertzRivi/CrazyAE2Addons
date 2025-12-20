@@ -14,7 +14,7 @@ public class CradleWrapper extends ModularWrapper<CradlePreview> {
     public final ResourceLocation structure;
 
     public CradleWrapper(CradleEntry entry) {
-        super(new CradlePreview(entry.structureId(), entry.inputs(), entry.output()));
+        super(new CradlePreview(entry.structureId(), entry.inputs(), entry.output(), entry.description()));
         this.input = entry.inputs();
         this.output = entry.output();
         this.structure = entry.structureId();

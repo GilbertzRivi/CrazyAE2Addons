@@ -1,113 +1,36 @@
 {
   "$schema": "schema.json",
-  "includes": ["common/common.json", "common/player_inventory.json"],
+  "includes": ["common/common.json"],
   "background": {
     "texture": "guis/penrose_controller.png",
-    "srcRect": [0, 0, 176, 205]
+    "srcRect": [0, 0, 256, 256]
   },
   "text": {
     "dialog_title": {
-      "text": {
-        "translate": "block.crazyae2addons.penrose_controller"
-      },
-      "position": {
-        "left": 8,
-        "top": 6
-      }
+      "text": { "translate": "block.crazyae2addons.penrose_controller" },
+      "position": { "left": 8, "top": 6 }
     },
-    "config": {
-      "text": "Item to consume",
-      "position": {
-        "left": 8,
-        "top": 72
-      }
-    },
-    "tier": {
-      "position": {
-        "left": 140,
-        "top": 6
-      }
-    },
-    "prev": {
-      "position": {
-        "left": 8,
-        "top": 16
-      }
-    },
-    "generation": {
-      "position": {
-        "left": 120,
-        "top": 27
-      },
-      "align": "CENTER"
-    },
-    "amount": {
-      "position": {
-        "left": 120,
-        "top": 39
-      },
-      "align": "CENTER"
-    },
-    "matter_balls": {
-      "text": "Matter Balls: Power x8",
-      "position": {
-        "left": 52,
-        "top": 84
-      }
-    },
-    "singularities": {
-      "text": "Singularities: Power x64",
-      "position": {
-        "left": 52,
-        "top": 98
-      }
-    }
-  },
-  "slots": {
-    "MACHINE_INPUT": {
-      "left": 8,
-      "top": 28
-    },
-    "STORAGE_CELL": {
-      "left": 8,
-      "top": 48,
-      "grid": "HORIZONTAL"
-    },
-    "CONFIG": {
-      "left": 8,
-      "top": 84
+    "player_inventory_title": {
+      "text": { "translate": "container.inventory" },
+      "position": { "left": 47, "bottom": 93 }
     }
   },
   "widgets": {
-    "add": {
-      "left": 34,
-      "top": 28,
-      "width": 16,
-      "height": 16
+    "bh": { "left": 8, "top": 22, "width": 232, "height": 118 },
+    "start": { "left": 8, "top": 144, "width": 16, "height": 16 }
+  },
+  "slots": {
+    "STORAGE_CELL": { "left": 28, "top": 144 },
+
+    "PLAYER_INVENTORY": {
+      "left": 47,
+      "bottom": 82,
+      "grid": "BREAK_AFTER_9COLS"
     },
-    "remove": {
-      "left": 52,
-      "top": 28,
-      "width": 16,
-      "height": 16
-    },
-    "energy": {
-      "left": 32,
-      "top": 84,
-      "width": 16,
-      "height": 16
-    },
-    "prevbtn": {
-      "left": 110,
-      "top": 55,
-      "width": 16,
-      "height": 16
-    },
-    "tierbtn": {
-      "left": 130,
-      "top": 55,
-      "width": 16,
-      "height": 16
+    "PLAYER_HOTBAR": {
+      "left": 47,
+      "bottom": 24,
+      "grid": "HORIZONTAL"
     }
   }
 }

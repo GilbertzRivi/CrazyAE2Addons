@@ -5,13 +5,16 @@
 
   "text": {
     "dialog_title": { "text": { "translate": "item.crazyae2addons.data_drive" }, "position": { "left": 8, "top": 6 } },
-    "label":        { "text": "Researches", "position": { "left": 8, "top": 18 } }
+    "label":        { "text": { "translate": "gui.crazyae2addons.data_drive_researches" }, "position": { "left": 8, "top": 18 } }
   },
 
   "widgets": {
-    "card1": { "left": 8,  "top": 32,  "width": 144, "height": 32 },
-    "card2": { "left": 8,  "top": 68,  "width": 144, "height": 32 },
+    "card1": { "left": 8, "top": 32, "width": 144, "height": 16 },
+    "card2": { "left": 8, "top": 50, "width": 144, "height": 16 },
+    "card3": { "left": 8, "top": 68, "width": 144, "height": 16 },
+    "card4": { "left": 8, "top": 86, "width": 144, "height": 16 },
 
-    "page_scroll": { "left": 155, "top": 33, "width": 6, "height": 66 }
+    "page_scroll": { "left": 155, "top": 33, "width": 6, "height": 69 }
   }
+
 }

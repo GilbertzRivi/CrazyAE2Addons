@@ -1,11 +1,15 @@
 package net.oktawia.crazyae2addons.logic;
 
+import appeng.api.implementations.blockentities.IWirelessAccessPoint;
 import appeng.api.implementations.menuobjects.ItemMenuHost;
+import appeng.helpers.WirelessTerminalMenuHost;
+import appeng.menu.MenuOpener;
 import com.mojang.logging.LogUtils;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.storage.LevelResource;
+import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Files;

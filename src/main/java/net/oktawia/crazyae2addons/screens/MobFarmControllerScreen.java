@@ -13,14 +13,15 @@ public class MobFarmControllerScreen<C extends MobFarmControllerMenu> extends Up
     public MobFarmControllerScreen(C menu, Inventory playerInventory, Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
         var prevBtn = new IconButton(Icon.ENTER, btn -> getMenu().changePreview(!getMenu().preview));
-        prevBtn.setTooltip(Tooltip.create(Component.literal("Enable/Disable preview")));
+        prevBtn.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.mobfarm_preview_tooltip")));
         this.widgets.add("prevbtn", prevBtn);
     }
 
     @Override
     protected void updateBeforeRender(){
         super.updateBeforeRender();
-        this.setTextContent("dmgitem", Component.literal("Item to use:"));
-        setTextContent("prev", Component.literal("Preview: " + getMenu().preview));
+        this.setTextContent("dmgitem", Component.translatable("gui.crazyae2addons.mobfarm_item_use"));
+        setTextContent("prev", Component.translatable("gui.crazyae2addons.mobfarm_preview_label")
+                .append(String.valueOf(getMenu().preview)));
     }
 }

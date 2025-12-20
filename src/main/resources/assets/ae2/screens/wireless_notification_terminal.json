@@ -1,0 +1,29 @@
+{
+  "$schema": "schema.json",
+  "includes": [
+    "common/common.json",
+    "common/player_inventory.json",
+    "wtlib/universal_terminal_no_viewcells.json"
+  ],
+  "background": {
+    "texture": "guis/notification_terminal.png",
+    "srcRect": [0, 0, 176, 256]
+  },
+  "text": {
+    "dialog_title": {
+      "text": { "translate": "item.crazyae2addons.wireless_notification_terminal" },
+      "position": { "left": 8, "top": 6 }
+    }
+  },
+  "widgets": {
+    "add_row":   { "left": 152, "top": 18, "width": 12, "height": 12 },
+    "scrollbar": { "left": 154, "top": 36, "width": 12, "height": 110 },
+
+    "threshold_0": { "left": 30, "top": 36,  "width": 116, "height": 16 },
+    "threshold_1": { "left": 30, "top": 54,  "width": 116, "height": 16 },
+    "threshold_2": { "left": 30, "top": 72,  "width": 116, "height": 16 },
+    "threshold_3": { "left": 30, "top": 90,  "width": 116, "height": 16 },
+    "threshold_4": { "left": 30, "top": 108, "width": 116, "height": 16 },
+    "threshold_5": { "left": 30, "top": 126, "width": 116, "height": 16 }
+  }
+}

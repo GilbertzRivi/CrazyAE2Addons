@@ -3,7 +3,6 @@ package net.oktawia.crazyae2addons.entities;
 import appeng.blockentity.AEBaseBlockEntity;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuLocator;
-import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -72,7 +71,7 @@ public class AmpereMeterBE extends AEBaseBlockEntity implements MenuProvider {
 
     @Override
     public Component getDisplayName() {
-        return Component.literal("Ampere Meter");
+        return Component.translatable("block.crazyae2addons.ampere_meter");
     }
 
     public void openMenu(Player player, MenuLocator locator) {

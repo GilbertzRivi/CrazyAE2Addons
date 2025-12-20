@@ -116,6 +116,7 @@ public class PatternDetailsSerializer {
         @Override public AEItemKey getDefinition()                     { return definition; }
         @Override public IInput[] getInputs()                          { return inputs; }
         @Override public GenericStack[] getOutputs()                   { return outputs; }
+
         @Override public boolean supportsPushInputsToExternalInventory() { return supportsPush; }
 
     }

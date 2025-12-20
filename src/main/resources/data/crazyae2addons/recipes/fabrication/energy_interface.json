@@ -1,7 +1,14 @@
 {
   "type": "crazyae2addons:fabrication",
-  "input": { "item": "ae2:interface" },
-  "input_count": 1,
-  "output": { "item": "crazyae2addons:energy_interface", "count": 1 },
+  "input": [
+    { "item": "crazyae2addons:energy_exporter",   "count": 2 },
+    { "item": "ae2:speed_card",                   "count": 2 },
+    { "item": "ae2:interface",                    "count": 1 },
+    { "item": "ae2:engineering_processor",        "count": 4 }
+  ],
+  "output": {
+    "item": "crazyae2addons:energy_interface",
+    "count": 1
+  },
   "required_key": "crazyae2addons:energy_interface_research"
 }

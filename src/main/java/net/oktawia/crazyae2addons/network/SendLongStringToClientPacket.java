@@ -32,9 +32,9 @@ public class SendLongStringToClientPacket {
             Minecraft mc = Minecraft.getInstance();
             if (mc.screen instanceof BuilderPatternScreen<?> screen) {
                 screen.setProgram(packet.data);
-            } else if (mc.screen instanceof GadgetScreen<?> screen) {
+            } else if (mc.screen instanceof PortableSpatialStorageScreen<?> screen) {
                 screen.setProgram(packet.data);
-            } else if (mc.screen instanceof CopyGadgetScreen<?> screen) {
+            } else if (mc.screen instanceof PortableAutobuilderScreen<?> screen) {
                 screen.setProgram(packet.data);
             }
         });

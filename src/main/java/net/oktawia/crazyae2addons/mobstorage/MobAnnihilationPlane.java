@@ -23,9 +23,11 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.client.model.data.ModelData;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Comparator;
 import java.util.List;
 
 public class MobAnnihilationPlane extends AEBasePart implements IGridTickable {
@@ -76,13 +78,14 @@ public class MobAnnihilationPlane extends AEBasePart implements IGridTickable {
         AABB box = new AABB(
                 pos.getX(),     pos.getY(),     pos.getZ(),
                 pos.getX() + 1, pos.getY() + 1, pos.getZ() + 1
-        );
-        for (Mob mob : level.getEntitiesOfClass(Mob.class, box)) {
-            if (mob.blockPosition().equals(pos)) {
-                return mob;
-            }
-        }
-        return null;
+        ).inflate(0.001);
+
+        var center = Vec3.atCenterOf(pos);
+
+        return level.getEntitiesOfClass(Mob.class, box, m -> m.isAlive() && !m.isRemoved())
+                .stream()
+                .min(Comparator.comparingDouble(m -> m.distanceToSqr(center)))
+                .orElse(null);
     }
 
     @Override

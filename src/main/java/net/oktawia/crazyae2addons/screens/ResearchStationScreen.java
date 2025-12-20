@@ -12,27 +12,22 @@ import net.oktawia.crazyae2addons.misc.IconButton;
 
 public class ResearchStationScreen<C extends ResearchStationMenu> extends AEBaseScreen<C> {
 
-    private IconButton prevBtn;
     private IconButton devBtn;
 
     public ResearchStationScreen(C menu, Inventory playerInventory, Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
 
         widgets.add("energyBar", new ProgressBar(this.menu.energyBar, style.getImage("progressEnergy"),
-                ProgressBar.Direction.HORIZONTAL, Component.literal("Stored Energy")));
-
-        widgets.add("waterBar", new ProgressBar(this.menu.waterBar, style.getImage("progressWater"),
-                ProgressBar.Direction.HORIZONTAL, Component.literal("Stored Fluid")));
+                ProgressBar.Direction.HORIZONTAL,
+                Component.translatable("gui.crazyae2addons.research_stored_energy")));
 
         widgets.add("recipeBar", new ProgressBar(this.menu.recipeBar, style.getImage("progressRecipe"),
-                ProgressBar.Direction.HORIZONTAL, Component.literal("Recipe Progress")));
-
-        prevBtn = new IconButton(Icon.ENTER, btn -> getMenu().changePreview(!getMenu().preview));
-        this.widgets.add("prevbtn", prevBtn);
+                ProgressBar.Direction.HORIZONTAL,
+                Component.translatable("gui.crazyae2addons.research_recipe_progress")));
 
         if (playerInventory.player != null && playerInventory.player.isCreative()) {
             devBtn = new IconButton(Icon.ENTER, btn -> getMenu().unlockAllClick());
-            devBtn.setTooltip(Tooltip.create(Component.literal("Write all research to disk")));
+            devBtn.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.research_dev_unlock")));
             this.widgets.add("devbtn", devBtn);
         }
     }
@@ -41,9 +36,8 @@ public class ResearchStationScreen<C extends ResearchStationMenu> extends AEBase
     @Override
     public void updateBeforeRender(){
         super.updateBeforeRender();
-        prevBtn.setTooltip(Tooltip.create(Component.literal(getMenu().preview ? "Hide preview" : "Show preview")));
         if (this.menu.recipeBar.getCurrentProgress() > 0 && (minecraft.level.getGameTime() / 20) % 2 == 0){
-            this.setTextContent("working", Component.literal("Loading..."));
+            this.setTextContent("working", Component.translatable("gui.crazyae2addons.research_loading"));
         } else {
             this.setTextContent("working", Component.empty());
         }

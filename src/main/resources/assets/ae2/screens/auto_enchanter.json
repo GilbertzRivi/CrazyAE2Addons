@@ -16,21 +16,27 @@
       }
     },
     "input": {
-      "text": "Input",
+      "text": {
+        "translate": "gui.crazyae2addons.auto_enchanter_input"
+      },
       "position": {
         "left": 8,
         "top": 23
       }
     },
     "output": {
-      "text": "Output",
+      "text": {
+        "translate": "gui.crazyae2addons.auto_enchanter_output"
+      },
       "position": {
         "left": 8,
         "top": 63
       }
     },
     "xp": {
-      "text": "Available XP:",
+      "text": {
+        "translate": "gui.crazyae2addons.auto_enchanter_xp"
+      },
       "position": {
         "left": 110,
         "top": 18
@@ -59,21 +65,27 @@
       "align": "CENTER"
     },
     "label_opt1": {
-      "text": "Cheap",
+      "text": {
+        "translate": "gui.crazyae2addons.auto_enchanter_lbl_cheap"
+      },
       "position": {
         "left": 105,
         "top": 65
       }
     },
     "label_opt2": {
-      "text": "Medium",
+      "text": {
+        "translate": "gui.crazyae2addons.auto_enchanter_lbl_medium"
+      },
       "position": {
         "left": 105,
         "top": 82
       }
     },
     "label_opt3": {
-      "text": "Exp",
+      "text": {
+        "translate": "gui.crazyae2addons.auto_enchanter_lbl_exp"
+      },
       "position": {
         "left": 105,
         "top": 101

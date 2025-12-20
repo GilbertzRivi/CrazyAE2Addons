@@ -25,7 +25,6 @@ public class ResearchStationMenu extends AEBaseMenu {
     private static final String ACT_UNLOCK_ALL = "unlock_all";
     private final Inventory playerInv;
 
-    public waterProgressProvider waterBar = new waterProgressProvider();
     public energyProgressProvider energyBar = new energyProgressProvider();
     public recipeProgressProvider recipeBar = new recipeProgressProvider();
 
@@ -35,18 +34,10 @@ public class ResearchStationMenu extends AEBaseMenu {
         super(CrazyMenuRegistrar.RESEARCH_STATION_MENU.get(), id, playerInventory, host);
         this.host = host;
         this.playerInv = playerInventory;
-        this.formed = host.formed;
         this.energyPct = host.getEnergyPct();
-        this.waterPct = host.getWaterPct();
         this.progressPct = host.getProgressPct();
         this.preview = host.preview;
 
-        if (host.input != null) {
-            for (int i = 0; i < 9; i++){
-                this.addSlot(new AppEngSlot(host.input, i), SlotSemantics.MACHINE_INPUT);
-                this.addSlot(new AppEngSlot(host.input, i+9), SlotSemantics.CONFIG);
-            }
-        }
         if (host.disk != null) {
             this.addSlot(new AppEngFilteredSlot(host.disk, 0, CrazyItemRegistrar.DATA_DRIVE.get()), SlotSemantics.MACHINE_OUTPUT);
         }
@@ -76,9 +67,7 @@ public class ResearchStationMenu extends AEBaseMenu {
     @Override
     public void broadcastChanges() {
         if (!isClientSide()) {
-            this.formed = host.formed;
             this.energyPct = host.getEnergyPct();
-            this.waterPct = host.getWaterPct();
             this.progressPct = host.getProgressPct();
             this.preview = host.preview;
         }
@@ -88,19 +77,6 @@ public class ResearchStationMenu extends AEBaseMenu {
     public class recipeProgressProvider implements IProgressProvider {
         @Override public int getCurrentProgress() { return ResearchStationMenu.this.progressPct; }
         @Override public int getMaxProgress() { return 1000; }
-    }
-
-    public class waterProgressProvider implements IProgressProvider {
-
-        @Override
-        public int getCurrentProgress() {
-            return ResearchStationMenu.this.waterPct;
-        }
-
-        @Override
-        public int getMaxProgress() {
-            return 16_000;
-        }
     }
 
     public class energyProgressProvider implements IProgressProvider {

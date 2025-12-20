@@ -1,8 +1,6 @@
 package net.oktawia.crazyae2addons.renderer.preview;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.block.BlockRenderDispatcher;
-import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.Block;
@@ -23,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-
 @Mod.EventBusSubscriber(modid = CrazyAddons.MODID, value = Dist.CLIENT)
 public class PenrosePreviewRenderer {
 
@@ -36,21 +33,17 @@ public class PenrosePreviewRenderer {
 
         for (PenroseControllerBE controller : PenroseControllerBE.CLIENT_INSTANCES) {
             if (!controller.preview) continue;
+
             BlockPos origin = controller.getBlockPos();
             if (origin.distSqr(mc.player.blockPosition()) > 64 * 64) continue;
 
-            PenroseValidator validator = switch (controller.previewTier) {
-                case 3 -> controller.validatorT3;
-                case 2 -> controller.validatorT2;
-                case 1 -> controller.validatorT1;
-                default -> controller.validatorT0;
-            };
+            PenroseValidator validator = controller.validator;
 
             Direction facing = controller.getBlockState()
                     .getValue(BlockStateProperties.HORIZONTAL_FACING)
                     .getOpposite();
 
-            if (controller.getPreviewInfo() == null || controller.cachedTier != controller.previewTier) {
+            if (controller.getPreviewInfo() == null) {
                 rebuildCache(controller, validator, facing);
             }
 
@@ -62,18 +55,13 @@ public class PenrosePreviewRenderer {
         return switch (facing) {
             case NORTH -> new BlockPos(x, 0, z);
             case SOUTH -> new BlockPos(-x, 0, -z);
-            case WEST -> new BlockPos(z, 0, -x);
-            case EAST -> new BlockPos(-z, 0, x);
-            default -> BlockPos.ZERO;
+            case WEST  -> new BlockPos(z, 0, -x);
+            case EAST  -> new BlockPos(-z, 0, x);
+            default    -> BlockPos.ZERO;
         };
     }
 
     private static void rebuildCache(PenroseControllerBE controller, PenroseValidator validator, Direction facing) {
-        controller.cachedTier = controller.previewTier;
-
-        Minecraft mc = Minecraft.getInstance();
-        BlockRenderDispatcher blockRenderer = mc.getBlockRenderer();
-
         List<List<String>> layers = validator.getLayers();
         Map<String, List<Block>> symbols = validator.getSymbols();
         int originX = validator.getOriginX();
@@ -99,23 +87,21 @@ public class PenrosePreviewRenderer {
                     if (blocks.isEmpty()) continue;
 
                     BlockState state = blocks.get(0).defaultBlockState();
-                    if (state.getBlock() instanceof PenroseFrameBlock){
+                    if (state.getBlock() instanceof PenroseFrameBlock) {
                         state = state.setValue(PenroseFrameBlock.FORMED, true);
                     }
+
                     int relX = x - originX;
                     int relY = y - originY;
                     int relZ = z - originZ;
                     BlockPos offset = rotateOffset(relX, relZ, facing);
                     BlockPos pos = origin.offset(offset.getX(), relY, offset.getZ());
 
-                    BakedModel model = blockRenderer.getBlockModel(state);
-                    blockInfos.add(new PreviewInfo.BlockInfo(pos, state, model));
+                    blockInfos.add(new PreviewInfo.BlockInfo(pos, state));
                 }
             }
         }
 
         controller.setPreviewInfo(new PreviewInfo(blockInfos));
     }
-
 }
-

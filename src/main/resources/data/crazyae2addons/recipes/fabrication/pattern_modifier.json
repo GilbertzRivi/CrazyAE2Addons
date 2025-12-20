@@ -1,7 +1,13 @@
 {
   "type": "crazyae2addons:fabrication",
-  "input": { "item": "ae2:blank_pattern" },
-  "input_count": 1,
-  "output": { "item": "crazyae2addons:crazy_pattern_modifier", "count": 1 },
+  "input": [
+    { "item": "ae2:blank_pattern",         "count": 1 },
+    { "item": "ae2:engineering_processor", "count": 2 },
+    { "item": "ae2:logic_processor",       "count": 2 }
+  ],
+  "output": {
+    "item": "crazyae2addons:crazy_pattern_modifier",
+    "count": 1
+  },
   "required_key": "crazyae2addons:pattern_modifier_research"
 }

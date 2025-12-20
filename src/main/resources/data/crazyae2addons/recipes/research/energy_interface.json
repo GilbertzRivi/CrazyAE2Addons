@@ -1,85 +1,20 @@
 {
   "type": "crazyae2addons:research",
-  "duration": 12000,
+  "duration": 1728000,
   "energy_per_tick": 440,
-  "fluid": "crazyae2addons:researchfluid",
-  "fluid_per_tick": 6,
-  "requires_stabilizer": true,
   "gadget": true,
   "consumables": [
-    { "item": "minecraft:gold_ingot", "count": 1024 }
+    { "item": "minecraft:copper_block",  "count": 32, "computation": 64 },
+    { "item": "minecraft:gold_block",    "count": 32, "computation": 64 },
+    { "item": "minecraft:redstone_block","count": 8, "computation": 96 },
+    { "item": "minecraft:redstone_block","count": 8, "computation": 96 },
+    { "item": "ae2:dense_energy_cell",         "count": 8, "computation": 128 },
+    { "item": "ae2:dense_energy_cell",         "count": 8, "computation": 128 }
   ],
   "drive": true,
-  "structure": {
-    "mode": "pattern",
-    "size": [6, 6, 6],
-  "symbols": {
-    "A": [
-      "minecraft:copper_block"
-    ],
-    "B": [
-      "minecraft:gold_block"
-    ],
-    "D": [
-      "minecraft:iron_bars"
-    ],
-    "E": [
-      "minecraft:redstone_block"
-    ]
-  },
-  "layers": [
-    [
-      "A A A A A A",
-      "A A A A A A",
-      "B B B A A A",
-      "B B B A A A",
-      "B B B B B B",
-      "B B B B B B"
-    ],
-    [
-      "D D D D D D",
-      "D . . . . D",
-      "D . . E . D",
-      "D . E . . D",
-      "D . . . . D",
-      "D D D D D D"
-    ],
-    [
-      ". . . . . .",
-      ". . . . . .",
-      ". . E . . .",
-      ". . . E . .",
-      ". . . . . .",
-      ". . . . . ."
-    ],
-    [
-      ". . . . . .",
-      ". . . . . .",
-      ". . . E . .",
-      ". . E . . .",
-      ". . . . . .",
-      ". . . . . ."
-    ],
-    [
-      "D D D D D D",
-      "D . . . . D",
-      "D . E . . D",
-      "D . . E . D",
-      "D . . . . D",
-      "D D D D D D"
-    ],
-    [
-      "B B B B B B",
-      "B B B B B B",
-      "A A A B B B",
-      "A A A B B B",
-      "A A A A A A",
-      "A A A A A A"
-    ]
-  ]
-},
   "unlock": {
     "key": "crazyae2addons:energy_interface_research",
-    "label": "Energy Interface"
+    "label": "Energy Interface",
+    "item": "crazyae2addons:energy_interface"
   }
 }

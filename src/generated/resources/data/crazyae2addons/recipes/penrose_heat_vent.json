@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "B": {
+      "item": "crazyae2addons:energy_interface"
+    },
+    "C": {
+      "item": "crazyae2addons:penrose_heat_emitter"
+    },
+    "E": {
+      "item": "crazyae2addons:redstone_emitter"
+    }
+  },
+  "pattern": [
+    "ECB"
+  ],
+  "result": {
+    "item": "crazyae2addons:penrose_heat_vent"
+  },
+  "show_notification": true
+}

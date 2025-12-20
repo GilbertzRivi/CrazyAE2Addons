@@ -3,6 +3,7 @@ package net.oktawia.crazyae2addons.defs;
 import java.util.*;
 import java.util.function.Supplier;
 
+import appeng.api.util.AEColor;
 import appeng.core.definitions.AEBlocks;
 import appeng.core.definitions.AEItems;
 import appeng.core.definitions.AEParts;
@@ -36,11 +37,12 @@ public class BlockDefs {
     public static void registerRecipes(){
         block(
                 CrazyBlockRegistrar.AMPERE_METER_BLOCK.get(),
-                "ICE",
+                " L /ICE",
                 () -> Map.of(
                         "I", AEParts.IMPORT_BUS.asItem(),
-                        "C", AEBlocks.INTERFACE.asItem(),
-                        "E", AEParts.EXPORT_BUS.asItem()
+                        "C", CrazyItemRegistrar.ENERGY_INTERFACE_PART.get().asItem(),
+                        "E", AEParts.EXPORT_BUS.asItem(),
+                        "L", CrazyItemRegistrar.CRAZY_CALCULATOR_ITEM.get().asItem()
                 )
         );
 
@@ -171,25 +173,6 @@ public class BlockDefs {
         );
 
         block(
-                CrazyBlockRegistrar.ENERGY_STORAGE_FRAME_BLOCK.get(),
-                "FMF/MEM/FMF",
-                () -> Map.of(
-                        "F", AEItems.FLUIX_CRYSTAL.asItem(),
-                        "M", AEItems.CERTUS_QUARTZ_CRYSTAL_CHARGED.asItem(),
-                        "E", AEBlocks.ENERGY_CELL.asItem()
-                )
-        );
-
-        block(
-                CrazyBlockRegistrar.ENERGY_STORAGE_CONTROLLER_BLOCK.get(),
-                "FFF/FNF/FFF",
-                () -> Map.of(
-                        "F", CrazyBlockRegistrar.ENERGY_STORAGE_FRAME_BLOCK.get().asItem(),
-                        "N", Items.NETHER_STAR
-                )
-        );
-
-        block(
                 CrazyBlockRegistrar.AUTO_BUILDER_BLOCK.get(),
                 "EPE/BRN/EPE",
                 () -> Map.of(
@@ -208,16 +191,6 @@ public class BlockDefs {
                         "E", CrazyItemRegistrar.ENERGY_EXPORTER_PART_ITEM.get().asItem(),
                         "I", AEBlocks.INTERFACE.asItem(),
                         "P", CrazyBlockRegistrar.PENROSE_FRAME.get().asItem()
-                )
-        );
-
-        block(
-                CrazyBlockRegistrar.ENERGY_STORAGE_PORT_BLOCK.get(),
-                " E /IPI/ E ",
-                () -> Map.of(
-                        "E", CrazyItemRegistrar.ENERGY_EXPORTER_PART_ITEM.get().asItem(),
-                        "I", AEBlocks.INTERFACE.asItem(),
-                        "P", CrazyBlockRegistrar.ENERGY_STORAGE_FRAME_BLOCK.get().asItem()
                 )
         );
 
@@ -266,6 +239,101 @@ public class BlockDefs {
                 () -> Map.of(
                         "C", Blocks.CRAFTING_TABLE.asItem(),
                         "R", CrazyBlockRegistrar.RESEARCH_STATION.get().asItem()
+                )
+        );
+
+        block(
+                CrazyBlockRegistrar.RESEARCH_PEDESTAL_BOTTOM.get(),
+                "SC",
+                () -> Map.of(
+                        "S", AEBlocks.SMOOTH_SKY_STONE_BLOCK.asItem(),
+                        "C", CrazyBlockRegistrar.RESEARCH_CABLE_BLOCK.get().asItem()
+                )
+        );
+
+        block(
+                CrazyBlockRegistrar.RESEARCH_PEDESTAL_TOP.get(),
+                "SC",
+                () -> Map.of(
+                        "S", AEBlocks.SKY_STONE_TANK.asItem(),
+                        "C", CrazyBlockRegistrar.RESEARCH_CABLE_BLOCK.get().asItem()
+                )
+        );
+
+        block(
+                CrazyBlockRegistrar.RESEARCH_CABLE_BLOCK.get(),
+                "CSC",
+                () -> Map.of(
+                        "S", AEParts.GLASS_CABLE.stack(AEColor.TRANSPARENT).getItem(),
+                        "C", Items.REDSTONE.asItem()
+                )
+        );
+
+        block(
+                CrazyBlockRegistrar.RESEARCH_UNIT_FRAME.get(),
+                "CCC/CIC/CCC",
+                () -> Map.of(
+                        "I", Blocks.IRON_BLOCK.asItem(),
+                        "C", CrazyBlockRegistrar.RESEARCH_CABLE_BLOCK.get().asItem()
+                )
+        );
+
+        block(
+                CrazyBlockRegistrar.RESEARCH_UNIT.get(),
+                "CT",
+                () -> Map.of(
+                        "T", AEBlocks.CONTROLLER.asItem(),
+                        "C", CrazyBlockRegistrar.RESEARCH_UNIT_FRAME.get().asItem()
+                )
+        );
+
+        block(
+                CrazyBlockRegistrar.PENROSE_MASS_EMITTER.get(),
+                "ECS",
+                () -> Map.of(
+                        "E", AEParts.LEVEL_EMITTER.asItem(),
+                        "C", CrazyBlockRegistrar.PENROSE_FRAME.get().asItem(),
+                        "S", CrazyItemRegistrar.SUPER_SINGULARITY.get().asItem()
+                )
+        );
+
+        block(
+                CrazyBlockRegistrar.PENROSE_HEAT_EMITTER.get(),
+                "ECS",
+                () -> Map.of(
+                        "E", AEParts.LEVEL_EMITTER.asItem(),
+                        "C", CrazyBlockRegistrar.PENROSE_FRAME.get().asItem(),
+                        "S", Items.FIRE_CHARGE.asItem()
+                )
+        );
+
+        block(
+                CrazyBlockRegistrar.PENROSE_INJECTION_PORT.get(),
+                "ECB",
+                () -> Map.of(
+                        "E", AEBlocks.PATTERN_PROVIDER.asItem(),
+                        "C", CrazyBlockRegistrar.PENROSE_FRAME.get().asItem(),
+                        "B", Blocks.HOPPER.asItem()
+                )
+        );
+
+        block(
+                CrazyBlockRegistrar.PENROSE_HEAT_VENT.get(),
+                "ECB",
+                () -> Map.of(
+                        "E", CrazyItemRegistrar.REDSTONE_EMITTER.get().asItem(),
+                        "C", CrazyBlockRegistrar.PENROSE_HEAT_EMITTER.get().asItem(),
+                        "B", CrazyItemRegistrar.ENERGY_INTERFACE_PART.get().asItem()
+                )
+        );
+
+        block(
+                CrazyBlockRegistrar.PENROSE_HAWKING_VENT.get(),
+                "ECB",
+                () -> Map.of(
+                        "E", CrazyItemRegistrar.REDSTONE_EMITTER.get().asItem(),
+                        "C", CrazyBlockRegistrar.PENROSE_MASS_EMITTER.get().asItem(),
+                        "B", CrazyItemRegistrar.ENTITY_TICKER_PART_ITEM.get().asItem()
                 )
         );
     }

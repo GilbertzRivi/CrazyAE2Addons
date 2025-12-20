@@ -7,7 +7,6 @@ import appeng.client.gui.widgets.Scrollbar;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
-import net.oktawia.crazyae2addons.menus.NbtViewCellMenu;
 import net.oktawia.crazyae2addons.menus.TagViewCellMenu;
 import net.oktawia.crazyae2addons.misc.IconButton;
 import net.oktawia.crazyae2addons.misc.MultilineTextFieldWidget;
@@ -42,7 +41,7 @@ public class TagViewCellScreen<C extends TagViewCellMenu> extends AEBaseScreen<C
     public TagViewCellScreen(C menu, Inventory playerInventory, Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
         setupGui();
-        setTextContent("dialog_title", Component.literal("Tag View Cell"));
+        setTextContent("dialog_title", Component.translatable("gui.crazyae2addons.tag_view_cell_title"));
         this.widgets.add("confirm", confirm);
         this.widgets.add("data", input);
         this.widgets.add("scroll", scrollbar);
@@ -79,11 +78,11 @@ public class TagViewCellScreen<C extends TagViewCellMenu> extends AEBaseScreen<C
 
     private void setupGui() {
         confirm = new IconButton(Icon.ENTER, (btn) -> getMenu().updateData(input.getValue()));
-        confirm.setTooltip(Tooltip.create(Component.literal("Confirm")));
+        confirm.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.tag_view_cell_confirm")));
 
         input = new MultilineTextFieldWidget(
                 font, 0, 0, 145, 80,
-                Component.literal("Input filter"));
+                Component.translatable("gui.crazyae2addons.tag_view_cell_input"));
 
         scrollbar = new Scrollbar();
         updateScrollbarRangeFromInput();

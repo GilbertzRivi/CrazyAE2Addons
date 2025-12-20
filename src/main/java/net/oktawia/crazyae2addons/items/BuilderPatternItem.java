@@ -143,9 +143,9 @@ public class BuilderPatternItem extends AEBaseItem implements IMenuItem {
                 stack.getOrCreateTag().putString("srcFacing", originFacing.getName());
 
                 saveProgramToFile(programId, finalCode, p.getServer());
-                p.displayClientMessage(Component.literal("Saved pattern. Length: " + finalCode.length()), true);
+                p.displayClientMessage(Component.translatable("gui.crazyae2addons.builder_pattern_saved").append(String.valueOf(finalCode.length())), true);
             } else {
-                p.displayClientMessage(Component.literal("Could not save this structure"), true);
+                p.displayClientMessage(Component.translatable("gui.crazyae2addons.builder_pattern_error"), true);
             }
 
             cornerA = null;
@@ -228,17 +228,17 @@ public class BuilderPatternItem extends AEBaseItem implements IMenuItem {
         if (player != null && !player.isLocalPlayer()) {
             if (cornerA == null) {
                 cornerA = clicked.immutable();
-                player.displayClientMessage(Component.literal("Corner 1 set!"), true);
+                player.displayClientMessage(Component.translatable("gui.crazyae2addons.builder_corner_1"), true);
             } else if (cornerB == null) {
                 cornerB = clicked.immutable();
                 origin = clicked.immutable();
                 originFacing = player.getDirection();
-                player.displayClientMessage(Component.literal("Corner 2 set! (origin)"), true);
+                player.displayClientMessage(Component.translatable("gui.crazyae2addons.builder_corner_2"), true);
             } else {
                 cornerA = clicked.immutable();
                 cornerB = null;
                 origin = null;
-                player.displayClientMessage(Component.literal("Corner 1 set! (reset)"), true);
+                player.displayClientMessage(Component.translatable("gui.crazyae2addons.builder_corner_3"), true);
             }
         }
         return InteractionResult.SUCCESS;
@@ -262,7 +262,7 @@ public class BuilderPatternItem extends AEBaseItem implements IMenuItem {
     private static void applyFlipInPlace(ItemStack stack, MinecraftServer server, Axis axis, @Nullable Player player, String okMsg) {
         String full = BuilderPatternHost.loadProgramFromFile(stack, server);
         if (full.isEmpty()) {
-            if (player != null) player.displayClientMessage(Component.literal("No program"), true);
+            if (player != null) player.displayClientMessage(Component.translatable("gui.crazyae2addons.builder_pattern_no_program"), true);
             return;
         }
         int sepIdx = full.lastIndexOf(SEP);
@@ -290,7 +290,7 @@ public class BuilderPatternItem extends AEBaseItem implements IMenuItem {
             if (player != null) player.displayClientMessage(Component.literal(okMsg), true);
         } catch (Exception e) {
             LogUtils.getLogger().info(e.toString());
-            if (player != null) player.displayClientMessage(Component.literal("Failed to save changes"), true);
+            if (player != null) player.displayClientMessage(Component.translatable("gui.crazyae2addons.builder_pattern_failed_changes"), true);
         }
     }
 
@@ -424,7 +424,6 @@ public class BuilderPatternItem extends AEBaseItem implements IMenuItem {
         } catch (IOException ignored) {}
     }
 
-
     private static String rotateBodyInPlace(String s, int times) {
         class Ev {
             String kind;
@@ -432,77 +431,134 @@ public class BuilderPatternItem extends AEBaseItem implements IMenuItem {
             BlockPos pos;
             Ev(String k, String p, BlockPos bp) { kind = k; payload = p; pos = bp; }
         }
+
         ArrayList<Ev> events = new ArrayList<>();
         BlockPos cursor = BlockPos.ZERO;
         int i = 0, n = s.length();
 
+        // --- parsing programu na eventy (bez zmian) ---
         while (i < n) {
             char c = s.charAt(i);
-            if (c == 'H') { events.add(new Ev("H", "H", null)); cursor = BlockPos.ZERO; i++; continue; }
+
+            if (c == 'H') {
+                events.add(new Ev("H", "H", null));
+                cursor = BlockPos.ZERO;
+                i++;
+                continue;
+            }
+
             if (c == 'Z' && i + 1 < n && s.charAt(i + 1) == '|') {
-                int j = i + 2; while (j < n && Character.isDigit(s.charAt(j))) j++;
-                events.add(new Ev("Z", s.substring(i, j), null)); i = j; continue;
+                int j = i + 2;
+                while (j < n && Character.isDigit(s.charAt(j))) j++;
+                events.add(new Ev("Z", s.substring(i, j), null));
+                i = j;
+                continue;
             }
+
             if (c == 'P' && i + 1 < n && s.charAt(i + 1) == '(') {
-                int j = i + 2; while (j < n && s.charAt(j) != ')') j++; if (j < n) j++;
-                events.add(new Ev("ACT", s.substring(i, j), cursor)); i = j; continue;
+                int j = i + 2;
+                while (j < n && s.charAt(j) != ')') j++;
+                if (j < n) j++;
+                events.add(new Ev("ACT", s.substring(i, j), cursor));
+                i = j;
+                continue;
             }
+
             if (c == 'P' && i + 1 < n && s.charAt(i + 1) == '|') {
                 int j = i + 2;
                 while (j < n) {
                     char cj = s.charAt(j);
-                    if (cj == 'H' || cj == 'Z' || cj == 'P' || cj == 'F' || cj == 'B' || cj == 'L' || cj == 'R' || cj == 'U' || cj == 'D' || cj == 'X') break;
+                    if (cj == 'H' || cj == 'Z' || cj == 'P' || cj == 'F' || cj == 'B'
+                            || cj == 'L' || cj == 'R' || cj == 'U' || cj == 'D'
+                            || cj == 'X') break;
                     j++;
                 }
-                events.add(new Ev("ACT", s.substring(i, j), cursor)); i = j; continue;
+                events.add(new Ev("ACT", s.substring(i, j), cursor));
+                i = j;
+                continue;
             }
-            if (c == 'X') { events.add(new Ev("ACT", "X", cursor)); i++; continue; }
-            if ("FBLRUD".indexOf(c) >= 0) { cursor = stepCursor(cursor, c); i++; continue; }
+
+            if (c == 'X') {
+                events.add(new Ev("ACT", "X", cursor));
+                i++;
+                continue;
+            }
+
+            if ("FBLRUD".indexOf(c) >= 0) {
+                cursor = stepCursor(cursor, c);
+                i++;
+                continue;
+            }
+
             i++;
         }
 
         boolean hasAct = false;
-        for (Ev ev : events) if ("ACT".equals(ev.kind)) { hasAct = true; break; }
+        for (Ev ev : events) {
+            if ("ACT".equals(ev.kind)) {
+                hasAct = true;
+                break;
+            }
+        }
         if (!hasAct) return s;
 
-        int minX = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE;
-        int minZ = Integer.MAX_VALUE, maxZ = Integer.MIN_VALUE;
-        for (Ev ev : events) if ("ACT".equals(ev.kind)) {
-            minX = Math.min(minX, ev.pos.getX()); maxX = Math.max(maxX, ev.pos.getX());
-            minZ = Math.min(minZ, ev.pos.getZ()); maxZ = Math.max(maxZ, ev.pos.getZ());
-        }
-        double cx = (minX + maxX) / 2.0;
-        double cz = (minZ + maxZ) / 2.0;
-
+        // normalizacja liczby obrotów
         times = ((times % 4) + 4) % 4;
         if (times == 0) return s;
 
+        // --- NOWA CZĘŚĆ: rotacja tylko wokół (0,0,0) w XZ ---
         StringBuilder out = new StringBuilder(s.length() + 64);
         BlockPos outCursor = BlockPos.ZERO;
 
         for (Ev ev : events) {
             switch (ev.kind) {
-                case "H" -> { out.append("H"); outCursor = BlockPos.ZERO; }
+                case "H" -> {
+                    out.append("H");
+                    outCursor = BlockPos.ZERO;
+                }
                 case "Z" -> out.append(ev.payload);
                 case "ACT" -> {
                     BlockPos p = ev.pos;
-                    double rx = p.getX() - cx;
-                    double rz = p.getZ() - cz;
-                    double x = rx, z = rz;
-                    for (int k = 0; k < times; k++) {
-                        double tmp = x;
-                        x = -z;
-                        z = tmp;
+                    int x = p.getX();
+                    int y = p.getY();
+                    int z = p.getZ();
+
+                    int rx = x;
+                    int rz = z;
+
+                    // UWAGA: zachowujemy dokładnie tę samą "stronę" obrotu co wcześniej,
+                    // tylko pivot to (0,0) zamiast środka AABB.
+                    switch (times) {
+                        case 1 -> {           // 90° (tak jak w starej implementacji)
+                            int nx = -z;
+                            int nz = x;
+                            rx = nx;
+                            rz = nz;
+                        }
+                        case 2 -> {           // 180°
+                            rx = -x;
+                            rz = -z;
+                        }
+                        case 3 -> {           // 270°
+                            int nx = z;
+                            int nz = -x;
+                            rx = nx;
+                            rz = nz;
+                        }
+                        default -> {
+                            rx = x;
+                            rz = z;
+                        }
                     }
-                    int newX = (int)Math.round(x + cx);
-                    int newZ = (int)Math.round(z + cz);
-                    BlockPos target = new BlockPos(newX, p.getY(), newZ);
+
+                    BlockPos target = new BlockPos(rx, y, rz);
                     out.append(moveCursorRelative(outCursor, target));
                     outCursor = target;
                     out.append(ev.payload);
                 }
             }
         }
+
         return out.toString();
     }
 

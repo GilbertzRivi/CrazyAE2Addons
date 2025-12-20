@@ -2,6 +2,7 @@
   "type": "crazyae2addons:cradle",
   "result_block": "crazyae2addons:energy_storage_4k",
   "preview_nbt": "crazyae2addons:4k_storage.nbt",
+  "description": "ec.4k",
   "pattern": {
     "symbols": {
       "A": [

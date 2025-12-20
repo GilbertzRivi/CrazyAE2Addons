@@ -1,6 +1,7 @@
 package net.oktawia.crazyae2addons.screens;
 
 import appeng.api.stacks.GenericStack;
+import appeng.client.gui.AEBaseScreen;
 import appeng.client.gui.Icon;
 import appeng.client.gui.implementations.UpgradeableScreen;
 import appeng.client.gui.style.ScreenStyle;
@@ -17,18 +18,16 @@ import net.minecraft.client.gui.components.Renderable; // ← ważne
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.ForgeRegistry;
 import net.oktawia.crazyae2addons.Utils;
 import net.oktawia.crazyae2addons.menus.EjectorMenu;
 import net.oktawia.crazyae2addons.misc.IconButton;
 import net.oktawia.crazyae2addons.network.NetworkHandler;
 import net.oktawia.crazyae2addons.network.SetConfigAmountPacket;
 
-import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class EjectorScreen<C extends EjectorMenu> extends UpgradeableScreen<C> {
+public class EjectorScreen<C extends EjectorMenu> extends AEBaseScreen<C> {
 
     private ItemStack missingIcon = ItemStack.EMPTY;
     private String missingCountText = "";
@@ -61,11 +60,11 @@ public class EjectorScreen<C extends EjectorMenu> extends UpgradeableScreen<C> {
                 Utils.asyncDelay(setColorFunction, 1);
             }
         });
-        btn.setTooltip(Tooltip.create(Component.literal("Load settings from pattern")));
+        btn.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.ejector_load_pattern")));
         this.widgets.add("load", btn);
 
         this.amount = new AETextField(style, font, 0, 0, 0, 0);
-        amount.setTooltip(Tooltip.create(Component.literal("Multiplier applied to all items")));
+        amount.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.ejector_multiplier_tooltip")));
         amount.setBordered(false);
         this.widgets.add("amount", amount);
 
@@ -95,7 +94,9 @@ public class EjectorScreen<C extends EjectorMenu> extends UpgradeableScreen<C> {
         if (parsedOk && !missingIcon.isEmpty()) {
             setTextContent("missing", Component.empty());
         } else {
-            setTextContent("missing", Component.literal(getMenu().cantCraft == null ? "nothing" : getMenu().cantCraft));
+            setTextContent("missing", getMenu().cantCraft == null
+                    ? Component.translatable("gui.crazyae2addons.ejector_nothing")
+                    : Component.literal(getMenu().cantCraft));
         }
     }
 
@@ -208,9 +209,9 @@ public class EjectorScreen<C extends EjectorMenu> extends UpgradeableScreen<C> {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (this.minecraft.options.keyPickItem.matchesMouse(button)) {
+        if (button == 2) {
             var slot = this.getSlotUnderMouse();
-            if (getMenu().canModifyAmountForSlot(slot)) {
+            if (slot != null && getMenu().canModifyAmountForSlot(slot)) {
                 var gs = GenericStack.fromItemStack(slot.getItem());
                 if (gs != null) {
                     this.setSlotsHidden(SlotSemantics.CONFIG, true);
@@ -236,8 +237,10 @@ public class EjectorScreen<C extends EjectorMenu> extends UpgradeableScreen<C> {
                 }
             }
         }
+
         return super.mouseClicked(mouseX, mouseY, button);
     }
+
 
     @Override
     protected void renderTooltip(net.minecraft.client.gui.GuiGraphics gg, int x, int y) {
@@ -248,7 +251,7 @@ public class EjectorScreen<C extends EjectorMenu> extends UpgradeableScreen<C> {
 
         if (this.menu.getCarried().isEmpty() && this.menu.canModifyAmountForSlot(this.hoveredSlot)) {
             var lines = new java.util.ArrayList<>(getTooltipFromContainerItem(this.hoveredSlot.getItem()));
-            lines.add(Component.literal("Middle mouse button to set amount").withStyle(net.minecraft.ChatFormatting.GRAY));
+            lines.add(Component.translatable("gui.crazyae2addons.ejector_middle_click").withStyle(net.minecraft.ChatFormatting.GRAY));
             drawTooltip(gg, x, y, lines);
             return;
         }
@@ -267,7 +270,9 @@ public class EjectorScreen<C extends EjectorMenu> extends UpgradeableScreen<C> {
             if (parsedOk && !missingIcon.isEmpty()) {
                 setTextContent("missing", Component.empty());
             } else {
-                setTextContent("missing", Component.literal(s == null ? "nothing" : s));
+                setTextContent("missing", s == null
+                        ? Component.translatable("gui.crazyae2addons.ejector_nothing")
+                        : Component.literal(s));
             }
         }
     }

@@ -31,7 +31,7 @@ public class CrazyCategory extends ModularUIRecipeCategory<CrazyWrapper> {
 
     @Override
     public Component getTitle() {
-        return Component.literal("Crazy Multiblocks");
+        return Component.translatable("jei.crazyae2addons.category_crazy_multiblocks");
     }
 
     @Override

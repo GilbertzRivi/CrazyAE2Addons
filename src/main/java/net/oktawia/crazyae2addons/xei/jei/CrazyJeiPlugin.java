@@ -6,6 +6,7 @@ import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.registration.IModIngredientRegistration;
+import mezz.jei.api.registration.IRecipeCatalystRegistration;
 import mezz.jei.api.registration.IRecipeCategoryRegistration;
 import mezz.jei.api.registration.IRecipeRegistration;
 import mezz.jei.api.runtime.IIngredientManager;
@@ -16,6 +17,7 @@ import net.minecraft.world.entity.MobCategory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.oktawia.crazyae2addons.CrazyAddons;
+import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.mobstorage.MobKey;
 import net.oktawia.crazyae2addons.mobstorage.MobKeyIng;
 import net.oktawia.crazyae2addons.mobstorage.MobKeyIngType;
@@ -65,21 +67,11 @@ public class CrazyJeiPlugin implements IModPlugin {
                 .toList();
         registration.addRecipes(FabricationCategory.TYPE, fabricationWrapped);
     }
-
     @Override
-    public void registerIngredients(IModIngredientRegistration reg) {
-        List<MobKeyIng> all = new ArrayList<>();
-        for (EntityType<?> type : ForgeRegistries.ENTITY_TYPES.getValues()) {
-            if (type != null && type.canSummon() && type.getCategory() != MobCategory.MISC) {
-                var key = MobKey.of(type);
-                all.add(MobKeyIng.of(key));
-            }
-        }
-        reg.register(MobKeyIngType.TYPE, all, new MobKeyIngHelper(), new MobKeyIngDelegatingRenderer());
+    public void registerRecipeCatalysts(IRecipeCatalystRegistration registration) {
+        registration.addRecipeCatalyst(CrazyBlockRegistrar.ENTROPY_CRADLE_CONTROLLER.get(), CradleCategory.TYPE);
+        registration.addRecipeCatalyst(CrazyBlockRegistrar.RESEARCH_STATION.get(), ResearchCategory.TYPE);
+        registration.addRecipeCatalyst(CrazyBlockRegistrar.RECIPE_FABRICATOR_BLOCK.get(), FabricationCategory.TYPE);
     }
 
-    @Override
-    public void onRuntimeAvailable(@NotNull IJeiRuntime jei) {
-        IngredientConverters.register(new MobKeyIngredientConverter());
-    }
 }

@@ -1,8 +1,6 @@
 package net.oktawia.crazyae2addons.renderer.preview;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.block.BlockRenderDispatcher;
-import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.Block;
@@ -51,9 +49,6 @@ public class MobFarmPreviewRenderer {
     }
 
     private static void rebuildCache(MobFarmControllerBE controller, Direction facing) {
-        Minecraft mc = Minecraft.getInstance();
-        BlockRenderDispatcher blockRenderer = mc.getBlockRenderer();
-
         var validator = controller.validator;
         List<List<String>> layers = validator.getLayers();
         Map<String, List<Block>> symbols = validator.getSymbols();
@@ -79,17 +74,18 @@ public class MobFarmPreviewRenderer {
                     if (blocks.isEmpty()) continue;
 
                     BlockState state = blocks.get(0).defaultBlockState();
-                    if (state.getBlock() instanceof MobFarmWallBlock){
+                    if (state.getBlock() instanceof MobFarmWallBlock) {
                         state = state.setValue(MobFarmWallBlock.FORMED, true);
                     }
+
                     int relX = x - originX;
                     int relY = y - originY;
                     int relZ = z - originZ;
                     BlockPos offset = rotateOffset(relX, relZ, facing);
                     BlockPos pos = origin.offset(offset.getX(), relY, offset.getZ());
 
-                    BakedModel model = blockRenderer.getBlockModel(state);
-                    blockInfos.add(new PreviewInfo.BlockInfo(pos, state, model));
+                    // nowa sygnatura BlockInfo: tylko pos + state
+                    blockInfos.add(new PreviewInfo.BlockInfo(pos, state));
                 }
             }
         }

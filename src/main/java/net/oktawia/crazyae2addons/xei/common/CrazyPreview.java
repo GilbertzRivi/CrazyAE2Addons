@@ -4,17 +4,16 @@ import com.lowdragmc.lowdraglib.gui.widget.*;
 import com.lowdragmc.lowdraglib.jei.IngredientIO;
 import com.lowdragmc.lowdraglib.misc.ItemStackTransfer;
 import com.lowdragmc.lowdraglib.utils.BlockInfo;
-import com.lowdragmc.lowdraglib.utils.BlockPosFace;
 import com.lowdragmc.lowdraglib.utils.TrackedDummyWorld;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.item.ItemStack;
@@ -44,7 +43,6 @@ public class CrazyPreview extends WidgetGroup {
     private Set<BlockPos> allPositions = new HashSet<>();
     private final SlotWidget selectedBlockSlot;
     private ItemStack selectedStack = ItemStack.EMPTY;
-    private BlockPos selectedBlockPos = null;
 
     public CrazyPreview(ResourceLocation structureId, List<ItemStack> ingredients, String displayName) {
         super(0, 0, WIDTH, HEIGHT);
@@ -56,12 +54,10 @@ public class CrazyPreview extends WidgetGroup {
         LabelWidget label = new LabelWidget(5, 5, displayName);
 
         sceneWidgetAll.setOnSelected((pos, facing) -> {
-            selectedBlockPos = pos;
             updateSelectedBlock(pos);
         });
 
         sceneWidgetLayer.setOnSelected((pos, facing) -> {
-            selectedBlockPos = pos;
             updateSelectedBlock(pos);
         });
 
@@ -81,7 +77,9 @@ public class CrazyPreview extends WidgetGroup {
 
         addWidget(new ButtonWidget(130, 20, 20, 20,
                 new com.lowdragmc.lowdraglib.gui.texture.TextTexture("L")
-                        .setSupplier(() -> layer >= 0 ? "L:" + layer : "ALL"),
+                        .setSupplier(() -> layer >= 0
+                                ? Component.translatable("gui.crazyae2addons.crazy_preview_layer_prefix").getString() + layer
+                                : Component.translatable("gui.crazyae2addons.crazy_preview_layer_all").getString()),
                 b -> switchLayer()));
 
         int x = 5;
@@ -160,8 +158,6 @@ public class CrazyPreview extends WidgetGroup {
                     state = state.setValue(MobFarmWallBlock.FORMED, true);
                 } else if (state.getBlock() instanceof SpawnerExtractorWallBlock) {
                     state = state.setValue(SpawnerExtractorWallBlock.FORMED, true);
-                } else if (state.getBlock() instanceof EnergyStorageFrame) {
-                    state = state.setValue(EnergyStorageFrame.FORMED, true);
                 } else if (state.getBlock() instanceof EntropyCradle) {
                     state = state.setValue(EntropyCradle.FORMED, true);
                 } else if (state.getBlock() instanceof EntropyCradleCapacitor) {

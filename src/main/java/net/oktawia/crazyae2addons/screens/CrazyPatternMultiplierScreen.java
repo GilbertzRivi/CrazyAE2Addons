@@ -14,7 +14,6 @@ import net.oktawia.crazyae2addons.Utils;
 import net.oktawia.crazyae2addons.menus.CrazyPatternMultiplierMenu;
 import net.oktawia.crazyae2addons.misc.IconButton;
 
-
 public class CrazyPatternMultiplierScreen<C extends CrazyPatternMultiplierMenu> extends AEBaseScreen<C> {
 
     public IconButton clear;
@@ -29,30 +28,36 @@ public class CrazyPatternMultiplierScreen<C extends CrazyPatternMultiplierMenu> 
         super(menu, playerInventory, title, style);
 
         this.confirm = new IconButton(Icon.ENTER, this::modify);
-        this.confirm.setTooltip(Tooltip.create(Component.literal("Multiply all patterns by selected value")));
+        this.confirm.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.pattern_mult_confirm")));
+
         this.clear = new IconButton(Icon.CLEAR, this::clear);
-        this.clear.setTooltip(Tooltip.create(Component.literal("Clear all patterns")));
+        this.clear.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.pattern_mult_clear")));
+
         this.circuit = new IconButton(Icon.ENTER, this::circuit);
-        this.circuit.setTooltip(Tooltip.create(Component.literal("Set selected circuit to all patterns")));
+        this.circuit.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.pattern_mult_set_circuit")));
+
         this.circuitValue = new AETextField(style, Minecraft.getInstance().font, 0, 0, 0, 0);
         this.circuitValue.setBordered(false);
         this.circuitValue.setMaxLength(2);
-        this.circuitValue.setTooltip(Tooltip.create(Component.literal("Input desired circuit number (0-32)")));
+        this.circuitValue.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.pattern_mult_circuit_input")));
+
         this.value = new AETextField(style, Minecraft.getInstance().font, 0,0,0,0);
         this.value.setBordered(false);
         this.value.setMaxLength(50);
-        this.value.setPlaceholder(Component.literal("Multiplier"));
-        this.value.setTooltip(Tooltip.create(Component.literal("Input the amount by which you want to multiply your patterns, can also be an equation like 2*(3/4)")));
+        this.value.setPlaceholder(Component.translatable("gui.crazyae2addons.pattern_mult_multiplier"));
+        this.value.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.pattern_mult_value_tooltip")));
+
         this.limit = new AETextField(style, Minecraft.getInstance().font, 0, 0, 0, 0);
         this.limit.setBordered(false);
         this.limit.setMaxLength(16);
-        this.limit.setTooltip(Tooltip.create(Component.literal("Limit above which patterns wont get multiplied, 0 means limit disabled")));
+        this.limit.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.pattern_mult_limit")));
         this.limit.setResponder(val -> {
             try {
                 int parsed = Integer.parseInt(val);
                 getMenu().setLimit(Math.max(parsed, 0));
             } catch (Exception ignored) {}
         });
+
         this.widgets.add("confirm", this.confirm);
         this.widgets.add("value", this.value);
         this.widgets.add("clear", this.clear);

@@ -1,7 +1,14 @@
 {
   "type": "crazyae2addons:fabrication",
-  "input": { "item": "minecraft:enchanting_table" },
-  "input_count": 1,
-  "output": { "item": "crazyae2addons:auto_enchanter", "count": 1 },
+  "input": [
+    { "item": "minecraft:enchanting_table", "count": 2 },
+    { "item": "ae2:import_bus",           "count": 1 },
+    { "item": "ae2:export_bus",           "count": 1 },
+    { "item": "ae2:energy_cell",          "count": 1 }
+  ],
+  "output": {
+    "item": "crazyae2addons:auto_enchanter",
+    "count": 1
+  },
   "required_key": "crazyae2addons:auto_enchanter_research"
 }

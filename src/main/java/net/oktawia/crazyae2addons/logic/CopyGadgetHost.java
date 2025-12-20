@@ -1,11 +1,14 @@
 package net.oktawia.crazyae2addons.logic;
 
-import appeng.api.implementations.menuobjects.ItemMenuHost;
+import appeng.api.implementations.blockentities.IWirelessAccessPoint;
+import appeng.helpers.WirelessTerminalMenuHost;
+import appeng.menu.MenuOpener;
 import com.mojang.logging.LogUtils;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.storage.LevelResource;
+import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Files;
@@ -14,9 +17,16 @@ import java.util.UUID;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-public class CopyGadgetHost extends ItemMenuHost {
+public class CopyGadgetHost extends WirelessTerminalMenuHost {
+
     public CopyGadgetHost(Player player, @Nullable Integer slot, ItemStack itemStack) {
-        super(player, slot, itemStack);
+        super(player, slot, itemStack, ((player1, iSubMenu) ->
+                MenuOpener.open(CrazyMenuRegistrar.COPY_GADGET_MENU.get(), player1, iSubMenu.getLocator(), true)));
+    }
+
+    @Override
+    protected double getWapSqDistance(IWirelessAccessPoint wap) {
+        return 1;
     }
 
     public String getProgram() {

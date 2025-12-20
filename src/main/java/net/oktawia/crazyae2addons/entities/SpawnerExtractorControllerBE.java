@@ -141,7 +141,7 @@ public class SpawnerExtractorControllerBE extends AENetworkBlockEntity implement
 
     @Override
     public Component getDisplayName() {
-        return Component.literal("Spawner Extractor Controller");
+        return Component.translatable("block.crazyae2addons.spawner_extractor_controller");
     }
 
     public void openMenu(Player player, MenuLocator locator) {

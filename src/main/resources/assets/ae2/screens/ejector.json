@@ -28,7 +28,9 @@
       }
     },
     "interface_config": {
-      "text": "Config",
+      "text": {
+        "translate": "gui.crazyae2addons.ejector_config"
+      },
       "position": {
         "left": 8,
         "top": 31
@@ -47,7 +49,9 @@
         "top": 12
       },
       "align": "CENTER",
-      "text": "Missing:"
+      "text": {
+        "translate": "gui.crazyae2addons.ejector_missing_label"
+      }
     }
   },
   "widgets": {

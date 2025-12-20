@@ -15,11 +15,13 @@ public class FabricationEmiRecipe extends ModularEmiRecipe<WidgetGroup> {
 
     public FabricationEmiRecipe(FabricationEntry entry, EmiRecipeCategory category) {
         super(() -> new FabricationPreview(
-                entry.recipeId(),
-                entry.input(),
+                entry.id(),
+                entry.inputs(),
                 entry.output(),
+                entry.fluidInput(),
+                entry.fluidOutput(),
                 entry.requiredKey(),
-                entry.requiredLabel()
+                entry.label()
         ));
         this.category = category;
         this.entry = entry;
@@ -32,7 +34,6 @@ public class FabricationEmiRecipe extends ModularEmiRecipe<WidgetGroup> {
 
     @Override
     public ResourceLocation getId() {
-        // unikalny ID oparty o ID recepty
-        return CrazyAddons.makeId("/fabrication/" + entry.recipeId().toString().replace(':', '/'));
+        return CrazyAddons.makeId("/fabrication/" + entry.id().toString().replace(':', '/'));
     }
 }

@@ -1,6 +1,5 @@
 package net.oktawia.crazyae2addons.logic;
 
-import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.TickEvent;
@@ -11,8 +10,6 @@ import java.util.*;
 
 @Mod.EventBusSubscriber
 public class BuildScheduler {
-
-    public static final int DEFAULT_RATE = 4; // domyślnie 4 bloki / tick
 
     private static final List<Job> JOBS = new ArrayList<>();
 

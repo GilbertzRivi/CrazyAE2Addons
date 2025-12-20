@@ -2,6 +2,7 @@
   "type": "crazyae2addons:cradle",
   "result_block": "crazyae2addons:penrose_frame",
   "preview_nbt": "crazyae2addons:penrose_frame.nbt",
+  "description": "penrose.xei.description",
   "pattern": {
     "symbols": {
       "A": ["ae2:fluix_block"],

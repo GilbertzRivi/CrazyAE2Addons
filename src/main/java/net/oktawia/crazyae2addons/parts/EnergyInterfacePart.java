@@ -73,7 +73,9 @@ public class EnergyInterfacePart extends AEBasePart {
         @Override
         public int extractEnergy(int maxExtract, boolean simulate) {
             var grid = getMainNode().getGrid();
-            if (grid == null) return 0;
+            if (grid == null) {
+                return 0;
+            }
 
             var energyService = grid.getEnergyService();
             double storedAE = energyService.getStoredPower();
@@ -97,8 +99,11 @@ public class EnergyInterfacePart extends AEBasePart {
             return true;
         }
         @Override public int receiveEnergy(int maxReceive, boolean simulate) {
-            if (getMainNode().getGrid() == null) return 0;
-            return (int) getMainNode().getGrid().getEnergyService().injectPower(maxReceive, simulate ? Actionable.SIMULATE : Actionable.MODULATE);
+            var grid = getMainNode().getGrid();
+            if (grid == null) {
+                return 0;
+            }
+            return maxReceive - ((int) getMainNode().getGrid().getEnergyService().injectPower((double) maxReceive / 2, simulate ? Actionable.SIMULATE : Actionable.MODULATE)) * 2;
         }
     });
 

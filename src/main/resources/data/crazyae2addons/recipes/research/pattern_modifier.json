@@ -1,72 +1,16 @@
 {
   "type": "crazyae2addons:research",
-  "duration": 2400,
+  "duration": 76800,
   "energy_per_tick": 180,
-  "fluid": "crazyae2addons:researchfluid",
-  "fluid_per_tick": 10,
-  "requires_stabilizer": true,
   "gadget": true,
   "consumables": [
-    { "item": "ae2:blank_pattern", "count": 128 }
+    { "item": "ae2:blank_pattern", "count": 32, "computation": 64 },
+    { "item": "ae2:blank_pattern", "count": 32, "computation": 64 }
   ],
   "drive": true,
-  "structure": {
-    "mode": "pattern",
-    "size": [5, 5, 5],
-  "symbols": {
-    "A": [
-      "minecraft:iron_block"
-    ],
-    "B": [
-      "minecraft:polished_deepslate"
-    ],
-    "D": [
-      "minecraft:note_block"
-    ],
-    "E": [
-      "minecraft:redstone_block"
-    ]
-  },
-  "layers": [
-    [
-      "A A A A A",
-      "A A A A A",
-      "A A A A A",
-      "A A A A A",
-      "A A A A A"
-    ],
-    [
-      "B B D B B",
-      "B . E . B",
-      "D E E E D",
-      "B . E . B",
-      "B B D B B"
-    ],
-    [
-      "A A A A A",
-      "A . . . A",
-      "A . E . A",
-      "A . . . A",
-      "A A A A A"
-    ],
-    [
-      "B B D B B",
-      "B . E . B",
-      "D E E E D",
-      "B . E . B",
-      "B B D B B"
-    ],
-    [
-      "A A A A A",
-      "A A A A A",
-      "A A A A A",
-      "A A A A A",
-      "A A A A A"
-    ]
-  ]
-},
   "unlock": {
     "key": "crazyae2addons:pattern_modifier_research",
-    "label": "Pattern Manipulation"
+    "label": "Pattern Manipulation",
+    "item": "crazyae2addons:crazy_pattern_modifier"
   }
 }

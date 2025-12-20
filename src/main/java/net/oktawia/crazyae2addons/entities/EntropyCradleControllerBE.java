@@ -114,7 +114,7 @@ public class EntropyCradleControllerBE extends AENetworkInvBlockEntity implement
 
     @Override
     public Component getDisplayName() {
-        return Component.literal("Entropy Cradle");
+        return Component.translatable("block.crazyae2addons.entropy_cradle_controller");
     }
 
     @Override

@@ -29,28 +29,18 @@
       },
       "align": "CENTER"
     },
-    "disk": {
-      "text": "Data Disk",
-      "position": {
-        "left": 11,
-        "top": 100
-      },
-      "align": "LEFT"
-    },
     "inputs": {
-      "text": "Inputs",
+      "text": {
+        "translate": "gui.crazyae2addons.research_station_inputs"
+      },
       "position": {
-        "left": 112,
-        "top": 32
+        "left": 114,
+        "top": 29
       },
       "align": "CENTER"
     }
   },
   "images": {
-    "progressWater": {
-      "texture": "guis/research_station.png",
-      "srcRect": [177, 0, 50, 6]
-    },
     "progressEnergy": {
       "texture": "guis/research_station.png",
       "srcRect": [177, 6, 50, 6]
@@ -61,36 +51,14 @@
     }
   },
   "slots": {
-    "MACHINE_INPUT": {
-      "left": 62,
-      "top": 43,
-      "grid": "BREAK_AFTER_3COLS"
-    },
-    "CONFIG": {
-      "left": 116,
-      "top": 43,
-      "grid": "BREAK_AFTER_3COLS"
-    },
     "MACHINE_OUTPUT": {
-      "left": 26,
-      "top": 79,
+      "left": 106,
+      "top": 40,
       "grid": "HORIZONTAL"
     }
   },
   "widgets": {
-    "prevbtn": {
-      "right": 24,
-      "top": 8,
-      "width": 16,
-      "height": 16
-    },
     "energyBar": {
-      "left": 8,
-      "top": 30,
-      "width": 50,
-      "height": 6
-    },
-    "waterBar": {
       "left": 8,
       "top": 40,
       "width": 50,
@@ -103,7 +71,7 @@
       "height": 6
     },
     "devbtn": {
-      "right": 42,
+      "right": 24,
       "top": 8,
       "width": 16,
       "height": 16

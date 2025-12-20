@@ -1,9 +1,14 @@
 package net.oktawia.crazyae2addons;
 
+import com.electronwill.nightconfig.core.Config;
+import com.electronwill.nightconfig.core.UnmodifiableConfig;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.common.ForgeConfigSpec;
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class CrazyConfig {
     public static final ForgeConfigSpec COMMON_SPEC;
@@ -38,12 +43,23 @@ public class CrazyConfig {
         public final ForgeConfigSpec.IntValue     CradleCost;
         public final ForgeConfigSpec.IntValue     CradleChargingSpeed;
 
-        public final ForgeConfigSpec.IntValue     PenroseGenT0;
-        public final ForgeConfigSpec.IntValue     PenroseGenT1;
-        public final ForgeConfigSpec.IntValue     PenroseGenT2;
-        public final ForgeConfigSpec.IntValue     PenroseGenT3;
-        public final ForgeConfigSpec.ConfigValue<List<? extends String>> PenroseGoodFuel;
-        public final ForgeConfigSpec.ConfigValue<List<? extends String>> PenroseBestFuel;
+        public final ForgeConfigSpec.BooleanValue PenroseMeltdownExplosionsEnabled;
+        public final ForgeConfigSpec.IntValue     PenroseMeltdownFieldRadius;
+
+        public final ForgeConfigSpec.LongValue    PenroseStartupCostSingu;
+
+        public final ForgeConfigSpec.LongValue    PenroseInitialMassMu;
+        public final ForgeConfigSpec.LongValue    PenroseMassWindowMu;
+        public final ForgeConfigSpec.DoubleValue  PenroseMassFactorMax;
+
+        public final ForgeConfigSpec.DoubleValue  PenroseDutyCompensation;
+        public final ForgeConfigSpec.DoubleValue  PenroseFeBasePerSinguFlow;
+        public final ForgeConfigSpec.DoubleValue  PenroseHeatPerSinguFlow;
+
+        public final ForgeConfigSpec.DoubleValue  PenroseHeatPeakMK;
+        public final ForgeConfigSpec.DoubleValue  PenroseMaxHeatMK;
+
+        public final ForgeConfigSpec.IntValue     PenroseMaxFeedPerTick;
 
         public final ForgeConfigSpec.BooleanValue ResearchRequired;
 
@@ -55,6 +71,9 @@ public class CrazyConfig {
         public final ForgeConfigSpec.IntValue     FEp2pSpeed;
         public final ForgeConfigSpec.IntValue     Fluidp2pSpeed;
         public final ForgeConfigSpec.IntValue     Itemp2pSpeed;
+
+        public final ForgeConfigSpec.ConfigValue<UnmodifiableConfig> ResearchUnitExtraQBlocks;
+
 
         public Common(ForgeConfigSpec.Builder builder) {
             builder.comment("Crazy AE2 Addons - Config").push("general");
@@ -138,43 +157,138 @@ public class CrazyConfig {
             builder.pop();
 
 
+            // ===== Penrose Controller (multiblock) =====
             builder.push("PenroseSphere");
-            PenroseGenT0 = builder
-                    .comment("Max FE production when capped (tier 0)")
-                    .defineInRange("penroseGenT0", 262_144, 0, Integer.MAX_VALUE);
 
-            PenroseGenT1 = builder
-                    .comment("Max FE production when capped (tier 1)")
-                    .defineInRange("penroseGenT1", 1_048_576, 0, Integer.MAX_VALUE);
-
-            PenroseGenT2 = builder
-                    .comment("Max FE production when capped (tier 2)")
-                    .defineInRange("penroseGenT2", 4_194_304, 0, Integer.MAX_VALUE);
-
-            PenroseGenT3 = builder
-                    .comment("Max FE production when capped (tier 3)")
-                    .defineInRange("penroseGenT3", 16_777_216, 0, Integer.MAX_VALUE);
-
-            PenroseGoodFuel = builder
-                    .comment("Fuel boosting production x4")
-                    .defineList("penroseGoodFuel", List.of("ae2:matter_ball"), o -> o instanceof String);
-
-            PenroseBestFuel = builder
-                    .comment("Fuel boosting production x64")
-                    .defineList("penroseBestFuel", List.of("ae2:singularity"), o -> o instanceof String);
+            builder.push("Meltdown");
+            PenroseMeltdownExplosionsEnabled = builder
+                    .comment(
+                            "Enable/disable meltdown world effect (explosions + black hole field).",
+                            "Default: true."
+                    )
+                    .define("penroseMeltdownExplosionsEnabled", true);
+            PenroseMeltdownFieldRadius = builder
+                    .comment(
+                            "Radius used by BlackHoleManager.start(...) after meltdown.",
+                            "Set to 0 to disable the field entirely."
+                    )
+                    .defineInRange("penroseMeltdownFieldRadius", 768, 0, 4096);
             builder.pop();
+
+            builder.push("Startup");
+            PenroseStartupCostSingu = builder
+                    .comment(
+                            "How many Super Singularity items are consumed to start the black hole.",
+                            "Units: items. Default: 32512."
+                    )
+                    .defineInRange("penroseStartupCostSingu", 32_512L, 0L, Long.MAX_VALUE);
+            builder.pop();
+
+            builder.push("Balance");
+            PenroseInitialMassMu = builder
+                    .comment(
+                            "Initial black hole mass at startup.",
+                            "Units: MU (internal mass unit). Default matches old hardcoded value."
+                    )
+                    .defineInRange("penroseInitialMassMu", 32_768L * 8_192L, 0L, Long.MAX_VALUE);
+
+            PenroseMassWindowMu = builder
+                    .comment(
+                            "Allowed mass window above initial mass before meltdown triggers.",
+                            "Max mass = initialMassMu + massWindowMu.",
+                            "Units: MU. Default: 1113600."
+                    )
+                    .defineInRange("penroseMassWindowMu", 1_113_600L, 0L, Long.MAX_VALUE);
+
+            PenroseMassFactorMax = builder
+                    .comment(
+                            "Max mass factor multiplier at the sweet-spot (peak of the mass curve).",
+                            "massFactorSweet(): 1.0 .. massFactorMax.",
+                            "Default: 2.0 (matches current)."
+                    )
+                    .defineInRange("penroseMassFactorMax", 2.0, 1.0, 64.0);
+
+            PenroseDutyCompensation = builder
+                    .comment(
+                            "Duty-cycle compensation multiplier used in energy calculations.",
+                            "Default: 4/3 (~1.3333333)."
+                    )
+                    .defineInRange("penroseDutyCompensation", 4.0 / 3.0, 0.0, 1000.0);
+
+            PenroseFeBasePerSinguFlow = builder
+                    .comment(
+                            "Base FE produced per 1.0 singu/t disk flow at heatEff=1 and massFactor=1.",
+                            "Units: FE per tick per (singu/t).",
+                            "Default equals current PenroseControllerBE FE_BASE_PER_SINGU."
+                    )
+                    .defineInRange("penroseFeBasePerSinguFlow", (double) (1L << 27) * 0.5, 0.0, 1.0e18);
+
+            PenroseHeatPerSinguFlow = builder
+                    .comment(
+                            "Heat added per tick per 1.0 singu/t disk flow at massFactor=1.",
+                            "Units: MK per tick per (singu/t)."
+                    )
+                    .defineInRange("penroseHeatPerSinguFlow", 0.5, 0.0, 1.0e12);
+
+            PenroseHeatPeakMK = builder
+                    .comment(
+                            "Heat value where the efficiency curve peaks (heatEff reaches 1.0 at heat=peak).",
+                            "Used by computeHeatEff(): x=heat/peak; eff=2x-x^2 clamped to [0..1].",
+                            "Units: MK. Default: 50000."
+                    )
+                    .defineInRange("penroseHeatPeakMK", 50_000.0, 1.0, 1.0e12);
+
+            PenroseMaxHeatMK = builder
+                    .comment(
+                            "Overheat threshold. If heat >= maxHeat -> meltdown.",
+                            "Units: MK. Default: 100000."
+                    )
+                    .defineInRange("penroseMaxHeatMK", 100_000.0, 0.0, 1.0e12);
+
+            PenroseMaxFeedPerTick = builder
+                    .comment(
+                            "Hard cap on how many singularities per tick can be injected into the disk.",
+                            "Units: items/t. Default: 4096."
+                    )
+                    .defineInRange("penroseMaxFeedPerTick", 4_096, 0, Integer.MAX_VALUE);
+            builder.pop();
+
+            builder.pop(); // PenroseController
 
 
             builder.push("Research");
             ResearchRequired = builder
                     .comment("Enable research mechanic (if false: Recipe Fabricator works without data drive)")
                     .define("researchEnabled", true);
+            ResearchUnitExtraQBlocks = builder
+                    .comment(
+                            "Extra blocks allowed in the Research Unit multiblock in 'Q' slots.",
+                            "Format: TOML map of \"namespace:block\" -> integer.",
+                            "The integer is currently used as a multiplier for computation (count * value).",
+                            "Keys with ':' must be quoted, e.g. { \"minecraft:glass\" = 1 }.",
+                            "Default: empty map."
+                    )
+                    .define(
+                            "researchUnitExtraQBlocks",
+                            Config.inMemory(),
+                            o -> {
+                                if (!(o instanceof UnmodifiableConfig c)) return false;
+                                for (var e : c.valueMap().entrySet()) {
+                                    String key = e.getKey();
+                                    Object val = e.getValue();
+
+                                    if (key == null || ResourceLocation.tryParse(key) == null) return false;
+                                    if (!(val instanceof Number)) return false; // TOML może dać Int/Long
+                                }
+                                return true;
+                            }
+                    );
             builder.pop();
 
 
-            builder.push("Nokia");
+            builder.push("Portable Spatial IO");
             NokiaCost = builder
-                    .comment("FE cost multiplier for Nokia 3310")
+                    .comment("FE cost multiplier for Portable Spatial IO")
                     .defineInRange("nokiaCost", 5, 0, 100);
             builder.pop();
 
@@ -204,7 +318,7 @@ public class CrazyConfig {
                     .defineInRange("itemp2pSpeed", 4, 0, Integer.MAX_VALUE);
             builder.pop();
 
-            builder.pop();
+            builder.pop(); // general
         }
     }
 }

@@ -150,12 +150,6 @@ public final class Screens {
         );
 
         InitScreens.register(
-                CrazyMenuRegistrar.ENERGY_STORAGE_CONTROLLER_MENU.get(),
-                EnergyStorageControllerScreen<EnergyStorageControllerMenu>::new,
-                "/screens/energy_storage_controller.json"
-        );
-
-        InitScreens.register(
                 CrazyMenuRegistrar.AUTO_BUILDER_MENU.get(),
                 AutoBuilderScreen<AutoBuilderMenu>::new,
                 "/screens/auto_builder.json"
@@ -211,14 +205,14 @@ public final class Screens {
 
         InitScreens.register(
                 CrazyMenuRegistrar.GADGET_MENU.get(),
-                GadgetScreen<GadgetMenu>::new,
-                "/screens/gadget.json"
+                PortableSpatialStorageScreen<PortableSpatialStorageMenu>::new,
+                "/screens/portable_spatial_storage.json"
         );
 
         InitScreens.register(
                 CrazyMenuRegistrar.COPY_GADGET_MENU.get(),
-                CopyGadgetScreen<CopyGadgetMenu>::new,
-                "/screens/copy_gadget.json"
+                PortableAutobuilderScreen<PortableAutobuilderMenu>::new,
+                "/screens/portable_builder.json"
         );
 
         InitScreens.register(
@@ -237,6 +231,54 @@ public final class Screens {
                 CrazyMenuRegistrar.MOB_KEY_SELECTOR_MENU.get(),
                 MobKeySelectorScreen<MobKeySelectorMenu>::new,
                 "/screens/mob_key_selector.json"
+        );
+
+        InitScreens.register(
+                CrazyMenuRegistrar.RESEARCH_UNIT_MENU.get(),
+                ResearchUnitScreen<ResearchUnitMenu>::new,
+                "/screens/research_unit.json"
+        );
+
+        InitScreens.register(
+                CrazyMenuRegistrar.RESEARCH_PEDESTAL_MENU.get(),
+                ResearchPedestalScreen<ResearchPedestalMenu>::new,
+                "/screens/research_pedestal.json"
+        );
+
+        InitScreens.register(
+                CrazyMenuRegistrar.PENROSE_MASS_EMITTER_MENU.get(),
+                PenroseMassEmitterScreen<PenroseMassEmitterMenu>::new,
+                "/screens/penrose_mass_emitter.json"
+        );
+
+        InitScreens.register(
+                CrazyMenuRegistrar.PENROSE_HEAT_EMITTER_MENU.get(),
+                PenroseHeatEmitterScreen<PenroseHeatEmitterMenu>::new,
+                "/screens/penrose_heat_emitter.json"
+        );
+
+        InitScreens.register(
+                CrazyMenuRegistrar.PENROSE_INJECTION_PORT_MENU.get(),
+                PenroseInjectionPortScreen<PenroseInjectionPortMenu>::new,
+                "/screens/penrose_injection_port.json"
+        );
+
+        InitScreens.register(
+                CrazyMenuRegistrar.PENROSE_HEAT_VENT_MENU.get(),
+                PenroseHeatVentScreen<PenroseHeatVentMenu>::new,
+                "/screens/penrose_heat_vent.json"
+        );
+
+        InitScreens.register(
+                CrazyMenuRegistrar.PENROSE_HAWKING_VENT_MENU.get(),
+                PenroseHawkingVentScreen<PenroseHawkingVentMenu>::new,
+                "/screens/penrose_hawking_vent.json"
+        );
+
+        InitScreens.register(
+                CrazyMenuRegistrar.WIRELESS_NOTIFICATION_TERMINAL_MENU.get(),
+                WirelessNotificationTerminalScreen<WirelessNotificationTerminalMenu>::new,
+                "/screens/wireless_notification_terminal.json"
         );
     }
 

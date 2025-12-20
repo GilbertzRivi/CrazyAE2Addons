@@ -232,7 +232,7 @@ public class ItemDefs {
 
         item(
                 CrazyItemRegistrar.REDSTONE_TERMINAL.get(),
-                "T/R",
+                "TR",
                 Map.of(
                         "R", Items.REDSTONE,
                         "T", AEParts.TERMINAL.asItem()
@@ -267,15 +267,6 @@ public class ItemDefs {
         );
 
         item(
-                CrazyItemRegistrar.UNASSEMBLED_CRAZY_PATTERN_PROVIDER.get(),
-                "PPP/PDP/PPP",
-                Map.of(
-                        "P", AEBlocks.PATTERN_PROVIDER.asItem(),
-                        "D", Items.DIAMOND.asItem()
-                )
-        );
-
-        item(
                 CrazyItemRegistrar.MOB_KEY_SELECTOR_ITEM.get(),
                 "CE",
                 Map.of(
@@ -285,11 +276,51 @@ public class ItemDefs {
         );
 
         item(
-                CrazyItemRegistrar.SAMSUNG_GALAXY_S6.get(),
+                CrazyItemRegistrar.PORTABLE_BUILDER.get(),
                 "CE",
                 Map.of(
                         "C", CrazyBlockRegistrar.AUTO_BUILDER_BLOCK.get().asItem(),
-                        "E", CrazyItemRegistrar.STRUCTURE_GADGET.get().asItem()
+                        "E", CrazyItemRegistrar.PORTABLE_SPATIAL_IO.get().asItem()
+                )
+        );
+
+        item(
+                CrazyItemRegistrar.AUTOMATION_UPGRADE_CARD.get(),
+                "CE",
+                Map.of(
+                        "C", AEItems.ADVANCED_CARD.asItem(),
+                        "E", AEBlocks.CRAFTING_UNIT.asItem()
+                )
+        );
+
+        item(
+                CrazyItemRegistrar.PLAYER_UPGRADE_CARD.get(),
+                "CE",
+                Map.of(
+                        "C", AEItems.ADVANCED_CARD.asItem(),
+                        "E", Items.IRON_PICKAXE.asItem()
+                )
+        );
+
+        item(
+                CrazyItemRegistrar.WIRELESS_NOTIFICATION_TERMINAL.get(),
+                "CE",
+                Map.of(
+                        "C", CrazyItemRegistrar.WIRELESS_REDSTONE_TERMINAL.get().asItem(),
+                        "E", CrazyItemRegistrar.AUTOMATION_UPGRADE_CARD.get().asItem()
+                )
+        );
+
+        item(
+                CrazyItemRegistrar.PORTABLE_SPATIAL_IO.get(),
+                "PTP/ISE/PDP",
+                Map.of(
+                        "P", AEBlocks.SPATIAL_PYLON.asItem(),
+                        "T", AEParts.TERMINAL.asItem(),
+                        "I", AEParts.IMPORT_BUS.asItem(),
+                        "S", AEBlocks.SPATIAL_IO_PORT.asItem(),
+                        "E", AEParts.EXPORT_BUS.asItem(),
+                        "D", AEBlocks.DENSE_ENERGY_CELL.asItem()
                 )
         );
     }

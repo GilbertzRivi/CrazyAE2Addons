@@ -1,8 +1,6 @@
 package net.oktawia.crazyae2addons.renderer.preview;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.block.BlockRenderDispatcher;
-import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.Block;
@@ -19,7 +17,9 @@ import net.oktawia.crazyae2addons.blocks.EntropyCradleCapacitor;
 import net.oktawia.crazyae2addons.entities.EntropyCradleControllerBE;
 import net.oktawia.crazyae2addons.renderer.PreviewRenderer;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 @Mod.EventBusSubscriber(modid = CrazyAddons.MODID, value = Dist.CLIENT)
 public class EntropyCradlePreviewRenderer {
@@ -50,9 +50,6 @@ public class EntropyCradlePreviewRenderer {
     }
 
     private static void rebuildCache(EntropyCradleControllerBE controller, Direction facing) {
-        Minecraft mc = Minecraft.getInstance();
-        BlockRenderDispatcher blockRenderer = mc.getBlockRenderer();
-
         var validator = controller.validator;
         List<List<String>> layers = validator.getLayers();
         Map<String, List<Block>> symbols = validator.getSymbols();
@@ -78,19 +75,20 @@ public class EntropyCradlePreviewRenderer {
                     if (blocks.isEmpty()) continue;
 
                     BlockState state = blocks.get(0).defaultBlockState();
-                    if (state.getBlock() instanceof EntropyCradle){
+                    if (state.getBlock() instanceof EntropyCradle) {
                         state = state.setValue(EntropyCradle.FORMED, true);
-                    } else if (state.getBlock() instanceof EntropyCradleCapacitor){
+                    } else if (state.getBlock() instanceof EntropyCradleCapacitor) {
                         state = state.setValue(EntropyCradleCapacitor.FORMED, true);
                     }
+
                     int relX = x - originX;
                     int relY = y - originY;
                     int relZ = z - originZ;
                     BlockPos offset = rotateOffset(relX, relZ, facing);
                     BlockPos pos = origin.offset(offset.getX(), relY, offset.getZ());
 
-                    BakedModel model = blockRenderer.getBlockModel(state);
-                    blockInfos.add(new PreviewInfo.BlockInfo(pos, state, model));
+                    // nowa sygnatura BlockInfo: tylko pos + state
+                    blockInfos.add(new PreviewInfo.BlockInfo(pos, state));
                 }
             }
         }
@@ -102,9 +100,9 @@ public class EntropyCradlePreviewRenderer {
         return switch (facing) {
             case NORTH -> new BlockPos(x, 0, z);
             case SOUTH -> new BlockPos(-x, 0, -z);
-            case WEST -> new BlockPos(z, 0, -x);
-            case EAST -> new BlockPos(-z, 0, x);
-            default -> BlockPos.ZERO;
+            case WEST  -> new BlockPos(z, 0, -x);
+            case EAST  -> new BlockPos(-z, 0, x);
+            default    -> BlockPos.ZERO;
         };
     }
 }

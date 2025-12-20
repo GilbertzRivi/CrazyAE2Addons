@@ -14,13 +14,14 @@ public class EntropyCradleControllerScreen<C extends EntropyCradleControllerMenu
     public EntropyCradleControllerScreen(C menu, Inventory playerInventory, Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
         var prevBtn = new IconButton(Icon.ENTER, btn -> getMenu().changePreview(!getMenu().preview));
-        prevBtn.setTooltip(Tooltip.create(Component.literal("Enable/Disable preview")));
+        prevBtn.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.entropy_preview_tooltip")));
         this.widgets.add("prevbtn", prevBtn);
     }
 
     @Override
     public void updateBeforeRender() {
         super.updateBeforeRender();
-        setTextContent("prev", Component.literal("Preview: " + getMenu().preview));
+        setTextContent("prev", Component.translatable("gui.crazyae2addons.entropy_preview_label")
+                .append(String.valueOf(getMenu().preview)));
     }
 }

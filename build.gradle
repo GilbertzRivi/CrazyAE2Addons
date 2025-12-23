@@ -202,7 +202,8 @@ dependencies {
 
 //    implementation fg.deobf("curse.maven:expanded-ae-1213351:7266780")
 //    implementation fg.deobf("curse.maven:jade-324717:6106101")
-//    implementation fg.deobf("mezz.jei:jei-1.20.1-forge:15.20.0.115")
+    implementation fg.deobf("mezz.jei:jei-1.20.1-forge:15.20.0.115")
+    implementation fg.deobf("curse.maven:emi-580555:6420945")
 //    implementation fg.deobf("curse.maven:mekanism-268560:6552911")
 //    implementation fg.deobf("curse.maven:mekanism-generators-268566:6552914")
 //    implementation fg.deobf("com.gregtechceu.gtceu:gtceu-1.20.1:7.3.0") { transitive = false }

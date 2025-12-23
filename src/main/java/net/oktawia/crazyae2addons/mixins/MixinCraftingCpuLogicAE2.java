@@ -19,6 +19,7 @@ import appeng.me.service.CraftingService;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
 import net.oktawia.crazyae2addons.entities.CrazyPatternProviderBE;
+import net.oktawia.crazyae2addons.interfaces.ICrazyProviderSourceFilter;
 import net.oktawia.crazyae2addons.interfaces.IIgnoreNBT;
 import net.oktawia.crazyae2addons.interfaces.IPatternProviderCpu;
 import org.spongepowered.asm.mixin.Final;
@@ -31,7 +32,9 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @Mixin(value = CraftingCpuLogic.class)
 public abstract class MixinCraftingCpuLogicAE2 {
@@ -55,14 +58,20 @@ public abstract class MixinCraftingCpuLogicAE2 {
 
         this.crazyAE2Addons$ignoreNBT = false;
 
-        plan.patternTimes().forEach((pattern, ignored) -> {
+        for (var entry : plan.patternTimes().entrySet()) {
+            var pattern = entry.getKey();
+            if (pattern == null) continue;
             if (pattern.getPrimaryOutput().what().matches(plan.finalOutput())) {
-                var tag = pattern.getDefinition().getTag();
-                if (tag != null && tag.contains("ignorenbt")) {
-                    this.crazyAE2Addons$ignoreNBT = tag.getBoolean("ignorenbt");
+                var def = pattern.getDefinition();
+                if (def != null) {
+                    var tag = def.getTag();
+                    if (tag != null && tag.contains("ignorenbt")) {
+                        this.crazyAE2Addons$ignoreNBT = tag.getBoolean("ignorenbt");
+                    }
                 }
+                break;
             }
-        });
+        }
 
         ((IIgnoreNBT) ((ExecutingCraftingJobAccessor) job).getWaitingFor())
                 .setIgnoreNBT(this.crazyAE2Addons$ignoreNBT);
@@ -77,36 +86,45 @@ public abstract class MixinCraftingCpuLogicAE2 {
             remap = false
     )
     private Iterable<ICraftingProvider> redirectGetProviders(CraftingService instance, IPatternDetails key) {
-        Iterable<ICraftingProvider> original = instance.getProviders(key);
-        var org = new ArrayList<ICraftingProvider>();
-        original.forEach(org::add);
+        final IActionSource src = this.crazyAE2Addons$src;
+        final Iterable<ICraftingProvider> original = instance.getProviders(key);
 
-        var providers = cluster.getGrid().getNodes();
-        List<ICraftingProvider> output = new ArrayList<>();
+        return () -> new Iterator<>() {
+            private final Iterator<ICraftingProvider> it = original.iterator();
+            private ICraftingProvider next;
 
-        providers.forEach(node -> {
-            var svc = node.getService(ICraftingProvider.class);
-            if (svc == null) return;
+            private void advance() {
+                while (next == null && it.hasNext()) {
+                    ICraftingProvider p = it.next();
 
-            if (org.contains(svc)) {
-                if (node.getOwner() instanceof CrazyPatternProviderBE cpp) {
-                    if (cpp.getUpgrades().isInstalled(CrazyItemRegistrar.AUTOMATION_UPGRADE_CARD.get())) {
-                        if (this.crazyAE2Addons$src instanceof MachineSource) output.add(svc);
-                    } else if (cpp.getUpgrades().isInstalled(CrazyItemRegistrar.PLAYER_UPGRADE_CARD.get())) {
-                        if (this.crazyAE2Addons$src instanceof PlayerSource) output.add(svc);
-                    } else {
-                        output.add(svc);
+                    if (p instanceof ICrazyProviderSourceFilter filter) {
+                        if (!filter.allowSource(src)) {
+                            continue;
+                        }
                     }
-                } else {
-                    output.add(svc);
+
+                    next = p;
+                    return;
                 }
             }
-        });
 
-        return output;
+            @Override
+            public boolean hasNext() {
+                advance();
+                return next != null;
+            }
+
+            @Override
+            public ICraftingProvider next() {
+                advance();
+                if (next == null) throw new NoSuchElementException();
+                ICraftingProvider r = next;
+                next = null;
+                return r;
+            }
+        };
     }
 
-    // AE2: trySubmitJob(grid, plan, src, requester)
     @Inject(
             method = "trySubmitJob(Lappeng/api/networking/IGrid;Lappeng/api/networking/crafting/ICraftingPlan;Lappeng/api/networking/security/IActionSource;Lappeng/api/networking/crafting/ICraftingRequester;)Lappeng/api/networking/crafting/ICraftingSubmitResult;",
             at = @At("HEAD"),

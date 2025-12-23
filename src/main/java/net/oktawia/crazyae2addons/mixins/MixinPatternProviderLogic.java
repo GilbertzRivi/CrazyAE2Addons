@@ -9,13 +9,18 @@ import appeng.helpers.patternprovider.PatternProviderLogicHost;
 import appeng.helpers.patternprovider.PatternProviderTarget;
 import appeng.helpers.patternprovider.UnlockCraftingEvent;
 import appeng.me.cluster.implementations.CraftingCPUCluster;
+import appeng.me.helpers.MachineSource;
+import appeng.me.helpers.PlayerSource;
 import appeng.util.ConfigManager;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
+import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
+import net.oktawia.crazyae2addons.entities.CrazyPatternProviderBE;
 import net.oktawia.crazyae2addons.interfaces.IAdvPatternProviderCpu;
+import net.oktawia.crazyae2addons.interfaces.ICrazyProviderSourceFilter;
 import net.oktawia.crazyae2addons.interfaces.IPatternProviderCpu;
 import net.oktawia.crazyae2addons.interfaces.IPatternProviderTargetCacheExt;
 import net.oktawia.crazyae2addons.logic.ImpulsedPatternProviderLogic;
@@ -31,7 +36,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.lang.reflect.Field;
 
 @Mixin(value = PatternProviderLogic.class, priority = 1100)
-public abstract class MixinPatternProviderLogic implements IPatternProviderCpu {
+public abstract class MixinPatternProviderLogic implements IPatternProviderCpu, ICrazyProviderSourceFilter {
 
     @Shadow @Final private PatternProviderLogicHost host;
     @Shadow @Nullable private UnlockCraftingEvent unlockEvent;
@@ -202,4 +207,22 @@ public abstract class MixinPatternProviderLogic implements IPatternProviderCpu {
             logic.onUnlockCleared();
         }
     }
+
+    @Unique
+    @Override
+    public boolean allowSource(@Nullable IActionSource src) {
+        if (src == null) return true;
+        var be = host != null ? host.getBlockEntity() : null;
+        if (!(be instanceof CrazyPatternProviderBE cpp)) return true;
+        var upgrades = cpp.getUpgrades();
+        if (upgrades == null) return true;
+        if (upgrades.isInstalled(CrazyItemRegistrar.AUTOMATION_UPGRADE_CARD.get())) {
+            return src instanceof MachineSource;
+        }
+        if (upgrades.isInstalled(CrazyItemRegistrar.PLAYER_UPGRADE_CARD.get())) {
+            return src instanceof PlayerSource;
+        }
+        return true;
+    }
+
 }

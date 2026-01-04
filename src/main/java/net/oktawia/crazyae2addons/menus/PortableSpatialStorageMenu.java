@@ -29,7 +29,6 @@ public class PortableSpatialStorageMenu extends AEBaseMenu {
     public static final String FLIP_V = "flipV";
     public static final String ROTATE = "rotateCW";
 
-    @GuiSync(7)
     public String program = "";
 
     public GadgetHost host;

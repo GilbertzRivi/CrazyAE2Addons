@@ -37,6 +37,8 @@ public class UpgradeCards {
             Upgrades.add(AEItems.CRAFTING_CARD, CrazyItemRegistrar.PORTABLE_BUILDER.get(), 1, "group.portable_autobuilder.name");
             Upgrades.add(CrazyItemRegistrar.AUTOMATION_UPGRADE_CARD.get(), CrazyBlockRegistrar.CRAZY_PATTERN_PROVIDER_BLOCK.get(), 1, "group.crazy_pattern_provider.name");
             Upgrades.add(CrazyItemRegistrar.PLAYER_UPGRADE_CARD.get(), CrazyBlockRegistrar.CRAZY_PATTERN_PROVIDER_BLOCK.get(), 1, "group.crazy_pattern_provider.name");
+            Upgrades.add(AEItems.FUZZY_CARD, CrazyItemRegistrar.MULTI_LEVEL_EMITTER_ITEM.get(), 1, "group.multi_level_emitter.name");
+            Upgrades.add(AEItems.CRAFTING_CARD, CrazyItemRegistrar.MULTI_LEVEL_EMITTER_ITEM.get(), 1, "group.multi_level_emitter.name");
 
             if (IsModLoaded.isAppFluxLoaded()){
                 Upgrades.add(AFItemAndBlock.INDUCTION_CARD, CrazyBlockRegistrar.CRAZY_PATTERN_PROVIDER_BLOCK.get(), 1, "group.crazy_pattern_provider.name");

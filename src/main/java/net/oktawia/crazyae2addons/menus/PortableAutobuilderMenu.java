@@ -34,7 +34,7 @@ public class PortableAutobuilderMenu extends AEBaseMenu {
     public static final String ACTION_UPDATE = "actionUpdate";
     public static final String CRAFT = "craft";
     public static final String CLEAR = "clear";
-    @GuiSync(7)
+
     public String program = "";
 
     public CopyGadgetHost host;

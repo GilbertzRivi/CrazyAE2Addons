@@ -186,5 +186,8 @@ public class CrazyMenuRegistrar {
     public static final RegistryObject<MenuType<PenroseHawkingVentMenu>> PENROSE_HAWKING_VENT_MENU =
             reg(id("penrose_hawking_vent_menu"), PenroseHawkingVentMenu::new, PenroseHawkingVentBE.class);
 
+    public static final RegistryObject<MenuType<MultiLevelEmitterMenu>> MULTI_LEVEL_EMITTER_MENU =
+            reg(id("multi_level_emitter_menu"), MultiLevelEmitterMenu::new, MultiStorageLevelEmitterPart.class);
+
     private CrazyMenuRegistrar() {}
 }

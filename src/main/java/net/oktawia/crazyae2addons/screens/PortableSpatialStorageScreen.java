@@ -13,6 +13,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
@@ -28,19 +29,33 @@ import java.util.*;
 
 public class PortableSpatialStorageScreen<C extends PortableSpatialStorageMenu> extends AEBaseScreen<C> {
     private IconButton flipHBtn, flipVBtn, rotateBtn;
-    String program = "";
+
+    // finalny program po złożeniu chunków
+    private String program = "";
+
+    // składanie programu bez O(n^2)
+    private final StringBuilder programBuf = new StringBuilder();
+    private boolean receiving = false;
 
     private final WidgetGroup root = new WidgetGroup(0, 0, 0, 0);
     private TrackedDummyWorld world = new TrackedDummyWorld();
     private SceneWidget scene;
 
     private Map<BlockPos, BlockState> blocks = Collections.emptyMap();
+    private Set<BlockPos> renderedCore = Collections.emptySet(); // tylko surface do renderu
     private BlockPos min = BlockPos.ZERO, max = BlockPos.ZERO;
+
     private boolean rotating = false;
     private double lastMouseX, lastMouseY;
     private float yaw = 0f, pitch = 30f, distance = -20f;
     private int lastSceneW = -1, lastSceneH = -1;
+
     private static final String SEP = "|";
+    private static final Direction[] DIRS = {
+            Direction.NORTH, Direction.SOUTH,
+            Direction.WEST, Direction.EAST,
+            Direction.UP, Direction.DOWN
+    };
 
     public PortableSpatialStorageScreen(C menu, Inventory inv, Component title, ScreenStyle style) {
         super(menu, inv, title, style);
@@ -50,9 +65,9 @@ public class PortableSpatialStorageScreen<C extends PortableSpatialStorageMenu> 
         this.widgets.add("flipV", flipVBtn);
         this.widgets.add("rotate", rotateBtn);
         this.widgets.add("upgrades", new UpgradesPanel(getMenu().getSlots(SlotSemantics.UPGRADE)));
-        root.setSize(this.width, this.height);
 
-        if (!program.isEmpty()) {
+        root.setSize(this.width, this.height);
+        if (scene == null && !blocks.isEmpty()) {
             initScene();
         }
 
@@ -82,19 +97,37 @@ public class PortableSpatialStorageScreen<C extends PortableSpatialStorageMenu> 
         }
 
         scene.clearAllWidgets();
-        scene.setRenderedCore(blocks.keySet());
 
-        BlockPos size = max.subtract(min).offset(1,1,1);
+        // KLUCZ: renderuj tylko surface zamiast blocks.keySet()
+        this.renderedCore = computeSurface(this.blocks);
+        scene.setRenderedCore(this.renderedCore);
+
+        BlockPos size = max.subtract(min).offset(1, 1, 1);
         BlockPos center = new BlockPos(
-                (int)(min.getX() + size.getX() * 0.5),
-                (int)(min.getY() + size.getY() * 0.5),
-                (int)(min.getZ() + size.getZ() * 0.5)
+                (int) (min.getX() + size.getX() * 0.5),
+                (int) (min.getY() + size.getY() * 0.5),
+                (int) (min.getZ() + size.getZ() * 0.5)
         );
+
         scene.setCenter(center.getCenter().toVector3f());
         scene.setCameraYawAndPitch(yaw, pitch);
         scene.setZoom(distance);
     }
 
+    private static Set<BlockPos> computeSurface(Map<BlockPos, BlockState> map) {
+        HashSet<BlockPos> out = new HashSet<>();
+        if (map == null || map.isEmpty()) return out;
+
+        for (BlockPos p : map.keySet()) {
+            for (Direction d : DIRS) {
+                if (!map.containsKey(p.relative(d))) {
+                    out.add(p);
+                    break;
+                }
+            }
+        }
+        return out;
+    }
 
     private void setupGui() {
         flipHBtn = new IconButton(Icon.ARROW_RIGHT, (btn) -> {
@@ -116,16 +149,25 @@ public class PortableSpatialStorageScreen<C extends PortableSpatialStorageMenu> 
         rotateBtn.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.gadget_rotate")));
     }
 
+    /**
+     * Odbiór chunków z serwera.
+     * "__RESET__" -> start, "__END__" -> finalizacja + rebuild preview.
+     */
     public void setProgram(String data) {
         if ("__RESET__".equals(data)) {
-            program = "";
+            programBuf.setLength(0);
+            receiving = true;
             return;
         }
         if ("__END__".equals(data)) {
+            receiving = false;
+            program = programBuf.toString();
             reloadPreviewNow();
             return;
         }
-        program += data;
+        if (receiving) {
+            programBuf.append(data);
+        }
     }
 
     private BlockState parseBlockStateSpec(String spec) {
@@ -170,8 +212,8 @@ public class PortableSpatialStorageScreen<C extends PortableSpatialStorageMenu> 
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTicks) {
         if (scene != null) {
             int x = this.leftPos + 8;
-            int y = this.topPos  + 24;
-            int w = this.imageWidth  - 16;
+            int y = this.topPos + 24;
+            int w = this.imageWidth - 16;
             int h = this.imageHeight - 24 - 104;
 
             w = Math.max(32, w);
@@ -183,7 +225,8 @@ public class PortableSpatialStorageScreen<C extends PortableSpatialStorageMenu> 
                 scene.setSize(w, h);
 
                 if (w != lastSceneW || h != lastSceneH) {
-                    lastSceneW = w; lastSceneH = h;
+                    lastSceneW = w;
+                    lastSceneH = h;
                     int sx = max.getX() - min.getX() + 1;
                     int sy = max.getY() - min.getY() + 1;
                     int sz = max.getZ() - min.getZ() + 1;
@@ -197,15 +240,22 @@ public class PortableSpatialStorageScreen<C extends PortableSpatialStorageMenu> 
                 }
             }
         }
+
         this.renderBackground(g);
         super.render(g, mouseX, mouseY, partialTicks);
+
+        RenderSystem.enableDepthTest();
+        RenderSystem.depthMask(true);
         RenderSystem.clear(GL11.GL_DEPTH_BUFFER_BIT, Minecraft.ON_OSX);
         g.flush();
+
         root.drawInBackground(g, mouseX, mouseY, partialTicks);
         root.drawInForeground(g, mouseX, mouseY, partialTicks);
         root.drawOverlay(g, mouseX, mouseY, partialTicks);
-    }
 
+        RenderSystem.depthMask(false);
+        RenderSystem.disableDepthTest();
+    }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
@@ -226,15 +276,14 @@ public class PortableSpatialStorageScreen<C extends PortableSpatialStorageMenu> 
             lastMouseX = mouseX;
             lastMouseY = mouseY;
 
-            pitch   += (float) (dx * 0.5f);
-            yaw = Math.max(-89f, Math.min(89f, yaw + (float)(dy * 0.5f)));
+            pitch += (float) (dx * 0.5f);
+            yaw = Math.max(-89f, Math.min(89f, yaw + (float) (dy * 0.5f)));
 
             scene.setCameraYawAndPitch(yaw, pitch);
             return true;
         }
         return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
     }
-
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
@@ -248,7 +297,6 @@ public class PortableSpatialStorageScreen<C extends PortableSpatialStorageMenu> 
         root.updateScreen();
     }
 
-
     private void reloadPreviewNow() {
         List<BlockPos> positions = new ArrayList<>();
         List<Integer> indices = new ArrayList<>();
@@ -257,7 +305,7 @@ public class PortableSpatialStorageScreen<C extends PortableSpatialStorageMenu> 
         String full = program == null ? "" : program;
         int sep = full.lastIndexOf(SEP);
         String header = sep >= 0 ? full.substring(0, sep) : "";
-        String body   = sep >= 0 ? full.substring(sep + 1) : full;
+        String body = sep >= 0 ? full.substring(sep + 1) : full;
 
         Map<Integer, Integer> idToIndex = new HashMap<>();
         if (!header.isEmpty()) {
@@ -266,10 +314,17 @@ public class PortableSpatialStorageScreen<C extends PortableSpatialStorageMenu> 
             int depth = 0;
             for (int pos = 0; pos < header.length(); pos++) {
                 char ch = header.charAt(pos);
-                if (ch == '(') { depth++; cur.append(ch); }
-                else if (ch == ')') { depth = Math.max(0, depth - 1); cur.append(ch); }
-                else if (ch == ',' && depth == 0) { String t = cur.toString().trim(); if (!t.isEmpty()) tokens.add(t); cur.setLength(0); }
-                else cur.append(ch);
+                if (ch == '(') {
+                    depth++;
+                    cur.append(ch);
+                } else if (ch == ')') {
+                    depth = Math.max(0, depth - 1);
+                    cur.append(ch);
+                } else if (ch == ',' && depth == 0) {
+                    String t = cur.toString().trim();
+                    if (!t.isEmpty()) tokens.add(t);
+                    cur.setLength(0);
+                } else cur.append(ch);
             }
             String last = cur.toString().trim();
             if (!last.isEmpty()) tokens.add(last);
@@ -283,16 +338,19 @@ public class PortableSpatialStorageScreen<C extends PortableSpatialStorageMenu> 
                 try {
                     int id = Integer.parseInt(m.group(1));
                     String spec = m.group(2).trim();
-                    if (!spec.isEmpty()) { idToSpec.put(id, spec); sortedIds.add(id); }
-                } catch (NumberFormatException ignored) {}
+                    if (!spec.isEmpty()) {
+                        idToSpec.put(id, spec);
+                        sortedIds.add(id);
+                    }
+                } catch (NumberFormatException ignored) {
+                }
             }
             Collections.sort(sortedIds);
             for (int i = 0; i < sortedIds.size(); i++) {
                 int id = sortedIds.get(i);
                 idToIndex.put(id, i);
                 BlockState st = parseBlockStateSpec(idToSpec.get(id));
-                if (st != null) paletteStates.add(st);
-                else paletteStates.add(null);
+                paletteStates.add(st);
             }
         }
 
@@ -301,12 +359,20 @@ public class PortableSpatialStorageScreen<C extends PortableSpatialStorageMenu> 
         while (i < n) {
             char c = body.charAt(i);
 
-            if (c == 'H') { cursor = BlockPos.ZERO; i++; continue; }
+            if (c == 'H') {
+                cursor = BlockPos.ZERO;
+                i++;
+                continue;
+            }
             if (c == 'F' || c == 'B' || c == 'L' || c == 'R' || c == 'U' || c == 'D') {
-                cursor = stepCursor(cursor, c); i++; continue;
+                cursor = stepCursor(cursor, c);
+                i++;
+                continue;
             }
             if (c == 'Z' && i + 1 < n && body.charAt(i + 1) == '|') {
-                i += 2; while (i < n && Character.isDigit(body.charAt(i))) i++; continue;
+                i += 2;
+                while (i < n && Character.isDigit(body.charAt(i))) i++;
+                continue;
             }
             if (c == 'P' && i + 1 < n && body.charAt(i + 1) == '(') {
                 int j = i + 2;
@@ -316,19 +382,27 @@ public class PortableSpatialStorageScreen<C extends PortableSpatialStorageMenu> 
                     try {
                         int id = Integer.parseInt(num);
                         Integer palIdx = idToIndex.get(id);
-                        if (palIdx != null) { positions.add(cursor); indices.add(palIdx); }
-                    } catch (NumberFormatException ignored) {}
-                    i = j + 1; continue;
+                        if (palIdx != null) {
+                            positions.add(cursor);
+                            indices.add(palIdx);
+                        }
+                    } catch (NumberFormatException ignored) {
+                    }
+                    i = j + 1;
+                    continue;
                 }
             }
             if (c == 'P' && i + 1 < n && body.charAt(i + 1) == '|') {
                 int j = i + 2;
                 while (j < n) {
                     char cj = body.charAt(j);
-                    if (cj=='H'||cj=='Z'||cj=='P'||cj=='F'||cj=='B'||cj=='L'||cj=='R'||cj=='U'||cj=='D'||cj=='X' || cj=='\n' || cj=='\r') break;
+                    if (cj == 'H' || cj == 'Z' || cj == 'P' || cj == 'F' || cj == 'B' || cj == 'L' || cj == 'R'
+                            || cj == 'U' || cj == 'D' || cj == 'X' || cj == '\n' || cj == '\r')
+                        break;
                     j++;
                 }
-                i = j; continue;
+                i = j;
+                continue;
             }
             i++;
         }
@@ -345,6 +419,7 @@ public class PortableSpatialStorageScreen<C extends PortableSpatialStorageMenu> 
             if (st == null) continue;
 
             map.put(p, st);
+
             if (p.getX() < min.getX()) min = new BlockPos(p.getX(), min.getY(), min.getZ());
             if (p.getY() < min.getY()) min = new BlockPos(min.getX(), p.getY(), min.getZ());
             if (p.getZ() < min.getZ()) min = new BlockPos(min.getX(), min.getY(), p.getZ());
@@ -358,6 +433,7 @@ public class PortableSpatialStorageScreen<C extends PortableSpatialStorageMenu> 
         this.min = map.isEmpty() ? BlockPos.ZERO : min;
         this.max = map.isEmpty() ? BlockPos.ZERO : max;
 
+        // przebuduj dummy world
         this.world.clear();
         for (Map.Entry<BlockPos, BlockState> e : blocks.entrySet()) {
             this.world.setBlock(e.getKey(), e.getValue(), 3);
@@ -365,6 +441,7 @@ public class PortableSpatialStorageScreen<C extends PortableSpatialStorageMenu> 
 
         if (map.isEmpty()) {
             this.blocks = Collections.emptyMap();
+            this.renderedCore = Collections.emptySet();
             if (this.scene != null) {
                 root.clearAllWidgets();
                 this.scene = null;
@@ -377,14 +454,18 @@ public class PortableSpatialStorageScreen<C extends PortableSpatialStorageMenu> 
             root.clearAllWidgets();
             root.addWidget(scene);
         }
-        scene.clearAllWidgets();
-        scene.setRenderedCore(blocks.keySet());
 
-        BlockPos size = max.subtract(min).offset(1,1,1);
+        scene.clearAllWidgets();
+
+        // KLUCZ: tylko surface
+        this.renderedCore = computeSurface(this.blocks);
+        scene.setRenderedCore(this.renderedCore);
+
+        BlockPos size = max.subtract(min).offset(1, 1, 1);
         BlockPos center = new BlockPos(
-                (int)(min.getX() + size.getX() * 0.5),
-                (int)(min.getY() + size.getY() * 0.5),
-                (int)(min.getZ() + size.getZ() * 0.5)
+                (int) (min.getX() + size.getX() * 0.5),
+                (int) (min.getY() + size.getY() * 0.5),
+                (int) (min.getZ() + size.getZ() * 0.5)
         );
 
         scene.setCenter(center.getCenter().toVector3f());
@@ -403,7 +484,6 @@ public class PortableSpatialStorageScreen<C extends PortableSpatialStorageMenu> 
             default -> cursor;
         };
     }
-
 
     private boolean insideScene(double mx, double my) {
         return scene != null &&

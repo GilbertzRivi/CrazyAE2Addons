@@ -114,6 +114,10 @@ public class CrazyItemRegistrar {
             ITEMS.register("display_monitor",
                     () -> new DisplayPartItem(new Item.Properties()));
 
+    public static final RegistryObject<PartItem<MultiStorageLevelEmitterPart>> MULTI_LEVEL_EMITTER_ITEM =
+            ITEMS.register("multi_level_emitter",
+                    () -> new PartItem<>(new Item.Properties(), MultiStorageLevelEmitterPart.class, MultiStorageLevelEmitterPart::new));
+
     public static final RegistryObject<EntityTickerPartItem> ENTITY_TICKER_PART_ITEM =
             ITEMS.register("entity_ticker",
                     () -> new EntityTickerPartItem(new Item.Properties()));

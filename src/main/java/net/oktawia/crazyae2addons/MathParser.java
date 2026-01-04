@@ -71,6 +71,7 @@ public class MathParser {
             while (true) {
                 if (eat('*')) x *= parseFactor();
                 else if (eat('/')) x /= parseFactor();
+                else if (eat('%')) x %= parseFactor();
                 else return x;
             }
         }

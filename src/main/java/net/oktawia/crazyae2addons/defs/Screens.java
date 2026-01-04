@@ -280,6 +280,12 @@ public final class Screens {
                 WirelessNotificationTerminalScreen<WirelessNotificationTerminalMenu>::new,
                 "/screens/wireless_notification_terminal.json"
         );
+
+        InitScreens.register(
+                CrazyMenuRegistrar.MULTI_LEVEL_EMITTER_MENU.get(),
+                MultiLevelEmitterScreen<MultiLevelEmitterMenu>::new,
+                "/screens/multi_level_emitter.json"
+        );
     }
 
     private Screens() {}

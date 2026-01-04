@@ -310,7 +310,13 @@ public enum LangDefs implements LocalizationEnum {
     MODIFIER_CIRCUIT_NONE("gui.crazyae2addons.modifier_circuit_none", "No circuit selected"),
     MODIFIER_CIRCUIT_SELECTED("gui.crazyae2addons.modifier_circuit_selected", "Selected circuit %s"),
     MODIFIER_CIRCUIT_BUTTON("gui.crazyae2addons.modifier_circuit_button", "%s"),
-
+    MULTI_EMITTER_TITLE("gui.crazyae2addons.multi_emitter.title", "Multi Level Emitter"),
+    MULTI_EMITTER_ADD_ROW("gui.crazyae2addons.multi_emitter.add_row", "Add row"),
+    MULTI_EMITTER_LOGIC("gui.crazyae2addons.multi_emitter.logic", "Switch logic (OR / AND)"),
+    MULTI_EMITTER_UNIT_LINE("gui.crazyae2addons.multi_emitter.unit_line", "Unit: %s"),
+    MULTI_EMITTER_COMPARE("gui.crazyae2addons.multi_emitter.compare", "Toggle compare (>= / <)"),
+    MULTI_EMITTER_CMP_ABOVE("gui.crazyae2addons.multi_emitter.cmp_above", "Emit when amount is above or equal to limit"),
+    MULTI_EMITTER_CMP_BELOW("gui.crazyae2addons.multi_emitter.cmp_below", "Emit when amount is bellow limit"),
     MODIFIER_IGNORE_NBT_TOOLTIP("gui.crazyae2addons.modifier_ignore_nbt_tooltip", "Toggle ignore NBT option"),
     CRAFTING_SCHEDULER_TOOLTIP("gui.crazyae2addons.c_scheduler_amount_tt", "How much to request (mB for fluids)"),
     PENROSE_BH_MASS_HEAT("gui.crazyae2addons.penrose_bh_mass_heat", "Mass: %s MU | Heat: %s");

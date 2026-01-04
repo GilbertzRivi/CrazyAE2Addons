@@ -44,11 +44,11 @@ public class AutoEnchanterScreen<C extends AutoEnchanterMenu> extends Upgradeabl
         ));
 
         this.opt2.setTooltip(Tooltip.create(
-                Component.literal("gui.crazyae2addons.enchanter_medium")
+                Component.translatable("gui.crazyae2addons.enchanter_medium")
         ));
 
         this.opt3.setTooltip(Tooltip.create(
-                Component.literal("gui.crazyae2addons.enchanter_exp")
+                Component.translatable("gui.crazyae2addons.enchanter_exp")
         ));
 
         this.widgets.add("opt1", this.opt1);

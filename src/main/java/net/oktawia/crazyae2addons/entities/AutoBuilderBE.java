@@ -101,7 +101,6 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements
     public AppEngInternalInventory inventory = new AppEngInternalInventory(this, 2);
     public int redstonePulseTicks = 0;
 
-    // true = czekamy na craft (pushPattern dostarczy inputy)
     private boolean isCrafting = false;
 
     public GenericStack missingItems = GenericStack.fromItemStack(ItemStack.EMPTY);

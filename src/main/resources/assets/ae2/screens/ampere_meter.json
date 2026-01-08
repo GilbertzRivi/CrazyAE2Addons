@@ -24,6 +24,18 @@
     }
   },
   "widgets": {
+    "min_fe": {
+      "left": 56,
+      "top": 70,
+      "width": 64,
+      "height": 12
+    },
+    "max_fe": {
+      "left": 56,
+      "top": 86,
+      "width": 64,
+      "height": 12
+    },
     "direction": {
       "left": 80,
       "top": 50,

@@ -11,6 +11,7 @@ import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.capabilities.Capability;
@@ -38,6 +39,12 @@ public class AmpereMeterBE extends AEBaseBlockEntity implements MenuProvider {
     private int lastTick = 0;
     private long secondBuffer = 0;
 
+    public int minFePerTick = 0;
+    public int maxFePerTick = 1000;
+
+    private long lastActiveTick = -1;
+    private static final long INACTIVITY_RESET_TICKS = 10;
+
     public AmpereMeterBE(BlockPos pos, BlockState blockState) {
         super(CrazyBlockEntityRegistrar.AMPERE_METER_BE.get(), pos, blockState);
     }
@@ -61,12 +68,23 @@ public class AmpereMeterBE extends AEBaseBlockEntity implements MenuProvider {
         if(data.contains("dir")){
             this.direction = data.getBoolean("dir");
         }
+        if (data.contains("minFe")) {
+            this.minFePerTick = data.getInt("minFe");
+        }
+        if (data.contains("maxFe")) {
+            this.maxFePerTick = data.getInt("maxFe");
+        }
+
+        if (this.minFePerTick < 0) this.minFePerTick = 0;
+        if (this.maxFePerTick < this.minFePerTick) this.maxFePerTick = this.minFePerTick;
     }
 
     @Override
     public void saveAdditional(CompoundTag data){
         super.saveAdditional(data);
         data.putBoolean("dir", this.direction);
+        data.putInt("minFe", this.minFePerTick);
+        data.putInt("maxFe", this.maxFePerTick);
     }
 
     @Override
@@ -76,6 +94,29 @@ public class AmpereMeterBE extends AEBaseBlockEntity implements MenuProvider {
 
     public void openMenu(Player player, MenuLocator locator) {
         MenuOpener.open(CrazyMenuRegistrar.AMPERE_METER_MENU.get(), player, locator);
+    }
+
+    public static void serverTick(Level level, BlockPos pos, BlockState state, AmpereMeterBE be) {
+        if (level.isClientSide()) return;
+
+        if (be.lastActiveTick == -1) return;
+
+        long now = level.getGameTime();
+        if ((now - be.lastActiveTick) >= INACTIVITY_RESET_TICKS) {
+            be.lastActiveTick = -1;
+
+            boolean hasValue = be.numTransfer != null && be.numTransfer != 0;
+            boolean hasBuffer = be.secondBuffer != 0;
+
+            if (hasValue || hasBuffer) {
+                be.resetTransfer();
+            }
+        }
+    }
+
+    public void markActive() {
+        if (this.level == null) return;
+        this.lastActiveTick = this.level.getGameTime();
     }
 
     @Override
@@ -90,10 +131,59 @@ public class AmpereMeterBE extends AEBaseBlockEntity implements MenuProvider {
         return super.getCapability(cap, dir);
     }
 
+    public int getComparatorSignal() {
+        int min = this.minFePerTick;
+        int max = this.maxFePerTick;
+        int value = this.numTransfer == null ? 0 : this.numTransfer;
+
+        if (value < 0) value = 0;
+        if (min < 0) min = 0;
+        if (max < min) max = min;
+
+        if (max == min) {
+            return value >= max ? 15 : 0;
+        }
+
+        if (value <= min) return 0;
+        if (value >= max) return 15;
+
+        long scaled = (long) (value - min) * 15L;
+        long range = (long) (max - min);
+
+        return (int) (scaled / range);
+    }
+
+    public void updateComparator() {
+        if (level != null && !level.isClientSide()) {
+            level.updateNeighbourForOutputSignal(getBlockPos(), getBlockState().getBlock());
+        }
+    }
+
+    public void resetTransfer() {
+        this.secondBuffer = 0;
+        this.lastTick = -1;
+        this.lastActiveTick = -1;
+
+        this.numTransfer = 0;
+        this.transfer = "0";
+
+        if (this.getMenu() != null) {
+            this.getMenu().unit = this.unit;
+            this.getMenu().transfer = this.transfer;
+        }
+
+        this.setChanged();
+        this.updateComparator();
+    }
+
     public IEnergyStorage feLogicInput = new IEnergyStorage() {
         @Override
         public int receiveEnergy(int maxReceive, boolean simulate) {
             if (AmpereMeterBE.this.getLevel() == null) return 0;
+
+            if (!simulate) {
+                AmpereMeterBE.this.markActive();
+            }
 
             Direction outputSide = !AmpereMeterBE.this.direction
                     ? Utils.getRightDirection(getBlockState())
@@ -129,6 +219,8 @@ public class AmpereMeterBE extends AEBaseBlockEntity implements MenuProvider {
                         AmpereMeterBE.this.getMenu().transfer = AmpereMeterBE.this.transfer;
                     }
 
+                    AmpereMeterBE.this.updateComparator();
+
                     secondBuffer = 0;
                     lastTick = currentTick;
                 } else if (lastTick == -1) {
@@ -150,6 +242,10 @@ public class AmpereMeterBE extends AEBaseBlockEntity implements MenuProvider {
         @Override
         public int extractEnergy(int maxExtract, boolean simulate) {
             if (AmpereMeterBE.this.getLevel() == null) return 0;
+
+            if (!simulate) {
+                AmpereMeterBE.this.markActive();
+            }
 
             Direction inputSide = AmpereMeterBE.this.direction
                     ? Utils.getRightDirection(getBlockState())
@@ -185,6 +281,8 @@ public class AmpereMeterBE extends AEBaseBlockEntity implements MenuProvider {
                         AmpereMeterBE.this.getMenu().unit = AmpereMeterBE.this.unit;
                         AmpereMeterBE.this.getMenu().transfer = AmpereMeterBE.this.transfer;
                     }
+
+                    AmpereMeterBE.this.updateComparator();
 
                     secondBuffer = 0;
                     lastTick = currentTick;

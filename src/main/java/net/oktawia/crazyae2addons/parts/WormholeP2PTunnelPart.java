@@ -5,6 +5,7 @@ import java.util.*;
 import appeng.api.implementations.items.IMemoryCard;
 import appeng.api.implementations.items.MemoryCardMessages;
 import appeng.me.service.P2PService;
+import appeng.menu.MenuOpener;
 import appeng.parts.p2p.P2PModels;
 import appeng.parts.p2p.P2PTunnelPart;
 import appeng.util.Platform;
@@ -12,10 +13,14 @@ import appeng.util.SettingsFrom;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.RedStoneWireBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 
@@ -169,6 +174,7 @@ public class WormholeP2PTunnelPart extends P2PTunnelPart<WormholeP2PTunnelPart> 
 
         BlockPos targetPos = null;
         Direction hitFace = null;
+        ServerLevel targetWorld = null;
 
         if (isOutput()) {
             var input = getInput();
@@ -176,6 +182,7 @@ public class WormholeP2PTunnelPart extends P2PTunnelPart<WormholeP2PTunnelPart> 
                 var remoteHost = input.getHost().getBlockEntity();
                 targetPos = remoteHost.getBlockPos().relative(input.getSide());
                 hitFace = input.getSide().getOpposite();
+                targetWorld = (ServerLevel) remoteHost.getLevel();
             }
         } else {
             var outs = getOutputs();
@@ -184,20 +191,28 @@ public class WormholeP2PTunnelPart extends P2PTunnelPart<WormholeP2PTunnelPart> 
                 var remoteHost = out.getHost().getBlockEntity();
                 targetPos = remoteHost.getBlockPos().relative(out.getSide());
                 hitFace = out.getSide().getOpposite();
+                targetWorld = (ServerLevel) remoteHost.getLevel();
             }
         }
 
-        if (targetPos == null) return false;
+        if (targetPos == null || targetWorld == null) return false;
 
-        var state = level.getBlockState(targetPos);
+        long chunkKey = new ChunkPos(targetPos).toLong();
+        if (!targetWorld.getChunkSource().isPositionTicking(chunkKey)) return false;
+
+        var state = targetWorld.getBlockState(targetPos);
         var hit = new BlockHitResult(Vec3.atCenterOf(targetPos), hitFace, targetPos, false);
 
-        WormholeAnchor.set(sp, targetPos);
+        var provider = state.getMenuProvider(targetWorld, targetPos);
+        if (provider != null && targetWorld != getLevel()) return false;
 
-        var result = state.use(level, player, hand, hit);
+        WormholeAnchor.set(sp, targetPos, targetWorld);
+        var containerBefore = sp.containerMenu;
 
-        if (!result.consumesAction()) {
-            WormholeAnchor.clear(player);
+        var result = state.use(targetWorld, sp, hand, hit);
+
+        if (sp.containerMenu == containerBefore) {
+            WormholeAnchor.clear(sp);
         }
 
         return result.consumesAction();
@@ -280,34 +295,33 @@ public class WormholeP2PTunnelPart extends P2PTunnelPart<WormholeP2PTunnelPart> 
             if (input != null && input.getHost() != null) {
                 var be = input.getHost().getBlockEntity();
                 var pos = be.getBlockPos().relative(input.getSide());
-                sendNeighborUpdatesAt(pos, input.getSide());
+                sendNeighborUpdatesAt(be.getLevel(), pos, input.getSide());
             }
         } else {
             for (var out : getOutputs()) {
                 if (out.getHost() != null) {
                     var be = out.getHost().getBlockEntity();
                     var pos = be.getBlockPos().relative(out.getSide());
-                    sendNeighborUpdatesAt(pos, out.getSide());
+                    sendNeighborUpdatesAt(be.getLevel(), pos, out.getSide());
                 }
             }
         }
     }
 
-    private void sendNeighborUpdatesAt(BlockPos pos, Direction facing) {
-        var world = getLevel();
-        if (world == null || world.isClientSide) return;
+    private void sendNeighborUpdatesAt(Level level, BlockPos pos, Direction facing) {
+        if (level == null || level.isClientSide) return;
         if (wormholeUpdateBlacklist.contains(pos)) return;
 
         wormholeUpdateBlacklist.add(pos);
-        TickHandler.instance().addCallable(world, wormholeUpdateBlacklist::clear);
+        TickHandler.instance().addCallable(level, wormholeUpdateBlacklist::clear);
 
-        BlockState state = world.getBlockState(pos);
-        world.sendBlockUpdated(pos, state, state, 3);
-        world.updateNeighborsAt(pos, state.getBlock());
+        BlockState state = level.getBlockState(pos);
+        level.sendBlockUpdated(pos, state, state, 3);
+        level.updateNeighborsAt(pos, state.getBlock());
 
         var neighbor = pos.relative(facing.getOpposite());
-        BlockState neighborState = world.getBlockState(neighbor);
-        world.updateNeighborsAt(neighbor, neighborState.getBlock());
+        BlockState neighborState = level.getBlockState(neighbor);
+        level.updateNeighborsAt(neighbor, neighborState.getBlock());
     }
 
     @Override

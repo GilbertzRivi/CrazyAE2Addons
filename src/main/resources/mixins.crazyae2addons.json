@@ -24,22 +24,23 @@
     "MixinCraftingCPUMenu",
     "MixinCraftingService",
     "MixinCraftingStatusMenu",
+    "MixinEntity",
     "MixinGT",
     "MixinListCraftingInventory",
     "MixinPatternP2PTunnelLogic",
     "MixinPatternProviderLogic",
     "MixinPatternProviderTargetCache",
+    "MixinServerPlayer",
     "P2PTunnelPartAccessor",
     "PatternProviderBlockEntityAccessor",
     "PatternProviderMenuAccessor",
     "PatternProviderTargetCacheAccessor",
-    "PlayerDistanceMixin",
     "RestrictedInputSlotMixin",
     "SlotAccessor",
     "ViewCellItemMixin",
     "WidgetContainerAccessor"
   ],
   "client": [
-    "MixinCraftingCPUScreen"
+    "MixinCraftingCPUScreen",
   ]
 }

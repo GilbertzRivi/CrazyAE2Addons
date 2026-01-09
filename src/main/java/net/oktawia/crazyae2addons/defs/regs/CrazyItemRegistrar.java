@@ -102,9 +102,11 @@ public class CrazyItemRegistrar {
             ITEMS.register("extracting_fluid_p2p_tunnel",
                     () -> new ExtractingFluidP2PTunnelPartItem(new Item.Properties()));
 
-    public static final RegistryObject<WormHoleP2PTunnelPartItem> WORMHOLE_P2P_TUNNEL =
+    public static final RegistryObject<PartItem<? extends WormholeP2PTunnelPart>> WORMHOLE_P2P_TUNNEL =
             ITEMS.register("wormhole_tunnel",
-                    () -> new WormHoleP2PTunnelPartItem(new Item.Properties()));
+                    () -> IsModLoaded.isGTCEuLoaded()
+                            ? new GTWormHoleP2PTunnelPartItem(new Item.Properties())
+                            : new WormHoleP2PTunnelPartItem(new Item.Properties()));
 
     // =========================================================
     // AE2 Parts: terminal / monitor / redstone

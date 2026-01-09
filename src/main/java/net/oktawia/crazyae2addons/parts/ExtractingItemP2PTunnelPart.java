@@ -2,11 +2,13 @@ package net.oktawia.crazyae2addons.parts;
 
 import appeng.api.implementations.items.IMemoryCard;
 import appeng.api.implementations.items.MemoryCardMessages;
+import appeng.api.networking.GridFlags;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.ticking.IGridTickable;
 import appeng.api.networking.ticking.TickRateModulation;
 import appeng.api.networking.ticking.TickingRequest;
 import appeng.api.parts.IPartItem;
+import appeng.api.stacks.AEKeyType;
 import appeng.me.service.P2PService;
 import appeng.parts.p2p.ItemP2PTunnelPart;
 import appeng.util.Platform;
@@ -23,11 +25,26 @@ import org.jetbrains.annotations.Nullable;
 
 public class ExtractingItemP2PTunnelPart extends ItemP2PTunnelPart implements IGridTickable {
 
-    private final int speed = CrazyConfig.COMMON.Itemp2pSpeed.get();
+    public int speed = CrazyConfig.COMMON.Itemp2pSpeed.get();
 
     public ExtractingItemP2PTunnelPart(IPartItem<?> partItem) {
         super(partItem);
-        getMainNode().addService(IGridTickable.class, this);
+        getMainNode()
+                .setFlags(GridFlags.REQUIRE_CHANNEL)
+                .setIdlePowerUsage(1)
+                .addService(IGridTickable.class, this);
+    }
+
+    @Override
+    public void readFromNBT(CompoundTag extra) {
+        super.readFromNBT(extra);
+        this.speed = extra.getInt("speed");
+    }
+
+    @Override
+    public void writeToNBT(CompoundTag extra) {
+        super.writeToNBT(extra);
+        extra.putInt("speed", this.speed);
     }
 
     @Override
@@ -101,7 +118,7 @@ public class ExtractingItemP2PTunnelPart extends ItemP2PTunnelPart implements IG
             }
         }
     }
-    
+
     @Override
     public TickRateModulation tickingRequest(IGridNode node, int ticksSinceLastCall) {
         if (!this.isOutput() || !this.isActive() || this.getOutputs().isEmpty()) {
@@ -122,6 +139,8 @@ public class ExtractingItemP2PTunnelPart extends ItemP2PTunnelPart implements IG
 
                 ItemStack remainder = inputHandler.insertItem(0, extracted, false);
                 int inserted = extracted.getCount() - remainder.getCount();
+
+                deductTransportCost(inserted, AEKeyType.items());
 
                 if (inserted > 0) {
                     input.extractItem(slot, inserted, false);

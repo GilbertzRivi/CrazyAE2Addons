@@ -6,9 +6,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.common.ForgeConfigSpec;
 import org.apache.commons.lang3.tuple.Pair;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class CrazyConfig {
     public static final ForgeConfigSpec COMMON_SPEC;
@@ -28,9 +26,12 @@ public class CrazyConfig {
         public final ForgeConfigSpec.IntValue     EntityTickerCost;
         public final ForgeConfigSpec.ConfigValue<List<? extends String>> EntityTickerBlackList;
         public final ForgeConfigSpec.BooleanValue NestedP2PWormhole;
+        public final ForgeConfigSpec.BooleanValue P2PWormholeTeleportation;
 
         public final ForgeConfigSpec.IntValue     AutoEnchanterCost;
         public final ForgeConfigSpec.BooleanValue GregEnergyExporter;
+        public final ForgeConfigSpec.BooleanValue GregWormholeEUP2P;
+        public final ForgeConfigSpec.BooleanValue GregWormholeGoodEuP2P;
 
         public final ForgeConfigSpec.IntValue     AutobuilderCostMult;
         public final ForgeConfigSpec.IntValue     AutobuilderMineDelay;
@@ -63,7 +64,7 @@ public class CrazyConfig {
 
         public final ForgeConfigSpec.BooleanValue ResearchRequired;
 
-        public final ForgeConfigSpec.IntValue     NokiaCost;
+        public final ForgeConfigSpec.IntValue     PortableSpatialStorageCostMult;
 
         public final ForgeConfigSpec.BooleanValue EnergyExporterEnabled;
         public final ForgeConfigSpec.BooleanValue EnergyInterfaceEnabled;
@@ -102,6 +103,10 @@ public class CrazyConfig {
             NestedP2PWormhole = builder
                     .comment("Allow routing P2P tunnels through a Wormhole tunnel")
                     .define("nestedP2Pwormhole", false);
+
+            P2PWormholeTeleportation = builder
+                    .comment("Allow teleporting through a Wormhole P2P")
+                    .define("wormholeP2PTeleportation", false);
             builder.pop();
 
 
@@ -113,6 +118,14 @@ public class CrazyConfig {
             GregEnergyExporter = builder
                     .comment("Allow Energy Exporter part to export EU if a GregTech battery is inserted")
                     .define("energyExporterGT", false);
+
+            GregWormholeEUP2P = builder
+                    .comment("Allow Wormhole P2P to transfer EU")
+                    .define("wormholeEUP2PGT", true);
+
+            GregWormholeGoodEuP2P = builder
+                    .comment("Allow Wormhole P2P to transfer EU to more than 1 output simultaneously")
+                    .define("wormholeGoodEUP2PGT", false);
             builder.pop();
 
 
@@ -287,7 +300,7 @@ public class CrazyConfig {
 
 
             builder.push("Portable Spatial IO");
-            NokiaCost = builder
+            PortableSpatialStorageCostMult = builder
                     .comment("FE cost multiplier for Portable Spatial IO")
                     .defineInRange("nokiaCost", 5, 0, 100);
             builder.pop();
@@ -307,18 +320,17 @@ public class CrazyConfig {
             builder.push("P2PSpeeds");
             FEp2pSpeed = builder
                     .comment("Extract speed for FE P2P (FE/t)")
-                    .defineInRange("fep2pSpeed", Integer.MAX_VALUE, 0, Integer.MAX_VALUE);
+                    .defineInRange("fep2pSpeed", 262144, 0, Integer.MAX_VALUE);
 
             Fluidp2pSpeed = builder
                     .comment("Extract speed for Fluid P2P (mB/t)")
-                    .defineInRange("fluidp2pSpeed", 250, 0, Integer.MAX_VALUE);
+                    .defineInRange("fluidp2pSpeed", 500, 0, Integer.MAX_VALUE);
 
             Itemp2pSpeed = builder
                     .comment("Extract speed for Item P2P (items/t)")
-                    .defineInRange("itemp2pSpeed", 4, 0, Integer.MAX_VALUE);
+                    .defineInRange("itemp2pSpeed", 16, 0, Integer.MAX_VALUE);
             builder.pop();
-
-            builder.pop(); // general
+            builder.pop();
         }
     }
 }

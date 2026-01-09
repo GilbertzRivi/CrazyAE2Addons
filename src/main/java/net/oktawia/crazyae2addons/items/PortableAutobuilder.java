@@ -199,7 +199,7 @@ public class PortableAutobuilder extends WirelessTerminalItem implements IMenuIt
         double dy = target.getY() - from.getY();
         double dz = target.getZ() - from.getZ();
         double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-        return distance * CrazyConfig.COMMON.NokiaCost.get();
+        return distance * CrazyConfig.COMMON.PortableSpatialStorageCostMult.get();
     }
 
     private void generateProgramAndCopy(Level level, Player p, ItemStack stack) {

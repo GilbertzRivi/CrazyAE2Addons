@@ -18,6 +18,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
@@ -74,7 +75,7 @@ public class WormholeP2PTunnelPart extends P2PTunnelPart<WormholeP2PTunnelPart> 
     private ConnectionUpdate pendingUpdate = ConnectionUpdate.NONE;
     private final Map<WormholeP2PTunnelPart, IGridConnection> connections = new IdentityHashMap<>();
 
-    private final IManagedGridNode outerNode = CrazyConfig.COMMON.NestedP2PWormhole.get() ?
+    protected final IManagedGridNode outerNode = CrazyConfig.COMMON.NestedP2PWormhole.get() ?
             GridHelper
             .createManagedNode(this, NodeListener.INSTANCE)
             .setTagName("outer")
@@ -199,6 +200,12 @@ public class WormholeP2PTunnelPart extends P2PTunnelPart<WormholeP2PTunnelPart> 
 
         long chunkKey = new ChunkPos(targetPos).toLong();
         if (!targetWorld.getChunkSource().isPositionTicking(chunkKey)) return false;
+
+        if (is.is(Items.ENDER_PEARL) && CrazyConfig.COMMON.P2PWormholeTeleportation.get()){
+            is.shrink(1);
+            sp.teleportTo(targetWorld, targetPos.getX() + 0.5D, targetPos.getY() + 0.1D, targetPos.getZ() + 0.5D, hitFace.getOpposite().toYRot(), sp.getXRot());
+            return true;
+        }
 
         var state = targetWorld.getBlockState(targetPos);
         var hit = new BlockHitResult(Vec3.atCenterOf(targetPos), hitFace, targetPos, false);
@@ -447,7 +454,7 @@ public class WormholeP2PTunnelPart extends P2PTunnelPart<WormholeP2PTunnelPart> 
 
             var remoteHost = input.getHost().getBlockEntity();
             var targetPos = remoteHost.getBlockPos().relative(input.getSide());
-            var targetBE = world.getBlockEntity(targetPos);
+            var targetBE = remoteHost.getLevel().getBlockEntity(targetPos);
             if (targetBE == null) return LazyOptional.empty();
 
             return targetBE.getCapability(cap, input.getSide().getOpposite());
@@ -533,7 +540,6 @@ public class WormholeP2PTunnelPart extends P2PTunnelPart<WormholeP2PTunnelPart> 
     public <T> @NotNull LazyOptional<T> getCapability(@NotNull Capability<T> capabilityClass) {
         return getCapability(capabilityClass, getSide());
     }
-
 
     private enum ConnectionUpdate {
         NONE,

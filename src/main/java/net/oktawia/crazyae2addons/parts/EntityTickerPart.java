@@ -17,7 +17,6 @@ import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuLocators;
 import appeng.parts.automation.UpgradeablePart;
 import appeng.parts.p2p.P2PModels;
-import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -37,7 +36,6 @@ import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.menus.EntityTickerMenu;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
 import java.util.List;
 
 import static java.lang.Math.pow;
@@ -55,7 +53,6 @@ public class EntityTickerPart extends UpgradeablePart implements IGridTickable, 
         return MODELS.getModels();
     }
 
-    private static final Logger LOGGER = LogUtils.getLogger();
     public EntityTickerPart(IPartItem<?> partItem) {
         super(partItem);
         this.getMainNode()

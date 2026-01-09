@@ -9,9 +9,7 @@ import appeng.api.upgrades.IUpgradeInventory;
 import appeng.api.upgrades.IUpgradeableObject;
 import appeng.api.upgrades.UpgradeInventories;
 import appeng.core.definitions.AEItems;
-import appeng.core.localization.GuiText;
 import appeng.core.localization.Tooltips;
-import appeng.items.AEBaseItem;
 import appeng.items.tools.powered.WirelessTerminalItem;
 import appeng.menu.ISubMenu;
 import appeng.menu.MenuOpener;
@@ -43,11 +41,6 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.ForgeCapabilities;
-import net.minecraftforge.common.capabilities.ICapabilityProvider;
-import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.energy.IEnergyStorage;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
@@ -73,7 +66,7 @@ public class PortableSpatialStorage extends WirelessTerminalItem implements IMen
     private BlockPos origin = null;
     private Direction originFacing = Direction.NORTH;
 
-    private static final String NBT_ENERGY        = "energy";
+    private static final String NBT_ENERGY = "energy";
 
     private static final String SEP = "|";
 
@@ -295,7 +288,7 @@ public class PortableSpatialStorage extends WirelessTerminalItem implements IMen
         double dy = target.getY() - from.getY();
         double dz = target.getZ() - from.getZ();
         double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-        return distance * CrazyConfig.COMMON.NokiaCost.get();
+        return distance * CrazyConfig.COMMON.PortableSpatialStorageCostMult.get();
     }
 
     public static int computeCutCostFE(Level level, BlockPos cornerA, BlockPos cornerB, BlockPos origin) {

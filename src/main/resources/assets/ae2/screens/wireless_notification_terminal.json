@@ -11,7 +11,7 @@
   },
   "text": {
     "dialog_title": {
-      "text": { "translate": "item.crazyae2addons.wireless_notification_terminal" },
+      "text": { "translate": "item.crazyae2addonslite.wireless_notification_terminal" },
       "position": { "left": 8, "top": 6 }
     }
   },

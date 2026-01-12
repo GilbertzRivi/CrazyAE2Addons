@@ -1,0 +1,12 @@
+{
+  "parent": "block/cube",
+  "textures": {
+    "particle": "crazyae2addonslite:block/ampere_meter",
+    "down": "crazyae2addonslite:block/ampere_meter",
+    "up": "crazyae2addonslite:block/ampere_meter",
+    "north": "crazyae2addonslite:block/ampere_meter_front",
+    "south": "crazyae2addonslite:block/ampere_meter",
+    "east": "crazyae2addonslite:block/ampere_meter_side",
+    "west": "crazyae2addonslite:block/ampere_meter_side"
+  }
+}

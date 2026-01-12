@@ -1,9 +1,9 @@
 {
   "parent": "ae2:part/display_base",
   "textures": {
-    "lightsBright": "crazyae2addons:part/redstone_terminal_bright",
-    "lightsMedium": "crazyae2addons:part/redstone_terminal",
-    "lightsDark": "crazyae2addons:part/redstone_terminal_dark"
+    "lightsBright": "crazyae2addonslite:part/redstone_terminal_bright",
+    "lightsMedium": "crazyae2addonslite:part/redstone_terminal",
+    "lightsDark": "crazyae2addonslite:part/redstone_terminal_dark"
   },
   "elements": [
     {

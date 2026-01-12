@@ -1,7 +1,0 @@
-{
-  "type": "ae2wtlib:upgrade",
-  "terminal": {
-    "item": "crazyae2addons:wireless_redstone_terminal"
-  },
-  "terminalName": "wireless_redstone_terminal"
-}

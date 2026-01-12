@@ -1,8 +1,0 @@
-{
-  "variants": {
-    "facing=north": { "model": "crazyae2addons:block/research_unit" },
-    "facing=east":  { "model": "crazyae2addons:block/research_unit", "y": 90 },
-    "facing=south": { "model": "crazyae2addons:block/research_unit", "y": 180 },
-    "facing=west":  { "model": "crazyae2addons:block/research_unit", "y": 270 }
-  }
-}

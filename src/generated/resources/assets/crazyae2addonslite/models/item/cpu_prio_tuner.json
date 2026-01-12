@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "crazyae2addonslite:item/cpu_prio_tuner"
+  }
+}

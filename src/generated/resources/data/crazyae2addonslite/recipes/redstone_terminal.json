@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "R": {
+      "item": "minecraft:redstone"
+    },
+    "T": {
+      "item": "ae2:terminal"
+    }
+  },
+  "pattern": [
+    "TR"
+  ],
+  "result": {
+    "item": "crazyae2addonslite:redstone_terminal"
+  },
+  "show_notification": true
+}

@@ -9,7 +9,7 @@ credits=".siann & kolja_ on discord"
 authors="${mod_authors}"
 description='''${mod_description}'''
 [[mixins]]
-config = "mixins.crazyae2addons.json"
+config = "mixins.crazyae2addonslite.json"
 [[dependencies.${mod_id}]]
     modId="forge"
     mandatory=true

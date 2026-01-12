@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "crazyae2addonslite:block/crazy_pattern_provider"
+  }
+}

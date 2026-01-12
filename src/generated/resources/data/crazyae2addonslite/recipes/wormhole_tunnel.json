@@ -1,0 +1,33 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "A": {
+      "item": "ae2:item_p2p_tunnel"
+    },
+    "B": {
+      "item": "ae2:fluid_p2p_tunnel"
+    },
+    "C": {
+      "item": "ae2:fe_p2p_tunnel"
+    },
+    "D": {
+      "item": "ae2:me_p2p_tunnel"
+    },
+    "I": {
+      "item": "minecraft:diamond"
+    },
+    "N": {
+      "item": "minecraft:nether_star"
+    }
+  },
+  "pattern": [
+    "IAI",
+    "BNC",
+    "IDI"
+  ],
+  "result": {
+    "item": "crazyae2addonslite:wormhole_tunnel"
+  },
+  "show_notification": true
+}

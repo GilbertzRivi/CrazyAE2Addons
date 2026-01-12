@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "C": {
+      "item": "ae2:level_emitter"
+    },
+    "P": {
+      "item": "crazyae2addonslite:crazy_pattern_multiplier"
+    }
+  },
+  "pattern": [
+    "PC"
+  ],
+  "result": {
+    "item": "crazyae2addonslite:crazy_emitter_multiplier"
+  },
+  "show_notification": true
+}

@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "E": {
+      "item": "ae2:level_emitter"
+    },
+    "P": {
+      "item": "ae2:pattern_provider"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    }
+  },
+  "pattern": [
+    "PRE"
+  ],
+  "result": {
+    "item": "crazyae2addonslite:crafting_scheduler"
+  },
+  "show_notification": true
+}

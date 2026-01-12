@@ -4,22 +4,23 @@
   "background": {
     "texture": "guis/builder_pattern.png",
     "srcRect": [0, 0, 256, 256]
-  },"slots": {
-  "PLAYER_INVENTORY": {
-    "left": 47,
-    "bottom": 82,
-    "grid": "BREAK_AFTER_9COLS"
   },
-  "PLAYER_HOTBAR": {
-    "left": 47,
-    "bottom": 24,
-    "grid": "HORIZONTAL"
-  }
-},
+  "slots": {
+    "PLAYER_INVENTORY": {
+      "left": 47,
+      "bottom": 82,
+      "grid": "BREAK_AFTER_9COLS"
+    },
+    "PLAYER_HOTBAR": {
+      "left": 47,
+      "bottom": 24,
+      "grid": "HORIZONTAL"
+    }
+  },
   "text": {
     "dialog_title": {
       "text": {
-        "translate": "item.crazyae2addons.display_monitor"
+        "translate": "item.crazyae2addonslite.display_monitor"
       },
       "position": {
         "left": 8,

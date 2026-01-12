@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "C": {
+      "item": "ae2:advanced_card"
+    },
+    "E": {
+      "item": "ae2:crafting_unit"
+    }
+  },
+  "pattern": [
+    "CE"
+  ],
+  "result": {
+    "item": "crazyae2addonslite:automation_upgrade_card"
+  },
+  "show_notification": true
+}

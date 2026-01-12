@@ -1,7 +1,7 @@
 {
   "parent": "block/block",
   "textures": {
-    "txt_on": "crazyae2addons:part/display_on"
+    "txt_on": "crazyae2addonslite:part/display_on"
   },
   "elements": [
     {

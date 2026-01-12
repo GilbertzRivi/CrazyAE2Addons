@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "E": {
+      "item": "ae2:storage_bus"
+    },
+    "L": {
+      "item": "ae2:logic_processor"
+    },
+    "T": {
+      "item": "minecraft:name_tag"
+    }
+  },
+  "pattern": [
+    "ET",
+    "TL"
+  ],
+  "result": {
+    "item": "crazyae2addonslite:nbt_storage_bus"
+  },
+  "show_notification": true
+}

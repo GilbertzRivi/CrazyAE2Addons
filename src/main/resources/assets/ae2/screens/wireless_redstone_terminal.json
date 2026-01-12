@@ -7,7 +7,7 @@
   },
   "text": {
     "dialog_title": {
-      "text": { "translate": "item.crazyae2addons.redstone_terminal" },
+      "text": { "translate": "item.crazyae2addonslite.redstone_terminal" },
       "position": { "left": 8, "top": 6 }
     },
 

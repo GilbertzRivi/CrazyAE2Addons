@@ -1,0 +1,40 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "net.oktawia.crazyae2addonslite.mixins",
+  "compatibilityLevel": "JAVA_17",
+  "plugin": "net.oktawia.crazyae2addonslite.mixins.Plugin",
+  "refmap": "mixins.crazyae2addonslite.refmap.json",
+  "mixins": [
+    "AAECraftingServiceMixin",
+    "AAEExecutingCraftingJobAccessor",
+    "BlockApiCacheAccessor",
+    "CraftingCalculationAccessor",
+    "CraftingCPURecordAccessor",
+    "CraftingTreeNodeMixin",
+    "ExecutingCraftingJobAccessor",
+    "MixinCPUSelectionList",
+    "MixinCraftingCpuCluster",
+    "MixinCraftingCPUCycler",
+    "MixinCraftingCpuListEntryPrio",
+    "MixinCraftingCpuLogicAE2",
+    "MixinCraftingCpuLogicAE2CL",
+    "MixinCraftingCPUMenu",
+    "MixinCraftingService",
+    "MixinCraftingStatusMenu",
+    "MixinEntity",
+    "MixinPatternProviderLogic",
+    "MixinServerPlayer",
+    "P2PTunnelPartAccessor",
+    "PatternProviderBlockEntityAccessor",
+    "PatternProviderMenuAccessor",
+    "PatternProviderTargetCacheAccessor",
+    "RestrictedInputSlotMixin",
+    "SlotAccessor",
+    "ViewCellItemMixin",
+    "WidgetContainerAccessor"
+  ],
+  "client": [
+    "MixinCraftingCPUScreen"
+  ]
+}

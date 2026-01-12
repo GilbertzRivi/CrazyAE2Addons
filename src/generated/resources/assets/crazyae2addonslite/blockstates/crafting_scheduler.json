@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "crazyae2addonslite:block/crafting_scheduler"
+    }
+  }
+}

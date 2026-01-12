@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "crazyae2addonslite:item/player_upgrade_card"
+  }
+}

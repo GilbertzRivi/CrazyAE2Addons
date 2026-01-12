@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "L": {
+      "item": "ae2:level_emitter"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    }
+  },
+  "pattern": [
+    "LR"
+  ],
+  "result": {
+    "item": "crazyae2addonslite:redstone_emitter"
+  },
+  "show_notification": true
+}

@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "D": {
+      "item": "ae2:advanced_card"
+    },
+    "P": {
+      "item": "ae2:pattern_provider"
+    }
+  },
+  "pattern": [
+    "PPP",
+    "PDP",
+    "PPP"
+  ],
+  "result": {
+    "item": "crazyae2addonslite:crazy_upgrade"
+  },
+  "show_notification": true
+}

@@ -64,11 +64,20 @@ public class NBTStorageBusScreen<C extends NBTStorageBusMenu> extends Upgradeabl
     @Override
     public void containerTick() {
         super.containerTick();
+        int maxScroll = (int) input.getMaxScroll();;
+        scrollbar.setRange(0, Math.max(0, maxScroll), 4);
 
-        int cur = scrollbar.getCurrentScroll();
-        if (cur != lastScroll) {
-            lastScroll = cur;
-            input.setScrollAmount(cur);
+        int currentScrollbarPos = scrollbar.getCurrentScroll();
+        if (currentScrollbarPos != lastScroll) {
+            lastScroll = currentScrollbarPos;
+            input.setScrollAmount(currentScrollbarPos);
+        } else {
+            int currentInputScroll = (int) input.getScrollAmount();
+
+            if (currentInputScroll != currentScrollbarPos) {
+                scrollbar.setCurrentScroll(Math.min(currentInputScroll, maxScroll));
+                lastScroll = Math.min(currentInputScroll, maxScroll);
+            }
         }
     }
 
@@ -77,7 +86,7 @@ public class NBTStorageBusScreen<C extends NBTStorageBusMenu> extends Upgradeabl
         confirm.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.nbt_storage_confirm")));
 
         input = new MultilineTextFieldWidget(
-                font, 0, 0, 110, 100,
+                font, 0, 0, 202, 135,
                 Component.translatable("gui.crazyae2addons.nbt_storage_input"));
 
         load = new IconButton(Icon.ENTER, (x) -> getMenu().loadNBT());

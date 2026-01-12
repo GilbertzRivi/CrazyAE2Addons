@@ -49,18 +49,6 @@ public final class Screens {
                 CrazyPatternMultiplierScreen<CrazyPatternMultiplierMenu>::new,
                 "/screens/crazy_pattern_multiplier.json");
 
-        InitScreens.register(CrazyMenuRegistrar.IMPULSED_PATTERN_PROVIDER_MENU.get(),
-                ImpulsedPatternProviderScreen<ImpulsedPatternProviderMenu>::new,
-                "/screens/impulsed_pattern_provider.json");
-
-        InitScreens.register(CrazyMenuRegistrar.SIGNALLING_INTERFACE_MENU.get(),
-                SignallingInterfaceScreen<SignallingInterfaceMenu>::new,
-                "/screens/signalling_interface.json");
-
-        InitScreens.register(CrazyMenuRegistrar.SET_STOCK_AMOUNT_MENU.get(),
-                SetStockAmountScreen<SetStockAmountMenu>::new,
-                "/screens/set_stock_amount.json");
-
         InitScreens.register(CrazyMenuRegistrar.MOB_EXPORT_BUS_MENU.get(),
                 MobExportBusScreen<MobExportBusMenu>::new,
                 "/screens/mob_export_bus.json");

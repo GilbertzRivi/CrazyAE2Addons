@@ -11,18 +11,12 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.StateDefinition;
-import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.phys.BlockHitResult;
-import net.oktawia.crazyae2addons.CrazyConfig;
-import net.oktawia.crazyae2addons.entities.EntropyCradleCapacitorBE;
 import net.oktawia.crazyae2addons.entities.PenroseMassEmitterBE;
-import net.oktawia.crazyae2addons.entities.SignallingInterfaceBE;
 import org.jetbrains.annotations.Nullable;
 
 public class PenroseMassEmitter extends AEBaseEntityBlock<PenroseMassEmitterBE> {

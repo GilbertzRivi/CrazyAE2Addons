@@ -49,7 +49,6 @@ public class CrazyItemRegistrar {
     }
 
     // =========================================================
-    // Debug / dev
     // =========================================================
 
     public static final RegistryObject<StructurePatternCopyItem> DEBUG_STRUCTURE_COPY_THING =
@@ -57,7 +56,6 @@ public class CrazyItemRegistrar {
                     () -> new StructurePatternCopyItem(new Item.Properties()));
 
     // =========================================================
-    // AE2 Parts: Busy / interfejsy
     // =========================================================
 
     public static final RegistryObject<NBTExportBusPartItem> NBT_EXPORT_BUS_PART_ITEM =
@@ -79,12 +77,15 @@ public class CrazyItemRegistrar {
                             : new EnergyExporterPartItem(new Item.Properties()));
 
     // =========================================================
-    // AE2 Parts: P2P (tunele)
     // =========================================================
 
     public static final RegistryObject<RRItemP2PTunnelPartItem> RR_ITEM_P2P_TUNNEL_PART =
             ITEMS.register("round_robin_item_p2p_tunnel",
                     () -> new RRItemP2PTunnelPartItem(new Item.Properties()));
+
+    public static final RegistryObject<RRFluidP2PTunnelPartItem> RR_FLUID_P2P_TUNNEL_PART =
+            ITEMS.register("round_robin_fluid_p2p_tunnel",
+                    () -> new RRFluidP2PTunnelPartItem(new Item.Properties()));
 
     public static final RegistryObject<ChunkyFluidP2PTunnelPartItem> CHUNKY_FLUID_P2P_TUNNEL_PART =
             ITEMS.register("chunky_fluid_p2p_tunnel",
@@ -109,7 +110,6 @@ public class CrazyItemRegistrar {
                             : new WormHoleP2PTunnelPartItem(new Item.Properties()));
 
     // =========================================================
-    // AE2 Parts: terminal / monitor / redstone
     // =========================================================
 
     public static final RegistryObject<DisplayPartItem> DISPLAY_MONITOR_PART_ITEM =
@@ -133,7 +133,6 @@ public class CrazyItemRegistrar {
                     () -> new RedstoneTerminalPartItem(new Item.Properties()));
 
     // =========================================================
-    // Upgrade / karty
     // =========================================================
 
     public static final RegistryObject<CircuitUpgradeCard> CIRCUIT_UPGRADE_CARD_ITEM =
@@ -161,7 +160,6 @@ public class CrazyItemRegistrar {
                     () -> new CrazyUpgradeItem(new Item.Properties()));
 
     // =========================================================
-    // Patterny / narzędzia / utility
     // =========================================================
 
     public static final RegistryObject<CrazyPatternModifierItem> CRAZY_PATTERN_MODIFIER_ITEM =
@@ -197,7 +195,6 @@ public class CrazyItemRegistrar {
                     () -> new TagViewCellItem(new Item.Properties()));
 
     // =========================================================
-    // Mob storage + mob sieć (housing, cells, plane/bus)
     // =========================================================
 
     public static final RegistryObject<Item> MOB_CELL_HOUSING =
@@ -245,7 +242,6 @@ public class CrazyItemRegistrar {
                     () -> new MobKeySelectorItem(new Item.Properties()));
 
     // =========================================================
-    // Materia / XP / singularity
     // =========================================================
 
     public static final RegistryObject<XpShardItem> XP_SHARD_ITEM =
@@ -257,7 +253,6 @@ public class CrazyItemRegistrar {
                     () -> new SuperSingularityItem(new Item.Properties()));
 
     // =========================================================
-    // Wireless / portable
     // =========================================================
 
     public static final RegistryObject<WirelessRedstoneTerminal> WIRELESS_REDSTONE_TERMINAL =
@@ -277,7 +272,6 @@ public class CrazyItemRegistrar {
                     () -> new PortableAutobuilder(new Item.Properties()));
 
     // =========================================================
-    // Research / data
     // =========================================================
 
     public static final RegistryObject<DataDrive> DATA_DRIVE =

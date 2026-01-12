@@ -1,239 +1,242 @@
 package net.oktawia.crazyae2addons.menus;
 
-import appeng.api.inventories.InternalInventory;
-import appeng.api.stacks.AEKey;
-import appeng.api.stacks.GenericStack;
-import appeng.menu.guisync.GuiSync;
-import appeng.menu.implementations.MenuTypeBuilder;
-import appeng.menu.implementations.UpgradeableMenu;
-import appeng.menu.slot.FakeSlot;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.MenuType;
-import net.minecraft.world.item.ItemStack;
-import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.parts.MultiStorageLevelEmitterPart;
 import org.jetbrains.annotations.Nullable;
 
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.Slot;
+
+import appeng.api.config.Settings;
+import appeng.api.stacks.AEKey;
+import appeng.api.util.IConfigManager;
+import appeng.core.definitions.AEItems;
+import appeng.menu.SlotSemantics;
+import appeng.menu.guisync.GuiSync;
+import appeng.menu.implementations.UpgradeableMenu;
+import appeng.menu.slot.FakeSlot;
+import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
+
 public class MultiLevelEmitterMenu extends UpgradeableMenu<MultiStorageLevelEmitterPart> {
 
-    public static final int MAX_ROWS = MultiStorageLevelEmitterPart.MAX_RULES;
-    public static final int MIN_ROWS = 6;
+    private static final int FILTER_SLOTS = 16;
 
-    public static final String ACT_ADD_ROW = "addRow";
-    public static final String ACT_SET_LIMIT = "setLimit";
-    public static final String ACT_TOGGLE_COMPARE = "toggleCompare";
-    public static final String ACT_TOGGLE_LOGIC = "toggleLogic";
+    private static final String ACTION_SET_LOGIC_AND = "setLogicAnd";
+    private static final String ACTION_SET_COMPARE_SLOT = "setCompareSlot";
+    private static final String ACTION_SET_THRESHOLD = "setThresholdPacked";
+    private static final String ACTION_SET_CRAFT_SLOT = "setCraftSlot";
 
-    private static final Gson GSON = new GsonBuilder().create();
-    public final MultiStorageLevelEmitterPart host;
+    private static final long VALUE_MASK_60 = (1L << 60) - 1L;
+    @GuiSync(2)
+    public int compareMask;
+    @GuiSync(3)
+    public boolean logicAnd;
+    @GuiSync(4)
+    public int craftMask;
 
-    @GuiSync(200)
-    public int rows;
-
-    @GuiSync(201)
-    public String limitsJson = "";
-
-    @GuiSync(202)
-    public String modesJson = "";
-
-    @GuiSync(203)
-    public int logicMode; // 0 OR, 1 AND
-
-    private final InternalInventory monitorInv;
-
-    private final long[] limits = new long[MAX_ROWS];
-    private final int[] modes = new int[MAX_ROWS];
-
-    private int monitorSlotStart;
+    @GuiSync(10) public long t0;
+    @GuiSync(11) public long t1;
+    @GuiSync(12) public long t2;
+    @GuiSync(13) public long t3;
+    @GuiSync(14) public long t4;
+    @GuiSync(15) public long t5;
+    @GuiSync(16) public long t6;
+    @GuiSync(17) public long t7;
+    @GuiSync(18) public long t8;
+    @GuiSync(19) public long t9;
+    @GuiSync(20) public long t10;
+    @GuiSync(21) public long t11;
+    @GuiSync(22) public long t12;
+    @GuiSync(23) public long t13;
+    @GuiSync(24) public long t14;
+    @GuiSync(25) public long t15;
 
     public MultiLevelEmitterMenu(int id, Inventory ip, MultiStorageLevelEmitterPart host) {
         super(CrazyMenuRegistrar.MULTI_LEVEL_EMITTER_MENU.get(), id, ip, host);
-        this.host = host;
 
-        this.monitorInv = host.getMonitorInventory();
+        this.logicAnd = host.isLogicAnd();
+        this.compareMask = buildMaskFromHost(host);
+        for (int i = 0; i < FILTER_SLOTS; i++) {
+            setThresholdField(i, host.getThreshold(i));
+        }
+        this.craftMask = 0;
+        for (int i = 0; i < 16; i++) {
+            if (host.isCraftEmitWhenCrafting(i)) this.craftMask |= (1 << i);
+        }
 
-        this.rows = MIN_ROWS;
+        registerClientAction(ACTION_SET_LOGIC_AND, Boolean.class, this::setLogicAnd);
+        registerClientAction(ACTION_SET_COMPARE_SLOT, Integer.class, this::setCompareSlotPacked);
+        registerClientAction(ACTION_SET_THRESHOLD, Long.class, this::setThresholdPacked);
+        registerClientAction(ACTION_SET_CRAFT_SLOT, Integer.class, this::setCraftSlotPacked);
+
+    }
+
+    private static int buildMaskFromHost(MultiStorageLevelEmitterPart host) {
+        int mask = 0;
+        for (int i = 0; i < FILTER_SLOTS; i++) {
+            if (host.isCompareGe(i)) mask |= (1 << i);
+        }
+        return mask;
+    }
+
+    public boolean isLogicAndClient() { return logicAnd; }
+
+    public void setLogicAnd(boolean and) {
+        this.logicAnd = and;
+
+        if (isClientSide()) {
+            sendClientAction(ACTION_SET_LOGIC_AND, and);
+        } else {
+            getHost().setLogicAnd(and);
+            getHost().getHost().markForSave();
+        }
+    }
+
+    public boolean isCompareGeClient(int slot) {
+        return slot >= 0 && slot < FILTER_SLOTS && (compareMask & (1 << slot)) != 0;
+    }
+
+    public void setCompareGe(int slot, boolean ge) {
+        if (slot < 0 || slot >= FILTER_SLOTS) return;
+
+        if (ge) compareMask |= (1 << slot);
+        else compareMask &= ~(1 << slot);
+
+        if (isClientSide()) {
+            int packed = (slot << 1) | (ge ? 1 : 0);
+            sendClientAction(ACTION_SET_COMPARE_SLOT, packed);
+        } else {
+            getHost().setCompareGe(slot, ge);
+            getHost().getHost().markForSave();
+        }
+    }
+
+    private void setCompareSlotPacked(int packed) {
+        int slot = packed >> 1;
+        boolean ge = (packed & 1) != 0;
+        if (!isClientSide() && slot >= 0 && slot < FILTER_SLOTS) {
+            getHost().setCompareGe(slot, ge);
+            getHost().getHost().markForSave();
+        }
+    }
+
+    public long getThresholdClient(int slot) {
+        return getThresholdField(slot);
+    }
+
+    public void setThreshold(int slot, long value) {
+        if (slot < 0 || slot >= FILTER_SLOTS) return;
+        if (value < 0) value = 0;
+
+        setThresholdField(slot, value);
+
+        if (isClientSide()) {
+            long packed = packThreshold(slot, value);
+            sendClientAction(ACTION_SET_THRESHOLD, packed);
+        } else {
+            getHost().setThreshold(slot, value);
+            getHost().getHost().markForSave();
+        }
+    }
+
+    private void setThresholdPacked(long packed) {
+        int slot = (int) (packed >>> 60);
+        long value = packed & VALUE_MASK_60;
 
         if (!isClientSide()) {
-            loadFromHost();
-            int inferred = computeRowsFromLastFilled();
-            if (rows != inferred) {
-                rows = inferred;
-                host.setRows(rows);
-            }
-            syncJson();
-        }
-
-        registerClientAction(ACT_ADD_ROW, Integer.class, this::handleAddRow);
-        registerClientAction(ACT_SET_LIMIT, String.class, this::handleSetLimit);
-        registerClientAction(ACT_TOGGLE_COMPARE, Integer.class, this::handleToggleCompare);
-        registerClientAction(ACT_TOGGLE_LOGIC, Integer.class, this::handleToggleLogic);
-
-        this.monitorSlotStart = this.slots.size();
-        for (int i = 0; i < MAX_ROWS; i++) {
-            this.addSlot(new FakeSlot(monitorInv, i));
+            setThresholdField(slot, value);
+            getHost().setThreshold(slot, value);
+            getHost().getHost().markForSave();
         }
     }
 
-    public int getMonitorSlotStart() {
-        return monitorSlotStart;
+    private static long packThreshold(int slot, long value) {
+        if (value < 0) value = 0;
+        value &= VALUE_MASK_60;
+        return ((long) slot << 60) | value;
     }
 
-    public int getRows() {
-        return rows;
+    private long getThresholdField(int slot) {
+        return switch (slot) {
+            case 0 -> t0; case 1 -> t1; case 2 -> t2; case 3 -> t3;
+            case 4 -> t4; case 5 -> t5; case 6 -> t6; case 7 -> t7;
+            case 8 -> t8; case 9 -> t9; case 10 -> t10; case 11 -> t11;
+            case 12 -> t12; case 13 -> t13; case 14 -> t14; case 15 -> t15;
+            default -> 0L;
+        };
     }
 
-    public int getLogicMode() {
-        return logicMode;
-    }
-
-    // ---- client requests ----
-    public void requestAddRow() {
-        if (isClientSide()) sendClientAction(ACT_ADD_ROW, 0);
-        else handleAddRow(0);
-    }
-
-    public void requestSetLimit(int row, long value) {
-        String payload = row + ":" + value;
-        if (isClientSide()) sendClientAction(ACT_SET_LIMIT, payload);
-        else handleSetLimit(payload);
-    }
-
-    public void requestToggleCompare(int row) {
-        if (isClientSide()) sendClientAction(ACT_TOGGLE_COMPARE, row);
-        else handleToggleCompare(row);
-    }
-
-    public void requestToggleLogic() {
-        if (isClientSide()) sendClientAction(ACT_TOGGLE_LOGIC, 0);
-        else handleToggleLogic(0);
-    }
-
-    // ---- handlers (server-side) ----
-    private void handleAddRow(Integer ignored) {
-        if (isClientSide()) {
-            sendClientAction(ACT_ADD_ROW, 0);
-            return;
+    private void setThresholdField(int slot, long v) {
+        switch (slot) {
+            case 0 -> t0 = v; case 1 -> t1 = v; case 2 -> t2 = v; case 3 -> t3 = v;
+            case 4 -> t4 = v; case 5 -> t5 = v; case 6 -> t6 = v; case 7 -> t7 = v;
+            case 8 -> t8 = v; case 9 -> t9 = v; case 10 -> t10 = v; case 11 -> t11 = v;
+            case 12 -> t12 = v; case 13 -> t13 = v; case 14 -> t14 = v; case 15 -> t15 = v;
         }
-        if (rows >= MAX_ROWS) return;
-
-        rows++;
-        host.setRows(rows);
-        syncJson();
-    }
-
-    private void handleSetLimit(String payload) {
-        if (isClientSide()) {
-            sendClientAction(ACT_SET_LIMIT, payload);
-            return;
-        }
-
-        int sep = payload.indexOf(':');
-        if (sep <= 0) return;
-
-        int row;
-        long value;
-        try {
-            row = Integer.parseInt(payload.substring(0, sep));
-            value = Long.parseLong(payload.substring(sep + 1));
-        } catch (Exception ignored) {
-            return;
-        }
-
-        if (row < 0 || row >= MAX_ROWS) return;
-
-        value = Math.max(0, value);
-        limits[row] = value;
-        host.setLimit(row, value);
-
-        syncJson();
-    }
-
-    private void handleToggleCompare(Integer row) {
-        if (isClientSide()) {
-            sendClientAction(ACT_TOGGLE_COMPARE, row);
-            return;
-        }
-        if (row == null || row < 0 || row >= MAX_ROWS) return;
-
-        modes[row] = (modes[row] == 0) ? 1 : 0;
-
-        host.setCompareMode(row, modes[row] == 1
-                ? MultiStorageLevelEmitterPart.CompareMode.BELOW
-                : MultiStorageLevelEmitterPart.CompareMode.ABOVE_OR_EQUAL);
-
-        syncJson();
-    }
-
-    private void handleToggleLogic(Integer ignored) {
-        if (isClientSide()) {
-            sendClientAction(ACT_TOGGLE_LOGIC, 0);
-            return;
-        }
-
-        logicMode = (logicMode == 0) ? 1 : 0;
-
-        host.setLogicMode(logicMode == 1
-                ? MultiStorageLevelEmitterPart.LogicMode.AND
-                : MultiStorageLevelEmitterPart.LogicMode.OR);
-
-        syncJson();
-    }
-
-    private void loadFromHost() {
-        rows = Math.max(MIN_ROWS, Math.min(host.getRows(), MAX_ROWS));
-        logicMode = (host.getLogicMode() == MultiStorageLevelEmitterPart.LogicMode.AND) ? 1 : 0;
-
-        for (int i = 0; i < MAX_ROWS; i++) {
-            limits[i] = host.getLimit(i);
-            modes[i] = host.getCompareMode(i) == MultiStorageLevelEmitterPart.CompareMode.BELOW ? 1 : 0;
-        }
-    }
-
-    private void syncJson() {
-        int r = Math.max(0, Math.min(rows, MAX_ROWS));
-
-        long[] l = new long[r];
-        int[] m = new int[r];
-        for (int i = 0; i < r; i++) {
-            l[i] = limits[i];
-            m[i] = modes[i];
-        }
-
-        limitsJson = GSON.toJson(l);
-        modesJson = GSON.toJson(m);
-    }
-
-    private ItemStack safeGetFilterStack(int slot) {
-        try {
-            ItemStack s = monitorInv.getStackInSlot(slot);
-            return s == null ? ItemStack.EMPTY : s;
-        } catch (Exception e) {
-            return ItemStack.EMPTY;
-        }
-    }
-
-    private int computeRowsFromLastFilled() {
-        int last = -1;
-        for (int i = 0; i < MAX_ROWS; i++) {
-            if (!safeGetFilterStack(i).isEmpty()) last = i;
-        }
-        return Math.max(MIN_ROWS, Math.min(MAX_ROWS, last + 1));
     }
 
     @Override
-    public void removed(Player player) {
-        if (!isClientSide()) {
-            int inferred = computeRowsFromLastFilled();
-            if (rows != inferred) {
-                rows = inferred;
-                host.setRows(rows);
-                syncJson();
-            }
+    protected void setupConfig() {
+        var inv = getHost().getConfig().createMenuWrapper();
+        for (int i = 0; i < FILTER_SLOTS; i++) {
+            this.addSlot(new FakeSlot(inv, i), SlotSemantics.CONFIG);
         }
-        super.removed(player);
     }
+
+    @Override
+    public void onSlotChange(Slot s) {
+        super.onSlotChange(s);
+        getHost().getHost().markForSave();
+    }
+
+    @Override
+    protected void loadSettingsFromHost(IConfigManager cm) {
+        this.setCraftingMode(cm.getSetting(Settings.CRAFT_VIA_REDSTONE));
+        if (cm.hasSetting(Settings.FUZZY_MODE)) {
+            this.setFuzzyMode(cm.getSetting(Settings.FUZZY_MODE));
+        }
+        this.setRedStoneMode(cm.getSetting(Settings.REDSTONE_EMITTER));
+    }
+
+    public boolean supportsFuzzySearch() {
+        return getHost().getConfigManager().hasSetting(Settings.FUZZY_MODE) && hasUpgrade(AEItems.FUZZY_CARD);
+    }
+
+    @Nullable
+    public AEKey getConfiguredFilter(int slot) {
+        if (slot < 0 || slot >= FILTER_SLOTS) return null;
+        return getHost().getConfig().getKey(slot);
+    }
+
+    public boolean isCraftEmitWhenCraftingClient(int slot) {
+        return slot >= 0 && slot < 16 && (craftMask & (1 << slot)) != 0;
+    }
+
+    public void setCraftEmitWhenCrafting(int slot, boolean whenCrafting) {
+        if (slot < 0 || slot >= 16) return;
+
+        if (whenCrafting) craftMask |= (1 << slot);
+        else craftMask &= ~(1 << slot);
+
+        if (isClientSide()) {
+            int packed = (slot << 1) | (whenCrafting ? 1 : 0);
+            sendClientAction("setCraftSlot", packed);
+        } else {
+            getHost().setCraftEmitWhenCrafting(slot, whenCrafting);
+            getHost().getHost().markForSave();
+        }
+    }
+
+    private void setCraftSlotPacked(int packed) {
+        int slot = packed >> 1;
+        boolean whenCrafting = (packed & 1) != 0;
+
+        if (!isClientSide() && slot >= 0 && slot < 16) {
+            if (whenCrafting) craftMask |= (1 << slot);
+            else craftMask &= ~(1 << slot);
+
+            getHost().setCraftEmitWhenCrafting(slot, whenCrafting);
+            getHost().getHost().markForSave();
+        }
+    }
+
 }

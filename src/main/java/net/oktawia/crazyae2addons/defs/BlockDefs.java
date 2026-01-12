@@ -47,25 +47,6 @@ public class BlockDefs {
         );
 
         block(
-                CrazyBlockRegistrar.IMPULSED_PATTERN_PROVIDER_BLOCK.get(),
-                "PDR",
-                () -> Map.of(
-                        "P", AEBlocks.PATTERN_PROVIDER.asItem(),
-                        "D", Items.DIAMOND,
-                        "R", Items.REDSTONE_TORCH
-                )
-        );
-
-        block(
-                CrazyBlockRegistrar.SIGNALLING_INTERFACE_BLOCK.get(),
-                "IT",
-                () -> Map.of(
-                        "I", AEBlocks.INTERFACE.asItem(),
-                        "T", Items.REDSTONE.asItem()
-                )
-        );
-
-        block(
                 CrazyBlockRegistrar.MOB_FARM_WALL.get(),
                 "BIB/IRI/BIB",
                 () -> Map.of(

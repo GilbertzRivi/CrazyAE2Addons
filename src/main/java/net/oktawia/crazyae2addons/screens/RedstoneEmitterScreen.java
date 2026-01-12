@@ -11,8 +11,6 @@ import net.oktawia.crazyae2addons.Utils;
 import net.oktawia.crazyae2addons.menus.RedstoneEmitterMenu;
 import net.oktawia.crazyae2addons.misc.IconButton;
 
-import java.util.Arrays;
-
 public class RedstoneEmitterScreen<C extends RedstoneEmitterMenu> extends AEBaseScreen<C> {
 
     public AETextField name;
@@ -40,15 +38,9 @@ public class RedstoneEmitterScreen<C extends RedstoneEmitterMenu> extends AEBase
     }
 
     public void save(){
-        if (Arrays.stream(this.getMenu().emitterNames.split("\\|")).noneMatch(name -> name.equals(this.name.getValue()))){
-            this.name.setTextColor(0x00FF00);
-            Runnable setColorFunction = () -> this.name.setTextColor(0xFFFFFF);
-            Utils.asyncDelay(setColorFunction, 1);
-            this.getMenu().changeName(this.name.getValue());
-        } else {
-            this.name.setTextColor(0xFF0000);
-            Runnable setColorFunction = () -> this.name.setTextColor(0xFFFFFF);
-            Utils.asyncDelay(setColorFunction, 1);
-        }
+        this.name.setTextColor(0x00FF00);
+        Runnable setColorFunction = () -> this.name.setTextColor(0xFFFFFF);
+        Utils.asyncDelay(setColorFunction, 1);
+        this.getMenu().changeName(this.name.getValue());
     }
 }

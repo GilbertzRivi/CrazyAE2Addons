@@ -29,7 +29,6 @@ public class CrazyBlockRegistrar {
             DeferredRegister.create(ForgeRegistries.ITEMS, CrazyAddons.MODID);
 
     // =========================================================
-    // Utility / pomiary
     // =========================================================
 
     public static final RegistryObject<AmpereMeterBlock> AMPERE_METER_BLOCK =
@@ -40,15 +39,7 @@ public class CrazyBlockRegistrar {
                     () -> new AEBaseBlockItem(AMPERE_METER_BLOCK.get(), new Item.Properties()));
 
     // =========================================================
-    // AE2 / sieć / crafting / patterny
     // =========================================================
-
-    public static final RegistryObject<SignallingInterfaceBlock> SIGNALLING_INTERFACE_BLOCK =
-            BLOCKS.register("signalling_interface", SignallingInterfaceBlock::new);
-
-    public static final RegistryObject<BlockItem> SIGNALLING_INTERFACE_BLOCK_ITEM =
-            BLOCK_ITEMS.register("signalling_interface",
-                    () -> new AEBaseBlockItem(SIGNALLING_INTERFACE_BLOCK.get(), new Item.Properties()));
 
     public static final RegistryObject<CraftingSchedulerBlock> CRAFTING_SCHEDULER_BLOCK =
             BLOCKS.register("crafting_scheduler", CraftingSchedulerBlock::new);
@@ -71,13 +62,6 @@ public class CrazyBlockRegistrar {
             BLOCK_ITEMS.register("crazy_pattern_provider",
                     () -> new CrazyPatternProviderBlockItem(CRAZY_PATTERN_PROVIDER_BLOCK.get(), new Item.Properties()));
 
-    public static final RegistryObject<ImpulsedPatternProviderBlock> IMPULSED_PATTERN_PROVIDER_BLOCK =
-            BLOCKS.register("impulsed_pattern_provider", ImpulsedPatternProviderBlock::new);
-
-    public static final RegistryObject<BlockItem> IMPULSED_PATTERN_PROVIDER_BLOCK_ITEM =
-            BLOCK_ITEMS.register("impulsed_pattern_provider",
-                    () -> new AEBaseBlockItem(IMPULSED_PATTERN_PROVIDER_BLOCK.get(), new Item.Properties()));
-
     public static final RegistryObject<BrokenPatternProviderBlock> BROKEN_PATTERN_PROVIDER_BLOCK =
             BLOCKS.register("broken_pattern_provider", BrokenPatternProviderBlock::new);
 
@@ -86,7 +70,6 @@ public class CrazyBlockRegistrar {
                     () -> new AEBaseBlockItem(BROKEN_PATTERN_PROVIDER_BLOCK.get(), new Item.Properties()));
 
     // =========================================================
-    // Maszyny / automatyzacja
     // =========================================================
 
     public static final RegistryObject<AutoEnchanterBlock> AUTO_ENCHANTER_BLOCK =
@@ -118,7 +101,6 @@ public class CrazyBlockRegistrar {
                     () -> new AEBaseBlockItem(AUTO_BUILDER_CREATIVE_SUPPLY_BLOCK.get(), new Item.Properties()));
 
     // =========================================================
-    // Materia / kondensacja
     // =========================================================
 
     public static final RegistryObject<ReinforcedMatterCondenserBlock> REINFORCED_MATTER_CONDENSER_BLOCK =
@@ -129,7 +111,6 @@ public class CrazyBlockRegistrar {
                     () -> new AEBaseBlockItem(REINFORCED_MATTER_CONDENSER_BLOCK.get(), new Item.Properties()));
 
     // =========================================================
-    // Energy Storage (tiered) + Dense
     // =========================================================
 
     public static final RegistryObject<EnergyStorage1k> ENERGY_STORAGE_1K_BLOCK =
@@ -203,7 +184,6 @@ public class CrazyBlockRegistrar {
                     () -> new EnergyStorage256mBlockItem(DENSE_ENERGY_STORAGE_256K_BLOCK.get(), new Item.Properties()));
 
     // =========================================================
-    // Multiblok: Mob Farm
     // =========================================================
 
     public static final RegistryObject<MobFarmControllerBlock> MOB_FARM_CONTROLLER =
@@ -242,7 +222,6 @@ public class CrazyBlockRegistrar {
                     () -> new AEBaseBlockItem(MOB_FARM_INPUT.get(), new Item.Properties()));
 
     // =========================================================
-    // Multiblok: Spawner Extractor
     // =========================================================
 
     public static final RegistryObject<SpawnerExtractorControllerBlock> SPAWNER_EXTRACTOR_CONTROLLER =
@@ -260,7 +239,6 @@ public class CrazyBlockRegistrar {
                     () -> new AEBaseBlockItem(SPAWNER_EXTRACTOR_WALL.get(), new Item.Properties()));
 
     // =========================================================
-    // Entropy / singularity (multiblok)
     // =========================================================
 
     public static final RegistryObject<EntropyCradle> ENTROPY_CRADLE =
@@ -292,7 +270,6 @@ public class CrazyBlockRegistrar {
                     () -> new AEBaseBlockItem(SUPER_SINGULARITY_BLOCK.get(), new Item.Properties()));
 
     // =========================================================
-    // Research (stacja / pedestal / unit / kabel / stabilizacja)
     // =========================================================
 
     public static final RegistryObject<ResearchStation> RESEARCH_STATION =
@@ -338,7 +315,6 @@ public class CrazyBlockRegistrar {
                     () -> new AEBaseBlockItem(CrazyBlockRegistrar.RESEARCH_UNIT.get(), new Item.Properties()));
 
     // =========================================================
-    // Penrose (multiblok + elementy)
     // =========================================================
 
     public static final RegistryObject<PenroseControllerBlock> PENROSE_CONTROLLER =

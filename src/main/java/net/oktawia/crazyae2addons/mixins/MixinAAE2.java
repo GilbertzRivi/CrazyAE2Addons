@@ -22,16 +22,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(value = PatternProviderLogic.class, priority = 1200)
 public abstract class MixinAAE2 implements IPatternProviderCpu, IAdvPatternProviderCpu {
-
-    @Shadow
-    @Final
-    private PatternProviderLogicHost host;
-
     @Unique
     private AdvCraftingCPU cpuLogic = null;
-
-    @Unique
-    private CompoundTag logicTag = null;
 
     @Shadow public abstract @Nullable IGrid getGrid();
 
@@ -39,70 +31,5 @@ public abstract class MixinAAE2 implements IPatternProviderCpu, IAdvPatternProvi
     @Override
     public void setCpuLogic(AdvCraftingCPU cpu) {
         this.cpuLogic = cpu;
-    }
-
-    @Inject(
-            method = "onStackReturnedToNetwork(Lappeng/api/stacks/GenericStack;)V",
-            at = @At(
-                    value  = "FIELD",
-                    target = "Lappeng/helpers/patternprovider/PatternProviderLogic;unlockEvent:Lappeng/helpers/patternprovider/UnlockCraftingEvent;",
-                    opcode = Opcodes.PUTFIELD,
-                    shift  = At.Shift.AFTER
-            ),
-            remap = false
-    )
-    private void afterUnlockCleared(GenericStack genericStack, CallbackInfo ci) {
-        if(host.getBlockEntity() != null && host.getBlockEntity().getType() == CrazyBlockEntityRegistrar.IMPULSED_PATTERN_PROVIDER_BE.get()){
-            this.cpuLogic = null;
-        }
-    }
-
-    public void failAdvCrafting(){
-        if (this.cpuLogic != null) {
-            this.cpuLogic.cancelJob();
-            this.cpuLogic = null;
-        }
-    }
-
-    @Override
-    public void advSaveNbt(CompoundTag tag){
-        if (this.cpuLogic != null) {
-            CompoundTag logicTag = new CompoundTag();
-            this.cpuLogic.writeToNBT(logicTag);
-            tag.put("cpuLogic", logicTag);
-        }
-    }
-
-    @Override
-    public void advReadNbt(CompoundTag tag){
-        this.logicTag = tag.getCompound("cpuLogic");
-    }
-
-    public void loadTag(){
-        if (this.getGrid() != null && logicTag != null){
-            for (var cpu : this.getGrid().getCraftingService().getCpus()) {
-                if (cpu instanceof AdvCraftingCPU advCpu) {
-                    CompoundTag newTag = new CompoundTag();
-                    advCpu.writeToNBT(newTag);
-                    var job = logicTag.getCompound("job");
-                    var link = job.getCompound("link");
-                    var id = link.getIntArray("craftId");
-
-                    var newJob = newTag.getCompound("job");
-                    var newLink = newJob.getCompound("link");
-                    var newId = newLink.getIntArray("craftId");
-
-                    try {
-                        if (newId[0] == id[0] && newId[1] == id[1] && newId[2] == id[2] && newId[3] == id[3]) {
-                            this.cpuLogic = advCpu;
-                            this.logicTag = null;
-                            return;
-                        }
-                    } catch (Exception e) {
-                        LogUtils.getLogger().info(e.toString());
-                    }
-                }
-            }
-        }
     }
 }

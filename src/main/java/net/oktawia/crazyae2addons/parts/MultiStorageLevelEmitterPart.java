@@ -1,28 +1,28 @@
 package net.oktawia.crazyae2addons.parts;
 
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Map;
+import java.util.List;
 import java.util.Set;
 
-import appeng.api.config.RedstoneMode;
+import appeng.helpers.IConfigInvHost;
+import appeng.parts.automation.AbstractLevelEmitterPart;
+import appeng.util.SettingsFrom;
+import info.journeymap.shaded.org.jetbrains.annotations.Nullable;
+import net.minecraft.nbt.Tag;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
-import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 
 import appeng.api.config.FuzzyMode;
+import appeng.api.config.RedstoneMode;
 import appeng.api.config.Settings;
 import appeng.api.config.YesNo;
 import appeng.api.crafting.IPatternDetails;
-import appeng.api.inventories.BaseInternalInventory;
-import appeng.api.inventories.InternalInventory;
 import appeng.api.networking.IGrid;
 import appeng.api.networking.IStackWatcher;
 import appeng.api.networking.crafting.ICraftingProvider;
@@ -31,7 +31,6 @@ import appeng.api.networking.storage.IStorageWatcherNode;
 import appeng.api.parts.IPartItem;
 import appeng.api.parts.IPartModel;
 import appeng.api.stacks.AEKey;
-import appeng.api.stacks.GenericStack;
 import appeng.api.stacks.KeyCounter;
 import appeng.core.AppEng;
 import appeng.core.definitions.AEItems;
@@ -40,27 +39,25 @@ import appeng.items.parts.PartModels;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuLocators;
 import appeng.parts.PartModel;
-import appeng.parts.automation.AbstractLevelEmitterPart;
-import net.oktawia.crazyae2addons.menus.MultiLevelEmitterMenu;
+import appeng.util.ConfigInventory;
 
-public class MultiStorageLevelEmitterPart extends AbstractLevelEmitterPart implements ICraftingProvider {
+public class MultiStorageLevelEmitterPart extends AbstractLevelEmitterPart implements IConfigInvHost, ICraftingProvider {
 
-    public static final int MAX_RULES = 63;
-
-    public enum LogicMode { OR, AND }
-    public enum CompareMode { ABOVE_OR_EQUAL, BELOW }
-
-    // --- Models (jak AE2 emitter)
     @PartModels
-    public static final ResourceLocation MODEL_BASE_OFF = new ResourceLocation(AppEng.MOD_ID, "part/level_emitter_base_off");
+    public static final ResourceLocation MODEL_BASE_OFF = new ResourceLocation(AppEng.MOD_ID,
+            "part/level_emitter_base_off");
     @PartModels
-    public static final ResourceLocation MODEL_BASE_ON = new ResourceLocation(AppEng.MOD_ID, "part/level_emitter_base_on");
+    public static final ResourceLocation MODEL_BASE_ON = new ResourceLocation(AppEng.MOD_ID,
+            "part/level_emitter_base_on");
     @PartModels
-    public static final ResourceLocation MODEL_STATUS_OFF = new ResourceLocation(AppEng.MOD_ID, "part/level_emitter_status_off");
+    public static final ResourceLocation MODEL_STATUS_OFF = new ResourceLocation(AppEng.MOD_ID,
+            "part/level_emitter_status_off");
     @PartModels
-    public static final ResourceLocation MODEL_STATUS_ON = new ResourceLocation(AppEng.MOD_ID, "part/level_emitter_status_on");
+    public static final ResourceLocation MODEL_STATUS_ON = new ResourceLocation(AppEng.MOD_ID,
+            "part/level_emitter_status_on");
     @PartModels
-    public static final ResourceLocation MODEL_STATUS_HAS_CHANNEL = new ResourceLocation(AppEng.MOD_ID, "part/level_emitter_status_has_channel");
+    public static final ResourceLocation MODEL_STATUS_HAS_CHANNEL = new ResourceLocation(AppEng.MOD_ID,
+            "part/level_emitter_status_has_channel");
 
     public static final PartModel MODEL_OFF_OFF = new PartModel(MODEL_BASE_OFF, MODEL_STATUS_OFF);
     public static final PartModel MODEL_OFF_ON = new PartModel(MODEL_BASE_OFF, MODEL_STATUS_ON);
@@ -69,29 +66,25 @@ public class MultiStorageLevelEmitterPart extends AbstractLevelEmitterPart imple
     public static final PartModel MODEL_ON_ON = new PartModel(MODEL_BASE_ON, MODEL_STATUS_ON);
     public static final PartModel MODEL_ON_HAS_CHANNEL = new PartModel(MODEL_BASE_ON, MODEL_STATUS_HAS_CHANNEL);
 
-    // --- NBT keys
-    private static final String NBT_ROWS = "ml_rows";
-    private static final String NBT_LOGIC = "ml_logic";
-    private static final String NBT_LIMITS = "ml_limits";
-    private static final String NBT_MODES = "ml_modes";
-    private static final String NBT_FILTERS = "ml_filters"; // CompoundTag { Items: [...] }
-    public static final int MIN_ROWS = 6;
-    // --- Inventory na filtry (ghost stacks) - InternalInventory (jak w terminalu)
-    private final FilterInventory monitorInv = new FilterInventory();
+    private static final int FILTER_SLOTS = 16;
+    private static final String NBT_CONFIG = "config";
+    private static final String NBT_COMPARE_MASK = "cmpMask";
+    private static final String NBT_CRAFT_MASK = "craftMask";
+    private static final String NBT_LOGIC_AND = "logicAnd";
+    private static final String NBT_THRESHOLDS = "thresholds";
+    private static final String NBT_RS_MODE = "rsMode";
+    private static final String NBT_FUZZY_MODE = "fzMode";
+    private static final String NBT_CRAFT_VIA = "craftVia";
+    private short compareMask = 0;
+    private short craftMask = (short) 0xFFFF;
+    private boolean logicAnd = false;
+    private final long[] thresholds = new long[FILTER_SLOTS];
+    private final ConfigInventory config = ConfigInventory.configTypes(FILTER_SLOTS, this::configureWatchers);
+    private final long[] lastReportedValues = new long[FILTER_SLOTS];
 
-    // Per row config
-    private int rows = MIN_ROWS;
-    private LogicMode logicMode = LogicMode.OR;
-    private final long[] limits = new long[MAX_RULES];
-    private final CompareMode[] modes = new CompareMode[MAX_RULES];
-
-    // Watchers + cache
     private IStackWatcher storageWatcher;
     private IStackWatcher craftingWatcher;
     private long lastUpdateTick = -1;
-
-    private final Map<AEKey, Long> cachedAmounts = new HashMap<>();
-    private final Set<AEKey> watchedKeys = new HashSet<>();
 
     private final IStorageWatcherNode stackWatcherNode = new IStorageWatcherNode() {
         @Override
@@ -102,20 +95,34 @@ public class MultiStorageLevelEmitterPart extends AbstractLevelEmitterPart imple
 
         @Override
         public void onStackChange(AEKey what, long amount) {
-            if (isUpgradedWith(AEItems.FUZZY_CARD)) {
+            if (isUpgradedWith(AEItems.CRAFTING_CARD)) {
+                return;
+            }
+
+            if (isUpgradedWith(AEItems.FUZZY_CARD) || !hasAnyConfiguredKey()) {
                 long currentTick = TickHandler.instance().getCurrentTick();
                 if (currentTick != lastUpdateTick) {
                     lastUpdateTick = currentTick;
                     var grid = getGridNode().getGrid();
-                    if (grid != null) updateAllFromGrid(grid);
-                    else updateStateFromCache();
+                    if (grid != null) {
+                        updateReportingValues(grid);
+                    }
                 }
                 return;
             }
 
-            if (watchedKeys.contains(what)) {
-                cachedAmounts.put(what, amount);
-                updateStateFromCache();
+            boolean touched = false;
+            for (int i = 0; i < FILTER_SLOTS; i++) {
+                var key = config.getKey(i);
+                if (key != null && key.equals(what)) {
+                    lastReportedValues[i] = amount;
+                    touched = true;
+                }
+            }
+
+            if (touched) {
+                MultiStorageLevelEmitterPart.this.lastReportedValue = pickLegacyDisplayValue();
+                MultiStorageLevelEmitterPart.this.updateState();
             }
         }
     };
@@ -146,77 +153,185 @@ public class MultiStorageLevelEmitterPart extends AbstractLevelEmitterPart imple
 
         getConfigManager().registerSetting(Settings.CRAFT_VIA_REDSTONE, YesNo.NO);
         getConfigManager().registerSetting(Settings.FUZZY_MODE, FuzzyMode.IGNORE_ALL);
-        getConfigManager().registerSetting(Settings.REDSTONE_CONTROLLED, RedstoneMode.IGNORE);
+    }
 
-        if (getReportingValue() != 0) setReportingValue(0);
+    public ConfigInventory getConfig() {
+        return config;
+    }
 
-        for (int i = 0; i < MAX_RULES; i++) {
-            limits[i] = 0;
-            modes[i] = CompareMode.ABOVE_OR_EQUAL;
+    public boolean isLogicAnd() {
+        return logicAnd;
+    }
+
+    public void setLogicAnd(boolean logicAnd) {
+        if (this.logicAnd != logicAnd) {
+            this.logicAnd = logicAnd;
+            updateState();
         }
     }
 
-    // ---------- API dla Menu ----------
-    public InternalInventory getMonitorInventory() {
-        return monitorInv;
+    public boolean isCompareGe(int slot) {
+        if (slot < 0 || slot >= FILTER_SLOTS) return false;
+        return (compareMask & (1 << slot)) != 0;
     }
 
-    public int getRows() {
-        return Math.max(MIN_ROWS, Math.min(rows, MAX_RULES));
+    public void setCompareGe(int slot, boolean ge) {
+        if (slot < 0 || slot >= FILTER_SLOTS) return;
+
+        short old = compareMask;
+        if (ge) compareMask = (short) (compareMask | (1 << slot));
+        else compareMask = (short) (compareMask & ~(1 << slot));
+
+        if (old != compareMask) updateState();
     }
 
-    public void setRows(int r) {
-        rows = Math.max(MIN_ROWS, Math.min(r, MAX_RULES));
-        getHost().markForUpdate();
-        configureWatchers();
+    public boolean isCraftEmitWhenCrafting(int slot) {
+        if (slot < 0 || slot >= FILTER_SLOTS) return true;
+        return (craftMask & (1 << slot)) != 0;
     }
 
-    public LogicMode getLogicMode() {
-        return logicMode;
+    public void setCraftEmitWhenCrafting(int slot, boolean whenCrafting) {
+        if (slot < 0 || slot >= FILTER_SLOTS) return;
+
+        short old = craftMask;
+        if (whenCrafting) craftMask = (short) (craftMask | (1 << slot));
+        else craftMask = (short) (craftMask & ~(1 << slot));
+
+        if (old != craftMask) updateState();
     }
 
-    public void setLogicMode(LogicMode mode) {
-        logicMode = (mode == null) ? LogicMode.OR : mode;
-        getHost().markForUpdate();
-        updateStateFromCache();
+    public long getThreshold(int slot) {
+        if (slot < 0 || slot >= FILTER_SLOTS) return 0;
+        return thresholds[slot];
     }
 
-    public long getLimit(int row) {
-        if (row < 0 || row >= MAX_RULES) return 0;
-        return limits[row];
+    public void setThreshold(int slot, long value) {
+        if (slot < 0 || slot >= FILTER_SLOTS) return;
+        if (value < 0) value = 0;
+
+        thresholds[slot] = value;
+
+        if (isUpgradedWith(AEItems.FUZZY_CARD) || !hasAnyConfiguredKey()) {
+            getMainNode().ifPresent(this::updateReportingValues);
+        } else {
+            updateState();
+        }
     }
 
-    public void setLimit(int row, long value) {
-        if (row < 0 || row >= MAX_RULES) return;
-        limits[row] = Math.max(0, value);
-        getHost().markForUpdate();
-        updateStateFromCache();
+    private boolean hasAnyConfiguredKey() {
+        for (int i = 0; i < FILTER_SLOTS; i++) {
+            if (config.getKey(i) != null) return true;
+        }
+        return false;
     }
 
-    public CompareMode getCompareMode(int row) {
-        if (row < 0 || row >= MAX_RULES) return CompareMode.ABOVE_OR_EQUAL;
-        return modes[row];
+    private long pickLegacyDisplayValue() {
+        for (int i = 0; i < FILTER_SLOTS; i++) {
+            if (config.getKey(i) != null) return lastReportedValues[i];
+        }
+        return this.lastReportedValue;
     }
 
-    public void setCompareMode(int row, CompareMode mode) {
-        if (row < 0 || row >= MAX_RULES) return;
-        modes[row] = (mode == null) ? CompareMode.ABOVE_OR_EQUAL : mode;
-        getHost().markForUpdate();
-        updateStateFromCache();
+    private boolean evaluateStorageSlot(int slot, long amount) {
+        long threshold = thresholds[slot];
+        boolean ge = isCompareGe(slot);
+        return ge == (amount >= threshold);
     }
 
-    // ---------- Upgrade slots ----------
+    private boolean computeStorageOutput() {
+        int active = 0;
+
+        if (logicAnd) {
+            for (int i = 0; i < FILTER_SLOTS; i++) {
+                var key = config.getKey(i);
+                if (key == null) continue;
+                active++;
+                if (!evaluateStorageSlot(i, lastReportedValues[i])) return false;
+            }
+            return active != 0 || evaluateStorageSlot(0, this.lastReportedValue);
+        } else {
+            for (int i = 0; i < FILTER_SLOTS; i++) {
+                var key = config.getKey(i);
+                if (key == null) continue;
+                active++;
+                if (evaluateStorageSlot(i, lastReportedValues[i])) return true;
+            }
+            return active == 0 && evaluateStorageSlot(0, this.lastReportedValue);
+        }
+    }
+
+    private boolean evaluateCraftingSlot(int slot, boolean requesting) {
+        boolean wantWhenCrafting = isCraftEmitWhenCrafting(slot);
+        return wantWhenCrafting == requesting;
+    }
+
+    private boolean computeCraftingOutput(IGrid grid) {
+        var crafting = grid.getCraftingService();
+        int active = 0;
+
+        if (logicAnd) {
+            for (int i = 0; i < FILTER_SLOTS; i++) {
+                var key = config.getKey(i);
+                if (key == null) continue;
+                active++;
+
+                boolean requesting = crafting.isRequesting(key);
+                if (!evaluateCraftingSlot(i, requesting)) return false;
+            }
+
+            if (active == 0) {
+                boolean any = crafting.isRequestingAny();
+                return evaluateCraftingSlot(0, any);
+            }
+            return true;
+        } else {
+            for (int i = 0; i < FILTER_SLOTS; i++) {
+                var key = config.getKey(i);
+                if (key == null) continue;
+                active++;
+
+                boolean requesting = crafting.isRequesting(key);
+                if (evaluateCraftingSlot(i, requesting)) return true;
+            }
+
+            if (active == 0) {
+                boolean any = crafting.isRequestingAny();
+                return evaluateCraftingSlot(0, any);
+            }
+            return false;
+        }
+    }
+
     @Override
-    protected int getUpgradeSlots() {
+    protected boolean isLevelEmitterOn() {
+        if (isClientSide()) {
+            return super.isLevelEmitterOn();
+        }
+
+        if (!getMainNode().isActive()) {
+            return false;
+        }
+
+        if (hasDirectOutput()) {
+            return getDirectOutput();
+        }
+
+        boolean desired = computeStorageOutput();
+
+        boolean invert = getConfigManager().getSetting(Settings.REDSTONE_EMITTER) == RedstoneMode.LOW_SIGNAL;
+        return invert != desired;
+    }
+
+    @Override
+    protected final int getUpgradeSlots() {
         return 1;
     }
 
     @Override
-    public void upgradesChanged() {
-        configureWatchers();
+    public final void upgradesChanged() {
+        this.configureWatchers();
     }
 
-    // ---------- Direct output (crafting card) ----------
     @Override
     protected boolean hasDirectOutput() {
         return isUpgradedWith(AEItems.CRAFTING_CARD);
@@ -225,36 +340,12 @@ public class MultiStorageLevelEmitterPart extends AbstractLevelEmitterPart imple
     @Override
     protected boolean getDirectOutput() {
         var grid = getMainNode().getGrid();
-        if (grid == null) return false;
-
-        var crafting = grid.getCraftingService();
-        var keys = getConfiguredKeysUnique();
-
-        if (keys.isEmpty()) {
-            return crafting.isRequestingAny();
-        }
-
-        if (logicMode == LogicMode.OR) {
-            for (var k : keys) if (crafting.isRequesting(k)) return true;
-            return false;
-        } else {
-            for (var k : keys) if (!crafting.isRequesting(k)) return false;
-            return true;
-        }
+        return grid != null && computeCraftingOutput(grid);
     }
 
     @Override
-    public Set<AEKey> getEmitableItems() {
-        if (isUpgradedWith(AEItems.CRAFTING_CARD)
-                && getConfigManager().getSetting(Settings.CRAFT_VIA_REDSTONE) == YesNo.YES) {
-            return getConfiguredKeysUnique();
-        }
-        return Set.of();
-    }
-
-    @Override
-    public java.util.List<IPatternDetails> getAvailablePatterns() {
-        return java.util.List.of();
+    public List<IPatternDetails> getAvailablePatterns() {
+        return List.of();
     }
 
     @Override
@@ -267,221 +358,130 @@ public class MultiStorageLevelEmitterPart extends AbstractLevelEmitterPart imple
         return true;
     }
 
-    // ---------- Watchers ----------
+    @Override
+    public Set<AEKey> getEmitableItems() {
+        if (isUpgradedWith(AEItems.CRAFTING_CARD)
+                && getConfigManager().getSetting(Settings.CRAFT_VIA_REDSTONE) == YesNo.YES) {
+            var out = new HashSet<AEKey>();
+            for (int i = 0; i < FILTER_SLOTS; i++) {
+                var k = config.getKey(i);
+                if (k != null) out.add(k);
+            }
+            return out;
+        }
+        return Set.of();
+    }
+
     @Override
     protected void configureWatchers() {
-        if (storageWatcher != null) storageWatcher.reset();
-        if (craftingWatcher != null) craftingWatcher.reset();
-
-        watchedKeys.clear();
-        cachedAmounts.clear();
+        if (this.storageWatcher != null) this.storageWatcher.reset();
+        if (this.craftingWatcher != null) this.craftingWatcher.reset();
 
         ICraftingProvider.requestUpdate(getMainNode());
 
-        var keys = getConfiguredKeysUnique();
-
         if (isUpgradedWith(AEItems.CRAFTING_CARD)) {
-            if (craftingWatcher != null) {
-                if (keys.isEmpty()) craftingWatcher.setWatchAll(true);
-                else for (var k : keys) craftingWatcher.add(k);
+            if (this.craftingWatcher != null) {
+                boolean any = false;
+                for (int i = 0; i < FILTER_SLOTS; i++) {
+                    var k = config.getKey(i);
+                    if (k != null) {
+                        any = true;
+                        this.craftingWatcher.add(k);
+                    }
+                }
+                if (!any) {
+                    this.craftingWatcher.setWatchAll(true);
+                }
+            }
+        } else {
+            if (this.storageWatcher != null) {
+                if (isUpgradedWith(AEItems.FUZZY_CARD) || !hasAnyConfiguredKey()) {
+                    this.storageWatcher.setWatchAll(true);
+                } else {
+                    for (int i = 0; i < FILTER_SLOTS; i++) {
+                        var k = config.getKey(i);
+                        if (k != null) this.storageWatcher.add(k);
+                    }
+                }
+            }
+            getMainNode().ifPresent(this::updateReportingValues);
+        }
+
+        updateState();
+    }
+
+    private void updateReportingValues(IGrid grid) {
+        var stacks = grid.getStorageService().getCachedInventory();
+        Arrays.fill(this.lastReportedValues, 0);
+
+        if (!hasAnyConfiguredKey()) {
+            long limit = thresholds[0];
+            this.lastReportedValue = 0;
+            for (var st : stacks) {
+                this.lastReportedValue += st.getLongValue();
+                if (this.lastReportedValue >= limit) break;
             }
             updateState();
             return;
         }
 
-        if (storageWatcher != null) {
-            if (isUpgradedWith(AEItems.FUZZY_CARD)) {
-                storageWatcher.setWatchAll(true);
+        boolean fuzzy = isUpgradedWith(AEItems.FUZZY_CARD);
+        var fzMode = getConfigManager().getSetting(Settings.FUZZY_MODE);
+
+        for (int i = 0; i < FILTER_SLOTS; i++) {
+            var key = config.getKey(i);
+            if (key == null) continue;
+
+            if (!fuzzy) {
+                lastReportedValues[i] = stacks.get(key);
             } else {
-                for (var k : keys) {
-                    storageWatcher.add(k);
-                    watchedKeys.add(k);
-                }
-            }
-        }
-
-        getMainNode().ifPresent(n -> {
-            var grid = n.getPivot().getGrid();
-            if (grid != null) updateAllFromGrid(grid);
-            else updateStateFromCache();
-        });
-    }
-
-    private Set<AEKey> getConfiguredKeysUnique() {
-        Set<AEKey> out = new HashSet<>();
-        int r = getRows();
-        for (int i = 0; i < r; i++) {
-            var k = keyFromFilter(monitorInv.getStackInSlot(i));
-            if (k != null) out.add(k);
-        }
-        return out;
-    }
-
-    private void updateAllFromGrid(IGrid grid) {
-        var inv = grid.getStorageService().getCachedInventory();
-
-        cachedAmounts.clear();
-
-        int r = getRows();
-        var keys = getConfiguredKeysUnique();
-
-        if (keys.isEmpty()) {
-            updateStateFromCache();
-            return;
-        }
-
-        if (!isUpgradedWith(AEItems.FUZZY_CARD)) {
-            for (var k : keys) {
-                cachedAmounts.put(k, inv.get(k));
-            }
-        } else {
-            var fzMode = getConfigManager().getSetting(Settings.FUZZY_MODE);
-
-            // cap per key = max(limit used with this key)
-            Map<AEKey, Long> cap = new HashMap<>();
-            for (int i = 0; i < r; i++) {
-                var k = keyFromFilter(monitorInv.getStackInSlot(i));
-                if (k == null) continue;
-                cap.merge(k, limits[i], Math::max);
-            }
-
-            for (var k : keys) {
-                long max = cap.getOrDefault(k, 0L);
+                long limit = thresholds[i];
                 long sum = 0;
-
-                var fuzzyList = inv.findFuzzy(k, fzMode);
+                var fuzzyList = stacks.findFuzzy(key, fzMode);
                 for (var st : fuzzyList) {
                     sum += st.getLongValue();
-                    if (sum > max) break;
+                    if (sum >= limit) break;
                 }
-                cachedAmounts.put(k, sum);
+                lastReportedValues[i] = sum;
             }
         }
 
-        updateStateFromCache();
-    }
-
-    private void updateStateFromCache() {
-        if (getReportingValue() != 0) setReportingValue(0);
-
-        boolean baseOn = evaluateRulesWithCache();
-
-        // encode base boolean into lastReportedValue (HIGH_SIGNAL -> ON if 0, OFF if -1)
-        this.lastReportedValue = baseOn ? 0 : -1;
+        this.lastReportedValue = pickLegacyDisplayValue();
         updateState();
     }
 
-    private boolean evaluateRulesWithCache() {
-        int r = getRows();
-        int configured = 0;
-
-        if (logicMode == LogicMode.OR) {
-            for (int i = 0; i < r; i++) {
-                var key = keyFromFilter(monitorInv.getStackInSlot(i));
-                if (key == null) continue;
-                configured++;
-
-                long amount = cachedAmounts.getOrDefault(key, 0L);
-                long lim = limits[i];
-
-                boolean ok = (modes[i] == CompareMode.ABOVE_OR_EQUAL) ? (amount >= lim) : (amount < lim);
-                if (ok) return true;
-            }
-            return false;
-        } else {
-            for (int i = 0; i < r; i++) {
-                var key = keyFromFilter(monitorInv.getStackInSlot(i));
-                if (key == null) continue;
-                configured++;
-
-                long amount = cachedAmounts.getOrDefault(key, 0L);
-                long lim = limits[i];
-
-                boolean ok = (modes[i] == CompareMode.ABOVE_OR_EQUAL) ? (amount >= lim) : (amount < lim);
-                if (!ok) return false;
-            }
-            return configured > 0;
-        }
-    }
-
-    private static @Nullable AEKey keyFromFilter(ItemStack filter) {
-        var gs = GenericStack.fromItemStack(filter);
-        return gs != null ? gs.what() : null;
-    }
-
-    // ---------- NBT ----------
     @Override
     public void readFromNBT(CompoundTag data) {
         super.readFromNBT(data);
 
-        if (getReportingValue() != 0) setReportingValue(0);
+        config.readFromChildTag(data, NBT_CONFIG);
 
-        rows = Math.max(MIN_ROWS, Math.min(data.getInt(NBT_ROWS), MAX_RULES));
-        logicMode = data.getByte(NBT_LOGIC) == 1 ? LogicMode.AND : LogicMode.OR;
+        if (data.contains(NBT_COMPARE_MASK)) this.compareMask = data.getShort(NBT_COMPARE_MASK);
+        if (data.contains(NBT_CRAFT_MASK)) this.craftMask = data.getShort(NBT_CRAFT_MASK);
+        if (data.contains(NBT_LOGIC_AND)) this.logicAnd = data.getBoolean(NBT_LOGIC_AND);
 
-        long[] l = data.getLongArray(NBT_LIMITS);
-        for (int i = 0; i < MAX_RULES; i++) limits[i] = (i < l.length && l[i] >= 0) ? l[i] : 0;
-
-        byte[] m = data.getByteArray(NBT_MODES);
-        for (int i = 0; i < MAX_RULES; i++) {
-            byte v = (i < m.length) ? m[i] : 0;
-            modes[i] = (v == 1) ? CompareMode.BELOW : CompareMode.ABOVE_OR_EQUAL;
-        }
-
-        // filters
-        monitorInv.beginBulkLoad();
-        try {
-            monitorInv.clearDirect();
-
-            if (data.contains(NBT_FILTERS)) {
-                CompoundTag invTag = data.getCompound(NBT_FILTERS);
-                ListTag items = invTag.getList("Items", 10); // CompoundTag list
-                for (int i = 0; i < items.size(); i++) {
-                    CompoundTag it = items.getCompound(i);
-                    int slot = it.getByte("Slot") & 0xFF;
-                    if (slot >= 0 && slot < MAX_RULES) {
-                        ItemStack s = ItemStack.of(it);
-                        monitorInv.setItemDirect(slot, s);
-                    }
-                }
+        if (data.contains(NBT_THRESHOLDS)) {
+            long[] arr = data.getLongArray(NBT_THRESHOLDS);
+            for (int i = 0; i < FILTER_SLOTS; i++) {
+                thresholds[i] = (i < arr.length) ? Math.max(0, arr[i]) : 0;
             }
-        } finally {
-            monitorInv.endBulkLoad();
+        } else {
+            Arrays.fill(thresholds, 0L);
         }
-
-        configureWatchers();
     }
 
     @Override
     public void writeToNBT(CompoundTag data) {
         super.writeToNBT(data);
 
-        data.putInt(NBT_ROWS, getRows());
-        data.putByte(NBT_LOGIC, (byte) (logicMode == LogicMode.AND ? 1 : 0));
+        config.writeToChildTag(data, NBT_CONFIG);
 
-        data.putLongArray(NBT_LIMITS, limits);
-
-        byte[] m = new byte[MAX_RULES];
-        for (int i = 0; i < MAX_RULES; i++) m[i] = (byte) (modes[i] == CompareMode.BELOW ? 1 : 0);
-        data.putByteArray(NBT_MODES, m);
-
-        // filters -> CompoundTag z listą {Slot, ...stack...}
-        CompoundTag invTag = new CompoundTag();
-        ListTag list = new ListTag();
-        for (int i = 0; i < MAX_RULES; i++) {
-            ItemStack s = monitorInv.getStackInSlot(i);
-            if (s.isEmpty()) continue;
-
-            CompoundTag it = new CompoundTag();
-            it.putByte("Slot", (byte) i);
-            s.save(it);
-            list.add(it);
-        }
-        invTag.put("Items", list);
-        data.put(NBT_FILTERS, invTag);
+        data.putShort(NBT_COMPARE_MASK, this.compareMask);
+        data.putShort(NBT_CRAFT_MASK, this.craftMask);
+        data.putBoolean(NBT_LOGIC_AND, this.logicAnd);
+        data.putLongArray(NBT_THRESHOLDS, this.thresholds);
     }
 
-    // ---------- GUI open ----------
     @Override
     public boolean onPartActivate(Player player, InteractionHand hand, Vec3 pos) {
         if (!isClientSide()) {
@@ -490,7 +490,6 @@ public class MultiStorageLevelEmitterPart extends AbstractLevelEmitterPart imple
         return true;
     }
 
-    // ---------- Models ----------
     @Override
     public IPartModel getStaticModels() {
         if (this.isActive() && this.isPowered()) {
@@ -502,58 +501,72 @@ public class MultiStorageLevelEmitterPart extends AbstractLevelEmitterPart imple
         }
     }
 
-    // ---------- InternalInventory impl ----------
-    private final class FilterInventory extends BaseInternalInventory {
-        private final ItemStack[] stacks = new ItemStack[MAX_RULES];
-        private boolean bulkLoading = false;
-
-        private FilterInventory() {
-            for (int i = 0; i < MAX_RULES; i++) stacks[i] = ItemStack.EMPTY;
+    @Override
+    public void exportSettings(SettingsFrom mode, CompoundTag output) {
+        super.exportSettings(mode, output);
+        if (mode != SettingsFrom.MEMORY_CARD) {
+            return;
         }
-
-        @Override
-        public int size() {
-            return MAX_RULES;
-        }
-
-        @Override
-        public ItemStack getStackInSlot(int slotIndex) {
-            if (slotIndex < 0 || slotIndex >= MAX_RULES) return ItemStack.EMPTY;
-            ItemStack s = stacks[slotIndex];
-            return s == null ? ItemStack.EMPTY : s;
-        }
-
-        @Override
-        public void setItemDirect(int slotIndex, ItemStack stack) {
-            if (slotIndex < 0 || slotIndex >= MAX_RULES) return;
-
-            ItemStack normalized;
-            if (stack == null || stack.isEmpty()) {
-                normalized = ItemStack.EMPTY;
-            } else {
-                normalized = stack.copy();
-                normalized.setCount(1); // ghost
-            }
-
-            stacks[slotIndex] = normalized;
-
-            if (!bulkLoading && !isClientSide()) {
-                // Reconfigure watchers when filter changes (jak w emitterach)
-                configureWatchers();
-                getHost().markForUpdate();
-            }
-        }
-
-        private void clearDirect() {
-            for (int i = 0; i < MAX_RULES; i++) stacks[i] = ItemStack.EMPTY;
-        }
-
-        private void beginBulkLoad() {
-            bulkLoading = true;
-        }
-
-        private void endBulkLoad() {
-            bulkLoading = false;
-        }
+        output.remove("reportingValue");
+        output.putBoolean(NBT_LOGIC_AND, this.logicAnd);
+        output.putShort(NBT_COMPARE_MASK, this.compareMask);
+        output.putShort(NBT_CRAFT_MASK, this.craftMask);
+        output.putLongArray(NBT_THRESHOLDS, this.thresholds);
+        this.config.writeToChildTag(output, NBT_CONFIG);
+        output.putString(NBT_RS_MODE, getConfigManager().getSetting(Settings.REDSTONE_EMITTER).name());
+        output.putString(NBT_FUZZY_MODE, getConfigManager().getSetting(Settings.FUZZY_MODE).name());
+        output.putString(NBT_CRAFT_VIA, getConfigManager().getSetting(Settings.CRAFT_VIA_REDSTONE).name());
     }
+
+    @Override
+    public void importSettings(SettingsFrom mode, CompoundTag input, @Nullable Player player) {
+        super.importSettings(mode, input, player);
+        if (mode != SettingsFrom.MEMORY_CARD) {
+            return;
+        }
+        if (input.contains(NBT_LOGIC_AND, Tag.TAG_BYTE)) {
+            this.logicAnd = input.getBoolean(NBT_LOGIC_AND);
+        }
+        if (input.contains(NBT_COMPARE_MASK, Tag.TAG_SHORT)) {
+            this.compareMask = input.getShort(NBT_COMPARE_MASK);
+        }
+        if (input.contains(NBT_CRAFT_MASK, Tag.TAG_SHORT)) {
+            this.craftMask = input.getShort(NBT_CRAFT_MASK);
+        }
+        if (input.contains(NBT_THRESHOLDS, Tag.TAG_LONG_ARRAY)) {
+            long[] arr = input.getLongArray(NBT_THRESHOLDS);
+            for (int i = 0; i < FILTER_SLOTS; i++) {
+                this.thresholds[i] = (i < arr.length) ? Math.max(0, arr[i]) : 0L;
+            }
+        } else {
+            Arrays.fill(this.thresholds, 0L);
+        }
+        if (input.contains(NBT_CONFIG)) {
+            this.config.readFromChildTag(input, NBT_CONFIG);
+        } else {
+            this.config.clear();
+        }
+        try {
+            if (input.contains(NBT_RS_MODE, Tag.TAG_STRING)) {
+                var v = RedstoneMode.valueOf(input.getString(NBT_RS_MODE));
+                getConfigManager().putSetting(Settings.REDSTONE_EMITTER, v);
+            }
+        } catch (Exception ignored) { }
+        try {
+            if (input.contains(NBT_FUZZY_MODE, Tag.TAG_STRING)) {
+                var v = FuzzyMode.valueOf(input.getString(NBT_FUZZY_MODE));
+                getConfigManager().putSetting(Settings.FUZZY_MODE, v);
+            }
+        } catch (Exception ignored) { }
+        try {
+            if (input.contains(NBT_CRAFT_VIA, Tag.TAG_STRING)) {
+                var v = YesNo.valueOf(input.getString(NBT_CRAFT_VIA));
+                getConfigManager().putSetting(Settings.CRAFT_VIA_REDSTONE, v);
+            }
+        } catch (Exception ignored) { }
+        this.configureWatchers();
+        this.updateState();
+        this.getHost().markForSave();
+    }
+
 }

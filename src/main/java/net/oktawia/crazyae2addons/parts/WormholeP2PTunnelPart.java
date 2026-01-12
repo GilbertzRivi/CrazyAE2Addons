@@ -5,18 +5,17 @@ import java.util.*;
 import appeng.api.implementations.items.IMemoryCard;
 import appeng.api.implementations.items.MemoryCardMessages;
 import appeng.me.service.P2PService;
-import appeng.menu.MenuOpener;
 import appeng.parts.p2p.P2PModels;
 import appeng.parts.p2p.P2PTunnelPart;
 import appeng.util.Platform;
 import appeng.util.SettingsFrom;
+import com.mojang.blaze3d.vertex.*;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.BlockGetter;
@@ -112,7 +111,6 @@ public class WormholeP2PTunnelPart extends P2PTunnelPart<WormholeP2PTunnelPart> 
             output.receiveRedstoneInput(reducedPower);
         }
     }
-
 
     private void receiveRedstoneInput(int power) {
         if (redstoneRecursive) return;

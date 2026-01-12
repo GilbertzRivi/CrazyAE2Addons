@@ -72,15 +72,6 @@ public class CrazyMenuRegistrar {
     public static final RegistryObject<MenuType<CrazyPatternMultiplierMenu>> CRAZY_PATTERN_MULTIPLIER_MENU =
             reg(id("crazy_pattern_multiplier"), CrazyPatternMultiplierMenu::new, CrazyPatternMultiplierHost.class);
 
-    public static final RegistryObject<MenuType<ImpulsedPatternProviderMenu>> IMPULSED_PATTERN_PROVIDER_MENU =
-            reg(id("impulsed_pp"), ImpulsedPatternProviderMenu::new, ImpulsedPatternProviderBE.class);
-
-    public static final RegistryObject<MenuType<SignallingInterfaceMenu>> SIGNALLING_INTERFACE_MENU =
-            reg(id("signalling_interface"), SignallingInterfaceMenu::new, SignallingInterfaceBE.class);
-
-    public static final RegistryObject<MenuType<SetStockAmountMenu>> SET_STOCK_AMOUNT_MENU =
-            reg(id("stock_amount_menu"), SetStockAmountMenu::new, SignallingInterfaceBE.class);
-
     public static final RegistryObject<MenuType<MobExportBusMenu>> MOB_EXPORT_BUS_MENU =
             reg(id("mob_export_bus"), MobExportBusMenu::new, MobExportBus.class);
 

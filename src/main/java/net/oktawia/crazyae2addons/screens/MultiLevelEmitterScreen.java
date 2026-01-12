@@ -1,311 +1,364 @@
 package net.oktawia.crazyae2addons.screens;
 
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.text.ParsePosition;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+
 import appeng.api.stacks.AEKey;
-import appeng.api.stacks.GenericStack;
-import appeng.client.gui.Icon;
-import appeng.client.gui.implementations.UpgradeableScreen;
-import appeng.client.gui.style.ScreenStyle;
-import appeng.client.gui.widgets.AETextField;
-import appeng.client.gui.widgets.Scrollbar;
-import appeng.menu.slot.AppEngSlot;
-import com.google.gson.Gson;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
-import net.minecraft.world.item.ItemStack;
+
+import appeng.api.config.FuzzyMode;
+import appeng.api.config.Settings;
+import appeng.client.gui.MathExpressionParser;
+import appeng.client.gui.NumberEntryType;
+import appeng.client.gui.implementations.UpgradeableScreen;
+import appeng.client.gui.style.PaletteColor;
+import appeng.client.gui.style.ScreenStyle;
+import appeng.client.gui.style.WidgetStyle;
+import appeng.client.gui.widgets.ConfirmableTextField;
+import appeng.client.gui.widgets.Scrollbar;
+import appeng.client.gui.widgets.ServerSettingToggleButton;
+import appeng.client.gui.widgets.SettingToggleButton;
+import appeng.client.gui.widgets.ToggleButton;
+import appeng.client.gui.Icon;
+import appeng.core.definitions.AEItems;
+import appeng.menu.SlotSemantics;
+import appeng.menu.slot.AppEngSlot;
+
 import net.oktawia.crazyae2addons.interfaces.IMovableSlot;
 import net.oktawia.crazyae2addons.menus.MultiLevelEmitterMenu;
-import net.oktawia.crazyae2addons.misc.IconButton;
-import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+public class MultiLevelEmitterScreen<C extends MultiLevelEmitterMenu> extends UpgradeableScreen<MultiLevelEmitterMenu> {
 
-public class MultiLevelEmitterScreen<C extends MultiLevelEmitterMenu> extends UpgradeableScreen<C> {
-
-    private static final Gson GSON = new Gson();
-
+    private static final int FILTER_SLOTS = 16;
     private static final int VISIBLE_ROWS = 6;
+    private static final int FILTER_SLOT_X = 10;
+    private static final int FILTER_SLOT_Y0 = 34;
+    private static final int ROW_H = 18;
 
-    private static final int SLOT_X_FROM_LIMIT_LEFT = 24;
-    private static final int SLOT_Y_FROM_LIMIT_TOP = -4;
+    private static final Icon ICON_GE = Icon.REDSTONE_HIGH;
+    private static final Icon ICON_LT = Icon.REDSTONE_LOW;
+    private final Font font;
+    private final Scrollbar scrollbar = new Scrollbar();
+    private int lastOffset = -1;
+    private final int[] boundSlot = new int[VISIBLE_ROWS];
+    private final NumberEntryType[] rowType = new NumberEntryType[VISIBLE_ROWS];
+    private final ConfirmableTextField[] limitFields = new ConfirmableTextField[VISIBLE_ROWS];
+    private final WidgetStyle[] limitStyles = new WidgetStyle[VISIBLE_ROWS];
+    private final boolean[] suppressChange = new boolean[VISIBLE_ROWS];
+    private final ToggleButton[] cmpToggles = new ToggleButton[VISIBLE_ROWS];
+    private Button logicToggle;
+    private final SettingToggleButton<FuzzyMode> fuzzyMode;
+    private final int errorTextColor;
+    private final int normalTextColor;
+    private final DecimalFormat decimalFormat;
+    private final AEKey[] lastKnownKeys = new AEKey[FILTER_SLOTS];
 
-    private static final String MAX_LONG_STR = Long.toString(Long.MAX_VALUE);
-    private static final int MAX_LONG_DIGITS = MAX_LONG_STR.length();
-
-    private Scrollbar scrollbar;
-    private Button addRowButton;
-    private Button logicButton;
-
-    private final List<AETextField> limitFields = new ArrayList<>(VISIBLE_ROWS);
-
-    // Jeden icon button na wiersz
-    private final List<IconButton> compareButtons = new ArrayList<>(VISIBLE_ROWS);
-
-    private final int[] fieldRowIndex = new int[VISIBLE_ROWS];
-
-    public MultiLevelEmitterScreen(C menu, Inventory playerInventory, Component title, ScreenStyle style) {
+    public MultiLevelEmitterScreen(C menu, Inventory playerInventory, Component title,
+                                   ScreenStyle style) {
         super(menu, playerInventory, title, style);
 
-        this.scrollbar = new Scrollbar();
-        this.widgets.add("scrollbar", this.scrollbar);
-
-        this.addRowButton = new IconButton(Icon.ENTER, (btn) -> getMenu().requestAddRow());
-        this.addRowButton.setTooltip(Tooltip.create(
-                Component.translatable("gui.crazyae2addons.multi_emitter.add_row")
-        ));
-        this.widgets.add("add_row", this.addRowButton);
-
-        this.logicButton = Button.builder(Component.literal("OR"), (btn) -> getMenu().requestToggleLogic())
-                .bounds(0, 0, 40, 16)
-                .build();
-        this.logicButton.setTooltip(Tooltip.create(
-                Component.translatable("gui.crazyae2addons.multi_emitter.logic")
-        ));
-        this.widgets.add("logic", this.logicButton);
-
-        ensureRows();
-        Arrays.fill(fieldRowIndex, -1);
-
-        updateScrollbarRange();
-        layoutSlotsAndSyncWidgets();
-    }
-
-    private static boolean isValidNonNegativeLongUpToMax(String s) {
-        if (s == null || s.isEmpty()) return true;
-
-        for (int i = 0; i < s.length(); i++) {
-            char c = s.charAt(i);
-            if (c < '0' || c > '9') return false;
+        for (int i = 0; i < FILTER_SLOTS; i++) {
+            lastKnownKeys[i] = menu.getConfiguredFilter(i);
         }
 
-        if (s.length() < MAX_LONG_DIGITS) return true;
-        if (s.length() > MAX_LONG_DIGITS) return false;
+        this.font = Minecraft.getInstance().font;
 
-        return s.compareTo(MAX_LONG_STR) <= 0;
-    }
+        this.errorTextColor = style.getColor(PaletteColor.TEXTFIELD_ERROR).toARGB();
+        this.normalTextColor = style.getColor(PaletteColor.TEXTFIELD_TEXT).toARGB();
 
-    private void ensureRows() {
-        for (int vis = limitFields.size(); vis < VISIBLE_ROWS; vis++) {
-            final int idx = vis;
+        this.decimalFormat = new DecimalFormat("#.######", new DecimalFormatSymbols());
+        this.decimalFormat.setParseBigDecimal(true);
+        this.decimalFormat.setNegativePrefix("-");
 
-            // --- limit field
-            AETextField tf = new AETextField(style, font, 0, 0, 0, 0);
-            tf.setMaxLength(MAX_LONG_DIGITS);
+        for (int i = 0; i < VISIBLE_ROWS; i++) {
+            boundSlot[i] = -1;
+            rowType[i] = NumberEntryType.of(null);
+        }
+
+        this.fuzzyMode = new ServerSettingToggleButton<>(Settings.FUZZY_MODE, FuzzyMode.IGNORE_ALL);
+        this.addToLeftToolbar(this.fuzzyMode);
+
+        this.scrollbar.setRange(0, Math.max(0, FILTER_SLOTS - VISIBLE_ROWS), 1);
+        this.widgets.add("scrollbar", scrollbar);
+
+        this.logicToggle = Button.builder(Component.literal(""), btn -> {
+            this.menu.setLogicAnd(!this.menu.isLogicAndClient());
+        }).bounds(0, 0, 40, 16).build();
+
+        this.logicToggle.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.multi_emitter.logic")));
+        this.widgets.add("logic", logicToggle);
+
+        for (int row = 0; row < VISIBLE_ROWS; row++) {
+            final int r = row;
+
+            this.limitStyles[row] = style.getWidget("limit_" + row);
+
+            var tf = new ConfirmableTextField(style, this.font, 0, 0, 0, this.font.lineHeight);
             tf.setBordered(false);
-            tf.setFilter(MultiLevelEmitterScreen::isValidNonNegativeLongUpToMax);
+            tf.setMaxLength(16);
+            tf.setTextColor(normalTextColor);
+            tf.setVisible(true);
+            tf.setResponder(text -> onLimitChanged(r));
+            tf.setOnConfirm(this::onClose);
+            this.limitFields[row] = tf;
+            this.widgets.add("limit_" + row, tf);
 
-            tf.setResponder(s -> {
-                if (!tf.isFocused()) return;
-
-                int row = fieldRowIndex[idx];
-                if (row < 0) return;
-
-                long units = 0;
-                if (s != null && !s.isEmpty()) units = Long.parseLong(s);
-
-                long tech = toTechnicalAmount(row, units);
-                getMenu().requestSetLimit(row, tech);
-            });
-
-            limitFields.add(tf);
-            this.widgets.add("limit_" + idx, tf);
-
-            // --- compare icon button (toggle)
-            IconButton cmp = new IconButton(Icon.REDSTONE_HIGH, (b) -> {
-                int row = fieldRowIndex[idx];
-                if (row >= 0) getMenu().requestToggleCompare(row);
-            });
-
-            cmp.setTooltip(Tooltip.create(
-                    Component.translatable("gui.crazyae2addons.multi_emitter.cmp_above")
-            ));
-
-            compareButtons.add(cmp);
-            this.widgets.add("cmp_" + idx, cmp);
+            var tg = new ToggleButton(ICON_GE, ICON_LT, (state) -> onCmpToggled(r, state)
+            );
+            this.cmpToggles[row] = tg;
+            this.widgets.add("cmp_" + row, tg);
         }
     }
 
-    private void updateScrollbarRange() {
-        int rows = getMenu().getRows();
-        int maxScroll = Math.max(0, rows - VISIBLE_ROWS);
-        this.scrollbar.setRange(0, maxScroll, 1);
+    @Override
+    protected void updateBeforeRender() {
+        super.updateBeforeRender();
+
+        this.fuzzyMode.set(menu.getFuzzyMode());
+        this.fuzzyMode.setVisibility(menu.supportsFuzzySearch());
+
+        final boolean hasCraftingCard = menu.hasUpgrade(AEItems.CRAFTING_CARD);
+
+        this.scrollbar.setVisible(true);
+        this.logicToggle.visible = true;
+        this.logicToggle.active = true;
+
+        for (int i = 0; i < VISIBLE_ROWS; i++) {
+            this.limitFields[i].setVisible(!hasCraftingCard);
+            this.limitFields[i].setEditable(!hasCraftingCard);
+
+            this.cmpToggles[i].visible = true;
+            this.cmpToggles[i].active = true;
+        }
+
+        this.logicToggle.setMessage(Component.literal(menu.isLogicAndClient() ? "AND" : "OR"));
+
+        this.scrollbar.setRange(0, Math.max(0, FILTER_SLOTS - VISIBLE_ROWS), 1);
+        int offset = this.scrollbar.getCurrentScroll();
+
+        if (offset != lastOffset) {
+            repositionConfigSlots(offset);
+            lastOffset = offset;
+        }
+
+        updateVisibleRows(offset, hasCraftingCard);
     }
 
-    private void layoutSlotsAndSyncWidgets() {
-        var menu = getMenu();
+    private void repositionConfigSlots(int offset) {
+        List<Slot> slots = getMenu().getSlots(SlotSemantics.CONFIG);
 
-        int scrollOffset = scrollbar.getCurrentScroll();
-        int rows = menu.getRows();
+        for (int i = 0; i < FILTER_SLOTS && i < slots.size(); i++) {
+            int row = i - offset;
 
-        long[] limits = parseLongArray(menu.limitsJson);
-        int[] modes = parseIntArray(menu.modesJson); // 0=ABOVE(>=), 1=BELOW(<)
+            Slot s = slots.get(i);
+            if (!(s instanceof AppEngSlot slot)) continue;
 
-        // logic button label
-        logicButton.setMessage(Component.literal(menu.getLogicMode() == 1 ? "AND" : "OR"));
+            boolean inView = row >= 0 && row < VISIBLE_ROWS;
 
-        for (int vis = 0; vis < VISIBLE_ROWS; vis++) {
-            int row = scrollOffset + vis;
-
-            AETextField tf = limitFields.get(vis);
-            IconButton cmp = compareButtons.get(vis);
-
-            if (row < rows) {
-                fieldRowIndex[vis] = row;
-
-                tf.setVisible(true);
-                cmp.visible = true;
-
-                int cm = row < modes.length ? modes[row] : 0;
-
-                if (cm == 1) {
-                    // BELOW
-                    cmp.setIcon(Icon.REDSTONE_LOW);
-                    cmp.setTooltip(Tooltip.create(
-                            Component.translatable("gui.crazyae2addons.multi_emitter.cmp_below")
-                    ));
+            if (slot instanceof IMovableSlot movable) {
+                if (inView) {
+                    movable.setX(FILTER_SLOT_X);
+                    movable.setY(FILTER_SLOT_Y0 + row * ROW_H);
+                    slot.setSlotEnabled(true);
                 } else {
-                    // ABOVE_OR_EQUAL
-                    cmp.setIcon(Icon.REDSTONE_HIGH);
-                    cmp.setTooltip(Tooltip.create(
-                            Component.translatable("gui.crazyae2addons.multi_emitter.cmp_above")
-                    ));
-                }
-
-                if (!tf.isFocused()) {
-                    long tech = row < limits.length ? limits[row] : 0;
-                    String target = formatForField(row, tech);
-                    if (!tf.getValue().equals(target)) tf.setValue(target);
+                    movable.setX(-10000);
+                    movable.setY(-10000);
+                    slot.setSlotEnabled(false);
                 }
             } else {
-                fieldRowIndex[vis] = -1;
-
-                if (tf.isFocused()) this.setFocused(null);
-
-                tf.setVisible(false);
-                cmp.visible = false;
-
-                if (!tf.getValue().isEmpty()) tf.setValue("");
+                slot.setSlotEnabled(inView);
             }
         }
+    }
 
-        int baseSlotIndex = menu.getMonitorSlotStart();
+    private void updateVisibleRows(int offset, boolean hasCraftingCard) {
+        for (int row = 0; row < VISIBLE_ROWS; row++) {
+            int slotIndex = offset + row;
+            boolean valid = slotIndex >= 0 && slotIndex < FILTER_SLOTS;
 
-        for (int row = 0; row < MultiLevelEmitterMenu.MAX_ROWS; row++) {
-            Slot slot = menu.getSlot(baseSlotIndex + row);
+            if (!valid) {
+                boundSlot[row] = -1;
+                limitFields[row].setVisible(false);
+                cmpToggles[row].visible = false;
+                continue;
+            }
 
-            if (!(slot instanceof AppEngSlot appEngSlot)) continue;
-            if (!(appEngSlot instanceof IMovableSlot movable)) continue;
+            boolean boundChanged = (boundSlot[row] != slotIndex);
+            boundSlot[row] = slotIndex;
 
-            boolean inView = row >= scrollOffset && row < scrollOffset + VISIBLE_ROWS && row < rows;
+            AEKey key = menu.getConfiguredFilter(slotIndex);
+            boolean filterChanged = !Objects.equals(lastKnownKeys[slotIndex], key);
 
-            if (inView) {
-                int vis = row - scrollOffset;
+            NumberEntryType newType = NumberEntryType.of(key);
+            boolean typeChanged = (rowType[row] == null) || !rowType[row].equals(newType);
 
-                AETextField anchor = limitFields.get(vis);
+            if (boundChanged || typeChanged) {
+                rowType[row] = newType;
+            }
+            if (filterChanged) {
+                lastKnownKeys[slotIndex] = key;
+                menu.setThreshold(slotIndex, 0L);
+                suppressChange[row] = true;
+                try {
+                    setTextFieldLongValue(row, 0L);
+                } finally {
+                    suppressChange[row] = false;
+                }
+            } else if (boundChanged || typeChanged) {
+                suppressChange[row] = true;
+                try {
+                    setTextFieldLongValue(row, menu.getThresholdClient(slotIndex));
+                } finally {
+                    suppressChange[row] = false;
+                }
+            }
 
-                int relX = anchor.getX() - this.leftPos - SLOT_X_FROM_LIMIT_LEFT;
-                int relY = anchor.getY() - this.topPos + SLOT_Y_FROM_LIMIT_TOP;
+            if (hasCraftingCard) {
+                boolean whenCrafting = menu.isCraftEmitWhenCraftingClient(slotIndex);
+                cmpToggles[row].setState(whenCrafting);
 
-                movable.setX(relX);
-                movable.setY(relY);
-                appEngSlot.setSlotEnabled(true);
+                Component tip = Component.literal(whenCrafting ? "Emit when crafting" : "Emit when NOT crafting");
+                cmpToggles[row].setTooltip(Tooltip.create(tip));
             } else {
-                appEngSlot.setSlotEnabled(false);
+                boolean ge = menu.isCompareGeClient(slotIndex);
+                cmpToggles[row].setState(ge);
+
+                Component tip = Component.translatable(
+                        ge ? "gui.crazyae2addons.multi_emitter.cmp_above"
+                                : "gui.crazyae2addons.multi_emitter.cmp_below"
+                );
+                cmpToggles[row].setTooltip(Tooltip.create(tip));
+            }
+
+            if (!hasCraftingCard && limitFields[row].visible) {
+                validateRow(row);
             }
         }
     }
 
-    private long[] parseLongArray(String json) {
-        try {
-            if (json == null || json.isBlank()) return new long[0];
-            return GSON.fromJson(json, long[].class);
-        } catch (Exception ignored) {
-            return new long[0];
+
+
+    private void onCmpToggled(int row, boolean state) {
+        int slotIndex = boundSlot[row];
+        if (slotIndex < 0) return;
+
+        if (menu.hasUpgrade(AEItems.CRAFTING_CARD)) {
+            menu.setCraftEmitWhenCrafting(slotIndex, state);
+        } else {
+            menu.setCompareGe(slotIndex, state);
         }
     }
 
-    private int[] parseIntArray(String json) {
-        try {
-            if (json == null || json.isBlank()) return new int[0];
-            return GSON.fromJson(json, int[].class);
-        } catch (Exception ignored) {
-            return new int[0];
+    private void onLimitChanged(int row) {
+        if (suppressChange[row]) return;
+
+        int slotIndex = boundSlot[row];
+        if (slotIndex < 0) return;
+
+        if (menu.hasUpgrade(AEItems.CRAFTING_CARD)) {
+            return;
         }
+
+        validateRow(row);
+
+        var v = getRowLongValue(row);
+        v.ifPresent(aLong -> menu.setThreshold(slotIndex, aLong));
     }
 
-    @Override
-    public void containerTick() {
-        super.containerTick();
-        updateScrollbarRange();
-        layoutSlotsAndSyncWidgets();
-    }
-
-    private @Nullable AEKey getKeyForRow(int row) {
-        int base = getMenu().getMonitorSlotStart();
-        ItemStack filter = getMenu().getSlot(base + row).getItem();
-        if (filter.isEmpty()) return null;
-
-        var gs = GenericStack.fromItemStack(filter);
-        return gs != null ? gs.what() : null;
-    }
-
-    private long toTechnicalAmount(int row, long userUnits) {
-        AEKey key = getKeyForRow(row);
-        if (key == null) return userUnits;
-
-        long perUnit = key.getAmountPerUnit();
-        if (perUnit <= 0) return userUnits;
-
-        if (userUnits > Long.MAX_VALUE / perUnit) return Long.MAX_VALUE;
-        return userUnits * perUnit;
-    }
-
-    private String formatForField(int row, long technical) {
-        if (technical <= 0) return "";
-        AEKey key = getKeyForRow(row);
-        if (key == null) return Long.toString(technical);
-
-        long perUnit = key.getAmountPerUnit();
-        if (perUnit > 1 && technical % perUnit == 0) {
-            return Long.toString(technical / perUnit);
+    private Optional<BigDecimal> getRowValueInternal(int row) {
+        String textValue = limitFields[row].getValue();
+        if (textValue.startsWith("=")) {
+            textValue = textValue.substring(1);
         }
-        return Long.toString(technical);
+        return MathExpressionParser.parse(textValue, decimalFormat);
     }
 
-    @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        super.render(graphics, mouseX, mouseY, partialTicks);
+    private boolean isNumber(int row) {
+        var position = new ParsePosition(0);
+        var textValue = limitFields[row].getValue().trim();
+        decimalFormat.parse(textValue, position);
+        return position.getErrorIndex() == -1 && position.getIndex() == textValue.length();
+    }
 
-        for (int vis = 0; vis < VISIBLE_ROWS; vis++) {
-            AETextField tf = limitFields.get(vis);
-            int row = fieldRowIndex[vis];
-            if (row < 0 || !tf.isVisible()) continue;
+    private long convertToExternalValue(NumberEntryType type, BigDecimal internalValue) {
+        var multiplicand = BigDecimal.valueOf(type.amountPerUnit());
+        var value = internalValue.multiply(multiplicand, MathContext.DECIMAL128);
+        value = value.setScale(0, RoundingMode.UP);
+        return value.longValue();
+    }
 
-            if (tf.isFocused() || tf.isMouseOver(mouseX, mouseY)) {
-                drawTooltip(graphics, mouseX, mouseY, List.of(limitTooltip(row)));
-                break;
-            }
+    private BigDecimal convertToInternalValue(NumberEntryType type, long externalValue) {
+        var divisor = BigDecimal.valueOf(type.amountPerUnit());
+        return BigDecimal.valueOf(externalValue).divide(divisor, MathContext.DECIMAL128);
+    }
+
+    private Optional<Long> getRowLongValue(int row) {
+        var type = rowType[row] != null ? rowType[row] : NumberEntryType.of(null);
+        var internal = getRowValueInternal(row);
+        if (internal.isEmpty()) return Optional.empty();
+
+        if (type.amountPerUnit() == 1 && internal.get().scale() > 0) {
+            return Optional.empty();
         }
+
+        long external = convertToExternalValue(type, internal.get());
+        if (external < 0) return Optional.empty();
+
+        return Optional.of(external);
     }
 
-    private Component limitTooltip(int row) {
-        AEKey key = getKeyForRow(row);
+    private void setTextFieldLongValue(int row, long value) {
+        if (value < 0) value = 0;
 
-        Component unit = Component.literal("-");
-        if (key != null) {
-            String sym = key.getUnitSymbol();
-            if (sym != null && !sym.isBlank()) {
-                unit = Component.literal(sym);
+        var type = rowType[row] != null ? rowType[row] : NumberEntryType.of(null);
+        var internal = convertToInternalValue(type, value);
+        limitFields[row].setValue(decimalFormat.format(internal));
+        limitFields[row].moveCursorToEnd();
+        limitFields[row].setHighlightPos(0);
+    }
+
+    private void validateRow(int row) {
+        var type = rowType[row] != null ? rowType[row] : NumberEntryType.of(null);
+
+        boolean valid = true;
+        List<Component> tooltip = new ArrayList<>();
+
+        tooltip.add(Component.translatable("gui.crazyae2addons.multi_emitter.unit_line", type.unit() == null ? "Items" : type.unit()));
+
+        var internal = getRowValueInternal(row);
+        if (internal.isEmpty()) {
+            valid = false;
+            tooltip.add(Component.literal("Invalid number"));
+        } else {
+            if (type.amountPerUnit() == 1 && internal.get().scale() > 0) {
+                valid = false;
+                tooltip.add(Component.literal("Invalid number"));
             } else {
-                unit = key.getType().getDescription();
+                long external = convertToExternalValue(type, internal.get());
+                if (external < 0) {
+                    valid = false;
+                    tooltip.add(Component.literal("Invalid number"));
+                } else if (!isNumber(row)) {
+                    tooltip.add(Component.literal("= " + decimalFormat.format(internal.get())));
+                }
             }
         }
 
-        return Component.translatable("gui.crazyae2addons.multi_emitter.unit_line", unit);
+        limitFields[row].setTextColor(valid ? normalTextColor : errorTextColor);
+        limitFields[row].setTooltipMessage(tooltip);
     }
 }

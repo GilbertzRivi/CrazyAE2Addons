@@ -152,63 +152,6 @@ public abstract class MixinPatternProviderLogic implements IPatternProviderCpu, 
     }
 
     @Unique
-    private boolean isImpulsed() {
-        var be = host != null ? host.getBlockEntity() : null;
-        return be != null && be.getType() == CrazyBlockEntityRegistrar.IMPULSED_PATTERN_PROVIDER_BE.get();
-    }
-
-    @ModifyExpressionValue(
-            method = "pushPattern(Lappeng/api/crafting/IPatternDetails;[Lappeng/api/stacks/KeyCounter;)Z",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lappeng/helpers/patternprovider/PatternProviderLogic;getCraftingLockedReason()Lappeng/api/config/LockCraftingMode;"
-            ),
-            remap = false
-    )
-    private LockCraftingMode bypassLockForImpulsed(LockCraftingMode original, IPatternDetails details) {
-        if (!isImpulsed()) return original;
-
-        if ((Object) this instanceof ImpulsedPatternProviderLogic logic && logic.bypassLock()) {
-            return LockCraftingMode.NONE;
-        }
-        return original;
-    }
-
-    @ModifyExpressionValue(
-            method = "onStackReturnedToNetwork(Lappeng/api/stacks/GenericStack;)V",
-            at = @At(value = "INVOKE", target = "Ljava/lang/Object;equals(Ljava/lang/Object;)Z"),
-            remap = false
-    )
-    private boolean ignoreNbtUnlockMatch(boolean originalCheck, GenericStack returned) {
-        if (originalCheck) return true;
-        if (!isImpulsed()) return false;
-        if (this.unlockStack == null) return false;
-
-        if ((Object) this instanceof ImpulsedPatternProviderLogic logic && logic.ignoreNbtUnlock()) {
-            return returned.what().getId() == this.unlockStack.what().getId();
-        }
-        return false;
-    }
-
-    @Inject(
-            method = "onStackReturnedToNetwork(Lappeng/api/stacks/GenericStack;)V",
-            at = @At(
-                    value  = "FIELD",
-                    target = "Lappeng/helpers/patternprovider/PatternProviderLogic;unlockEvent:Lappeng/helpers/patternprovider/UnlockCraftingEvent;",
-                    opcode = Opcodes.PUTFIELD,
-                    shift  = At.Shift.AFTER
-            ),
-            remap = false
-    )
-    private void afterUnlockCleared(GenericStack genericStack, CallbackInfo ci) {
-        if (!isImpulsed()) return;
-
-        if (this.unlockEvent == null && (Object) this instanceof ImpulsedPatternProviderLogic logic) {
-            logic.onUnlockCleared();
-        }
-    }
-
-    @Unique
     @Override
     public boolean allowSource(@Nullable IActionSource src) {
         if (src == null) return true;

@@ -151,10 +151,19 @@ public class RedstoneTerminalScreen<C extends RedstoneTerminalMenu> extends Upgr
         }
     }
 
-    private @NotNull List<RedstoneTerminalMenu.EmitterInfo> getEmitters() {
+    private @NotNull List<RedstoneTerminalMenu.EmitterInfo> getEmittersRaw() {
         return GSON.fromJson(
                 getMenu().emitters,
                 new TypeToken<List<RedstoneTerminalMenu.EmitterInfo>>() {}.getType()
         );
+    }
+
+    private @NotNull List<RedstoneTerminalMenu.EmitterInfo> getEmitters() {
+        var raw = getEmittersRaw();
+        java.util.LinkedHashMap<String, RedstoneTerminalMenu.EmitterInfo> map = new java.util.LinkedHashMap<>();
+        for (var e : raw) {
+            map.putIfAbsent(e.name(), e);
+        }
+        return new java.util.ArrayList<>(map.values());
     }
 }

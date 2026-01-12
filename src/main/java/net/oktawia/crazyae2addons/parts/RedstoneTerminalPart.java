@@ -49,10 +49,17 @@ public class RedstoneTerminalPart extends AbstractDisplayPart implements IUpgrad
     public void toggle(String name) {
         var grid = getMainNode().getGrid();
         if (grid == null) return;
-        grid.getActiveMachines(RedstoneEmitterPart.class)
-                .stream().filter(part -> Objects.equals(part.name, name))
-                .findFirst().ifPresent(emitter -> emitter.setState(!emitter.getState()));
+        var emitters = grid.getActiveMachines(RedstoneEmitterPart.class)
+                .stream()
+                .filter(part -> Objects.equals(part.name, name))
+                .toList();
+        if (emitters.isEmpty()) return;
+        boolean newState = !emitters.get(0).getState();
+        for (var emitter : emitters) {
+            emitter.setState(newState);
+        }
     }
+
 
     public List<RedstoneTerminalMenu.EmitterInfo> getEmitters(String filter) {
         var grid = getMainNode().getGrid();

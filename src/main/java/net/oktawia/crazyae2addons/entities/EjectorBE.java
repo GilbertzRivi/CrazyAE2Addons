@@ -173,14 +173,21 @@ public class EjectorBE extends AENetworkBlockEntity implements MenuProvider, IGr
         var tag = new CompoundTag();
         tag.putString("id", UUID.randomUUID().toString());
         this.target = new GenericStack(AEItemKey.of(CrazyBlockRegistrar.EJECTOR_BLOCK.get(), tag), 1);
+
         ArrayList<GenericStack> input = new ArrayList<>();
-        for (var stack : this.config.getAvailableStacks()){
+        for (var stack : this.config.getAvailableStacks()) {
             input.add(new GenericStack(stack.getKey(), stack.getLongValue() * this.multiplier));
         }
         if (input.isEmpty()) return;
 
-        var pattern = PatternDetailsHelper.encodeProcessingPattern(input.toArray(new GenericStack[0]), new GenericStack[]{target});
-        this.getLogic().getPatternInv().setItemDirect(0, pattern);
+        var patternStack = PatternDetailsHelper.encodeProcessingPattern(input.toArray(new GenericStack[0]), List.of(target).toArray(new GenericStack[0]));
+        if (tryPushPatternImmediately(patternStack, input)) {
+            this.cantCraft = null;
+            if (this.menu != null) this.menu.cantCraft = "nothing";
+            return;
+        }
+
+        this.getLogic().getPatternInv().setItemDirect(0, patternStack);
         this.getLogic().updatePatterns();
 
         toCraftPlan = getGridNode().getGrid().getCraftingService().beginCraftingCalculation(
@@ -290,5 +297,104 @@ public class EjectorBE extends AENetworkBlockEntity implements MenuProvider, IGr
         getLevel().setBlockAndUpdate(getBlockPos(), getBlockState().setValue(EjectorBlock.ISCRAFTING, false));
         this.getLogic().getPatternInv().setItemDirect(0, ItemStack.EMPTY);
         this.getLogic().updatePatterns();
+    }
+
+    private boolean tryPushPatternImmediately(ItemStack patternStack, List<GenericStack> inputs) {
+        var level = getLevel();
+        var grid = getGrid();
+        if (level == null || grid == null) return false;
+
+        var energy = grid.getEnergyService();
+        var meInv = grid.getStorageService().getInventory();
+        var src = IActionSource.ofMachine(this);
+
+        for (var gs : inputs) {
+            long available = StorageHelper.poweredExtraction(
+                    energy, meInv, gs.what(), gs.amount(), src, Actionable.SIMULATE
+            );
+            if (available < gs.amount()) return false;
+        }
+
+        var extracted = new ArrayList<GenericStack>(inputs.size());
+        var inputHolder = new KeyCounter[inputs.size()];
+
+        for (int i = 0; i < inputs.size(); i++) {
+            var gs = inputs.get(i);
+
+            long pulled = StorageHelper.poweredExtraction(
+                    energy, meInv, gs.what(), gs.amount(), src, Actionable.MODULATE
+            );
+
+            if (pulled < gs.amount()) {
+                for (var back : extracted) {
+                    StorageHelper.poweredInsert(energy, meInv, back.what(), back.amount(), src, Actionable.MODULATE);
+                }
+                if (pulled > 0) {
+                    StorageHelper.poweredInsert(energy, meInv, gs.what(), pulled, src, Actionable.MODULATE);
+                }
+                return false;
+            }
+
+            extracted.add(gs);
+
+            var kc = new KeyCounter();
+            kc.add(gs.what(), gs.amount());
+            inputHolder[i] = kc;
+        }
+
+        var patternDetails = PatternDetailsHelper.decodePattern(patternStack, level);
+        if (patternDetails == null || !patternDetails.supportsPushInputsToExternalInventory()) {
+            for (var back : extracted) {
+                StorageHelper.poweredInsert(energy, meInv, back.what(), back.amount(), src, Actionable.MODULATE);
+            }
+            return false;
+        }
+
+        pushInputsLikeProvider(patternDetails, inputHolder);
+        return true;
+    }
+
+    private void pushInputsLikeProvider(IPatternDetails patternDetails, KeyCounter[] inputHolder) {
+        var level = getLevel();
+        if (level == null) return;
+
+        var direction = getBlockState().getValue(EjectorBlock.FACING);
+        var targetEntity = level.getBlockEntity(getBlockPos().relative(direction));
+
+        if (targetEntity != null) {
+            var target = PatternProviderTarget.get(
+                    level,
+                    targetEntity.getBlockPos(),
+                    targetEntity,
+                    direction.getOpposite(),
+                    IActionSource.ofMachine(this)
+            );
+
+            patternDetails.pushInputsToExternalInventory(inputHolder, (what, amt) -> {
+                var inserted = target.insert(what, amt, Actionable.MODULATE);
+                if (inserted < amt) {
+                    StorageHelper.poweredInsert(
+                            getGrid().getEnergyService(),
+                            getGrid().getStorageService().getInventory(),
+                            what,
+                            amt - inserted,
+                            IActionSource.ofMachine(this)
+                    );
+                }
+            });
+        } else {
+            var grid = getGrid();
+            if (grid != null) {
+                patternDetails.pushInputsToExternalInventory(inputHolder, (what, amt) -> {
+                    StorageHelper.poweredInsert(
+                            grid.getEnergyService(),
+                            grid.getStorageService().getInventory(),
+                            what,
+                            amt,
+                            IActionSource.ofMachine(this)
+                    );
+                });
+            }
+        }
     }
 }

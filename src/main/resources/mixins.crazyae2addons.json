@@ -41,6 +41,6 @@
     "WidgetContainerAccessor"
   ],
   "client": [
-    "MixinCraftingCPUScreen",
+    "MixinCraftingCPUScreen"
   ]
 }

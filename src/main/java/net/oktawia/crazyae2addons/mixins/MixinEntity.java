@@ -129,4 +129,18 @@ public abstract class MixinEntity {
             cir.setReturnValue(anchor.center());
         }
     }
+
+    @Inject(
+            method = "isInWall()Z",
+            at = @At("HEAD"),
+            cancellable = true
+    )
+    private void anchorIsInWall(CallbackInfoReturnable<Boolean> cir) {
+        Entity entity = (Entity) (Object) this;
+        if (!(entity instanceof Player player)) return;
+        WormholeAnchor.Anchor anchor = WormholeAnchor.get(player);
+        if (anchor != null) {
+            cir.setReturnValue(false);
+        }
+    }
 }

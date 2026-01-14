@@ -8,7 +8,6 @@ import java.text.DecimalFormatSymbols;
 import java.text.ParsePosition;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 import appeng.api.stacks.AEKey;
@@ -65,15 +64,10 @@ public class MultiLevelEmitterScreen<C extends MultiLevelEmitterMenu> extends Up
     private final int errorTextColor;
     private final int normalTextColor;
     private final DecimalFormat decimalFormat;
-    private final AEKey[] lastKnownKeys = new AEKey[FILTER_SLOTS];
 
     public MultiLevelEmitterScreen(C menu, Inventory playerInventory, Component title,
                                    ScreenStyle style) {
         super(menu, playerInventory, title, style);
-
-        for (int i = 0; i < FILTER_SLOTS; i++) {
-            lastKnownKeys[i] = menu.getConfiguredFilter(i);
-        }
 
         this.font = Minecraft.getInstance().font;
 
@@ -201,7 +195,6 @@ public class MultiLevelEmitterScreen<C extends MultiLevelEmitterMenu> extends Up
             boundSlot[row] = slotIndex;
 
             AEKey key = menu.getConfiguredFilter(slotIndex);
-            boolean filterChanged = !Objects.equals(lastKnownKeys[slotIndex], key);
 
             NumberEntryType newType = NumberEntryType.of(key);
             boolean typeChanged = (rowType[row] == null) || !rowType[row].equals(newType);
@@ -209,16 +202,7 @@ public class MultiLevelEmitterScreen<C extends MultiLevelEmitterMenu> extends Up
             if (boundChanged || typeChanged) {
                 rowType[row] = newType;
             }
-            if (filterChanged) {
-                lastKnownKeys[slotIndex] = key;
-                menu.setThreshold(slotIndex, 0L);
-                suppressChange[row] = true;
-                try {
-                    setTextFieldLongValue(row, 0L);
-                } finally {
-                    suppressChange[row] = false;
-                }
-            } else if (boundChanged || typeChanged) {
+            if (boundChanged || typeChanged) {
                 suppressChange[row] = true;
                 try {
                     setTextFieldLongValue(row, menu.getThresholdClient(slotIndex));

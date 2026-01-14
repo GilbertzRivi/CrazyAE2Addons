@@ -25,8 +25,9 @@ public class CrazyConfig {
         public final ForgeConfigSpec.BooleanValue enableEntityTicker;
         public final ForgeConfigSpec.IntValue     EntityTickerCost;
         public final ForgeConfigSpec.ConfigValue<List<? extends String>> EntityTickerBlackList;
-        public final ForgeConfigSpec.BooleanValue NestedP2PWormhole;
+        public final ForgeConfigSpec.BooleanValue P2PWormholeNesting;
         public final ForgeConfigSpec.BooleanValue P2PWormholeTeleportation;
+        public final ForgeConfigSpec.BooleanValue ImmersiveP2PWormhole;
 
         public final ForgeConfigSpec.IntValue     AutoEnchanterCost;
         public final ForgeConfigSpec.BooleanValue GregEnergyExporter;
@@ -100,13 +101,18 @@ public class CrazyConfig {
                     .comment("Blocks on which Entity Ticker should not work")
                     .defineList("EntityTickerBlackList", List.of(), o -> o instanceof String);
 
-            NestedP2PWormhole = builder
+            P2PWormholeNesting = builder
                     .comment("Allow routing P2P tunnels through a Wormhole tunnel")
                     .define("nestedP2Pwormhole", false);
 
             P2PWormholeTeleportation = builder
                     .comment("Allow teleporting through a Wormhole P2P")
-                    .define("wormholeP2PTeleportation", false);
+                    .define("wormholeP2PTeleportation", true);
+
+
+            ImmersiveP2PWormhole = builder
+                    .comment("Create immersive portals on wormhole p2ps. Expect visual glitches with shaders.")
+                    .define("immersiveP2PWormhole", false);
             builder.pop();
 
 

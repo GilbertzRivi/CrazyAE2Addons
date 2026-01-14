@@ -8,7 +8,6 @@ import java.util.Set;
 import appeng.helpers.IConfigInvHost;
 import appeng.parts.automation.AbstractLevelEmitterPart;
 import appeng.util.SettingsFrom;
-import info.journeymap.shaded.org.jetbrains.annotations.Nullable;
 import net.minecraft.nbt.Tag;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 
@@ -40,6 +39,7 @@ import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuLocators;
 import appeng.parts.PartModel;
 import appeng.util.ConfigInventory;
+import org.jetbrains.annotations.Nullable;
 
 public class MultiStorageLevelEmitterPart extends AbstractLevelEmitterPart implements IConfigInvHost, ICraftingProvider {
 
@@ -453,33 +453,15 @@ public class MultiStorageLevelEmitterPart extends AbstractLevelEmitterPart imple
     @Override
     public void readFromNBT(CompoundTag data) {
         super.readFromNBT(data);
-
         config.readFromChildTag(data, NBT_CONFIG);
-
-        if (data.contains(NBT_COMPARE_MASK)) this.compareMask = data.getShort(NBT_COMPARE_MASK);
-        if (data.contains(NBT_CRAFT_MASK)) this.craftMask = data.getShort(NBT_CRAFT_MASK);
-        if (data.contains(NBT_LOGIC_AND)) this.logicAnd = data.getBoolean(NBT_LOGIC_AND);
-
-        if (data.contains(NBT_THRESHOLDS)) {
-            long[] arr = data.getLongArray(NBT_THRESHOLDS);
-            for (int i = 0; i < FILTER_SLOTS; i++) {
-                thresholds[i] = (i < arr.length) ? Math.max(0, arr[i]) : 0;
-            }
-        } else {
-            Arrays.fill(thresholds, 0L);
-        }
+        importSettings(SettingsFrom.MEMORY_CARD, data, null);
     }
 
     @Override
     public void writeToNBT(CompoundTag data) {
         super.writeToNBT(data);
-
         config.writeToChildTag(data, NBT_CONFIG);
-
-        data.putShort(NBT_COMPARE_MASK, this.compareMask);
-        data.putShort(NBT_CRAFT_MASK, this.craftMask);
-        data.putBoolean(NBT_LOGIC_AND, this.logicAnd);
-        data.putLongArray(NBT_THRESHOLDS, this.thresholds);
+        exportSettings(SettingsFrom.MEMORY_CARD, data);
     }
 
     @Override

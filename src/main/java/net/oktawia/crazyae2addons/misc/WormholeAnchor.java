@@ -1,19 +1,21 @@
 package net.oktawia.crazyae2addons.misc;
 
+import com.lowdragmc.lowdraglib.gui.modular.ModularUIContainer;
+import com.mojang.logging.LogUtils;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.event.entity.player.PlayerContainerEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -22,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class WormholeAnchor {
     private WormholeAnchor() {}
 
-    public record Anchor(ServerLevel dimension, BlockPos pos) {
+    public record Anchor(Level dimension, BlockPos pos) {
         public Vec3 center() {
             return Vec3.atCenterOf(pos);
         }
@@ -49,7 +51,7 @@ public final class WormholeAnchor {
         if (event.player.level().isClientSide) return;
         if (!(event.player instanceof ServerPlayer sp)) return;
 
-        if (get(sp) != null && sp.containerMenu == sp.inventoryMenu) {
+        if (get(sp) != null && (sp.containerMenu == sp.inventoryMenu)) {
             clear(sp);
         }
     }

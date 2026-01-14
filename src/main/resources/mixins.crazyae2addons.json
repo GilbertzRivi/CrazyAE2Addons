@@ -27,6 +27,7 @@
     "MixinEntity",
     "MixinGT",
     "MixinListCraftingInventory",
+    "MixinMachineUIFactory",
     "MixinPatternP2PTunnelLogic",
     "MixinPatternProviderLogic",
     "MixinPatternProviderTargetCache",

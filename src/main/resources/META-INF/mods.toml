@@ -5,9 +5,9 @@ license="${mod_license}"
 modId="${mod_id}"
 version="${mod_version}"
 displayName="${mod_name}"
-credits=".siann & kolja_ on discord"
+credits=".siann & kolja_ on discord, this mod uses immersive portals mod as a library"
 authors="${mod_authors}"
-description='''${mod_description}'''
+description='''${mod_description}, this mod uses immersive portals mod as a library'''
 [[mixins]]
 config = "mixins.crazyae2addons.json"
 [[dependencies.${mod_id}]]

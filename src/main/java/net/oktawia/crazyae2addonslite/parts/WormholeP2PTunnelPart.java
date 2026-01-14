@@ -4,6 +4,8 @@ import java.util.*;
 
 import appeng.api.implementations.items.IMemoryCard;
 import appeng.api.implementations.items.MemoryCardMessages;
+import appeng.api.parts.IPartCollisionHelper;
+import appeng.blockentity.networking.CableBusBlockEntity;
 import appeng.me.service.P2PService;
 import appeng.parts.p2p.P2PModels;
 import appeng.parts.p2p.P2PTunnelPart;
@@ -12,9 +14,11 @@ import appeng.util.SettingsFrom;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.BlockGetter;
@@ -38,6 +42,7 @@ import appeng.api.util.AECableType;
 import appeng.hooks.ticking.TickHandler;
 import appeng.items.parts.PartModels;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.capabilities.Capability;
@@ -45,10 +50,15 @@ import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.energy.IEnergyStorage;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.EntityJoinLevelEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.fluids.capability.IFluidHandlerItem;
+import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.items.IItemHandlerModifiable;
 import net.minecraftforge.items.wrapper.CombinedInvWrapper;
+import net.minecraftforge.registries.ForgeRegistries;
 import net.oktawia.crazyae2addonslite.CrazyAddons;
 import net.oktawia.crazyae2addonslite.CrazyConfig;
 import net.oktawia.crazyae2addonslite.misc.CombinedEnergyStorage;
@@ -58,6 +68,10 @@ import net.oktawia.crazyae2addonslite.misc.WormholeAnchor;
 import net.oktawia.crazyae2addonslite.mixins.P2PTunnelPartAccessor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
+import qouteall.imm_ptl.core.portal.Portal;
+import qouteall.q_misc_util.my_util.DQuaternion;
 
 public class WormholeP2PTunnelPart extends P2PTunnelPart<WormholeP2PTunnelPart> implements IGridTickable, ICapabilityProvider {
 
@@ -65,31 +79,39 @@ public class WormholeP2PTunnelPart extends P2PTunnelPart<WormholeP2PTunnelPart> 
     private static final Set<BlockPos> wormholeUpdateBlacklist = new HashSet<>();
     private int redstonePower = 0;
     private boolean redstoneRecursive = false;
+    public static final String PD_WORMHOLE = "crazyae2addonslite_wormhole";
+    private static final String PD_HOST_POS = "hostPos";
+    private static final String PD_HOST_DIM = "hostDim";
+    private static final String PD_HOST_SIDE = "hostSide";
+    private static final Map<ServerLevel, Set<WormholeP2PTunnelPart>> LOADED_PARTS = new WeakHashMap<>();
+    private int portalMaintenanceCooldown = 0;
+    private boolean intangibleCollision = false;
 
     @PartModels
     public static List<IPartModel> getModels() {
         return MODELS.getModels();
     }
+
     private ConnectionUpdate pendingUpdate = ConnectionUpdate.NONE;
     private final Map<WormholeP2PTunnelPart, IGridConnection> connections = new IdentityHashMap<>();
 
-    protected final IManagedGridNode outerNode = CrazyConfig.COMMON.NestedP2PWormhole.get() ?
+    protected final IManagedGridNode outerNode = CrazyConfig.COMMON.P2PWormholeNesting.get() ?
             GridHelper
-            .createManagedNode(this, NodeListener.INSTANCE)
-            .setTagName("outer")
-            .setInWorldNode(true)
-            .setFlags(GridFlags.DENSE_CAPACITY)
+                    .createManagedNode(this, NodeListener.INSTANCE)
+                    .setTagName("outer")
+                    .setInWorldNode(true)
+                    .setFlags(GridFlags.DENSE_CAPACITY)
             :
             GridHelper
                     .createManagedNode(this, NodeListener.INSTANCE)
-            .setTagName("outer")
-            .setInWorldNode(true)
-            .setFlags(GridFlags.DENSE_CAPACITY, GridFlags.CANNOT_CARRY_COMPRESSED);
+                    .setTagName("outer")
+                    .setInWorldNode(true)
+                    .setFlags(GridFlags.DENSE_CAPACITY, GridFlags.CANNOT_CARRY_COMPRESSED);
 
     public WormholeP2PTunnelPart(IPartItem<?> partItem) {
         super(partItem);
         this.getMainNode()
-                .setFlags(GridFlags.REQUIRE_CHANNEL, CrazyConfig.COMMON.NestedP2PWormhole.get() ? GridFlags.DENSE_CAPACITY : GridFlags.COMPRESSED_CHANNEL)
+                .setFlags(GridFlags.REQUIRE_CHANNEL, CrazyConfig.COMMON.P2PWormholeNesting.get() ? GridFlags.DENSE_CAPACITY : GridFlags.COMPRESSED_CHANNEL)
                 .addService(IGridTickable.class, this);
     }
 
@@ -110,7 +132,6 @@ public class WormholeP2PTunnelPart extends P2PTunnelPart<WormholeP2PTunnelPart> 
             output.receiveRedstoneInput(reducedPower);
         }
     }
-
 
     private void receiveRedstoneInput(int power) {
         if (redstoneRecursive) return;
@@ -171,8 +192,8 @@ public class WormholeP2PTunnelPart extends P2PTunnelPart<WormholeP2PTunnelPart> 
         var level = getLevel();
         if (!(player instanceof ServerPlayer sp) || level == null) return false;
 
-        BlockPos targetPos = null;
-        Direction hitFace = null;
+        BlockPos targetPos;
+        Direction hitFace;
         ServerLevel targetWorld = null;
 
         if (isOutput()) {
@@ -182,6 +203,9 @@ public class WormholeP2PTunnelPart extends P2PTunnelPart<WormholeP2PTunnelPart> 
                 targetPos = remoteHost.getBlockPos().relative(input.getSide());
                 hitFace = input.getSide().getOpposite();
                 targetWorld = (ServerLevel) remoteHost.getLevel();
+            } else {
+                targetPos = null;
+                hitFace = null;
             }
         } else {
             var outs = getOutputs();
@@ -191,6 +215,9 @@ public class WormholeP2PTunnelPart extends P2PTunnelPart<WormholeP2PTunnelPart> 
                 targetPos = remoteHost.getBlockPos().relative(out.getSide());
                 hitFace = out.getSide().getOpposite();
                 targetWorld = (ServerLevel) remoteHost.getLevel();
+            } else {
+                targetPos = null;
+                hitFace = null;
             }
         }
 
@@ -199,17 +226,14 @@ public class WormholeP2PTunnelPart extends P2PTunnelPart<WormholeP2PTunnelPart> 
         long chunkKey = new ChunkPos(targetPos).toLong();
         if (!targetWorld.getChunkSource().isPositionTicking(chunkKey)) return false;
 
-        if (is.is(Items.ENDER_PEARL) && CrazyConfig.COMMON.P2PWormholeTeleportation.get()){
-            is.shrink(1);
+        if (is.is(Items.ENDER_PEARL) && CrazyConfig.COMMON.P2PWormholeTeleportation.get() && !CrazyConfig.COMMON.ImmersiveP2PWormhole.get()){
+            if (!sp.isCreative()) is.shrink(1);
             sp.teleportTo(targetWorld, targetPos.getX() + 0.5D, targetPos.getY() + 0.1D, targetPos.getZ() + 0.5D, hitFace.getOpposite().toYRot(), sp.getXRot());
             return true;
         }
 
         var state = targetWorld.getBlockState(targetPos);
         var hit = new BlockHitResult(Vec3.atCenterOf(targetPos), hitFace, targetPos, false);
-
-        var provider = state.getMenuProvider(targetWorld, targetPos);
-        if (provider != null && targetWorld != getLevel()) return false;
 
         WormholeAnchor.set(sp, targetPos, targetWorld);
         var containerBefore = sp.containerMenu;
@@ -219,19 +243,17 @@ public class WormholeP2PTunnelPart extends P2PTunnelPart<WormholeP2PTunnelPart> 
         if (sp.containerMenu == containerBefore) {
             WormholeAnchor.clear(sp);
         }
-
         return result.consumesAction();
     }
-
 
     @Override
     public void importSettings(SettingsFrom mode, CompoundTag input, @Nullable Player player) {
         if (input.contains("myFreq")) {
             var freq = input.getShort("myFreq");
             var grid = getMainNode().getGrid();
-            
-            if (grid != null){
-                ((P2PTunnelPartAccessor)this).setOutput(true);
+
+            if (grid != null) {
+                ((P2PTunnelPartAccessor) this).setOutput(true);
                 P2PService.get(grid).updateFreq(this, freq);
                 sendBlockUpdateToOppositeSide();
             }
@@ -243,11 +265,11 @@ public class WormholeP2PTunnelPart extends P2PTunnelPart<WormholeP2PTunnelPart> 
         if (mode == SettingsFrom.MEMORY_CARD) {
             if (!output.getAllKeys().isEmpty()) {
                 var iterator = output.getAllKeys().iterator();
-                while (iterator.hasNext()){
+                while (iterator.hasNext()) {
                     iterator.next();
                     iterator.remove();
                 }
-            };
+            }
             output.putString("myType", IPartItem.getId(getPartItem()).toString());
             output.putBoolean("wormhole", true);
 
@@ -255,9 +277,12 @@ public class WormholeP2PTunnelPart extends P2PTunnelPart<WormholeP2PTunnelPart> 
                 output.putShort("myFreq", getFrequency());
 
                 var colors = Platform.p2p().toColors(getFrequency());
-                var colorCode = new int[] { colors[0].ordinal(), colors[0].ordinal(), colors[1].ordinal(),
-                        colors[1].ordinal(), colors[2].ordinal(), colors[2].ordinal(), colors[3].ordinal(),
-                        colors[3].ordinal(), };
+                var colorCode = new int[]{
+                        colors[0].ordinal(), colors[0].ordinal(),
+                        colors[1].ordinal(), colors[1].ordinal(),
+                        colors[2].ordinal(), colors[2].ordinal(),
+                        colors[3].ordinal(), colors[3].ordinal(),
+                };
                 output.putIntArray(IMemoryCard.NBT_COLOR_CODE, colorCode);
             }
         }
@@ -284,12 +309,15 @@ public class WormholeP2PTunnelPart extends P2PTunnelPart<WormholeP2PTunnelPart> 
     public void onTunnelNetworkChange() {
         super.onTunnelNetworkChange();
         if (!this.isOutput() || !connections.isEmpty()) {
-            getMainNode().ifPresent((grid, node) -> {
-                grid.getTickManager().wakeDevice(node);
-            });
+            getMainNode().ifPresent((grid, node) -> grid.getTickManager().wakeDevice(node));
         }
         sendBlockUpdateToOppositeSide();
+
+        if (!isClientSide() && getLevel() instanceof ServerLevel sl) {
+            TickHandler.instance().addCallable(sl, this::updateOrCreatePortalEntity);
+        }
     }
+
 
     private void sendBlockUpdateToOppositeSide() {
         var world = getLevel();
@@ -345,6 +373,16 @@ public class WormholeP2PTunnelPart extends P2PTunnelPart<WormholeP2PTunnelPart> 
 
     @Override
     public void removeFromWorld() {
+        if (!isClientSide()) {
+            removePortalEntity();
+            if (getLevel() instanceof ServerLevel sl) {
+                var set = LOADED_PARTS.get(sl);
+                if (set != null) {
+                    set.remove(this);
+                    if (set.isEmpty()) LOADED_PARTS.remove(sl);
+                }
+            }
+        }
         super.removeFromWorld();
         this.outerNode.destroy();
     }
@@ -353,6 +391,12 @@ public class WormholeP2PTunnelPart extends P2PTunnelPart<WormholeP2PTunnelPart> 
     public void addToWorld() {
         super.addToWorld();
         this.outerNode.create(getLevel(), getBlockEntity().getBlockPos());
+
+        if (!isClientSide() && getLevel() instanceof ServerLevel sl) {
+            LOADED_PARTS.computeIfAbsent(sl, k -> Collections.newSetFromMap(new IdentityHashMap<>())).add(this);
+            TickHandler.instance().addCallable(sl, this::updateOrCreatePortalEntity);
+            TickHandler.instance().addCallable(sl, this::updateOrCreatePortalEntity);
+        }
     }
 
     @Override
@@ -543,5 +587,383 @@ public class WormholeP2PTunnelPart extends P2PTunnelPart<WormholeP2PTunnelPart> 
         NONE,
         DISCONNECT,
         CONNECT
+    }
+
+    private record RemoteView(ServerLevel level, BlockPos frontBlock, Direction facingOut) {}
+
+    private static Vec3 dirVec(Direction d) {
+        var n = d.getNormal();
+        return new Vec3(n.getX(), n.getY(), n.getZ());
+    }
+
+    private static Vec3 safeNormalize(Vec3 v) {
+        double len = v.length();
+        return len < 1e-8 ? new Vec3(0, 0, 0) : v.scale(1.0 / len);
+    }
+
+    private static Vec3[] makePortalAxesFromNormal(Vec3 normal) {
+        normal = safeNormalize(normal);
+
+        Vec3 axisH = projectUpOnPlane(normal);
+        Vec3 axisW = safeNormalize(axisH.cross(normal));
+
+        return new Vec3[]{axisW, axisH};
+    }
+
+    private static Vec3 rotateVec(DQuaternion q, Vec3 v) {
+        Quaternionf qf = q.toMcQuaternion();
+        Vector3f tmp = new Vector3f((float) v.x, (float) v.y, (float) v.z);
+        tmp.rotate(qf);
+        return new Vec3(tmp.x, tmp.y, tmp.z);
+    }
+
+    private static DQuaternion rotationFromTo(Vec3 from, Vec3 to) {
+        from = safeNormalize(from);
+        to = safeNormalize(to);
+
+        double dot = from.dot(to);
+        dot = Math.max(-1.0, Math.min(1.0, dot));
+
+        if (dot > 0.999999) {
+            return DQuaternion.identity;
+        }
+
+        if (dot < -0.999999) {
+            Vec3 axis = Math.abs(from.y) < 0.9 ? from.cross(new Vec3(0, 1, 0)) : from.cross(new Vec3(1, 0, 0));
+            axis = safeNormalize(axis);
+            return DQuaternion.rotationByDegrees(axis, 180.0);
+        }
+
+        Vec3 axis = safeNormalize(from.cross(to));
+        double angleRad = Math.acos(dot);
+        double angleDeg = angleRad * (180.0 / Math.PI);
+
+        return DQuaternion.rotationByDegrees(axis, angleDeg);
+    }
+
+    private static Vec3 projectUpOnPlane(Vec3 forward) {
+        forward = safeNormalize(forward);
+        Vec3 up = new Vec3(0, 1, 0);
+        Vec3 proj = up.subtract(forward.scale(up.dot(forward)));
+        if (proj.lengthSqr() < 1e-8) {
+            Vec3 alt = new Vec3(0, 0, 1);
+            proj = alt.subtract(forward.scale(alt.dot(forward)));
+        }
+        return safeNormalize(proj);
+    }
+
+    private static double signedAngleAroundAxis(Vec3 from, Vec3 to, Vec3 axis) {
+        from = safeNormalize(from);
+        to = safeNormalize(to);
+        axis = safeNormalize(axis);
+
+        Vec3 cross = from.cross(to);
+        double sin = axis.dot(cross);
+        double cos = from.dot(to);
+        return Math.atan2(sin, cos);
+    }
+
+    private static DQuaternion computeViewRotation(Vec3 localNormal, Vec3 remoteNormal) {
+        Vec3 srcForward = safeNormalize(localNormal.scale(-1));
+        Vec3 dstForward = safeNormalize(remoteNormal);
+
+        Vec3 srcUp = projectUpOnPlane(srcForward);
+        Vec3 dstUp = projectUpOnPlane(dstForward);
+
+        DQuaternion qForward = rotationFromTo(srcForward, dstForward);
+        Vec3 srcUpRot = rotateVec(qForward, srcUp);
+        double rollRad = signedAngleAroundAxis(srcUpRot, dstUp, dstForward);
+
+        DQuaternion qRoll = DQuaternion.rotationByDegrees(dstForward, rollRad * (180.0 / Math.PI));
+        return qRoll.hamiltonProduct(qForward);
+    }
+
+    private void updateOrCreatePortalEntity() {
+        if (!CrazyConfig.COMMON.ImmersiveP2PWormhole.get()) {
+            if (intangibleCollision) {
+                intangibleCollision = false;
+                var lvl = getLevel();
+                if (lvl != null && !lvl.isClientSide()) {
+                    var p = getBlockEntity().getBlockPos();
+                    var st = lvl.getBlockState(p);
+                    lvl.sendBlockUpdated(p, st, st, 3);
+                }
+            }
+            removePortalEntity();
+            return;
+        }
+
+        if (!(getLevel() instanceof ServerLevel sl)) return;
+
+        BlockPos hostPos = getBlockEntity().getBlockPos();
+        Direction localFacing = getSide();
+
+        var rr = resolveRemoteViewEx();
+
+        boolean newIntangible = (rr.status() == RemoteResolveStatus.OK);
+        if (newIntangible != intangibleCollision) {
+            intangibleCollision = newIntangible;
+
+            var lvl = getLevel();
+            if (lvl != null && !lvl.isClientSide()) {
+                var p = getBlockEntity().getBlockPos();
+                var st = lvl.getBlockState(p);
+                lvl.sendBlockUpdated(p, st, st, 3);
+            }
+        }
+
+        if (rr.status() == RemoteResolveStatus.DISCONNECTED) {
+            removePortalEntity();
+            return;
+        }
+
+        if (rr.status() == RemoteResolveStatus.REMOTE_UNLOADED) {
+            adoptOrCleanupLocalPortal(sl, hostPos, localFacing, false);
+            return;
+        }
+
+        var remote = rr.view();
+        if (remote == null) {
+            removePortalEntity();
+            return;
+        }
+
+        Vec3 portalCenter = computeExpectedPortalCenter(hostPos, localFacing);
+
+        Vec3 remoteNormal = dirVec(remote.facingOut());
+        Vec3 destCenter = Vec3.atCenterOf(remote.frontBlock()).add(remoteNormal.scale(-0.525));
+
+        Vec3 localNormal = dirVec(localFacing);
+        Vec3[] localAxes = makePortalAxesFromNormal(localNormal);
+
+        Portal portal = adoptOrCleanupLocalPortal(sl, hostPos, localFacing, false);
+
+        boolean shouldSpawnPortal = false;
+        if (portal == null || portal.isRemoved()) {
+            shouldSpawnPortal = true;
+            EntityType<?> entityType = ForgeRegistries.ENTITY_TYPES.getValue(new ResourceLocation("immersive_portals", "portal"));
+            if (entityType == null) return;
+
+            portal = new Portal(entityType, sl);
+            portal.setPos(portalCenter.x, portalCenter.y, portalCenter.z);
+        }
+
+        portal.setPos(portalCenter.x, portalCenter.y, portalCenter.z);
+        portal.axisW = localAxes[0];
+        portal.axisH = localAxes[1];
+        portal.width = 0.5;
+        portal.height = 0.5;
+
+        portal.dimensionTo = remote.level().dimension();
+        portal.destination = destCenter;
+
+        DQuaternion rot = computeViewRotation(localNormal, remoteNormal);
+        portal.setRotation(rot);
+        portal.teleportable = true;
+        tagPortal(sl, hostPos, localFacing, portal);
+
+        if (shouldSpawnPortal) sl.addFreshEntity(portal);
+
+        portal.reloadAndSyncToClientNextTick();
+    }
+
+    private Vec3 computeExpectedPortalCenter(BlockPos hostPos, Direction localFacing) {
+        Vec3 localNormal = dirVec(localFacing);
+        return Vec3.atCenterOf(hostPos).add(localNormal.scale(0.475));
+    }
+
+    private void tagPortal(ServerLevel level, BlockPos hostPos, Direction side, Portal portal) {
+        var pd = portal.getPersistentData();
+        pd.putBoolean(PD_WORMHOLE, true);
+        pd.putLong(PD_HOST_POS, hostPos.asLong());
+        pd.putString(PD_HOST_DIM, level.dimension().location().toString());
+        pd.putByte(PD_HOST_SIDE, (byte) side.ordinal());
+    }
+
+    private boolean isTaggedAsOurs(ServerLevel level, BlockPos hostPos, Direction side, Portal portal) {
+        var pd = portal.getPersistentData();
+        if (!pd.getBoolean(PD_WORMHOLE)) return false;
+        if (pd.getLong(PD_HOST_POS) != hostPos.asLong()) return false;
+        if (pd.getByte(PD_HOST_SIDE) != (byte) side.ordinal()) return false;
+        return Objects.equals(pd.getString(PD_HOST_DIM), level.dimension().location().toString());
+    }
+
+    private List<Portal> findCandidatePortals(ServerLevel level, Vec3 expectedCenter, BlockPos hostPos, Direction side) {
+        var box = new AABB(expectedCenter, expectedCenter).inflate(1.0);
+        var all = level.getEntitiesOfClass(Portal.class, box);
+
+        List<Portal> result = new ArrayList<>();
+        for (Portal p : all) {
+            if (isTaggedAsOurs(level, hostPos, side, p)) {
+                result.add(p);
+                continue;
+            }
+            if (!p.getPersistentData().contains(PD_WORMHOLE) && p.position().distanceToSqr(expectedCenter) < 0.03) {
+                result.add(p);
+            }
+        }
+        return result;
+    }
+
+    @Nullable
+    private Portal adoptOrCleanupLocalPortal(ServerLevel level, BlockPos hostPos, Direction side, boolean discardAll) {
+        Vec3 expectedCenter = computeExpectedPortalCenter(hostPos, side);
+        var candidates = findCandidatePortals(level, expectedCenter, hostPos, side);
+        if (candidates.isEmpty()) {
+            return null;
+        }
+
+        Portal best = null;
+        double bestDist = Double.POSITIVE_INFINITY;
+        for (Portal p : candidates) {
+            double d = p.position().distanceToSqr(expectedCenter);
+            boolean tagged = isTaggedAsOurs(level, hostPos, side, p);
+            if (best == null) {
+                best = p;
+                bestDist = d;
+            } else {
+                boolean bestTagged = isTaggedAsOurs(level, hostPos, side, best);
+                if (tagged && !bestTagged) {
+                    best = p;
+                    bestDist = d;
+                } else if (tagged == bestTagged && d < bestDist) {
+                    best = p;
+                    bestDist = d;
+                }
+            }
+        }
+
+        for (Portal p : candidates) {
+            if (p == best) continue;
+            p.discard();
+        }
+
+        if (discardAll) {
+            best.discard();
+            return null;
+        }
+
+        tagPortal(level, hostPos, side, best);
+        return best;
+    }
+
+    private void removePortalEntity() {
+        if (!(getLevel() instanceof ServerLevel sl)) return;
+        var hostPos = getBlockEntity().getBlockPos();
+        var side = getSide();
+
+        adoptOrCleanupLocalPortal(sl, hostPos, side, true);
+    }
+
+    private enum RemoteResolveStatus { OK, DISCONNECTED, REMOTE_UNLOADED }
+    private record RemoteResolve(RemoteResolveStatus status, @Nullable RemoteView view) {}
+
+    @NotNull
+    private RemoteResolve resolveRemoteViewEx() {
+        var lvl = getLevel();
+        if (!(lvl instanceof ServerLevel)) return new RemoteResolve(RemoteResolveStatus.DISCONNECTED, null);
+        if (!isActive()) return new RemoteResolve(RemoteResolveStatus.DISCONNECTED, null);
+
+        if (isOutput()) {
+            var input = getInput();
+            if (input == null) return new RemoteResolve(RemoteResolveStatus.DISCONNECTED, null);
+            if (input.getHost() == null) return new RemoteResolve(RemoteResolveStatus.REMOTE_UNLOADED, null);
+
+            var remoteHost = input.getHost().getBlockEntity();
+            if (remoteHost == null || !(remoteHost.getLevel() instanceof ServerLevel sl)) {
+                return new RemoteResolve(RemoteResolveStatus.REMOTE_UNLOADED, null);
+            }
+
+            Direction remoteSide = input.getSide();
+            BlockPos front = remoteHost.getBlockPos().relative(remoteSide);
+            return new RemoteResolve(RemoteResolveStatus.OK, new RemoteView(sl, front, remoteSide));
+        } else {
+            var outs = getOutputs();
+            if (outs.isEmpty()) return new RemoteResolve(RemoteResolveStatus.DISCONNECTED, null);
+
+            WormholeP2PTunnelPart chosen = null;
+            for (var out : outs) {
+                if (out.getHost() == null) continue;
+                var remoteHost = out.getHost().getBlockEntity();
+                if (remoteHost != null && remoteHost.getLevel() instanceof ServerLevel) {
+                    chosen = out;
+                    break;
+                }
+            }
+
+            if (chosen == null) return new RemoteResolve(RemoteResolveStatus.REMOTE_UNLOADED, null);
+
+            var remoteHost = chosen.getHost().getBlockEntity();
+            ServerLevel sl = (ServerLevel) remoteHost.getLevel();
+
+            Direction remoteSide = chosen.getSide();
+            BlockPos front = remoteHost.getBlockPos().relative(remoteSide);
+            return new RemoteResolve(RemoteResolveStatus.OK, new RemoteView(sl, front, remoteSide));
+        }
+    }
+
+    @Mod.EventBusSubscriber(modid = CrazyAddons.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+    public static class WormholePortalEvents {
+
+        @SubscribeEvent
+        public static void onLevelTick(TickEvent.LevelTickEvent e) {
+            if (e.phase != TickEvent.Phase.END) return;
+            if (!(e.level instanceof ServerLevel sl)) return;
+
+            var set = LOADED_PARTS.get(sl);
+            if (set == null || set.isEmpty()) return;
+
+            for (var part : List.copyOf(set)) {
+                if (part.getLevel() != sl) continue;
+
+                if (part.portalMaintenanceCooldown-- > 0) continue;
+                part.portalMaintenanceCooldown = 20;
+
+                part.updateOrCreatePortalEntity();
+            }
+        }
+
+        @SubscribeEvent
+        public static void onEntityJoin(EntityJoinLevelEvent e) {
+            if (e.getLevel().isClientSide()) return;
+            if (!(e.getEntity() instanceof Portal p)) return;
+
+            var pd = p.getPersistentData();
+            if (!pd.getBoolean(PD_WORMHOLE)) return;
+
+            if (!(e.getLevel() instanceof ServerLevel sl)) return;
+
+            BlockPos hostPos = BlockPos.of(pd.getLong(PD_HOST_POS));
+            int sideOrd = pd.getByte(PD_HOST_SIDE);
+            if (sideOrd < 0 || sideOrd >= Direction.values().length) {
+                p.discard();
+                return;
+            }
+            Direction side = Direction.values()[sideOrd];
+            if (!hasWormholePartAt(sl, hostPos, side)) {
+                p.discard();
+            }
+        }
+
+        private static boolean hasWormholePartAt(ServerLevel level, BlockPos pos, Direction side) {
+            var be = level.getBlockEntity(pos);
+            if (be == null) return false;
+
+            if (be instanceof CableBusBlockEntity host) {
+                var part = host.getPart(side);
+                return part instanceof WormholeP2PTunnelPart;
+            }
+            return false;
+        }
+    }
+
+    @Override
+    public void getBoxes(IPartCollisionHelper bch) {
+        if (bch.isBBCollision() && intangibleCollision) {
+            return;
+        }
+        bch.addBox(5, 5, 11.5, 11, 11, 12.5);
+        bch.addBox(3, 3, 12.5, 13, 13, 13.5);
+        bch.addBox(2, 2, 13.5, 14, 14, 15.5);
     }
 }

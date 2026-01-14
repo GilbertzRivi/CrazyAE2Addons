@@ -1,5 +1,7 @@
 package net.oktawia.crazyae2addonslite.misc;
 
+import com.lowdragmc.lowdraglib.gui.modular.ModularUIContainer;
+import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -8,6 +10,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.oktawia.crazyae2addonslite.IsModLoaded;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
@@ -27,10 +30,12 @@ public final class WormholeAnchor {
     private static final Map<UUID, Anchor> ANCHORS = new ConcurrentHashMap<>();
 
     public static void set(ServerPlayer player, BlockPos pos, ServerLevel world) {
+        LogUtils.getLogger().info("[WormholeAnchor] set {}", player);
         ANCHORS.put(player.getUUID(), new Anchor(world, pos.immutable()));
     }
 
     public static void clear(Player player) {
+        LogUtils.getLogger().info("[WormholeAnchor] clear {}", player);
         ANCHORS.remove(player.getUUID());
     }
 
@@ -44,9 +49,14 @@ public final class WormholeAnchor {
         if (event.phase != net.minecraftforge.event.TickEvent.Phase.END) return;
         if (event.player.level().isClientSide) return;
         if (!(event.player instanceof ServerPlayer sp)) return;
-
-        if (get(sp) != null && sp.containerMenu == sp.inventoryMenu) {
-            clear(sp);
+        if (IsModLoaded.isLDLibLoaded()){
+            if (get(sp) != null && (sp.containerMenu == sp.inventoryMenu || sp.containerMenu instanceof ModularUIContainer)) {
+                clear(sp);
+            }
+        } else {
+            if (get(sp) != null && sp.containerMenu == sp.inventoryMenu) {
+                clear(sp);
+            }
         }
     }
     @SubscribeEvent

@@ -30,6 +30,5 @@ public class NetworkHandler {
 
         // PLAY_TO_SERVER
         INSTANCE.registerMessage(id++, SetConfigAmountPacket.class,SetConfigAmountPacket::encode,SetConfigAmountPacket::decode,SetConfigAmountPacket::handle,Optional.of(NetworkDirection.PLAY_TO_SERVER));
-        INSTANCE.registerMessage(id++, CancellAllCraftingPacket.class,CancellAllCraftingPacket::encode,CancellAllCraftingPacket::decode,CancellAllCraftingPacket::handle,Optional.of(NetworkDirection.PLAY_TO_SERVER));
-    }
+        INSTANCE.registerMessage(id++, CancellAllCraftingPacket.class,CancellAllCraftingPacket::encode,CancellAllCraftingPacket::decode,CancellAllCraftingPacket::handle,Optional.of(NetworkDirection.PLAY_TO_SERVER));}
 }

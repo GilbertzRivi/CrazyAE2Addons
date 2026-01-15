@@ -601,13 +601,28 @@ public class WormholeP2PTunnelPart extends P2PTunnelPart<WormholeP2PTunnelPart> 
         return len < 1e-8 ? new Vec3(0, 0, 0) : v.scale(1.0 / len);
     }
 
-    private static Vec3[] makePortalAxesFromNormal(Vec3 normal) {
-        normal = safeNormalize(normal);
+    private static Vec3[] makePortalAxesFromNormal(Vec3 n) {
+        int nx = (int)Math.round(n.x);
+        int ny = (int)Math.round(n.y);
 
-        Vec3 axisH = projectUpOnPlane(normal);
-        Vec3 axisW = safeNormalize(axisH.cross(normal));
+        if (ny != 0) {
+            Vec3 w = new Vec3(1, 0, 0);
+            Vec3 h = new Vec3(0, 0, 1);
+            if (w.cross(h).dot(n) < 0) w = w.scale(-1);
+            return new Vec3[]{w, h};
+        }
 
-        return new Vec3[]{axisW, axisH};
+        if (nx != 0) {
+            Vec3 w = new Vec3(0, 0, 1);
+            Vec3 h = new Vec3(0, 1, 0);
+            if (w.cross(h).dot(n) < 0) w = w.scale(-1);
+            return new Vec3[]{w, h};
+        }
+
+        Vec3 w = new Vec3(1, 0, 0);
+        Vec3 h = new Vec3(0, 1, 0);
+        if (w.cross(h).dot(n) < 0) w = w.scale(-1);
+        return new Vec3[]{w, h};
     }
 
     private static Vec3 rotateVec(DQuaternion q, Vec3 v) {

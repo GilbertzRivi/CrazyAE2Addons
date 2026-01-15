@@ -1,16 +1,12 @@
 package net.oktawia.crazyae2addonslite.mixins;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
-import net.oktawia.crazyae2addonslite.interfaces.IRealPos;
 import net.oktawia.crazyae2addonslite.misc.WormholeAnchor;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Mutable;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -130,6 +126,20 @@ public abstract class MixinEntity {
         WormholeAnchor.Anchor anchor = WormholeAnchor.get(player);
         if (anchor != null) {
             cir.setReturnValue(anchor.center());
+        }
+    }
+
+    @Inject(
+            method = "isInWall()Z",
+            at = @At("HEAD"),
+            cancellable = true
+    )
+    private void anchorIsInWall(CallbackInfoReturnable<Boolean> cir) {
+        Entity entity = (Entity) (Object) this;
+        if (!(entity instanceof Player player)) return;
+        WormholeAnchor.Anchor anchor = WormholeAnchor.get(player);
+        if (anchor != null) {
+            cir.setReturnValue(false);
         }
     }
 }

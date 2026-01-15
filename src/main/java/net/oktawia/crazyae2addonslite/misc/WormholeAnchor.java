@@ -1,7 +1,6 @@
 package net.oktawia.crazyae2addonslite.misc;
 
 import com.lowdragmc.lowdraglib.gui.modular.ModularUIContainer;
-import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -30,12 +29,10 @@ public final class WormholeAnchor {
     private static final Map<UUID, Anchor> ANCHORS = new ConcurrentHashMap<>();
 
     public static void set(ServerPlayer player, BlockPos pos, ServerLevel world) {
-        LogUtils.getLogger().info("[WormholeAnchor] set {}", player);
         ANCHORS.put(player.getUUID(), new Anchor(world, pos.immutable()));
     }
 
     public static void clear(Player player) {
-        LogUtils.getLogger().info("[WormholeAnchor] clear {}", player);
         ANCHORS.remove(player.getUUID());
     }
 

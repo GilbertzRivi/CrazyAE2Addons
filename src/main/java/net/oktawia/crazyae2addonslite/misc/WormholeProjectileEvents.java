@@ -15,7 +15,6 @@ import net.oktawia.crazyae2addonslite.parts.WormholeP2PTunnelPart;
 public class WormholeProjectileEvents {
     @SubscribeEvent
     public static void onProjectileImpact(ProjectileImpactEvent event) {
-        LogUtils.getLogger().info("[WormholeProjectileEvents] {}", event.getEntity());
         Projectile proj = event.getProjectile();
         HitResult hit = event.getRayTraceResult();
         if (!(hit instanceof BlockHitResult bhr)) return;

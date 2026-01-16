@@ -30,6 +30,7 @@ import net.oktawia.crazyae2addonslite.logic.WirelessRedstoneTerminalItemLogicHos
 import net.oktawia.crazyae2addonslite.menus.WirelessNotificationTerminalMenu;
 import net.oktawia.crazyae2addonslite.menus.WirelessRedstoneTerminalMenu;
 import net.oktawia.crazyae2addonslite.network.NetworkHandler;
+import net.oktawia.crazyae2addonslite.parts.WormholeIPCompat;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
@@ -83,8 +84,11 @@ public class CrazyAddons {
         );
 
         modEventBus.addListener(this::registerCreativeTab);
-
         MinecraftForge.EVENT_BUS.register(this);
+
+        if (IsModLoaded.isIPLoaded()) {
+            MinecraftForge.EVENT_BUS.register(new WormholeIPCompat.Events());
+        }
     }
 
     public static @NotNull ResourceLocation makeId(String path) {

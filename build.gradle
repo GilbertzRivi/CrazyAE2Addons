@@ -176,8 +176,7 @@ dependencies {
 //    compileOnly fg.deobf("appeng:appliedenergistics2-forge:15.4.10-cosmolite.32")
 
     compileOnly fg.deobf("qouteall:imm_ptl_core-cae2:3.0.7")
-    runtimeOnly fg.deobf("qouteall:imm_ptl_core-cae2:3.0.7")
-    jarJar("qouteall:imm_ptl_core-cae2:3.0.7") { jarJar.ranged(it, "[3.0.7,)") }
+//    runtimeOnly fg.deobf("qouteall:imm_ptl_core-cae2:3.0.7")
 
     compileOnly (annotationProcessor("io.github.llamalad7:mixinextras-common:0.4.1"))
     compileOnly jarJar("io.github.llamalad7:mixinextras-forge:0.4.1") { jarJar.ranged(it, "[0.4.1,)") }

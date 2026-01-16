@@ -34,9 +34,3 @@ config = "mixins.crazyae2addonslite.json"
     versionRange="[15.2.0,)"
     ordering="AFTER"
     side="BOTH"
-[[dependencies.${mod_id}]]
-    modId="imm_ptl_core"
-    mandatory=true
-    versionRange="*"
-    ordering="AFTER"
-    side="BOTH"

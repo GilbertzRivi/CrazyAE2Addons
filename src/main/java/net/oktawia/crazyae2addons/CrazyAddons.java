@@ -38,6 +38,7 @@ import net.oktawia.crazyae2addons.menus.WirelessRedstoneTerminalMenu;
 import net.oktawia.crazyae2addons.mobstorage.EntityTypeRenderer;
 import net.oktawia.crazyae2addons.mobstorage.MobKeyType;
 import net.oktawia.crazyae2addons.network.NetworkHandler;
+import net.oktawia.crazyae2addons.parts.WormholeIPCompat;
 import net.oktawia.crazyae2addons.renderer.AutoBuilderBERenderer;
 import net.oktawia.crazyae2addons.renderer.PreviewTooltipRenderer;
 import net.oktawia.crazyae2addons.renderer.ResearchPedestalTopRenderer;
@@ -113,6 +114,10 @@ public class CrazyAddons {
         CrazyRecipes.RECIPE_TYPES.register(modEventBus);
 
         MinecraftForge.EVENT_BUS.register(this);
+
+        if (IsModLoaded.isIPLoaded()) {
+            MinecraftForge.EVENT_BUS.register(new WormholeIPCompat.Events());
+        }
     }
 
     public static @NotNull ResourceLocation makeId(String path) {

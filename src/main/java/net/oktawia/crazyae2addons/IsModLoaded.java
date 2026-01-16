@@ -10,5 +10,6 @@ public class IsModLoaded {
         return ModList.get().isLoaded("apotheosis");
     }
     public static boolean isAppFluxLoaded() { return ModList.get().isLoaded("appflux"); }
+    public static boolean isIPLoaded() { return ModList.get().isLoaded("imm_ptl_core");  }
 }
 

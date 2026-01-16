@@ -15,13 +15,11 @@ import net.oktawia.crazyae2addons.parts.WormholeP2PTunnelPart;
 public class WormholeProjectileEvents {
     @SubscribeEvent
     public static void onProjectileImpact(ProjectileImpactEvent event) {
-        LogUtils.getLogger().info("[WormholeProjectileEvents] {}", event.getEntity());
         Projectile proj = event.getProjectile();
         HitResult hit = event.getRayTraceResult();
         if (!(hit instanceof BlockHitResult bhr)) return;
         if (!(proj.level().getBlockEntity(bhr.getBlockPos()) instanceof CableBusBlockEntity cbbe)) return;
         if (!(cbbe.getPart(bhr.getDirection()) instanceof WormholeP2PTunnelPart)) return;
         event.setImpactResult(ProjectileImpactEvent.ImpactResult.SKIP_ENTITY);
-//        proj.setDeltaMovement(proj.getDeltaMovement());
     }
 }

@@ -1,0 +1,13 @@
+{
+  "itemGroup.crazyae2addonslite": "Example Mod Tab",
+  "block.crazyae2addonslite.example_block": "Example Block",
+  "item.crazyae2addonslite.example_item": "Example Item",
+
+  "crazyae2addonslite.configuration.title": "Crazy AE2 Addons lite Configs",
+  "crazyae2addonslite.configuration.section.crazyae2addonslite.common.toml": "Crazy AE2 Addons lite Configs",
+  "crazyae2addonslite.configuration.section.crazyae2addonslite.common.toml.title": "Crazy AE2 Addons lite Configs",
+  "crazyae2addonslite.configuration.items": "Item List",
+  "crazyae2addonslite.configuration.logDirtBlock": "Log Dirt Block",
+  "crazyae2addonslite.configuration.magicNumberIntroduction": "Magic Number Text",
+  "crazyae2addonslite.configuration.magicNumber": "Magic Number"
+}

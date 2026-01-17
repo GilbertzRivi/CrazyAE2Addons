@@ -3,24 +3,17 @@ package net.oktawia.crazyae2addons.entities;
 import appeng.api.config.*;
 import appeng.api.crafting.IPatternDetails;
 import appeng.api.crafting.PatternDetailsHelper;
-import appeng.api.inventories.ISegmentedInventory;
-import appeng.api.inventories.InternalInventory;
 import appeng.api.networking.GridFlags;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.crafting.*;
-import appeng.api.networking.energy.IEnergyService;
-import appeng.api.networking.energy.IEnergySource;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.networking.ticking.IGridTickable;
 import appeng.api.networking.ticking.TickRateModulation;
 import appeng.api.networking.ticking.TickingRequest;
 import appeng.api.stacks.*;
 import appeng.api.storage.AEKeyFilter;
-import appeng.api.storage.MEStorage;
 import appeng.api.storage.StorageHelper;
 import appeng.blockentity.grid.AENetworkBlockEntity;
-import appeng.core.definitions.AEItems;
-import appeng.crafting.pattern.EncodedPatternItem;
 import appeng.helpers.patternprovider.PatternProviderLogic;
 import appeng.helpers.patternprovider.PatternProviderLogicHost;
 import appeng.helpers.patternprovider.PatternProviderTarget;
@@ -30,21 +23,17 @@ import appeng.menu.locator.MenuLocator;
 import appeng.util.ConfigInventory;
 import appeng.util.inv.AppEngInternalInventory;
 import com.google.common.collect.ImmutableSet;
-import com.mojang.logging.LogUtils;
 import it.unimi.dsi.fastutil.objects.Object2LongMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.oktawia.crazyae2addons.blocks.EjectorBlock;
@@ -57,7 +46,6 @@ import net.oktawia.crazyae2addons.menus.EjectorMenu;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 public class EjectorBE extends AENetworkBlockEntity implements MenuProvider, IGridTickable, PatternProviderLogicHost, ICraftingRequester, IHackedProvider {
@@ -175,8 +163,14 @@ public class EjectorBE extends AENetworkBlockEntity implements MenuProvider, IGr
         this.target = new GenericStack(AEItemKey.of(CrazyBlockRegistrar.EJECTOR_BLOCK.get(), tag), 1);
 
         ArrayList<GenericStack> input = new ArrayList<>();
-        for (var stack : this.config.getAvailableStacks()) {
-            input.add(new GenericStack(stack.getKey(), stack.getLongValue() * this.multiplier));
+        for (int slot = 0; slot < this.config.size(); slot++) {
+            var gs = this.config.getStack(slot);
+            if (gs == null) continue;
+
+            long amt = gs.amount();
+            if (amt <= 0) continue;
+
+            input.add(new GenericStack(gs.what(), amt * (long) this.multiplier));
         }
         if (input.isEmpty()) return;
 
@@ -350,42 +344,49 @@ public class EjectorBE extends AENetworkBlockEntity implements MenuProvider, IGr
             return false;
         }
 
-        pushInputsLikeProvider(patternDetails, inputHolder);
+        pushInputsLikeProvider(inputHolder);
         return true;
     }
 
-    private void pushInputsLikeProvider(IPatternDetails patternDetails, KeyCounter[] inputHolder) {
+    private void pushInputsLikeProvider(KeyCounter[] inputHolder) {
         var level = getLevel();
-        if (level == null) return;
+        var grid = getGrid();
+        if (level == null || grid == null) return;
 
         var direction = getBlockState().getValue(EjectorBlock.FACING);
         var targetEntity = level.getBlockEntity(getBlockPos().relative(direction));
 
+        PatternProviderTarget target = null;
         if (targetEntity != null) {
-            var target = PatternProviderTarget.get(
+            target = PatternProviderTarget.get(
                     level,
                     targetEntity.getBlockPos(),
                     targetEntity,
                     direction.getOpposite(),
                     IActionSource.ofMachine(this)
             );
+        }
 
-            patternDetails.pushInputsToExternalInventory(inputHolder, (what, amt) -> {
-                var inserted = target.insert(what, amt, Actionable.MODULATE);
-                if (inserted < amt) {
-                    StorageHelper.poweredInsert(
-                            getGrid().getEnergyService(),
-                            getGrid().getStorageService().getInventory(),
-                            what,
-                            amt - inserted,
-                            IActionSource.ofMachine(this)
-                    );
-                }
-            });
-        } else {
-            var grid = getGrid();
-            if (grid != null) {
-                patternDetails.pushInputsToExternalInventory(inputHolder, (what, amt) -> {
+        for (var kc : inputHolder) {
+            if (kc == null || kc.isEmpty()) continue;
+
+            for (var entry : kc) {
+                var what = entry.getKey();
+                long amt = entry.getLongValue();
+                if (amt <= 0) continue;
+
+                if (target != null) {
+                    long inserted = target.insert(what, amt, Actionable.MODULATE);
+                    if (inserted < amt) {
+                        StorageHelper.poweredInsert(
+                                grid.getEnergyService(),
+                                grid.getStorageService().getInventory(),
+                                what,
+                                amt - inserted,
+                                IActionSource.ofMachine(this)
+                        );
+                    }
+                } else {
                     StorageHelper.poweredInsert(
                             grid.getEnergyService(),
                             grid.getStorageService().getInventory(),
@@ -393,7 +394,7 @@ public class EjectorBE extends AENetworkBlockEntity implements MenuProvider, IGr
                             amt,
                             IActionSource.ofMachine(this)
                     );
-                });
+                }
             }
         }
     }

@@ -124,16 +124,11 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements
     private GenericStack target;
     private Future<ICraftingPlan> toCraftPlan;
 
-    // ------------------------------
-    // Infinite temp buffer (reserved build storage) + flush state
-    // ------------------------------
     private static final String NBT_BUILD_BUFFER = "BuildBuffer";
 
     private final Object2LongOpenHashMap<AEItemKey> buildBuffer = new Object2LongOpenHashMap<>();
-
-    // Jeśli true -> próbujemy opróżnić bufor do ME. Dopóki nie opróżnione: nie wolno requestować/pobierać.
     private boolean flushPending = false;
-    private int flushTickAcc = 0; // retry co sekundę (20 ticków)
+    private int flushTickAcc = 0;
 
     @OnlyIn(Dist.CLIENT)
     public PreviewInfo getPreviewInfo() {
@@ -215,9 +210,6 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements
                 drops.add(stack);
             }
         }
-
-        // (opcjonalnie) bufor też mógłby dropić, ale to akurat "tymczasowy" magazyn – ja go ZAWSZE flushuję
-        // więc nie dodaję dropsów z bufora.
     }
 
     @Override
@@ -370,7 +362,6 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements
 
         tag.put("previewIndices", new IntArrayTag(previewIndices));
 
-        // Save build buffer
         ListTag buf = new ListTag();
         for (Object2LongMap.Entry<AEItemKey> e : buildBuffer.object2LongEntrySet()) {
             if (e.getLongValue() <= 0) continue;
@@ -708,9 +699,6 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements
         return stepsFromCards(cards, maxFromConfig);
     }
 
-    // ------------------------------
-    // Buffer helpers + flush logic
-    // ------------------------------
     private long bufferGet(AEItemKey key) {
         return buildBuffer.getOrDefault(key, 0L);
     }
@@ -741,13 +729,11 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements
             return;
         }
 
-        // Stop wszystkiego
         this.isRunning = false;
         this.isCrafting = false;
         this.energyPrepaid = false;
         this.tickDelayLeft = 0;
 
-        // Anuluj craft kalkulacje/linki
         if (this.toCraftPlan != null) this.toCraftPlan = null;
         if (this.craftingLink != null) {
             try { this.craftingLink.cancel(); } catch (Throwable ignored) {}
@@ -881,7 +867,6 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements
             return TickRateModulation.URGENT;
         }
 
-        // 3) Obsługa ukończonej kalkulacji crafta (submitJob)
         if (this.toCraftPlan != null && this.toCraftPlan.isDone()) {
             try {
                 var plan = this.toCraftPlan.get();
@@ -1130,7 +1115,6 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements
             resetGhostToHome();
             triggerRedstonePulse();
 
-            // Jak coś zostało w buforze (np craft “wyszedł więcej”) -> flush
             if (!buildBuffer.isEmpty()) {
                 beginFlushBuffer();
             }
@@ -1357,6 +1341,7 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements
     public void onRedstoneActivate() {
         if (getLevel() == null) return;
         if (flushPending) return;
+        if (this.craftingLink != null) return;
         if (inventory.getStackInSlot(0).isEmpty() && !inventory.getStackInSlot(1).isEmpty()) {
             inventory.setItemDirect(0, inventory.getStackInSlot(1).copyWithCount(1));
             inventory.setItemDirect(1, ItemStack.EMPTY);

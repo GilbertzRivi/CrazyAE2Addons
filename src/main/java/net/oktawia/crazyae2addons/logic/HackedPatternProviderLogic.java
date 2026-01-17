@@ -69,18 +69,38 @@ public class HackedPatternProviderLogic extends PatternProviderLogic {
                         direction.getOpposite(),
                         IActionSource.ofMachine(ejector)
                 );
-                patternDetails.pushInputsToExternalInventory(inputHolder, (what, amt) -> {
-                    var inserted = target.insert(what, amt, Actionable.MODULATE);
-                    if (inserted < amt) {
-                        StorageHelper.poweredInsert(
-                            getGrid().getEnergyService(),
-                            getGrid().getStorageService().getInventory(),
-                            what,
-                            amt - inserted,
-                            IActionSource.ofMachine(ejector)
-                        );
+                var grid = getGrid();
+                if (grid == null) return true;
+                for (var kc : inputHolder) {
+                    if (kc == null || kc.isEmpty()) continue;
+
+                    for (var entry : kc) {
+                        var what = entry.getKey();
+                        long amt = entry.getLongValue();
+                        if (amt <= 0) continue;
+
+                        if (target != null) {
+                            long inserted = target.insert(what, amt, Actionable.MODULATE);
+                            if (inserted < amt) {
+                                StorageHelper.poweredInsert(
+                                        grid.getEnergyService(),
+                                        grid.getStorageService().getInventory(),
+                                        what,
+                                        amt - inserted,
+                                        IActionSource.ofMachine(ejector)
+                                );
+                            }
+                        } else {
+                            StorageHelper.poweredInsert(
+                                    grid.getEnergyService(),
+                                    grid.getStorageService().getInventory(),
+                                    what,
+                                    amt,
+                                    IActionSource.ofMachine(ejector)
+                            );
+                        }
                     }
-                });
+                }
             } else {
                 var grid = getGrid();
                 if (grid != null) {

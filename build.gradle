@@ -214,7 +214,6 @@ dependencies {
 
     // END OF REQUIRED
 
-    runtimeOnly fg.deobf("curse.maven:expanded-ae-1213351:7266780")
     runtimeOnly fg.deobf("curse.maven:jade-324717:6106101")
     runtimeOnly fg.deobf("mezz.jei:jei-1.20.1-forge:15.20.0.115")
     runtimeOnly fg.deobf("curse.maven:emi-580555:6420945")

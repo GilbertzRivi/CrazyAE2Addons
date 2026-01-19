@@ -1,0 +1,50 @@
+{
+  "$schema": "schema.json",
+  "includes": ["common/common.json", "common/player_inventory.json"],
+  "background": {
+    "texture": "guis/crafting_scheduler.png",
+    "srcRect": [0, 0, 176, 205]
+  },
+  "text": {
+    "dialog_title": {
+      "text": {
+        "translate": "block.crazyae2addonslite.crafting_scheduler"
+      },
+      "position": {
+        "left": 8,
+        "top": 6
+      }
+    },
+    "info1": {
+      "text": {
+        "translate": "gui.crazyae2addons.crafting_scheduler_target"
+      },
+      "position": {
+        "top": 40,
+        "left": 88
+      },
+      "align": "CENTER"
+    }
+  },
+  "slots": {
+    "CONFIG": {
+      "left": 80,
+      "top": 59,
+      "grid": "BREAK_AFTER_3COLS"
+    }
+  },
+  "widgets": {
+    "amount": {
+      "left": 63,
+      "top": 82,
+      "width": 50,
+      "height": 16
+    },
+    "confirm": {
+      "left": 120,
+      "top": 80,
+      "width": 16,
+      "height": 16
+    }
+  }
+}

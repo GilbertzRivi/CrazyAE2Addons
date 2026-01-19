@@ -1,0 +1,40 @@
+{
+  "$schema": "schema.json",
+  "includes": ["common/common.json"],
+  "background": {
+    "texture": "guis/blank_background_no_inv.png",
+    "srcRect": [0, 0, 176, 205]
+  },
+  "text": {
+    "dialog_title": {
+      "text": {
+        "translate": "item.crazyae2addonslite.chunky_fluid_p2p_tunnel"
+      },
+      "position": {
+        "left": 8,
+        "top": 6
+      }
+    },
+    "info1": {
+      "position": {
+        "top": 30,
+        "left": 88
+      },
+      "align": "CENTER"
+    }
+  },
+  "widgets": {
+    "value": {
+      "left": 15,
+      "top": 77,
+      "width": 110,
+      "height": 16
+    },
+    "confirm": {
+      "left": 135,
+      "top": 77,
+      "width": 30,
+      "height": 16
+    }
+  }
+}

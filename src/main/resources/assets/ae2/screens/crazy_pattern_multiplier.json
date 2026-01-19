@@ -1,0 +1,67 @@
+{
+  "$schema": "schema.json",
+  "includes": ["common/common.json", "common/player_inventory.json"],
+  "background": {
+    "texture": "guis/crazy_pattern_multiplier_background.png",
+    "srcRect": [0, 0, 176, 245]
+  },
+  "slots": {
+    "ENCODED_PATTERN": {
+      "left": 8,
+      "top": 42,
+      "grid": "BREAK_AFTER_9COLS"
+    }
+  },
+  "text": {
+    "dialog_title": {
+      "text": {
+        "translate": "item.crazyae2addonslite.crazy_pattern_multiplier"
+      },
+      "position": {
+        "left": 8,
+        "top": 6
+      }
+    },
+    "interface_config": {
+      "text": {
+        "translate": "gui.ae2.Patterns"
+      },
+      "position": {
+        "left": 8,
+        "top": 31
+      }
+    }
+  },
+  "widgets": {
+    "clear": {
+      "left": 8,
+      "top": 128
+    },
+    "value": {
+      "left": 30,
+      "top": 130,
+      "width": 65,
+      "height": 16
+    },
+    "confirm": {
+      "left": 100,
+      "top": 128
+    },
+    "circuitVal": {
+      "left": 123,
+      "top": 130,
+      "width": 25,
+      "height": 16
+    },
+    "circuit": {
+      "left": 152,
+      "top": 128
+    },
+    "limit": {
+      "left": 98,
+      "top": 26,
+      "width": 52,
+      "height": 16
+    }
+  }
+}

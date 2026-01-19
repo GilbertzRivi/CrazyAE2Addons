@@ -1,0 +1,12 @@
+{
+  "parent": "block/cube",
+  "textures": {
+    "particle": "crazyae2addonslite:block/ejector_active",
+    "down": "crazyae2addonslite:block/ejector_active",
+    "up": "crazyae2addonslite:block/ejector_active",
+    "north": "crazyae2addonslite:block/ejector_front_active",
+    "south": "crazyae2addonslite:block/ejector_active",
+    "east": "crazyae2addonslite:block/ejector_active",
+    "west": "crazyae2addonslite:block/ejector_active"
+  }
+}

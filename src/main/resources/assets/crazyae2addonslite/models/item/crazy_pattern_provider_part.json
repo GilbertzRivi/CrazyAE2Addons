@@ -1,0 +1,10 @@
+{
+  "parent": "ae2:item/cable_pattern_provider",
+  "textures": {
+    "sides": "crazyae2addonslite:part/crazy_pattern_provider_sides",
+    "sidesStatus": "ae2:part/monitor_sides_status",
+    "particle": "crazyae2addonslite:part/crazy_pattern_provider_back",
+    "back": "crazyae2addonslite:part/crazy_pattern_provider_back",
+    "front": "crazyae2addonslite:part/crazy_pattern_provider"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "parent": "ae2:part/display_base",
+  "textures": {
+    "lightsBright": "crazyae2addonslite:part/redstone_terminal_bright",
+    "lightsMedium": "crazyae2addonslite:part/redstone_terminal",
+    "lightsDark": "crazyae2addonslite:part/redstone_terminal_dark"
+  },
+  "elements": [
+    {
+      "from": [2, 2, 0],
+      "to": [14, 14, 2],
+      "faces": {
+        "north": {
+          "texture": "#lightsBright",
+          "tintindex": 3,
+          "forge_data": { "block_light": 15, "sky_light": 15 }
+        }
+      }
+    },
+    {
+      "from": [2, 2, 0],
+      "to": [14, 14, 2],
+      "faces": {
+        "north": {
+          "texture": "#lightsMedium",
+          "tintindex": 2,
+          "forge_data": { "block_light": 15, "sky_light": 15 }
+        }
+      }
+    },
+    {
+      "from": [2, 2, 0],
+      "to": [14, 14, 2],
+      "faces": {
+        "north": {
+          "texture": "#lightsDark",
+          "tintindex": 1,
+          "forge_data": { "block_light": 15, "sky_light": 15 }
+        }
+      }
+    }
+  ]
+}

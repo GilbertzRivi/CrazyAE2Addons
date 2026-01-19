@@ -1,0 +1,37 @@
+{
+  "$schema": "schema.json",
+  "includes": ["common/common.json", "common/player_inventory.json"],
+  "background": {
+    "texture": "guis/crazy_emitter_multiplier_background.png",
+    "srcRect": [0, 0, 176, 245]
+  },
+  "text": {
+    "dialog_title": {
+      "text": {
+        "translate": "item.crazyae2addonslite.crazy_emitter_multiplier"
+      },
+      "position": {
+        "left": 8,
+        "top": 6
+      }
+    }
+  },
+  "widgets": {
+    "value": {
+      "left": 40,
+      "top": 80,
+      "width": 70,
+      "height": 16
+    },
+    "confirm": {
+      "left": 130,
+      "top": 78
+    },
+    "mult": {
+      "left": 40,
+      "top": 55,
+      "width": 100,
+      "height": 16
+    }
+  }
+}

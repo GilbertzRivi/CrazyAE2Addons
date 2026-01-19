@@ -1,0 +1,192 @@
+package net.oktawia.crazyae2addonslite.entities;
+
+import appeng.api.inventories.ISegmentedInventory;
+import appeng.api.inventories.InternalInventory;
+import appeng.api.stacks.AEItemKey;
+import appeng.api.upgrades.IUpgradeInventory;
+import appeng.api.upgrades.IUpgradeableObject;
+import appeng.api.upgrades.UpgradeInventories;
+import appeng.blockentity.crafting.PatternProviderBlockEntity;
+import appeng.helpers.patternprovider.PatternProviderLogic;
+import appeng.menu.ISubMenu;
+import appeng.menu.MenuOpener;
+import appeng.menu.locator.MenuHostLocator;
+import appeng.util.inv.AppEngInternalInventory;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.oktawia.crazyae2addonslite.IsModLoaded;
+import net.oktawia.crazyae2addonslite.defs.regs.CrazyBlockEntityRegistrar;
+import net.oktawia.crazyae2addonslite.defs.regs.CrazyBlockRegistrar;
+import net.oktawia.crazyae2addonslite.defs.regs.CrazyMenuRegistrar;
+import net.oktawia.crazyae2addonslite.mixins.PatternProviderBlockEntityAccessor;
+import net.oktawia.crazyae2addonslite.network.packets.SyncBlockClientPacket;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
+
+public class CrazyPatternProviderBE extends PatternProviderBlockEntity implements IUpgradeableObject {
+
+    private int added = 0;
+
+    private CompoundTag nbt;
+
+    public IUpgradeInventory upgrades = UpgradeInventories.forMachine(
+            CrazyBlockRegistrar.CRAZY_PATTERN_PROVIDER_BLOCK.get(),
+            IsModLoaded.isAppFluxLoaded() ? 2 : 1,
+            this::saveChanges
+    );
+
+    public CrazyPatternProviderBE(BlockPos pos, BlockState blockState) {
+        this(pos, blockState, 9 * 8);
+    }
+
+    public CrazyPatternProviderBE(BlockPos pos, BlockState blockState, int patternSize) {
+        super(CrazyBlockEntityRegistrar.CRAZY_PATTERN_PROVIDER_BE.get(), pos, blockState);
+        this.getMainNode().setVisualRepresentation(CrazyBlockRegistrar.CRAZY_PATTERN_PROVIDER_BLOCK.get().asItem());
+        ((PatternProviderBlockEntityAccessor) this).setLogic(new PatternProviderLogic(getMainNode(), this, patternSize));
+    }
+
+    public CrazyPatternProviderBE refreshLogic(int added) {
+        if (this.level == null) {
+            return this;
+        }
+
+        CompoundTag snap = new CompoundTag();
+        this.getLogic().writeToNBT(snap, level.registryAccess());
+
+        var oldInv = (AppEngInternalInventory) this.getLogic().getPatternInv();
+        oldInv.writeToNBT(snap, "dainv", level.registryAccess());
+
+        BlockPos pos = this.getBlockPos();
+        BlockState state = this.getBlockState();
+        Level level = this.level;
+
+        level.removeBlockEntity(pos);
+        level.setBlockEntity(new CrazyPatternProviderBE(pos, state, 8 * 9 + 9 * added));
+
+        var newBE = (CrazyPatternProviderBE) level.getBlockEntity(pos);
+        if (newBE == null) return this;
+
+        newBE.added = added;
+
+        newBE.getLogic().readFromNBT(snap, level.registryAccess());
+
+        var newInv = (AppEngInternalInventory) newBE.getLogic().getPatternInv();
+        newInv.readFromNBT(snap, "dainv", level.registryAccess());
+
+        newBE.setChanged();
+
+        if (!level.isClientSide) {
+            level.sendBlockUpdated(pos, state, state, Block.UPDATE_ALL);
+
+            PacketDistributor.sendToPlayersTrackingChunk(
+                    (ServerLevel) level,
+                    new ChunkPos(pos),
+                    new SyncBlockClientPacket(pos, added)
+            );
+        }
+
+        return newBE;
+    }
+
+    public int getAdded() {
+        return added;
+    }
+
+    public void setAdded(int amt) {
+        if (amt != this.added) {
+            this.added = amt;
+            this.refreshLogic(amt);
+        }
+    }
+
+    @Override
+    public void saveAdditional(CompoundTag data, HolderLookup.Provider registries) {
+        super.saveAdditional(data, registries);
+        data.putInt("added", added);
+
+        getLogic().writeToNBT(data, registries);
+        ((AppEngInternalInventory) getLogic().getPatternInv()).writeToNBT(data, "dainv", registries);
+        this.upgrades.writeToNBT(data, "upgrades", registries);
+    }
+
+    @Override
+    public void loadTag(CompoundTag data, HolderLookup.Provider registries) {
+        super.loadTag(data, registries);
+
+        added = data.getInt("added");
+        this.nbt = data;
+
+        if (data.contains("upgrades")) {
+            this.upgrades.readFromNBT(data, "upgrades", registries);
+        }
+    }
+
+    @Nullable
+    @Override
+    public InternalInventory getSubInventory(ResourceLocation id) {
+        if (id.equals(ISegmentedInventory.UPGRADES)) {
+            return this.upgrades;
+        }
+        return super.getSubInventory(id);
+    }
+
+    @Override
+    public IUpgradeInventory getUpgrades() {
+        return this.upgrades;
+    }
+
+    @Override
+    public void onReady() {
+        super.onReady();
+
+        int expected = 8 * 9 + 9 * added;
+        if (this.getLogic().getPatternInv().size() != expected) {
+            var be = refreshLogic(added);
+            be.added = added;
+            if (this.nbt != null) {
+                be.getLogic().readFromNBT(this.nbt, getLevel().registryAccess());
+                ((AppEngInternalInventory) be.getLogic().getPatternInv()).readFromNBT(this.nbt, "dainv", getLevel().registryAccess());
+            }
+        }
+    }
+
+    @Override
+    public PatternProviderLogic createLogic() {
+        return new PatternProviderLogic(this.getMainNode(), this, 9 * 8 + (this.getAdded() * 9));
+    }
+
+    @Override
+    public void openMenu(Player player, MenuHostLocator locator) {
+        MenuOpener.open(CrazyMenuRegistrar.CRAZY_PATTERN_PROVIDER_MENU.get(), player, locator);
+    }
+
+    @Override
+    public void returnToMainMenu(Player player, ISubMenu subMenu) {
+        MenuOpener.returnTo(CrazyMenuRegistrar.CRAZY_PATTERN_PROVIDER_MENU.get(), player, subMenu.getLocator());
+    }
+
+    @Override
+    public AEItemKey getTerminalIcon() {
+        return AEItemKey.of(CrazyBlockRegistrar.CRAZY_PATTERN_PROVIDER_BLOCK.get());
+    }
+
+    @Override
+    public ItemStack getMainMenuIcon() {
+        return CrazyBlockRegistrar.CRAZY_PATTERN_PROVIDER_BLOCK.get().asItem().getDefaultInstance();
+    }
+
+    @Override
+    public void addAdditionalDrops(Level level, BlockPos pos, List<ItemStack> drops) {
+    }
+}

@@ -1,0 +1,71 @@
+{
+  "$schema": "schema.json",
+  "includes": ["common/common.json", "common/player_inventory.json"],
+  "background": {
+    "texture": "guis/ejector.png",
+    "srcRect": [0, 0, 176, 243]
+  },
+  "slots": {
+    "CONFIG": {
+      "left": 8,
+      "top": 42,
+      "grid": "BREAK_AFTER_9COLS"
+    },
+    "ENCODED_PATTERN": {
+      "left": 152,
+      "top": 5,
+      "grid": "BREAK_AFTER_3COLS"
+    }
+  },
+  "text": {
+    "dialog_title": {
+      "text": {
+        "translate": "block.crazyae2addonslite.ejector"
+      },
+      "position": {
+        "left": 8,
+        "top": 6
+      }
+    },
+    "interface_config": {
+      "text": {
+        "translate": "gui.crazyae2addons.ejector_config"
+      },
+      "position": {
+        "left": 8,
+        "top": 31
+      }
+    },
+    "missing": {
+      "position": {
+        "left": 88,
+        "top": 22
+      },
+      "align": "CENTER"
+    },
+    "missing0": {
+      "position": {
+        "left": 88,
+        "top": 12
+      },
+      "align": "CENTER",
+      "text": {
+        "translate": "gui.crazyae2addons.ejector_missing_label"
+      }
+    }
+  },
+  "widgets": {
+    "load": {
+      "left": 152,
+      "top": 23,
+      "width": 16,
+      "height": 16
+    },
+    "amount": {
+      "left": 118,
+      "top": 5,
+      "width": 30,
+      "height": 16
+    }
+  }
+}

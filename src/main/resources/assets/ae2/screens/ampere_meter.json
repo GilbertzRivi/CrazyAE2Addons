@@ -1,0 +1,46 @@
+{
+  "$schema": "schema.json",
+  "includes": ["common/common.json"],
+  "background": {
+    "texture": "guis/blank_background_no_inv.png",
+    "srcRect": [0, 0, 176, 205]
+  },
+  "text": {
+    "dialog_title": {
+      "text": {
+        "translate": "block.crazyae2addonslite.ampere_meter"
+      },
+      "position": {
+        "left": 8,
+        "top": 6
+      }
+    },
+    "energy": {
+      "position": {
+        "top": 30,
+        "left": 88
+      },
+      "align": "CENTER"
+    }
+  },
+  "widgets": {
+    "min_fe": {
+      "left": 56,
+      "top": 70,
+      "width": 64,
+      "height": 12
+    },
+    "max_fe": {
+      "left": 56,
+      "top": 86,
+      "width": 64,
+      "height": 12
+    },
+    "direction": {
+      "left": 80,
+      "top": 50,
+      "width": 16,
+      "height": 16
+    }
+  }
+}

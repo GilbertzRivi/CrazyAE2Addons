@@ -1,0 +1,47 @@
+{
+  "$schema": "schema.json",
+  "includes": ["common/common.json", "common/player_inventory.json"],
+  "background": {
+    "texture": "guis/redstone_terminal.png",
+    "srcRect": [0, 0, 176, 256]
+  },
+  "text": {
+    "dialog_title": {
+      "text": { "translate": "item.crazyae2addonslite.redstone_terminal" },
+      "position": { "left": 8, "top": 6 }
+    },
+
+    "label_0": {"position": { "left": 10, "top": 38 } },
+    "label_1": {"position": { "left": 10, "top": 56 } },
+    "label_2": {"position": { "left": 10, "top": 74 } },
+    "label_3": {"position": { "left": 10, "top": 92 } },
+    "label_4": {"position": { "left": 10, "top": 110 } },
+    "label_5": {"position": { "left": 10, "top": 128 } },
+    "label_6": {"position": { "left": 10, "top": 146 } }
+  },
+  "widgets": {
+    "toggle_0": { "left": 130, "top": 36,  "width": 16, "height": 16 },
+    "pulse_0":  { "left": 130, "top": 36,  "width": 16, "height": 16 },
+
+    "toggle_1": { "left": 130, "top": 54,  "width": 16, "height": 16 },
+    "pulse_1":  { "left": 130, "top": 54,  "width": 16, "height": 16 },
+
+    "toggle_2": { "left": 130, "top": 72,  "width": 16, "height": 16 },
+    "pulse_2":  { "left": 130, "top": 72,  "width": 16, "height": 16 },
+
+    "toggle_3": { "left": 130, "top": 90,  "width": 16, "height": 16 },
+    "pulse_3":  { "left": 130, "top": 90,  "width": 16, "height": 16 },
+
+    "toggle_4": { "left": 130, "top": 108, "width": 16, "height": 16 },
+    "pulse_4":  { "left": 130, "top": 108, "width": 16, "height": 16 },
+
+    "toggle_5": { "left": 130, "top": 126, "width": 16, "height": 16 },
+    "pulse_5":  { "left": 130, "top": 126, "width": 16, "height": 16 },
+
+    "toggle_6": { "left": 130, "top": 144, "width": 16, "height": 16 },
+    "pulse_6":  { "left": 130, "top": 144, "width": 16, "height": 16 },
+
+    "search":    { "left": 30,  "top": 18,  "width": 116, "height": 16 },
+    "scrollbar": { "left": 154, "top": 36,  "width": 12,  "height": 126 }
+  }
+}

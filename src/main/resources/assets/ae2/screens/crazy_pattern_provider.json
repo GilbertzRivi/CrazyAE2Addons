@@ -1,0 +1,62 @@
+{
+  "$schema": "schema.json",
+  "includes": ["common/common.json", "common/player_inventory.json"],
+  "background": {
+    "texture": "guis/crazy_pattern_provider.png",
+    "srcRect": [0, 0, 195, 243]
+  },
+  "slots": {
+    "ENCODED_PATTERN": {
+      "left": 8,
+      "top": 42,
+      "grid": "BREAK_AFTER_9COLS"
+    },
+    "STORAGE": {
+      "left": 8,
+      "top": 127,
+      "grid": "HORIZONTAL"
+    }
+  },
+  "text": {
+    "dialog_title": {
+      "text": {
+        "translate": "block.crazyae2addonslite.crazy_pattern_provider"
+      },
+      "position": {
+        "left": 8,
+        "top": 6
+      }
+    },
+    "interface_stored_items": {
+      "text": {
+        "translate": "gui.ae2.ReturnInventory"
+      },
+      "position": {
+        "left": 8,
+        "top": 116
+      }
+    },
+    "patterninfo": {
+      "position": {
+        "left": 8,
+        "top": 30
+      }
+    }
+  },
+  "widgets": {
+    "openPriority": {
+      "left": 154,
+      "top": 0
+    },
+    "lockReason": {
+      "left": 5,
+      "top": 15
+    },
+    "scrollbar": {
+      "left": 175,
+      "top": 42,
+      "width": 16,
+      "height": 70
+    }
+  }
+}

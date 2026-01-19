@@ -1,0 +1,71 @@
+{
+  "$schema": "schema.json",
+  "includes": ["common/common.json", "common/player_inventory.json"],
+  "background": {
+    "texture": "guis/nbt_bus.png",
+    "srcRect": [0, 0, 256, 256]
+  },
+  "slots": {
+    "CONFIG": {
+      "left": 231,
+      "top": 42,
+      "grid": "BREAK_AFTER_9COLS"
+    },
+    "PLAYER_INVENTORY": {
+      "left": 47,
+      "bottom": 82,
+      "grid": "BREAK_AFTER_9COLS"
+    },
+    "PLAYER_HOTBAR": {
+      "left": 47,
+      "bottom": 24,
+      "grid": "HORIZONTAL"
+    }
+  },
+  "text": {
+    "dialog_title": {
+      "text": {
+        "translate": "item.crazyae2addonslite.nbt_export_bus"
+      },
+      "position": {
+        "left": 8,
+        "top": 6
+      }
+    },
+    "player_inventory_title": {
+      "text": {
+        "translate": "container.inventory"
+      },
+      "position": {
+        "left": 47,
+        "bottom": 93
+      }
+    }
+  },
+  "widgets": {
+    "data": {
+      "left": 8,
+      "top": 23,
+      "width": 202,
+      "height": 135
+    },
+    "load": {
+      "left": 231,
+      "top": 60,
+      "width": 16,
+      "height": 16
+    },
+    "scroll": {
+      "left": 212,
+      "top": 24,
+      "width": 10,
+      "height": 133
+    },
+    "confirm": {
+      "left": 231,
+      "top": 24,
+      "width": 16,
+      "height": 16
+    }
+  }
+}

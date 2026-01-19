@@ -1,0 +1,43 @@
+{
+  "$schema": "schema.json",
+  "includes": ["common/common.json", "common/player_inventory.json"],
+  "background": {
+    "texture": "guis/blank_background.png",
+    "srcRect": [0, 0, 176, 205]
+  },
+  "text": {
+    "dialog_title": {
+      "text": {
+        "translate": "item.crazyae2addonslite.redstone_emitter"
+      },
+      "position": {
+        "left": 8,
+        "top": 6
+      }
+    },
+    "name": {
+      "text": {
+        "translate": "gui.crazyae2addons.redstone_emitter_label_name"
+      },
+      "position": {
+        "left": 88,
+        "top": 25
+      },
+      "align": "CENTER"
+    }
+  },
+  "widgets": {
+    "name": {
+      "left": 43,
+      "top": 40,
+      "width": 90,
+      "height": 16
+    },
+    "confirm": {
+      "left": 80,
+      "top": 60,
+      "width": 16,
+      "height": 16
+    }
+  }
+}

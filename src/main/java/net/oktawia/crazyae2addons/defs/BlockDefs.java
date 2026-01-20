@@ -317,6 +317,14 @@ public class BlockDefs {
                         "B", CrazyItemRegistrar.ENTITY_TICKER_PART_ITEM.get().asItem()
                 )
         );
+
+        block(
+                CrazyBlockRegistrar.CRAZY_PATTERN_PROVIDER_BLOCK.get(),
+                "A",
+                () -> Map.of(
+                        "A", CrazyItemRegistrar.CRAZY_PATTERN_PROVIDER_PART.get().asItem()
+                )
+        );
     }
 
 }

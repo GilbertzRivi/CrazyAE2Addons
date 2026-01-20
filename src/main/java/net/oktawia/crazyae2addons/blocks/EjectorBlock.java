@@ -3,8 +3,10 @@ package net.oktawia.crazyae2addons.blocks;
 import appeng.api.upgrades.IUpgradeableObject;
 import appeng.block.AEBaseBlock;
 import appeng.block.AEBaseEntityBlock;
+import appeng.block.crafting.PushDirection;
 import appeng.menu.locator.MenuLocators;
 import appeng.util.InteractionUtil;
+import appeng.util.Platform;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionHand;
@@ -73,6 +75,11 @@ public class EjectorBlock extends AEBaseEntityBlock<EjectorBE> implements IUpgra
             return InteractionResult.PASS;
         }
 
+        if (heldItem != null && InteractionUtil.canWrenchRotate(heldItem)) {
+            setSide(level, pos, hit.getDirection());
+            return InteractionResult.sidedSuccess(level.isClientSide());
+        }
+
         var be = getBlockEntity(level, pos);
 
         if (be != null) {
@@ -107,5 +114,19 @@ public class EjectorBlock extends AEBaseEntityBlock<EjectorBE> implements IUpgra
         } else if (wasPowered && !isPoweredNow) {
             level.setBlock(pos, state.setValue(POWERED, false), 3);
         }
+    }
+
+    public void setSide(Level level, BlockPos pos, Direction facing) {
+        var currentState = level.getBlockState(pos);
+        var pushSide = currentState.getValue(FACING);
+
+        Direction newPushDirection;
+        if (pushSide == facing.getOpposite() || pushSide == facing) {
+            newPushDirection = pushSide.getOpposite();
+        } else {
+            newPushDirection = Platform.rotateAround(pushSide, facing);
+        }
+
+        level.setBlockAndUpdate(pos, currentState.setValue(FACING, newPushDirection));
     }
 }

@@ -32,7 +32,6 @@
     "MixinPatternProviderTargetCache",
     "MixinServerPlayer",
     "P2PTunnelPartAccessor",
-    "PatternProviderBlockEntityAccessor",
     "PatternProviderMenuAccessor",
     "PatternProviderTargetCacheAccessor",
     "RestrictedInputSlotMixin",

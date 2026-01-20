@@ -26,12 +26,9 @@ public class EjectorMenu extends AEBaseMenu {
 
     @GuiSync(82)
     public String cantCraft;
-    @GuiSync(21)
-    public String amount = "";
 
     public Player player;
     public String APPLY_PATTERN = "ActionPattern";
-    public String SET_MULT = "ActionSetMult";
     public EjectorBE host;
 
     private final Int2IntMap configIndexBySlot = new Int2IntOpenHashMap();
@@ -40,7 +37,6 @@ public class EjectorMenu extends AEBaseMenu {
         super(CrazyMenuRegistrar.EJECTOR_MENU.get(), id, ip, host);
         this.createPlayerInventorySlots(ip);
         this.player = ip.player;
-        this.amount = String.valueOf(host.multiplier);
         this.host = host;
 
         this.addSlot(new AppEngFilteredSlot(host.pattern, 0, AEItems.PROCESSING_PATTERN.asItem()), SlotSemantics.ENCODED_PATTERN);
@@ -63,7 +59,6 @@ public class EjectorMenu extends AEBaseMenu {
 
         host.setMenu(this);
         registerClientAction(APPLY_PATTERN, this::applyPatternToConfig);
-        registerClientAction(SET_MULT, String.class, this::setMultiplier);
     }
 
     @Contract("null -> false")
@@ -124,15 +119,6 @@ public class EjectorMenu extends AEBaseMenu {
                 }
             }
             this.broadcastChanges();
-        }
-    }
-
-    public void setMultiplier(String value) {
-        if (isClientSide()){
-            sendClientAction(SET_MULT, value);
-        }
-        if (!value.isBlank()){
-            host.multiplier = Integer.parseInt(value);
         }
     }
 }

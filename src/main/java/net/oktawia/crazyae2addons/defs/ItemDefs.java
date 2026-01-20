@@ -323,5 +323,13 @@ public class ItemDefs {
                         "D", AEBlocks.DENSE_ENERGY_CELL.asItem()
                 )
         );
+
+        item(
+                CrazyItemRegistrar.CRAZY_PATTERN_PROVIDER_PART.get(),
+                "A",
+                Map.of(
+                        "A", CrazyBlockRegistrar.CRAZY_PATTERN_PROVIDER_BLOCK.get().asItem()
+                )
+        );
     }
 }

@@ -1,299 +1,333 @@
 package net.oktawia.crazyae2addons.screens;
 
 import appeng.api.stacks.AEKey;
-import appeng.api.stacks.GenericStack;
-import appeng.client.gui.Icon;
-import appeng.client.gui.implementations.UpgradeableScreen;
+import appeng.client.gui.AEBaseScreen;
+import appeng.client.gui.MathExpressionParser;
+import appeng.client.gui.NumberEntryType;
+import appeng.client.gui.style.PaletteColor;
 import appeng.client.gui.style.ScreenStyle;
+import appeng.client.gui.widgets.AECheckbox;
 import appeng.client.gui.widgets.AETextField;
-import appeng.client.gui.widgets.BackgroundPanel;
+import appeng.client.gui.widgets.ConfirmableTextField;
 import appeng.client.gui.widgets.Scrollbar;
+import appeng.menu.SlotSemantics;
 import appeng.menu.slot.AppEngSlot;
-import com.google.gson.Gson;
 import de.mari_023.ae2wtlib.wut.CycleTerminalButton;
 import de.mari_023.ae2wtlib.wut.IUniversalTerminalCapable;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
-import net.minecraft.world.item.ItemStack;
 import net.oktawia.crazyae2addons.interfaces.IMovableSlot;
 import net.oktawia.crazyae2addons.menus.WirelessNotificationTerminalMenu;
-import net.oktawia.crazyae2addons.misc.IconButton;
-import net.oktawia.crazyae2addons.misc.StockThresholdToast;
-import org.jetbrains.annotations.Nullable;
 
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.text.ParsePosition;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 public class WirelessNotificationTerminalScreen<C extends WirelessNotificationTerminalMenu>
-        extends UpgradeableScreen<C> implements IUniversalTerminalCapable {
+        extends AEBaseScreen<C> implements IUniversalTerminalCapable {
 
-    private static final Gson GSON = new Gson();
+    private static final int FILTER_SLOTS = WirelessNotificationTerminalMenu.FILTER_SLOTS;
+    private static final int VISIBLE_ROWS = WirelessNotificationTerminalMenu.VISIBLE_ROWS;
 
-    private static final int VISIBLE_ROWS = 6;
+    private static final int FILTER_SLOT_X = 10;
+    private static final int FILTER_SLOT_Y0 = 34;
+    private static final int ROW_H = 18;
 
-    private static final int SLOT_X_FROM_THRESHOLD_LEFT = 24;
-    private static final int SLOT_Y_FROM_THRESHOLD_TOP = -4;
+    private final Scrollbar scrollbar = new Scrollbar();
+    private int lastOffset = -1;
 
-    private static final String TR_UNIT_LINE =
-            "gui.crazyae2addons.notification_terminal.unit_line";
+    private final int[] boundSlot = new int[VISIBLE_ROWS];
+    private final NumberEntryType[] rowType = new NumberEntryType[VISIBLE_ROWS];
+    private final ConfirmableTextField[] limitFields = new ConfirmableTextField[VISIBLE_ROWS];
+    private final boolean[] suppressChange = new boolean[VISIBLE_ROWS];
 
-    private static final String MAX_LONG_STR = Long.toString(Long.MAX_VALUE);
-    private static final int MAX_LONG_DIGITS = MAX_LONG_STR.length();
+    private AETextField hudXField;
+    private AETextField hudYField;
+    private AECheckbox hideAboveCb;
+    private AECheckbox hideBelowCb;
 
-    private Scrollbar scrollbar;
-    private Button addRowButton;
-
-    private final List<AETextField> thresholdFields = new ArrayList<>(VISIBLE_ROWS);
-    private final int[] fieldRowIndex = new int[VISIBLE_ROWS];
-
-    private int lastToastSeq = 0;
+    private final int errorTextColor;
+    private final int normalTextColor;
+    private final DecimalFormat decimalFormat;
+    private boolean initialized = false;
 
     public WirelessNotificationTerminalScreen(C menu, Inventory playerInventory, Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
 
+        Font font = Minecraft.getInstance().font;
+
         if (this.getMenu().isWUT()) {
             this.addToLeftToolbar(new CycleTerminalButton((btn) -> this.cycleTerminal()));
         }
-        this.widgets.add("singularityBackground", new BackgroundPanel(style.getImage("singularityBackground")));
 
-        this.scrollbar = new Scrollbar();
-        this.widgets.add("scrollbar", this.scrollbar);
+        this.errorTextColor = style.getColor(PaletteColor.TEXTFIELD_ERROR).toARGB();
+        this.normalTextColor = style.getColor(PaletteColor.TEXTFIELD_TEXT).toARGB();
 
-        this.addRowButton = new IconButton(Icon.ENTER, (btn) -> getMenu().requestAddRow());
-        this.addRowButton.setTooltip(Tooltip.create(
-                Component.translatable("gui.crazyae2addons.notification_terminal_add_row")
-        ));
-        this.widgets.add("add_row", this.addRowButton);
+        this.decimalFormat = new DecimalFormat("#.######", new DecimalFormatSymbols());
+        this.decimalFormat.setParseBigDecimal(true);
+        this.decimalFormat.setNegativePrefix("-");
 
-        ensureThresholdFields();
-        Arrays.fill(fieldRowIndex, -1);
-
-        updateScrollbarRange();
-        layoutSlotsAndSyncFields();
-        consumeToastIfAny();
-    }
-
-    private static boolean isValidNonNegativeLongUpToMax(String s) {
-        if (s == null || s.isEmpty()) return true;
-
-        for (int i = 0; i < s.length(); i++) {
-            char c = s.charAt(i);
-            if (c < '0' || c > '9') return false;
+        for (int i = 0; i < VISIBLE_ROWS; i++) {
+            boundSlot[i] = -1;
+            rowType[i] = NumberEntryType.of(null);
         }
 
-        if (s.length() < MAX_LONG_DIGITS) return true;
-        if (s.length() > MAX_LONG_DIGITS) return false;
+        this.scrollbar.setRange(0, Math.max(0, FILTER_SLOTS - VISIBLE_ROWS), 1);
+        this.widgets.add("scrollbar", scrollbar);
 
-        return s.compareTo(MAX_LONG_STR) <= 0;
-    }
+        for (int row = 0; row < VISIBLE_ROWS; row++) {
+            final int r = row;
 
-    private void ensureThresholdFields() {
-        for (int visIndex = thresholdFields.size(); visIndex < VISIBLE_ROWS; visIndex++) {
-            final int idx = visIndex;
-
-            AETextField tf = new AETextField(style, font, 0, 0, 0, 0);
-            tf.setMaxLength(MAX_LONG_DIGITS);
+            var tf = new ConfirmableTextField(style, font, 0, 0, 0, font.lineHeight);
             tf.setBordered(false);
+            tf.setMaxLength(16);
+            tf.setResponder(text -> onLimitChanged(r));
+            tf.setOnConfirm(this::onClose);
 
-            tf.setFilter(WirelessNotificationTerminalScreen::isValidNonNegativeLongUpToMax);
-
-            tf.setResponder(s -> {
-                if (!tf.isFocused()) return;
-
-                int row = fieldRowIndex[idx];
-                if (row < 0) return;
-
-                long units = 0;
-                if (s != null && !s.isEmpty()) {
-                    units = Long.parseLong(s);
-                }
-
-                long tech = toTechnicalAmount(row, units);
-                this.getMenu().requestSetThreshold(row, tech);
-            });
-
-            thresholdFields.add(tf);
-            this.widgets.add("threshold_" + idx, tf);
-        }
-    }
-
-    private void updateScrollbarRange() {
-        int rows = getMenu().getRows();
-        int maxScroll = Math.max(0, rows - VISIBLE_ROWS);
-        this.scrollbar.setRange(0, maxScroll, 1);
-    }
-
-    private void layoutSlotsAndSyncFields() {
-        var menu = getMenu();
-
-        int scrollOffset = scrollbar.getCurrentScroll();
-        int rows = menu.getRows();
-
-        long[] thresholds = parseThresholdsJson(menu.thresholdsJson);
-
-        for (int vis = 0; vis < VISIBLE_ROWS; vis++) {
-            int row = scrollOffset + vis;
-            AETextField tf = thresholdFields.get(vis);
-
-            if (row < rows) {
-                fieldRowIndex[vis] = row;
-                tf.setVisible(true);
-
-                if (!tf.isFocused()) {
-                    long tech = row < thresholds.length ? thresholds[row] : 0;
-                    String target = formatForField(row, tech);
-                    if (!tf.getValue().equals(target)) tf.setValue(target);
-                }
-            } else {
-                fieldRowIndex[vis] = -1;
-                if (tf.isFocused()) this.setFocused(null);
-                tf.setVisible(false);
-                if (!tf.getValue().isEmpty()) tf.setValue("");
-            }
+            this.limitFields[row] = tf;
+            this.widgets.add("limit_" + row, tf);
         }
 
-        int baseSlotIndex = menu.getMonitorSlotStart();
+        this.hudXField = new ConfirmableTextField(style, font, 0, 0, 0, font.lineHeight);
+        hudXField.setBordered(false);
+        hudXField.setMaxLength(3);
+        hudXField.setFilter((x) -> x.chars().allMatch(Character::isDigit));
+        hudXField.setResponder(x -> {
+            if (x.isEmpty()) return;
+            getMenu().setHudX(Math.max(0, Math.min(100, Integer.parseInt(x))));
+        });
+        hudXField.setTooltip(Tooltip.create(Component.literal("Hud X in % (0-100)")));
+        this.widgets.add("hud_x", hudXField);
 
-        for (int row = 0; row < WirelessNotificationTerminalMenu.MAX_ROWS; row++) {
-            Slot slot = menu.getSlot(baseSlotIndex + row);
+        this.hudYField = new ConfirmableTextField(style, font, 0, 0, 0, font.lineHeight);
+        hudYField.setBordered(false);
+        hudYField.setMaxLength(3);
+        hudYField.setFilter((x) -> x.chars().allMatch(Character::isDigit));
+        hudYField.setResponder(x -> {
+            if (x.isEmpty()) return;
+            getMenu().setHudY(Math.max(0, Math.min(100, Integer.parseInt(x))));
+        });
+        hudYField.setTooltip(Tooltip.create(Component.literal("Hud Y in % (0-100)")));
+        this.widgets.add("hud_y", hudYField);
 
-            if (!(slot instanceof AppEngSlot appEngSlot)) continue;
-            if (!(appEngSlot instanceof IMovableSlot movable)) continue;
+        hideAboveCb = new AECheckbox(0, 0, 170, 14, style, Component.empty());
+        hideAboveCb.setTooltip(Tooltip.create(Component.literal("Do not render entries that are >= threshold")));
+        hideAboveCb.setChangeListener(() -> getMenu().setHideAbove(hideAboveCb.isSelected()));
+        this.widgets.add("hide_above", hideAboveCb);
 
-            boolean inView = row >= scrollOffset && row < scrollOffset + VISIBLE_ROWS && row < rows;
-
-            if (inView) {
-                int vis = row - scrollOffset;
-
-                AETextField anchor = thresholdFields.get(vis);
-
-                int relX = anchor.getX() - this.leftPos - SLOT_X_FROM_THRESHOLD_LEFT;
-                int relY = anchor.getY() - this.topPos + SLOT_Y_FROM_THRESHOLD_TOP;
-
-                movable.setX(relX);
-                movable.setY(relY);
-                appEngSlot.setSlotEnabled(true);
-            } else {
-                appEngSlot.setSlotEnabled(false);
-            }
-        }
-    }
-
-    private long[] parseThresholdsJson(String json) {
-        try {
-            if (json == null || json.isBlank()) return new long[0];
-            return GSON.fromJson(json, long[].class);
-        } catch (Exception ignored) {
-            return new long[0];
-        }
+        hideBelowCb = new AECheckbox(0, 0, 170, 14, style, Component.empty());
+        hideBelowCb.setTooltip(Tooltip.create(Component.literal("Do not render entries that are < threshold")));
+        hideBelowCb.setChangeListener(() -> getMenu().setHideBelow(hideBelowCb.isSelected()));
+        this.widgets.add("hide_below", hideBelowCb);
     }
 
     @Override
-    public void containerTick() {
-        super.containerTick();
-        updateScrollbarRange();
-        layoutSlotsAndSyncFields();
-        consumeToastIfAny();
+    protected void updateBeforeRender() {
+        super.updateBeforeRender();
+
+        if (!initialized) {
+            hudYField.setValue(String.valueOf(getMenu().getHudY()));
+            hudXField.setValue(String.valueOf(getMenu().getHudX()));
+
+            hideAboveCb.setSelected(getMenu().isHideAbove());
+            hideBelowCb.setSelected(getMenu().isHideBelow());
+
+            initialized = true;
+        }
+
+        this.scrollbar.setRange(0, Math.max(0, FILTER_SLOTS - VISIBLE_ROWS), 1);
+        int offset = this.scrollbar.getCurrentScroll();
+
+        if (offset != lastOffset) {
+            repositionConfigSlots(offset);
+            lastOffset = offset;
+        }
+
+        updateVisibleRows(offset);
     }
 
-    private void consumeToastIfAny() {
-        var menu = getMenu();
-        if (menu.toastSeq == lastToastSeq) return;
-        lastToastSeq = menu.toastSeq;
+    private void repositionConfigSlots(int offset) {
+        List<Slot> slots = getMenu().getSlots(SlotSemantics.CONFIG);
 
-        if (menu.toastJson == null || menu.toastJson.isBlank()) return;
+        for (int i = 0; i < FILTER_SLOTS && i < slots.size(); i++) {
+            int row = i - offset;
 
-        WirelessNotificationTerminalMenu.ToastPayload p;
-        try {
-            p = GSON.fromJson(menu.toastJson, WirelessNotificationTerminalMenu.ToastPayload.class);
-        } catch (Exception ignored) {
+            Slot s = slots.get(i);
+            if (!(s instanceof AppEngSlot slot)) continue;
+
+            boolean inView = row >= 0 && row < VISIBLE_ROWS;
+
+            if (slot instanceof IMovableSlot movable) {
+                if (inView) {
+                    movable.setX(FILTER_SLOT_X);
+                    movable.setY(FILTER_SLOT_Y0 + row * ROW_H);
+                    slot.setSlotEnabled(true);
+                } else {
+                    movable.setX(-10000);
+                    movable.setY(-10000);
+                    slot.setSlotEnabled(false);
+                }
+            } else {
+                slot.setSlotEnabled(inView);
+            }
+        }
+    }
+
+    private void updateVisibleRows(int offset) {
+        for (int row = 0; row < VISIBLE_ROWS; row++) {
+            int slotIndex = offset + row;
+            boolean valid = slotIndex >= 0 && slotIndex < FILTER_SLOTS;
+
+            if (!valid) {
+                boundSlot[row] = -1;
+                limitFields[row].setVisible(false);
+                continue;
+            }
+
+            boolean boundChanged = (boundSlot[row] != slotIndex);
+            boundSlot[row] = slotIndex;
+
+            AEKey key = menu.getConfiguredFilter(slotIndex);
+
+            NumberEntryType newType = NumberEntryType.of(key);
+            boolean typeChanged = (rowType[row] == null) || !rowType[row].equals(newType);
+
+            if (boundChanged || typeChanged) {
+                rowType[row] = newType;
+
+                suppressChange[row] = true;
+                try {
+                    setTextFieldLongValue(row, menu.getThresholdClient(slotIndex));
+                } finally {
+                    suppressChange[row] = false;
+                }
+            }
+
+            limitFields[row].setVisible(true);
+            limitFields[row].setEditable(true);
+            validateRow(row);
+        }
+    }
+
+    private void onLimitChanged(int row) {
+        if (suppressChange[row]) return;
+
+        int slotIndex = boundSlot[row];
+        if (slotIndex < 0) return;
+
+        validateRow(row);
+
+        var v = getRowLongValue(row);
+        v.ifPresent(val -> menu.setThreshold(slotIndex, val));
+    }
+
+    private Optional<BigDecimal> getRowValueInternal(int row) {
+        String textValue = limitFields[row].getValue().trim();
+        if (textValue.isEmpty()) return Optional.empty();
+        if (textValue.startsWith("=")) textValue = textValue.substring(1);
+        return MathExpressionParser.parse(textValue, decimalFormat);
+    }
+
+    private boolean isNumberLiteral(int row) {
+        var position = new ParsePosition(0);
+        var textValue = limitFields[row].getValue().trim();
+        if (textValue.startsWith("=")) return false;
+        decimalFormat.parse(textValue, position);
+        return position.getErrorIndex() == -1 && position.getIndex() == textValue.length();
+    }
+
+    private long convertToExternalValue(NumberEntryType type, BigDecimal internalValue) {
+        var multiplicand = BigDecimal.valueOf(type.amountPerUnit());
+        var value = internalValue.multiply(multiplicand, MathContext.DECIMAL128);
+        value = value.setScale(0, RoundingMode.UP);
+        return value.longValue();
+    }
+
+    private BigDecimal convertToInternalValue(NumberEntryType type, long externalValue) {
+        var divisor = BigDecimal.valueOf(type.amountPerUnit());
+        return BigDecimal.valueOf(externalValue).divide(divisor, MathContext.DECIMAL128);
+    }
+
+    private Optional<Long> getRowLongValue(int row) {
+        var text = limitFields[row].getValue().trim();
+        if (text.isEmpty()) return Optional.of(0L);
+
+        var type = rowType[row] != null ? rowType[row] : NumberEntryType.of(null);
+        var internal = getRowValueInternal(row);
+        if (internal.isEmpty()) return Optional.empty();
+
+        if (type.amountPerUnit() == 1 && internal.get().scale() > 0) return Optional.empty();
+
+        long external = convertToExternalValue(type, internal.get());
+        if (external < 0) return Optional.empty();
+        return Optional.of(external);
+    }
+
+    private void setTextFieldLongValue(int row, long value) {
+        if (value <= 0) {
+            limitFields[row].setValue("");
+            limitFields[row].moveCursorToEnd();
+            limitFields[row].setHighlightPos(0);
             return;
         }
 
-        if (p.row < 0 || p.row >= WirelessNotificationTerminalMenu.MAX_ROWS) return;
-
-        int baseSlotIndex = menu.getMonitorSlotStart();
-        ItemStack filter = menu.getSlot(baseSlotIndex + p.row).getItem();
-        if (filter.isEmpty()) return;
-
-        var mc = Minecraft.getInstance();
-        if (mc.player == null) return;
-
-        var gs = GenericStack.fromItemStack(filter);
-        if (gs == null) return;
-
-        AEKey key = gs.what();
-        mc.getToasts().addToast(new StockThresholdToast(key, p.above, p.threshold, p.amount));
+        var type = rowType[row] != null ? rowType[row] : NumberEntryType.of(null);
+        var internal = convertToInternalValue(type, value);
+        limitFields[row].setValue(decimalFormat.format(internal));
+        limitFields[row].moveCursorToEnd();
+        limitFields[row].setHighlightPos(0);
     }
 
-    @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        super.render(graphics, mouseX, mouseY, partialTicks);
+    private void validateRow(int row) {
+        var type = rowType[row] != null ? rowType[row] : NumberEntryType.of(null);
 
-        for (int vis = 0; vis < VISIBLE_ROWS; vis++) {
-            AETextField tf = thresholdFields.get(vis);
-            int row = fieldRowIndex[vis];
-            if (row < 0 || !tf.isVisible()) continue;
+        boolean valid = true;
+        List<Component> tooltip = new ArrayList<>();
+        tooltip.add(Component.translatable(
+                "gui.crazyae2addons.notification_terminal.unit_line",
+                type.unit() == null ? "Items" : type.unit()
+        ));
 
-            if (tf.isFocused() || tf.isMouseOver(mouseX, mouseY)) {
-                this.drawTooltip(graphics, mouseX, mouseY, List.of(thresholdTooltip(row)));
-                break;
-            }
+        var text = limitFields[row].getValue().trim();
+        if (text.isEmpty()) {
+            tooltip.add(Component.literal("Disabled"));
+            limitFields[row].setTextColor(normalTextColor);
+            limitFields[row].setTooltipMessage(tooltip);
+            return;
         }
-    }
 
-    private @Nullable AEKey getKeyForRow(int row) {
-        int base = getMenu().getMonitorSlotStart();
-        ItemStack filter = getMenu().getSlot(base + row).getItem();
-        if (filter.isEmpty()) return null;
-
-        var gs = GenericStack.fromItemStack(filter);
-        return gs != null ? gs.what() : null;
-    }
-
-    private long toTechnicalAmount(int row, long userUnits) {
-        AEKey key = getKeyForRow(row);
-        if (key == null) return userUnits;
-
-        long perUnit = key.getAmountPerUnit();
-        if (perUnit <= 0) return userUnits;
-
-        if (userUnits > Long.MAX_VALUE / perUnit) return Long.MAX_VALUE;
-        return userUnits * perUnit;
-    }
-
-    private String formatForField(int row, long technical) {
-        if (technical <= 0) return "";
-        AEKey key = getKeyForRow(row);
-        if (key == null) return Long.toString(technical);
-
-        long perUnit = key.getAmountPerUnit();
-        if (perUnit > 1 && technical % perUnit == 0) {
-            return Long.toString(technical / perUnit);
-        }
-        return Long.toString(technical);
-    }
-
-    private Component thresholdTooltip(int row) {
-        AEKey key = getKeyForRow(row);
-
-        Component unit = Component.literal("-");
-        if (key != null) {
-            String sym = key.getUnitSymbol();
-            if (sym != null && !sym.isBlank()) {
-                unit = Component.literal(sym);
+        var internal = getRowValueInternal(row);
+        if (internal.isEmpty()) {
+            valid = false;
+            tooltip.add(Component.literal("Invalid number"));
+        } else {
+            if (type.amountPerUnit() == 1 && internal.get().scale() > 0) {
+                valid = false;
+                tooltip.add(Component.literal("Invalid number"));
             } else {
-                unit = key.getType().getDescription();
+                long external = convertToExternalValue(type, internal.get());
+                if (external < 0) {
+                    valid = false;
+                    tooltip.add(Component.literal("Invalid number"));
+                } else if (!isNumberLiteral(row)) {
+                    tooltip.add(Component.literal("= " + decimalFormat.format(internal.get())));
+                }
             }
         }
 
-        return Component.translatable(TR_UNIT_LINE, unit);
+        limitFields[row].setTextColor(valid ? normalTextColor : errorTextColor);
+        limitFields[row].setTooltipMessage(tooltip);
     }
 
     @Override

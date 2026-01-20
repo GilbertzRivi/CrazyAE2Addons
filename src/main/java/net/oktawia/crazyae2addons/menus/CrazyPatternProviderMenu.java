@@ -1,5 +1,6 @@
 package net.oktawia.crazyae2addons.menus;
 
+import appeng.blockentity.networking.CableBusBlockEntity;
 import appeng.helpers.patternprovider.PatternProviderLogicHost;
 import appeng.menu.SlotSemantics;
 import appeng.menu.guisync.GuiSync;
@@ -15,6 +16,7 @@ import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.entities.CrazyPatternProviderBE;
 import net.oktawia.crazyae2addons.network.NetworkHandler;
 import net.oktawia.crazyae2addons.network.UpdatePatternsPacket;
+import net.oktawia.crazyae2addons.parts.CrazyPatternProviderPart;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,6 +40,8 @@ public class CrazyPatternProviderMenu extends PatternProviderMenu {
 
         if (host.getBlockEntity() instanceof CrazyPatternProviderBE crazyBE) {
             this.slotNum = crazyBE.getAdded() * COLS + (8 * COLS);
+        } else if (host instanceof CrazyPatternProviderPart crazyPart) {
+            this.slotNum = crazyPart.getAdded() * COLS + (8 * COLS);
         } else {
             this.slotNum = 8 * COLS;
         }
@@ -46,9 +50,14 @@ public class CrazyPatternProviderMenu extends PatternProviderMenu {
 
         if (!IsModLoaded.isAppFluxLoaded()){
             if (host.getBlockEntity() instanceof CrazyPatternProviderBE cpp){
-
                 for (int i = 0; i < cpp.getUpgrades().size(); i++) {
                     var slot = new RestrictedInputSlot(RestrictedInputSlot.PlacableItemType.UPGRADES, cpp.getUpgrades(), i);
+                    slot.setNotDraggable();
+                    this.addSlot(slot, SlotSemantics.UPGRADE);
+                }
+            } else if (host instanceof CrazyPatternProviderPart crazyPart){
+                for (int i = 0; i < crazyPart.getUpgrades().size(); i++) {
+                    var slot = new RestrictedInputSlot(RestrictedInputSlot.PlacableItemType.UPGRADES, crazyPart.getUpgrades(), i);
                     slot.setNotDraggable();
                     this.addSlot(slot, SlotSemantics.UPGRADE);
                 }

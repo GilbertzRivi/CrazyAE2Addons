@@ -2,11 +2,11 @@
   "parent": "block/cube",
   "textures": {
     "particle": "crazyae2addons:block/ejector_active",
-    "down": "crazyae2addons:block/ejector_active",
-    "up": "crazyae2addons:block/ejector_active",
+    "down": "crazyae2addons:block/ejector_side_active4",
+    "up": "crazyae2addons:block/ejector_side_active",
     "north": "crazyae2addons:block/ejector_front_active",
     "south": "crazyae2addons:block/ejector_active",
-    "east": "crazyae2addons:block/ejector_active",
-    "west": "crazyae2addons:block/ejector_active"
+    "east": "crazyae2addons:block/ejector_side_active3",
+    "west": "crazyae2addons:block/ejector_side_active2"
   }
 }

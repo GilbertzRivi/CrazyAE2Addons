@@ -3,14 +3,12 @@ package net.oktawia.crazyae2addons.datagen;
 import appeng.core.definitions.AEBlocks;
 import com.mojang.logging.LogUtils;
 import net.minecraft.data.PackOutput;
-import net.minecraft.data.recipes.FinishedRecipe;
-import net.minecraft.data.recipes.RecipeCategory;
-import net.minecraft.data.recipes.RecipeProvider;
-import net.minecraft.data.recipes.ShapedRecipeBuilder;
+import net.minecraft.data.recipes.*;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.common.crafting.conditions.IConditionBuilder;
 import net.minecraftforge.registries.ForgeRegistries;
+import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.defs.BlockDefs;
 import net.oktawia.crazyae2addons.defs.ItemDefs;
 
@@ -26,35 +24,60 @@ public class CrazyRecipeProvider extends RecipeProvider implements IConditionBui
     protected void buildRecipes(Consumer<FinishedRecipe> pWriter) {
         ItemDefs.registerRecipes();
         BlockDefs.registerRecipes();
+        int recipeIndex1 = 0;
         for (var entry : BlockDefs.getBlockRecipes().entrySet()){
-            ShapedRecipeBuilder builder = ShapedRecipeBuilder.shaped(RecipeCategory.MISC, entry.getKey());
-            for (var recipe : entry.getValue().getKey().split("/")) {
-                builder.pattern(recipe);
-            }
-            for (Map.Entry<String, Item> e : entry.getValue().getValue().entrySet()) {
-                builder.define(e.getKey().charAt(0), e.getValue());
-            }
-            builder.unlockedBy(getHasName(AEBlocks.CONTROLLER.asItem()), has(AEBlocks.CONTROLLER.asItem()));
-            builder.save(pWriter);
-        }
-        for (var entry : ItemDefs.getItemRecipes().entrySet()) {
-            int recipeIndex = 0;
-            for (var recipeEntry : entry.getValue()) {
+            if (entry.getValue().getKey().trim().length() == 1) {
+                ShapelessRecipeBuilder builder = ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, entry.getKey());
+                builder.requires(entry.getValue().getValue().entrySet().stream().findAny().get().getValue());
+                builder.unlockedBy(getHasName(AEBlocks.CONTROLLER.asItem()), has(AEBlocks.CONTROLLER.asItem()));
+                ResourceLocation recipeId = CrazyAddons.makeId(
+                ForgeRegistries.BLOCKS.getKey(entry.getKey()).getPath() + (recipeIndex1 == 0 ? "" : "_alt" + recipeIndex1)
+                );
+                builder.save(pWriter, recipeId);
+            } else {
                 ShapedRecipeBuilder builder = ShapedRecipeBuilder.shaped(RecipeCategory.MISC, entry.getKey());
-                for (var recipe : recipeEntry.getKey().split("/")) {
+                for (var recipe : entry.getValue().getKey().split("/")) {
                     builder.pattern(recipe);
                 }
-                for (Map.Entry<String, Item> e : recipeEntry.getValue().entrySet()) {
+                for (Map.Entry<String, Item> e : entry.getValue().getValue().entrySet()) {
                     builder.define(e.getKey().charAt(0), e.getValue());
                 }
                 builder.unlockedBy(getHasName(AEBlocks.CONTROLLER.asItem()), has(AEBlocks.CONTROLLER.asItem()));
 
-                ResourceLocation recipeId = new ResourceLocation(
-                        "crazyae2addons",
-                        ForgeRegistries.ITEMS.getKey(entry.getKey()).getPath() + (recipeIndex == 0 ? "" : "_alt" + recipeIndex)
+                ResourceLocation recipeId = CrazyAddons.makeId(
+                        ForgeRegistries.BLOCKS.getKey(entry.getKey()).getPath() + (recipeIndex1 == 0 ? "" : "_alt" + recipeIndex1)
                 );
-
                 builder.save(pWriter, recipeId);
+            }
+            recipeIndex1++;
+        }
+        for (var entry : ItemDefs.getItemRecipes().entrySet()) {
+            int recipeIndex = 0;
+            for (var recipeEntry : entry.getValue()) {
+                if (entry.getValue().stream().findFirst().get().getKey().trim().length() == 1) {
+                    ShapelessRecipeBuilder builder = ShapelessRecipeBuilder.shapeless(RecipeCategory.MISC, entry.getKey());
+                    builder.requires(entry.getValue().stream().findFirst().get().getValue().entrySet().stream().findFirst().get().getValue());
+                    builder.unlockedBy(getHasName(AEBlocks.CONTROLLER.asItem()), has(AEBlocks.CONTROLLER.asItem()));
+                    ResourceLocation recipeId = CrazyAddons.makeId(
+                            ForgeRegistries.ITEMS.getKey(entry.getKey()).getPath() + (recipeIndex1 == 0 ? "" : "_alt" + recipeIndex1)
+                    );
+                    builder.save(pWriter, recipeId);
+                } else {
+                    ShapedRecipeBuilder builder = ShapedRecipeBuilder.shaped(RecipeCategory.MISC, entry.getKey());
+                    for (var recipe : recipeEntry.getKey().split("/")) {
+                        builder.pattern(recipe);
+                    }
+                    for (Map.Entry<String, Item> e : recipeEntry.getValue().entrySet()) {
+                        builder.define(e.getKey().charAt(0), e.getValue());
+                    }
+                    builder.unlockedBy(getHasName(AEBlocks.CONTROLLER.asItem()), has(AEBlocks.CONTROLLER.asItem()));
+
+                    ResourceLocation recipeId = CrazyAddons.makeId(
+                            ForgeRegistries.ITEMS.getKey(entry.getKey()).getPath() + (recipeIndex == 0 ? "" : "_alt" + recipeIndex)
+                    );
+
+                    builder.save(pWriter, recipeId);
+                }
                 recipeIndex++;
             }
         }

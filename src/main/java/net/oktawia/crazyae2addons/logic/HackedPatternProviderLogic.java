@@ -3,6 +3,7 @@ package net.oktawia.crazyae2addons.logic;
 import appeng.api.config.*;
 import appeng.api.crafting.IPatternDetails;
 import appeng.api.networking.IManagedGridNode;
+import appeng.api.networking.security.IActionHost;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.KeyCounter;
@@ -10,6 +11,7 @@ import appeng.api.storage.StorageHelper;
 import appeng.helpers.patternprovider.PatternProviderLogic;
 import appeng.helpers.patternprovider.PatternProviderLogicHost;
 import appeng.helpers.patternprovider.PatternProviderTarget;
+import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.Utils;
 import net.oktawia.crazyae2addons.blocks.EjectorBlock;
 import net.oktawia.crazyae2addons.entities.AutoBuilderBE;
@@ -29,9 +31,8 @@ public class HackedPatternProviderLogic extends PatternProviderLogic {
 
     @Override
     public boolean pushPattern(IPatternDetails patternDetails, KeyCounter[] inputHolder) {
-
+        if (host.getBlockEntity().getLevel() == null) return true;
         if (host.getBlockEntity() instanceof AutoBuilderBE ab) {
-
             for (var inputList : inputHolder) {
                 for (var input : inputList) {
                     var key = input.getKey();
@@ -57,7 +58,7 @@ public class HackedPatternProviderLogic extends PatternProviderLogic {
             return true;
         }
 
-        if (host.getBlockEntity() instanceof EjectorBE ejector) {
+        else if (host.getBlockEntity() instanceof EjectorBE ejector) {
             var level = ejector.getLevel();
             var direction = ejector.getBlockState().getValue(EjectorBlock.FACING);
             var targetEntity = ejector.getLevel().getBlockEntity(ejector.getBlockPos().relative(direction));
@@ -69,61 +70,49 @@ public class HackedPatternProviderLogic extends PatternProviderLogic {
                         direction.getOpposite(),
                         IActionSource.ofMachine(ejector)
                 );
-                var grid = getGrid();
-                if (grid == null) return true;
-                for (var kc : inputHolder) {
-                    if (kc == null || kc.isEmpty()) continue;
-
-                    for (var entry : kc) {
-                        var what = entry.getKey();
-                        long amt = entry.getLongValue();
-                        if (amt <= 0) continue;
-
-                        if (target != null) {
-                            long inserted = target.insert(what, amt, Actionable.MODULATE);
-                            if (inserted < amt) {
+                if (target == null) {
+                    returnToStorage(patternDetails, inputHolder, ejector);
+                } else {
+                    patternDetails.pushInputsToExternalInventory(inputHolder, (key, amount) -> {
+                        var inserted = target.insert(key, amount, Actionable.MODULATE);
+                        var leftover = amount - inserted;
+                        if (leftover > 0) {
+                            var grid = getGrid();
+                            if (grid != null) {
                                 StorageHelper.poweredInsert(
                                         grid.getEnergyService(),
                                         grid.getStorageService().getInventory(),
-                                        what,
-                                        amt - inserted,
+                                        key,
+                                        leftover,
                                         IActionSource.ofMachine(ejector)
                                 );
                             }
-                        } else {
-                            StorageHelper.poweredInsert(
-                                    grid.getEnergyService(),
-                                    grid.getStorageService().getInventory(),
-                                    what,
-                                    amt,
-                                    IActionSource.ofMachine(ejector)
-                            );
                         }
-                    }
-                }
-            } else {
-                var grid = getGrid();
-                if (grid != null) {
-                    patternDetails.pushInputsToExternalInventory(inputHolder, (what, amt) -> {
-                        StorageHelper.poweredInsert(
-                            grid.getEnergyService(),
-                            grid.getStorageService().getInventory(),
-                            what,
-                            amt,
-                            IActionSource.ofMachine(ejector)
-                        );
                     });
-                }
+                };
+            } else {
+                returnToStorage(patternDetails, inputHolder, ejector);
             }
-            if (host.getBlockEntity() instanceof IHackedProvider hp) {
-                hp.cancelCraft();
-            }
-            return true;
         }
 
         if (host.getBlockEntity() instanceof IHackedProvider hp) {
             hp.cancelCraft();
         }
         return true;
+    }
+
+    private void returnToStorage(IPatternDetails patternDetails, KeyCounter[] inputHolder, IActionHost machine) {
+        var grid = getGrid();
+        if (grid != null) {
+            patternDetails.pushInputsToExternalInventory(inputHolder, (what, amt) -> {
+                StorageHelper.poweredInsert(
+                        grid.getEnergyService(),
+                        grid.getStorageService().getInventory(),
+                        what,
+                        amt,
+                        IActionSource.ofMachine(machine)
+                );
+            });
+        }
     }
 }

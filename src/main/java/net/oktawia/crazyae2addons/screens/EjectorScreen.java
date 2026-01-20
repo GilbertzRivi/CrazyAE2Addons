@@ -7,6 +7,7 @@ import appeng.client.gui.implementations.UpgradeableScreen;
 import appeng.client.gui.style.ScreenStyle;
 import appeng.client.gui.widgets.AETextField;
 import appeng.menu.SlotSemantics;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
@@ -32,7 +33,6 @@ public class EjectorScreen<C extends EjectorMenu> extends AEBaseScreen<C> {
     private ItemStack missingIcon = ItemStack.EMPTY;
     private String missingCountText = "";
     private boolean parsedOk = false;
-    private AETextField amount;
 
     private static final int MISSING_ICON_X = 80;
     private static final int MISSING_ICON_Y = 22;
@@ -49,24 +49,9 @@ public class EjectorScreen<C extends EjectorMenu> extends AEBaseScreen<C> {
 
         var btn = new IconButton(Icon.ENTER, b -> {
             getMenu().applyPatternToConfig();
-            if (this.amount.getValue().chars().allMatch(Character::isDigit)){
-                this.amount.setTextColor(0x00FF00);
-                Runnable setColorFunction = () -> this.amount.setTextColor(0xFFFFFF);
-                Utils.asyncDelay(setColorFunction, 1);
-                this.getMenu().setMultiplier(this.amount.getValue());
-            } else {
-                this.amount.setTextColor(0xFF0000);
-                Runnable setColorFunction = () -> this.amount.setTextColor(0xFFFFFF);
-                Utils.asyncDelay(setColorFunction, 1);
-            }
         });
         btn.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.ejector_load_pattern")));
         this.widgets.add("load", btn);
-
-        this.amount = new AETextField(style, font, 0, 0, 0, 0);
-        amount.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.ejector_multiplier_tooltip")));
-        amount.setBordered(false);
-        this.widgets.add("amount", amount);
 
         this.addRenderableOnly((gg, mouseX, mouseY, partialTicks) -> {
             if (parsedOk && !missingIcon.isEmpty()) {
@@ -83,11 +68,6 @@ public class EjectorScreen<C extends EjectorMenu> extends AEBaseScreen<C> {
     @Override
     public void updateBeforeRender() {
         super.updateBeforeRender();
-
-        if (!this.started){
-            amount.setValue(getMenu().amount);
-            this.started = true;
-        }
 
         parseCantCraft(getMenu().cantCraft);
 

@@ -1,7 +1,6 @@
 package net.oktawia.crazyae2addons.entities;
 
 import appeng.api.config.*;
-import appeng.api.crafting.IPatternDetails;
 import appeng.api.crafting.PatternDetailsHelper;
 import appeng.api.networking.GridFlags;
 import appeng.api.networking.IGridNode;
@@ -21,6 +20,7 @@ import appeng.me.helpers.MachineSource;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuLocator;
 import appeng.util.ConfigInventory;
+import appeng.util.SettingsFrom;
 import appeng.util.inv.AppEngInternalInventory;
 import com.google.common.collect.ImmutableSet;
 import it.unimi.dsi.fastutil.objects.Object2LongMap;
@@ -68,7 +68,6 @@ public class EjectorBE extends AENetworkBlockEntity implements MenuProvider, IGr
     public ICraftingLink craftingLink;
     public GenericStack cantCraft = null;
     public EjectorMenu menu = null;
-    public int multiplier = 1;
     public PatternProviderLogic logic;
     public GenericStack target;
 
@@ -98,9 +97,6 @@ public class EjectorBE extends AENetworkBlockEntity implements MenuProvider, IGr
         if (data.contains("pattern")) {
             this.pattern.readFromNBT(data, "pattern");
         }
-        if (data.contains("mult")) {
-            this.multiplier = data.getInt("mult");
-        }
     }
 
     @Override
@@ -120,7 +116,6 @@ public class EjectorBE extends AENetworkBlockEntity implements MenuProvider, IGr
         this.config.writeToChildTag(data, "config");
         this.storage.writeToChildTag(data, "storage");
         this.pattern.writeToNBT(data, "pattern");
-        data.putInt("mult", this.multiplier);
     }
 
     @Override
@@ -155,7 +150,7 @@ public class EjectorBE extends AENetworkBlockEntity implements MenuProvider, IGr
     }
 
     public void doWork() {
-        if (getGridNode() == null || getGridNode().getGrid() == null || !getMainNode().isActive() || doesWait) return;
+        if (getGridNode() == null || getGridNode().getGrid() == null || !getMainNode().isActive() || doesWait || this.craftingLink != null || this.toCraftPlan != null) return;
         this.cantCraft = GenericStack.fromItemStack(ItemStack.EMPTY);
 
         var tag = new CompoundTag();
@@ -170,7 +165,7 @@ public class EjectorBE extends AENetworkBlockEntity implements MenuProvider, IGr
             long amt = gs.amount();
             if (amt <= 0) continue;
 
-            input.add(new GenericStack(gs.what(), amt * (long) this.multiplier));
+            input.add(new GenericStack(gs.what(), amt));
         }
         if (input.isEmpty()) return;
 
@@ -209,6 +204,7 @@ public class EjectorBE extends AENetworkBlockEntity implements MenuProvider, IGr
     public void cancelCraft(){
         if (this.craftingLink != null){
             this.craftingLink.cancel();
+            this.craftingLink = null;
         }
         getLevel().setBlockAndUpdate(getBlockPos(), getBlockState().setValue(EjectorBlock.ISCRAFTING, false));
         this.getLogic().getPatternInv().setItemDirect(0, ItemStack.EMPTY);
@@ -270,6 +266,7 @@ public class EjectorBE extends AENetworkBlockEntity implements MenuProvider, IGr
                     getLevel().setBlockAndUpdate(getBlockPos(),
                             getBlockState().setValue(EjectorBlock.ISCRAFTING, false));
                     this.craftingLink.cancel();
+                    this.craftingLink = null;
                 }
             } catch (Exception ignored) {}
         }
@@ -288,9 +285,13 @@ public class EjectorBE extends AENetworkBlockEntity implements MenuProvider, IGr
 
     @Override
     public void jobStateChange(ICraftingLink link) {
-        getLevel().setBlockAndUpdate(getBlockPos(), getBlockState().setValue(EjectorBlock.ISCRAFTING, false));
-        this.getLogic().getPatternInv().setItemDirect(0, ItemStack.EMPTY);
-        this.getLogic().updatePatterns();
+        if (link.isCanceled() || link.isDone()) {
+            if (!link.isCanceled()) link.cancel();
+            this.craftingLink = null;
+            getLevel().setBlockAndUpdate(getBlockPos(), getBlockState().setValue(EjectorBlock.ISCRAFTING, false));
+            this.getLogic().getPatternInv().setItemDirect(0, ItemStack.EMPTY);
+            this.getLogic().updatePatterns();
+        }
     }
 
     private boolean tryPushPatternImmediately(ItemStack patternStack, List<GenericStack> inputs) {
@@ -397,5 +398,17 @@ public class EjectorBE extends AENetworkBlockEntity implements MenuProvider, IGr
                 }
             }
         }
+    }
+
+    @Override
+    public void exportSettings(SettingsFrom mode, CompoundTag output, @Nullable Player player) {
+        super.exportSettings(mode, output, player);
+        this.config.writeToChildTag(output, "ejectorConfig");
+    }
+
+    @Override
+    public void importSettings(SettingsFrom mode, CompoundTag input, @Nullable Player player) {
+        super.importSettings(mode, input, player);
+        this.config.readFromChildTag(input, "ejectorConfig");
     }
 }

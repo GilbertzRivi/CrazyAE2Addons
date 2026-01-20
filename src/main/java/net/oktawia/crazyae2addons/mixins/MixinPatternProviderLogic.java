@@ -11,6 +11,7 @@ import appeng.helpers.patternprovider.UnlockCraftingEvent;
 import appeng.me.cluster.implementations.CraftingCPUCluster;
 import appeng.me.helpers.MachineSource;
 import appeng.me.helpers.PlayerSource;
+import appeng.util.inv.AppEngInternalInventory;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.Direction;
@@ -18,10 +19,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
 import net.oktawia.crazyae2addons.entities.CrazyPatternProviderBE;
-import net.oktawia.crazyae2addons.interfaces.IAdvPatternProviderCpu;
-import net.oktawia.crazyae2addons.interfaces.ICrazyProviderSourceFilter;
-import net.oktawia.crazyae2addons.interfaces.IPatternProviderCpu;
-import net.oktawia.crazyae2addons.interfaces.IPatternProviderTargetCacheExt;
+import net.oktawia.crazyae2addons.interfaces.*;
 import net.oktawia.crazyae2addons.misc.PatternDetailsSerializer;
 import org.jetbrains.annotations.Nullable;
 import org.objectweb.asm.Opcodes;
@@ -34,13 +32,20 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.lang.reflect.Field;
 
 @Mixin(value = PatternProviderLogic.class, priority = 1100)
-public abstract class MixinPatternProviderLogic implements IPatternProviderCpu, ICrazyProviderSourceFilter {
+public abstract class MixinPatternProviderLogic implements IPatternProviderCpu, ICrazyProviderSourceFilter, IProviderLogicResizable {
 
     @Shadow @Final private PatternProviderLogicHost host;
-    @Shadow @Nullable private UnlockCraftingEvent unlockEvent;
-    @Shadow @Nullable private GenericStack unlockStack;
     @Unique @Nullable private IPatternDetails ca_patternDetails;
     @Unique @Nullable private CraftingCPUCluster ca_cpuCluster;
+
+    @Shadow @Mutable @Final private AppEngInternalInventory patternInventory;
+
+    public void setSize(int size) {
+        var tag = new CompoundTag();
+        patternInventory.writeToNBT(tag, "dainv");
+        this.patternInventory = new AppEngInternalInventory(patternInventory.getHost(), size);
+        this.patternInventory.readFromNBT(tag, "dainv");
+    }
 
     @Unique
     @Override

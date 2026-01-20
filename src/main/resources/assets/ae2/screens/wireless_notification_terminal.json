@@ -16,14 +16,17 @@
     }
   },
   "widgets": {
-    "add_row":   { "left": 152, "top": 18, "width": 12, "height": 12 },
-    "scrollbar": { "left": 154, "top": 36, "width": 12, "height": 110 },
+    "scrollbar": { "left": 154, "top": 34, "width": 12, "height": 109 },
 
-    "threshold_0": { "left": 30, "top": 36,  "width": 116, "height": 16 },
-    "threshold_1": { "left": 30, "top": 54,  "width": 116, "height": 16 },
-    "threshold_2": { "left": 30, "top": 72,  "width": 116, "height": 16 },
-    "threshold_3": { "left": 30, "top": 90,  "width": 116, "height": 16 },
-    "threshold_4": { "left": 30, "top": 108, "width": 116, "height": 16 },
-    "threshold_5": { "left": 30, "top": 126, "width": 116, "height": 16 }
+    "limit_0": { "left": 40, "top": 36,  "width": 100, "height": 16 },
+    "limit_1": { "left": 40, "top": 54,  "width": 100, "height": 16 },
+    "limit_2": { "left": 40, "top": 72,  "width": 100, "height": 16 },
+    "limit_3": { "left": 40, "top": 90,  "width": 100, "height": 16 },
+    "limit_4": { "left": 40, "top": 108, "width": 100, "height": 16 },
+    "limit_5": { "left": 40, "top": 126, "width": 100, "height": 16 },
+    "hud_x": { "left": 40, "top": 18, "width": 40, "height": 16 },
+    "hud_y": { "left": 100, "top": 18, "width": 40, "height": 16 },
+    "hide_above": { "left": 6, "top": 17, "width": 14, "height": 14 },
+    "hide_below": { "left": 22, "top": 17, "width": 14, "height": 14 }
   }
 }

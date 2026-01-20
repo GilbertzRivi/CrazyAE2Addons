@@ -4,7 +4,9 @@ import appeng.api.parts.PartModels;
 import appeng.items.parts.PartItem;
 import appeng.items.parts.PartModelsHelper;
 import appeng.items.storage.StorageTier;
+import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
@@ -75,6 +77,10 @@ public class CrazyItemRegistrar {
                     () -> IsModLoaded.isGTCEuLoaded()
                             ? new GTEnergyExporterPartItem(new Item.Properties())
                             : new EnergyExporterPartItem(new Item.Properties()));
+
+    public static final RegistryObject<CrazyPatternProviderPartItem> CRAZY_PATTERN_PROVIDER_PART =
+            ITEMS.register("crazy_pattern_provider_part",
+                    () -> new CrazyPatternProviderPartItem(new Item.Properties()));
 
     // =========================================================
     // =========================================================

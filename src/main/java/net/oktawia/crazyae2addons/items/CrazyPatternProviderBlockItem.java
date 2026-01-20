@@ -29,8 +29,8 @@ public class CrazyPatternProviderBlockItem extends AEBaseBlockItem {
         int totalSlots = totalRows * 9;
 
         int filled = 0;
-        if (tag.contains("dainv")) {
-            ListTag invTag = tag.getList("dainv", Tag.TAG_COMPOUND);
+        if (tag.contains("patterns")) {
+            ListTag invTag = tag.getList("patterns", Tag.TAG_COMPOUND);
             filled = invTag.size();
         }
 

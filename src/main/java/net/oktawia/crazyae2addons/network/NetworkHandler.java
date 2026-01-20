@@ -28,6 +28,7 @@ public class NetworkHandler {
         INSTANCE.registerMessage(id++, SendLongStringToClientPacket.class,SendLongStringToClientPacket::encode,SendLongStringToClientPacket::decode,SendLongStringToClientPacket::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         INSTANCE.registerMessage(id++, ClipboardPacket.class,ClipboardPacket::encode,ClipboardPacket::decode,ClipboardPacket::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         INSTANCE.registerMessage(id++, StockThresholdToastPacket.class,StockThresholdToastPacket::encode,StockThresholdToastPacket::decode,StockThresholdToastPacket::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
+        INSTANCE.registerMessage(id++, NotificationHudPacket.class,NotificationHudPacket::encode,NotificationHudPacket::decode,NotificationHudPacket::handle,Optional.of(NetworkDirection.PLAY_TO_CLIENT));
 
         // PLAY_TO_SERVER
         INSTANCE.registerMessage(id++, SendLongStringToServerPacket.class,SendLongStringToServerPacket::encode,SendLongStringToServerPacket::decode,SendLongStringToServerPacket::handle,Optional.of(NetworkDirection.PLAY_TO_SERVER));

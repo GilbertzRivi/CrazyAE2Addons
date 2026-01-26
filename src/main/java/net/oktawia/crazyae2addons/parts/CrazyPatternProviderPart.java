@@ -79,8 +79,10 @@ public class CrazyPatternProviderPart extends PatternProviderPart implements IUp
         this.added ++;
         LogUtils.getLogger().info("{}, {}", isClientSide(), getLogic().getPatternInv().size());
         ((IProviderLogicResizable) getLogic()).setSize(8 * 9 + 9 * added);
-        NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(),
-                new SyncBlockClientPacket(getHost().getBlockEntity().getBlockPos(), added, getSide()));
+        if (!isClientSide()){
+            NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(),
+                    new SyncBlockClientPacket(getHost().getBlockEntity().getBlockPos(), added, getSide()));
+        }
     }
 
     public void setAdded(int amt) {
@@ -96,7 +98,9 @@ public class CrazyPatternProviderPart extends PatternProviderPart implements IUp
 
     @Override
     public boolean onPartActivate(Player player, InteractionHand hand, Vec3 pos) {
-        NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new SyncBlockClientPacket(getHost().getBlockEntity().getBlockPos(), added, getSide()));
+        if (!isClientSide()){
+            NetworkHandler.INSTANCE.send(PacketDistributor.ALL.noArg(), new SyncBlockClientPacket(getHost().getBlockEntity().getBlockPos(), added, getSide()));
+        }
 
         var heldItem = player.getItemInHand(hand);
 

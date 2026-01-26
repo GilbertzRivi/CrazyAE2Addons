@@ -1,9 +1,9 @@
 package net.oktawia.crazyae2addons.mixins;
 
+import com.mojang.logging.LogUtils;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.loading.LoadingModList;
 import net.minecraftforge.fml.loading.moddiscovery.ModInfo;
-import net.oktawia.crazyae2addons.IsModLoaded;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -78,7 +78,8 @@ public class Plugin implements IMixinConfigPlugin {
             case "net.oktawia.crazyae2addons.mixins.MixinCraftingService" -> !isModLoaded("advanced_ae");
             case "net.oktawia.crazyae2addons.mixins.MixinPatternP2PTunnelLogic" -> isModLoaded("mae2") && isModLoaded("gtceu");
             case "net.oktawia.crazyae2addons.mixins.MixinCraftingCpuLogicAE2" -> !hasTrySubmitJobBoolean;
-            case "net.oktawia.crazyae2addons.mixins.MixinCraftingCpuLogicAE2CL" -> hasTrySubmitJobBoolean;
+            case "net.oktawia.crazyae2addons.mixins.MixinCraftingCpuLogicAE2CL",
+                 "net.oktawia.crazyae2addons.mixins.MixinCraftingServiceCL" -> hasTrySubmitJobBoolean;
             default -> true;
         };
     }

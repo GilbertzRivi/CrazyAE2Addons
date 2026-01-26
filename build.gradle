@@ -176,7 +176,7 @@ dependencies {
 //    compileOnly fg.deobf("appeng:appliedenergistics2-forge:15.4.10-cosmolite.33")
 
     compileOnly fg.deobf("qouteall:imm_ptl_core-cae2:3.0.7")
-    runtimeOnly fg.deobf("qouteall:imm_ptl_core-cae2:3.0.7")
+//    runtimeOnly fg.deobf("qouteall:imm_ptl_core-cae2:3.0.7")
 
     compileOnly (annotationProcessor("io.github.llamalad7:mixinextras-common:0.4.1"))
     compileOnly jarJar("io.github.llamalad7:mixinextras-forge:0.4.1") { jarJar.ranged(it, "[0.4.1,)") }
@@ -233,7 +233,7 @@ dependencies {
     runtimeOnly fg.deobf("curse.maven:ftb-teams-forge-404468:6130786")
     runtimeOnly fg.deobf("curse.maven:cc-tweaked-282001:5714507")
 
-    runtimeOnly fg.deobf("curse.maven:applied-flux-965012:6649403")
+//    runtimeOnly fg.deobf("curse.maven:applied-flux-965012:6649403")
     runtimeOnly fg.deobf("curse.maven:glodium-957920:5226922")
     runtimeOnly fg.deobf("curse.maven:apothic-attributes-898963:5634071")
     runtimeOnly fg.deobf("curse.maven:placebo-283644:6274231")

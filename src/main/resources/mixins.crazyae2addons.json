@@ -23,6 +23,7 @@
     "MixinCraftingCpuLogicAE2CL",
     "MixinCraftingCPUMenu",
     "MixinCraftingService",
+    "MixinCraftingServiceCL",
     "MixinCraftingStatusMenu",
     "MixinEntity",
     "MixinGT",
@@ -36,10 +37,10 @@
     "PatternProviderTargetCacheAccessor",
     "RestrictedInputSlotMixin",
     "SlotAccessor",
-    "ViewCellItemMixin",
-    "WidgetContainerAccessor"
+    "ViewCellItemMixin"
   ],
   "client": [
-    "MixinCraftingCPUScreen"
+    "MixinCraftingCPUScreen",
+    "WidgetContainerAccessor"
   ]
 }

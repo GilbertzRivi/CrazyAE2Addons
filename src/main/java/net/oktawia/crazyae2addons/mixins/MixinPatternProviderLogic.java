@@ -32,7 +32,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.lang.reflect.Field;
 
 @Mixin(value = PatternProviderLogic.class, priority = 1100)
-public abstract class MixinPatternProviderLogic implements IPatternProviderCpu, ICrazyProviderSourceFilter, IProviderLogicResizable {
+public class MixinPatternProviderLogic implements IPatternProviderCpu, ICrazyProviderSourceFilter, IProviderLogicResizable {
 
     @Shadow @Final private PatternProviderLogicHost host;
     @Unique @Nullable private IPatternDetails ca_patternDetails;

@@ -32,15 +32,17 @@ public class ResearchUnitFrameBE extends AENetworkBlockEntity {
 
     public void setController(ResearchUnitBE controller) {
         this.controller = controller;
-        if (this.controller != null){
-            if (getMainNode().getNode().getConnections().stream()
-                    .noneMatch(x -> (x.a() == this.controller.getMainNode().getNode() || x.b() == this.controller.getMainNode().getNode()))){
-                GridHelper.createConnection(getMainNode().getNode(), this.controller.getMainNode().getNode());
+        if (getMainNode().getNode() != null) {
+            if (this.controller != null) {
+                if (getMainNode().getNode().getConnections().stream()
+                        .noneMatch(x -> (x.a() == this.controller.getMainNode().getNode() || x.b() == this.controller.getMainNode().getNode()))){
+                    GridHelper.createConnection(getMainNode().getNode(), this.controller.getMainNode().getNode());
+                }
+            } else {
+                getMainNode().getNode().getConnections().stream()
+                        .filter(x -> (!x.isInWorld()))
+                        .forEach(IGridConnection::destroy);
             }
-        } else {
-            getMainNode().getNode().getConnections().stream()
-                    .filter(x -> (!x.isInWorld()))
-                    .forEach(IGridConnection::destroy);
         }
     }
 }

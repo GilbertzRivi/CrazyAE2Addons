@@ -10,6 +10,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.storage.LevelResource;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
+import net.oktawia.crazyae2addons.misc.TemplateUtil;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Files;
@@ -62,5 +63,21 @@ public class GadgetHost extends ItemMenuHost {
         } catch (Exception e) {
             LogUtils.getLogger().warn("Failed to save program for gadget: " + e);
         }
+    }
+
+    public @Nullable byte[] getProgramBytes() {
+        return TemplateUtil.loadBytesFromFile(getItemStack(), getPlayer().getServer());
+    }
+
+    public void setProgramBytes(byte[] bytes) {
+        ItemStack stack = getItemStack();
+        var tag = stack.getOrCreateTag();
+        if (!tag.contains("program_id") || tag.getString("program_id").isEmpty()) {
+            tag.putString("program_id", UUID.randomUUID().toString());
+        }
+        tag.putBoolean("code", true);
+        MinecraftServer server = getPlayer().getServer();
+        if (server == null) return;
+        TemplateUtil.saveBytesToFile(tag.getString("program_id"), bytes, server);
     }
 }

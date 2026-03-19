@@ -5,6 +5,7 @@ import appeng.menu.AEBaseMenu;
 import appeng.menu.guisync.GuiSync;
 import appeng.menu.locator.MenuLocators;
 import appeng.menu.me.crafting.CraftAmountMenu;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
@@ -13,11 +14,10 @@ import net.minecraft.world.level.Level;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
-import net.oktawia.crazyae2addons.items.BuilderPatternItem;
 import net.oktawia.crazyae2addons.items.PortableAutobuilder;
 import net.oktawia.crazyae2addons.items.PortableSpatialStorage;
-import net.oktawia.crazyae2addons.logic.BuilderPatternHost;
 import net.oktawia.crazyae2addons.logic.CopyGadgetHost;
+import net.oktawia.crazyae2addons.misc.TemplateUtil;
 import net.oktawia.crazyae2addons.network.NetworkHandler;
 import net.oktawia.crazyae2addons.network.SendLongStringToClientPacket;
 import net.oktawia.crazyae2addons.network.SendLongStringToServerPacket;
@@ -35,6 +35,7 @@ public class PortableAutobuilderMenu extends AEBaseMenu {
     public static final String CRAFT = "craft";
     public static final String CLEAR = "clear";
 
+    /** Base64-encoded compressed-NBT template, or "" if none. */
     public String program = "";
 
     public CopyGadgetHost host;
@@ -42,7 +43,7 @@ public class PortableAutobuilderMenu extends AEBaseMenu {
     @GuiSync(239)
     public String name = "";
 
-    @GuiSync(240) //
+    @GuiSync(240)
     public String requirements = "";
 
     public PortableAutobuilderMenu(int id, Inventory playerInventory, CopyGadgetHost host) {
@@ -64,7 +65,8 @@ public class PortableAutobuilderMenu extends AEBaseMenu {
         this.createPlayerInventorySlots(playerInventory);
 
         if (!isClientSide()) {
-            this.program = host.getProgram();
+            byte[] bytes = host.getProgramBytes();
+            this.program = (bytes != null && bytes.length > 0) ? TemplateUtil.toBase64(bytes) : "";
         }
         requestData();
         updateRequirements();
@@ -93,7 +95,7 @@ public class PortableAutobuilderMenu extends AEBaseMenu {
             );
 
             byte[] bytes = program.getBytes(StandardCharsets.UTF_8);
-            int maxSize = 1000 * 1000;
+            int maxSize = 1_000_000;
             int total = (int) Math.ceil((double) bytes.length / maxSize);
 
             for (int i = 0; i < total; i++) {
@@ -101,7 +103,6 @@ public class PortableAutobuilderMenu extends AEBaseMenu {
                 int end = Math.min(bytes.length, (i + 1) * maxSize);
                 byte[] part = Arrays.copyOfRange(bytes, start, end);
                 String partString = new String(part, StandardCharsets.UTF_8);
-
                 NetworkHandler.INSTANCE.send(
                         PacketDistributor.PLAYER.with(() -> sp),
                         new SendLongStringToClientPacket(partString)
@@ -119,18 +120,8 @@ public class PortableAutobuilderMenu extends AEBaseMenu {
             sendClientAction(FLIP_H);
         } else {
             if (!PortableSpatialStorage.hasStoredStructure(host.getItemStack())) return;
-            ItemStack s = host.getItemStack();
-
-            BuilderPatternItem.applyFlipHorizontalToItem(s, getPlayer().getServer(), getPlayer());
-
-            String full = BuilderPatternHost.loadProgramFromFile(s, getPlayer().getServer());
-
-            this.host.setProgram(full);
-            this.program = full;
-
-            PortableSpatialStorage.rebuildPreviewFromCode(s, getPlayer().getServer(), full);
-
-            requestData();
+            net.minecraft.core.Direction srcFacing = PortableSpatialStorage.readSrcFacingFromNbt(host.getItemStack());
+            applyTransformAndResend(tag -> TemplateUtil.applyFlipHToTag(tag, srcFacing));
         }
     }
 
@@ -139,21 +130,9 @@ public class PortableAutobuilderMenu extends AEBaseMenu {
             sendClientAction(FLIP_V);
         } else {
             if (!PortableSpatialStorage.hasStoredStructure(host.getItemStack())) return;
-            ItemStack s = host.getItemStack();
-
-            BuilderPatternItem.applyFlipVerticalToItem(s, getPlayer().getServer(), getPlayer());
-
-            String full = BuilderPatternHost.loadProgramFromFile(s, getPlayer().getServer());
-
-            this.host.setProgram(full);
-            this.program = full;
-
-            PortableSpatialStorage.rebuildPreviewFromCode(s, getPlayer().getServer(), full);
-
-            requestData();
+            applyTransformAndResend(TemplateUtil::applyFlipVToTag);
         }
     }
-
 
     public void rotateCW(Integer times) {
         int t = times == null ? 1 : times;
@@ -161,40 +140,60 @@ public class PortableAutobuilderMenu extends AEBaseMenu {
             sendClientAction(ROTATE, t);
         } else {
             if (!PortableSpatialStorage.hasStoredStructure(host.getItemStack())) return;
-            ItemStack s = host.getItemStack();
-
-            BuilderPatternItem.applyRotateCWToItem(s, getPlayer().getServer(), t, getPlayer());
-
-            String full = BuilderPatternHost.loadProgramFromFile(s, getPlayer().getServer());
-
-            this.host.setProgram(full);
-            this.program = full;
-
-            PortableSpatialStorage.rebuildPreviewFromCode(s, getPlayer().getServer(), full);
-
-            requestData();
+            applyTransformAndResend(tag -> TemplateUtil.applyRotateCWToTag(tag, t));
         }
     }
 
+    @FunctionalInterface
+    private interface TagTransform {
+        CompoundTag apply(CompoundTag tag);
+    }
 
-    public void updateData(String program) {
-        this.program = program;
+    private void applyTransformAndResend(TagTransform transform) {
+        ItemStack s = host.getItemStack();
+        byte[] bytes = host.getProgramBytes();
+        if (bytes == null || bytes.length == 0) return;
+        try {
+            CompoundTag tag = TemplateUtil.decompressNbt(bytes);
+            tag = transform.apply(tag);
+            bytes = TemplateUtil.compressNbt(tag);
+            host.setProgramBytes(bytes);
+            this.program = TemplateUtil.toBase64(bytes);
+            TemplateUtil.rebuildPreviewFromTag(s, tag);
+        } catch (Exception ignored) {}
+        updateRequirements();
+        requestData();
+    }
+
+    public void updateData(String data) {
+        this.program = data;
         if (isClientSide()) {
             NetworkHandler.INSTANCE.sendToServer(new SendLongStringToServerPacket(this.program));
         } else {
-            this.host.setProgram(program);
-            this.program = host.getProgram();
+            if (!data.isEmpty()) {
+                try {
+                    byte[] bytes = TemplateUtil.fromBase64(data);
+                    CompoundTag tag = TemplateUtil.decompressNbt(bytes);
+                    host.setProgramBytes(bytes);
+                    this.program = data;
+                    TemplateUtil.rebuildPreviewFromTag(host.getItemStack(), tag);
+                } catch (Exception ignored) {
+                    this.program = "";
+                }
+            } else {
+                this.program = "";
+            }
             updateRequirements();
             requestData();
         }
     }
 
     public void craftRequest(String format) {
-        if (isClientSide()){
+        if (isClientSide()) {
             sendClientAction(CRAFT, format);
         } else {
             var item = ForgeRegistries.ITEMS.getValue(ResourceLocation.parse(format.split("\\|")[0]));
-            if (item != null){
+            if (item != null) {
                 CraftAmountMenu.open(
                         (ServerPlayer) getPlayer(),
                         MenuLocators.forHand(getPlayer(), getPlayer().swingingArm),
@@ -206,14 +205,13 @@ public class PortableAutobuilderMenu extends AEBaseMenu {
     }
 
     public void clearStructure() {
-        if (isClientSide()){
+        if (isClientSide()) {
             sendClientAction(CLEAR);
         } else {
             if (!PortableSpatialStorage.hasStoredStructure(host.getItemStack())) return;
             ItemStack s = host.getItemStack();
-            this.host.setProgram("");
+            TemplateUtil.clearStoredStructure(s, getPlayer().getServer());
             this.program = "";
-            PortableSpatialStorage.rebuildPreviewFromCode(s, getPlayer().getServer(), "");
             updateRequirements();
             requestData();
         }

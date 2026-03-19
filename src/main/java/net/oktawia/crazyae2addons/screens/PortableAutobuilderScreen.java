@@ -11,32 +11,31 @@ import com.lowdragmc.lowdraglib.gui.widget.SceneWidget;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
 import com.lowdragmc.lowdraglib.utils.TrackedDummyWorld;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.oktawia.crazyae2addons.menus.PortableAutobuilderMenu;
-import net.oktawia.crazyae2addons.menus.PortableSpatialStorageMenu;
 import net.oktawia.crazyae2addons.misc.IconButton;
 import net.oktawia.crazyae2addons.misc.ItemTextButtonBarWidget;
+import net.oktawia.crazyae2addons.misc.TemplateUtil;
 import org.lwjgl.opengl.GL11;
 
 import java.util.*;
 
 public class PortableAutobuilderScreen<C extends PortableAutobuilderMenu> extends AEBaseScreen<C> {
     private IconButton flipHBtn, flipVBtn, rotateBtn, clearBtn;
-    String program = "";
+
+    private final StringBuilder programBuf = new StringBuilder();
+    private boolean receiving = false;
 
     private final WidgetGroup root = new WidgetGroup(0, 0, 0, 0);
     private TrackedDummyWorld world = new TrackedDummyWorld();
@@ -48,7 +47,6 @@ public class PortableAutobuilderScreen<C extends PortableAutobuilderMenu> extend
     private double lastMouseX, lastMouseY;
     private float yaw = 0f, pitch = 30f, distance = -20f;
     private int lastSceneW = -1, lastSceneH = -1;
-    private static final String SEP = "|";
     private final List<ItemTextButtonBarWidget> requirementWidgets = new ArrayList<>();
     private int tick = 0;
 
@@ -58,35 +56,23 @@ public class PortableAutobuilderScreen<C extends PortableAutobuilderMenu> extend
     private int reqScrollIndex = 0;
     private String lastRequirements = "";
 
-
     public static List<RequirementQuad> parseRequirements(String requirements) {
         List<RequirementQuad> result = new ArrayList<>();
-
-        if (requirements == null || requirements.isEmpty()) {
-            return result;
-        }
+        if (requirements == null || requirements.isEmpty()) return result;
 
         String[] lines = requirements.split("\\r?\\n");
         for (String line : lines) {
             line = line.trim();
-            if (line.isEmpty()) {
-                continue;
-            }
+            if (line.isEmpty()) continue;
 
             String[] parts = line.split(";");
-            if (parts.length < 3) {
-                continue;
-            }
+            if (parts.length < 3) continue;
 
             ResourceLocation rl = ResourceLocation.tryParse(parts[0]);
-            if (rl == null) {
-                continue;
-            }
+            if (rl == null) continue;
 
             Item item = ForgeRegistries.ITEMS.getValue(rl);
-            if (item == null || item == Items.AIR) {
-                continue;
-            }
+            if (item == null || item == Items.AIR) continue;
 
             long need;
             long have;
@@ -100,7 +86,6 @@ public class PortableAutobuilderScreen<C extends PortableAutobuilderMenu> extend
             AEItemKey key = AEItemKey.of(item);
             result.add(new RequirementQuad(key, have, need, Objects.equals(parts[3], "1")));
         }
-
         return result;
     }
 
@@ -114,10 +99,6 @@ public class PortableAutobuilderScreen<C extends PortableAutobuilderMenu> extend
         this.widgets.add("clear", clearBtn);
         this.widgets.add("upgrades", new UpgradesPanel(getMenu().getSlots(SlotSemantics.UPGRADE)));
         root.setSize(this.width, this.height);
-
-        if (!program.isEmpty()) {
-            initScene();
-        }
 
         getMenu().requestData();
         getMenu().rotateCW(1);
@@ -147,17 +128,16 @@ public class PortableAutobuilderScreen<C extends PortableAutobuilderMenu> extend
         scene.clearAllWidgets();
         scene.setRenderedCore(blocks.keySet());
 
-        BlockPos size = max.subtract(min).offset(1,1,1);
+        BlockPos size = max.subtract(min).offset(1, 1, 1);
         BlockPos center = new BlockPos(
-                (int)(min.getX() + size.getX() * 0.5),
-                (int)(min.getY() + size.getY() * 0.5),
-                (int)(min.getZ() + size.getZ() * 0.5)
+                (int) (min.getX() + size.getX() * 0.5),
+                (int) (min.getY() + size.getY() * 0.5),
+                (int) (min.getZ() + size.getZ() * 0.5)
         );
         scene.setCenter(center.getCenter().toVector3f());
         scene.setCameraYawAndPitch(yaw, pitch);
         scene.setZoom(distance);
     }
-
 
     private void setupGui() {
         flipHBtn = new IconButton(Icon.ARROW_RIGHT, (btn) -> {
@@ -177,60 +157,29 @@ public class PortableAutobuilderScreen<C extends PortableAutobuilderMenu> extend
             getMenu().requestData();
         });
         rotateBtn.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.gadget_rotate")));
-        clearBtn = new IconButton(Icon.CLEAR, (btn) -> {
-            getMenu().clearStructure();
-        });
+
+        clearBtn = new IconButton(Icon.CLEAR, (btn) -> getMenu().clearStructure());
         clearBtn.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.gadget_clear")));
     }
 
+    /**
+     * Receives program chunks from the server.
+     * Payload is Base64-encoded compressed-NBT (not raw program text).
+     */
     public void setProgram(String data) {
         if ("__RESET__".equals(data)) {
-            program = "";
+            programBuf.setLength(0);
+            receiving = true;
             return;
         }
         if ("__END__".equals(data)) {
+            receiving = false;
             reloadPreviewNow();
             return;
         }
-        program += data;
-    }
-
-    private BlockState parseBlockStateSpec(String spec) {
-        String name = spec;
-        String props = null;
-        int br = spec.indexOf('[');
-        if (br >= 0 && spec.endsWith("]")) {
-            name = spec.substring(0, br);
-            props = spec.substring(br + 1, spec.length() - 1);
+        if (receiving) {
+            programBuf.append(data);
         }
-        ResourceLocation rl = ResourceLocation.tryParse(name);
-        if (rl == null) return null;
-        Block block = ForgeRegistries.BLOCKS.getValue(rl);
-        if (block == null) return null;
-
-        BlockState state = block.defaultBlockState();
-        if (props == null || props.isEmpty()) return state;
-
-        var def = block.getStateDefinition();
-        String[] pairs = props.split(",");
-        for (String pair : pairs) {
-            String[] kv = pair.split("=", 2);
-            if (kv.length != 2) continue;
-            String key = kv[0].trim();
-            String val = kv[1].trim();
-            Property<?> prop = def.getProperty(key);
-            if (prop == null) continue;
-
-            Optional<?> parsed = prop.getValue(val);
-            if (parsed.isPresent()) {
-                state = setUnchecked(state, prop, (Comparable) parsed.get());
-            }
-        }
-        return state;
-    }
-
-    private static BlockState setUnchecked(BlockState state, Property prop, Comparable value) {
-        return state.setValue(prop, value);
     }
 
     @Override
@@ -239,7 +188,6 @@ public class PortableAutobuilderScreen<C extends PortableAutobuilderMenu> extend
 
         if (hasCraftCard) {
             String currentReq = menu.requirements == null ? "" : menu.requirements;
-
             if (!Objects.equals(currentReq, lastRequirements)) {
                 lastRequirements = currentReq;
                 rebuildRequirementWidgets();
@@ -293,18 +241,14 @@ public class PortableAutobuilderScreen<C extends PortableAutobuilderMenu> extend
         }
     }
 
-
     private void clearRequirementWidgets() {
-        if (this.requirementWidgets.isEmpty()) {
-            return;
-        }
+        if (this.requirementWidgets.isEmpty()) return;
         for (var w : this.requirementWidgets) {
             this.renderables.remove(w);
             w.setBarEnabled(false);
         }
         this.requirementWidgets.clear();
     }
-
 
     private void rebuildRequirementWidgets() {
         clearRequirementWidgets();
@@ -322,37 +266,26 @@ public class PortableAutobuilderScreen<C extends PortableAutobuilderMenu> extend
                     } : (c) -> {});
 
             var widget = new ItemTextButtonBarWidget(
-                    0,
-                    0,
-                    160,
-                    24,
+                    0, 0, 160, 24,
                     record.key.toStack(),
                     Component.literal(String.format("%s/%s", wehave, record.need)),
                     button
             );
 
-            if (green) {
-                widget.setCenterTextColor(0, 255, 0);
-            } else {
-                widget.setCenterTextColor(255, 0, 0);
-            }
+            if (green) widget.setCenterTextColor(0, 255, 0);
+            else        widget.setCenterTextColor(255, 0, 0);
 
             this.addRenderableWidget(widget);
             this.requirementWidgets.add(widget);
         }
 
         int maxScroll = Math.max(0, requirementWidgets.size() - MAX_VISIBLE_REQUIREMENTS);
-        if (reqScrollIndex > maxScroll) {
-            reqScrollIndex = maxScroll;
-        }
-
+        if (reqScrollIndex > maxScroll) reqScrollIndex = maxScroll;
         layoutRequirementWidgets();
     }
 
     private void layoutRequirementWidgets() {
-        if (requirementWidgets.isEmpty()) {
-            return;
-        }
+        if (requirementWidgets.isEmpty()) return;
 
         int x = getGuiLeft() - 160 - 24;
         int baseY = getGuiTop() + 2;
@@ -361,17 +294,14 @@ public class PortableAutobuilderScreen<C extends PortableAutobuilderMenu> extend
         for (int i = 0; i < requirementWidgets.size(); i++) {
             ItemTextButtonBarWidget w = requirementWidgets.get(i);
             int relativeIndex = i - reqScrollIndex;
-
             if (relativeIndex >= 0 && relativeIndex < visibleCount) {
-                int y = baseY + relativeIndex * 24;
-                w.setBarPosition(x, y);
+                w.setBarPosition(x, baseY + relativeIndex * 24);
                 w.setBarEnabled(true);
             } else {
                 w.setBarEnabled(false);
             }
         }
     }
-
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
@@ -392,15 +322,13 @@ public class PortableAutobuilderScreen<C extends PortableAutobuilderMenu> extend
             lastMouseX = mouseX;
             lastMouseY = mouseY;
 
-            pitch   += (float) (dx * 0.5f);
-            yaw = Math.max(-89f, Math.min(89f, yaw + (float)(dy * 0.5f)));
-
+            pitch += (float) (dx * 0.5f);
+            yaw = Math.max(-89f, Math.min(89f, yaw + (float) (dy * 0.5f)));
             scene.setCameraYawAndPitch(yaw, pitch);
             return true;
         }
         return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
     }
-
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
@@ -412,169 +340,93 @@ public class PortableAutobuilderScreen<C extends PortableAutobuilderMenu> extend
     public void containerTick() {
         super.containerTick();
         root.updateScreen();
-        if (tick % 20 == 0){
+        if (tick % 20 == 0) {
             getMenu().updateRequirements();
             tick = 0;
         }
         tick += 1;
     }
 
-
     private void reloadPreviewNow() {
-        List<BlockPos> positions = new ArrayList<>();
-        List<Integer> indices = new ArrayList<>();
-        List<BlockState> paletteStates = new ArrayList<>();
-
-        String full = program == null ? "" : program;
-        int sep = full.lastIndexOf(SEP);
-        String header = sep >= 0 ? full.substring(0, sep) : "";
-        String body   = sep >= 0 ? full.substring(sep + 1) : full;
-
-        Map<Integer, Integer> idToIndex = new HashMap<>();
-        if (!header.isEmpty()) {
-            List<String> tokens = new ArrayList<>();
-            StringBuilder cur = new StringBuilder();
-            int depth = 0;
-            for (int pos = 0; pos < header.length(); pos++) {
-                char ch = header.charAt(pos);
-                if (ch == '(') { depth++; cur.append(ch); }
-                else if (ch == ')') { depth = Math.max(0, depth - 1); cur.append(ch); }
-                else if (ch == ',' && depth == 0) { String t = cur.toString().trim(); if (!t.isEmpty()) tokens.add(t); cur.setLength(0); }
-                else cur.append(ch);
-            }
-            String last = cur.toString().trim();
-            if (!last.isEmpty()) tokens.add(last);
-
-            java.util.regex.Pattern pat = java.util.regex.Pattern.compile("^\\s*(\\d+)\\s*\\((.*)\\)\\s*$");
-            List<Integer> sortedIds = new ArrayList<>();
-            Map<Integer, String> idToSpec = new HashMap<>();
-            for (String tok : tokens) {
-                var m = pat.matcher(tok.trim());
-                if (!m.matches()) continue;
-                try {
-                    int id = Integer.parseInt(m.group(1));
-                    String spec = m.group(2).trim();
-                    if (!spec.isEmpty()) { idToSpec.put(id, spec); sortedIds.add(id); }
-                } catch (NumberFormatException ignored) {}
-            }
-            Collections.sort(sortedIds);
-            for (int i = 0; i < sortedIds.size(); i++) {
-                int id = sortedIds.get(i);
-                idToIndex.put(id, i);
-                BlockState st = parseBlockStateSpec(idToSpec.get(id));
-                if (st != null) paletteStates.add(st);
-                else paletteStates.add(null);
-            }
-        }
-
-        BlockPos cursor = BlockPos.ZERO;
-        int i = 0, n = body.length();
-        while (i < n) {
-            char c = body.charAt(i);
-
-            if (c == 'H') { cursor = BlockPos.ZERO; i++; continue; }
-            if (c == 'F' || c == 'B' || c == 'L' || c == 'R' || c == 'U' || c == 'D') {
-                cursor = stepCursor(cursor, c); i++; continue;
-            }
-            if (c == 'Z' && i + 1 < n && body.charAt(i + 1) == '|') {
-                i += 2; while (i < n && Character.isDigit(body.charAt(i))) i++; continue;
-            }
-            if (c == 'P' && i + 1 < n && body.charAt(i + 1) == '(') {
-                int j = i + 2;
-                while (j < n && body.charAt(j) != ')') j++;
-                if (j < n) {
-                    String num = body.substring(i + 2, j);
-                    try {
-                        int id = Integer.parseInt(num);
-                        Integer palIdx = idToIndex.get(id);
-                        if (palIdx != null) { positions.add(cursor); indices.add(palIdx); }
-                    } catch (NumberFormatException ignored) {}
-                    i = j + 1; continue;
-                }
-            }
-            if (c == 'P' && i + 1 < n && body.charAt(i + 1) == '|') {
-                int j = i + 2;
-                while (j < n) {
-                    char cj = body.charAt(j);
-                    if (cj=='H'||cj=='Z'||cj=='P'||cj=='F'||cj=='B'||cj=='L'||cj=='R'||cj=='U'||cj=='D'||cj=='X' || cj=='\n' || cj=='\r') break;
-                    j++;
-                }
-                i = j; continue;
-            }
-            i++;
-        }
-
-        HashMap<BlockPos, BlockState> map = new HashMap<>();
-        BlockPos min = new BlockPos(Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE);
-        BlockPos max = new BlockPos(Integer.MIN_VALUE, Integer.MIN_VALUE, Integer.MIN_VALUE);
-
-        for (int k = 0; k < positions.size(); k++) {
-            BlockPos p = positions.get(k);
-            int idx = indices.get(k);
-            if (idx < 0 || idx >= paletteStates.size()) continue;
-            BlockState st = paletteStates.get(idx);
-            if (st == null) continue;
-
-            map.put(p, st);
-            if (p.getX() < min.getX()) min = new BlockPos(p.getX(), min.getY(), min.getZ());
-            if (p.getY() < min.getY()) min = new BlockPos(min.getX(), p.getY(), min.getZ());
-            if (p.getZ() < min.getZ()) min = new BlockPos(min.getX(), min.getY(), p.getZ());
-
-            if (p.getX() > max.getX()) max = new BlockPos(p.getX(), max.getY(), max.getZ());
-            if (p.getY() > max.getY()) max = new BlockPos(max.getX(), p.getY(), max.getZ());
-            if (p.getZ() > max.getZ()) max = new BlockPos(max.getX(), max.getY(), p.getZ());
-        }
-
-        this.blocks = map;
-        this.min = map.isEmpty() ? BlockPos.ZERO : min;
-        this.max = map.isEmpty() ? BlockPos.ZERO : max;
-
-        this.world.clear();
-        for (Map.Entry<BlockPos, BlockState> e : blocks.entrySet()) {
-            this.world.setBlock(e.getKey(), e.getValue(), 3);
-        }
-
-        if (map.isEmpty()) {
-            this.blocks = Collections.emptyMap();
-            if (this.scene != null) {
-                root.clearAllWidgets();
-                this.scene = null;
-            }
+        String base64 = programBuf.toString();
+        if (base64.isEmpty()) {
+            clearScene();
             return;
         }
 
-        if (this.scene == null) {
-            this.scene = new SceneWidget(0, 0, 32, 32, world);
-            root.clearAllWidgets();
-            root.addWidget(scene);
+        try {
+            byte[] bytes = TemplateUtil.fromBase64(base64);
+            CompoundTag templateTag = TemplateUtil.decompressNbt(bytes);
+            List<TemplateUtil.BlockInfo> blockInfos = TemplateUtil.parseBlocksFromTag(templateTag);
+
+            if (blockInfos.isEmpty()) {
+                clearScene();
+                return;
+            }
+
+            // Convert local positions to display-world positions so block states appear correctly oriented.
+            net.minecraft.core.Direction srcFacing = net.oktawia.crazyae2addons.items.PortableSpatialStorage.readSrcFacingFromNbt(
+                    net.minecraft.client.Minecraft.getInstance().player.getMainHandItem());
+            net.oktawia.crazyae2addons.items.PortableSpatialStorage.Basis basis =
+                    net.oktawia.crazyae2addons.items.PortableSpatialStorage.Basis.forFacing(srcFacing);
+
+            HashMap<BlockPos, BlockState> map = new HashMap<>();
+            int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE;
+            int maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
+
+            for (TemplateUtil.BlockInfo info : blockInfos) {
+                BlockPos p = net.oktawia.crazyae2addons.items.PortableSpatialStorage.localToWorld(
+                        info.pos(), BlockPos.ZERO, basis);
+                map.put(p, info.state());
+                if (p.getX() < minX) minX = p.getX();
+                if (p.getX() > maxX) maxX = p.getX();
+                if (p.getY() < minY) minY = p.getY();
+                if (p.getY() > maxY) maxY = p.getY();
+                if (p.getZ() < minZ) minZ = p.getZ();
+                if (p.getZ() > maxZ) maxZ = p.getZ();
+            }
+
+            this.blocks = map;
+            this.min = new BlockPos(minX, minY, minZ);
+            this.max = new BlockPos(maxX, maxY, maxZ);
+
+            this.world.clear();
+            for (Map.Entry<BlockPos, BlockState> e : blocks.entrySet()) {
+                this.world.setBlock(e.getKey(), e.getValue(), 3);
+            }
+
+            if (this.scene == null) {
+                this.scene = new SceneWidget(0, 0, 32, 32, world);
+                root.clearAllWidgets();
+                root.addWidget(scene);
+            }
+            scene.clearAllWidgets();
+            scene.setRenderedCore(blocks.keySet());
+
+            BlockPos size = max.subtract(min).offset(1, 1, 1);
+            BlockPos center = new BlockPos(
+                    (int) (min.getX() + size.getX() * 0.5),
+                    (int) (min.getY() + size.getY() * 0.5),
+                    (int) (min.getZ() + size.getZ() * 0.5)
+            );
+
+            scene.setCenter(center.getCenter().toVector3f());
+            scene.setCameraYawAndPitch(yaw, pitch);
+            scene.setZoom(distance);
+
+        } catch (Exception e) {
+            clearScene();
         }
-        scene.clearAllWidgets();
-        scene.setRenderedCore(blocks.keySet());
-
-        BlockPos size = max.subtract(min).offset(1,1,1);
-        BlockPos center = new BlockPos(
-                (int)(min.getX() + size.getX() * 0.5),
-                (int)(min.getY() + size.getY() * 0.5),
-                (int)(min.getZ() + size.getZ() * 0.5)
-        );
-
-        scene.setCenter(center.getCenter().toVector3f());
-        scene.setCameraYawAndPitch(yaw, pitch);
-        scene.setZoom(distance);
     }
 
-    private static BlockPos stepCursor(BlockPos cursor, char ch) {
-        return switch (ch) {
-            case 'F' -> cursor.offset(0, 0, 1);
-            case 'B' -> cursor.offset(0, 0, -1);
-            case 'R' -> cursor.offset(1, 0, 0);
-            case 'L' -> cursor.offset(-1, 0, 0);
-            case 'U' -> cursor.offset(0, 1, 0);
-            case 'D' -> cursor.offset(0, -1, 0);
-            default -> cursor;
-        };
+    private void clearScene() {
+        this.blocks = Collections.emptyMap();
+        this.world.clear();
+        if (this.scene != null) {
+            root.clearAllWidgets();
+            this.scene = null;
+        }
     }
-
 
     private boolean insideScene(double mx, double my) {
         return scene != null &&
@@ -589,7 +441,6 @@ public class PortableAutobuilderScreen<C extends PortableAutobuilderMenu> extend
             float step = 1.0f;
             float minDist = 2.0f;
             float maxDist = 256.0f;
-
             distance = Math.max(minDist, Math.min(maxDist, distance - (float) delta * step));
             scene.setZoom(distance);
             return true;
@@ -598,11 +449,9 @@ public class PortableAutobuilderScreen<C extends PortableAutobuilderMenu> extend
         if (!requirementWidgets.isEmpty() && insideRequirementArea(mouseX, mouseY)) {
             if (delta != 0) {
                 int maxScroll = Math.max(0, requirementWidgets.size() - MAX_VISIBLE_REQUIREMENTS);
-
                 reqScrollIndex -= (int) Math.signum(delta);
                 if (reqScrollIndex < 0) reqScrollIndex = 0;
                 if (reqScrollIndex > maxScroll) reqScrollIndex = maxScroll;
-
                 layoutRequirementWidgets();
             }
             return true;
@@ -612,17 +461,11 @@ public class PortableAutobuilderScreen<C extends PortableAutobuilderMenu> extend
     }
 
     private boolean insideRequirementArea(double mx, double my) {
-        if (requirementWidgets.isEmpty()) {
-            return false;
-        }
-
+        if (requirementWidgets.isEmpty()) return false;
         int x = getGuiLeft() - 160 - 24;
         int width = 160 + 24;
         int baseY = getGuiTop() + 2;
         int height = MAX_VISIBLE_REQUIREMENTS * 24;
-
-        return mx >= x && mx <= x + width
-                && my >= baseY && my <= baseY + height;
+        return mx >= x && mx <= x + width && my >= baseY && my <= baseY + height;
     }
-
 }

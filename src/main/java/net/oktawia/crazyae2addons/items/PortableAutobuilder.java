@@ -246,51 +246,65 @@ public class PortableAutobuilder extends WirelessTerminalItem implements IMenuIt
         cornerA = cornerB = origin = null;
     }
 
-    private boolean checkAndExtractFromME(ItemStack stack, Level level, Player p,
-                                          Map<AEItemKey, Long> needed,
-                                          Map<AEItemKey, ResourceLocation> nameMap) {
-        var grid = getLinkedGrid(stack, level, p);
-        if (grid == null) return false;
-        if (p.isCreative()) return true;
-
-        IStorageService ss = grid.getStorageService();
-        MEStorage inv = ss.getInventory();
-        IActionSource src = IActionSource.ofPlayer(p);
-
-        Map<AEItemKey, Long> missing = new LinkedHashMap<>();
-        for (var e : needed.entrySet()) {
-            AEItemKey key = e.getKey();
-            long want = e.getValue();
-            long can = inv.extract(key, want, Actionable.SIMULATE, src);
-            if (can < want) missing.put(key, want - can);
+    private Map<AEItemKey, Long> extractAvailable(ItemStack stack, Level level, Player p,
+                                                    Map<AEItemKey, Long> needed,
+                                                    Map<AEItemKey, ResourceLocation> nameMap) {
+        Map<AEItemKey, Long> budget = new LinkedHashMap<>();
+        if (p.isCreative()) {
+            budget.putAll(needed);
+            return budget;
         }
 
-        if (!missing.isEmpty()) {
-            StringBuilder sb = new StringBuilder("Missing: ");
+        // First pass: extract from player's own inventory (slots 0-35, no bags/shulkers)
+        Map<AEItemKey, Long> stillNeeded = new LinkedHashMap<>(needed);
+        for (int slot = 0; slot < 36; slot++) {
+            ItemStack slotStack = p.getInventory().getItem(slot);
+            if (slotStack.isEmpty()) continue;
+            AEItemKey slotKey = AEItemKey.of(slotStack);
+            long want = stillNeeded.getOrDefault(slotKey, 0L);
+            if (want <= 0) continue;
+            long take = Math.min(want, slotStack.getCount());
+            slotStack.shrink((int) take);
+            budget.merge(slotKey, take, Long::sum);
+            long left = want - take;
+            if (left <= 0) stillNeeded.remove(slotKey);
+            else stillNeeded.put(slotKey, left);
+        }
+
+        // Second pass: extract remaining from ME network (if linked)
+        if (!stillNeeded.isEmpty()) {
+            var grid = getLinkedGrid(stack, level, p);
+            if (grid != null) {
+                IStorageService ss = grid.getStorageService();
+                MEStorage meInv = ss.getInventory();
+                IActionSource src = IActionSource.ofPlayer(p);
+                for (var e : stillNeeded.entrySet()) {
+                    AEItemKey key = e.getKey();
+                    long want = e.getValue();
+                    long got = meInv.extract(key, want, Actionable.MODULATE, src);
+                    if (got > 0) {
+                        budget.merge(key, got, Long::sum);
+                        long left = want - got;
+                        if (left <= 0) stillNeeded.remove(key);
+                        else stillNeeded.put(key, left);
+                    }
+                }
+            }
+        }
+
+        if (!stillNeeded.isEmpty() && !level.isClientSide()) {
+            StringBuilder sb = new StringBuilder("Missing (skipping): ");
             int shown = 0;
-            for (var e : missing.entrySet()) {
+            for (var e : stillNeeded.entrySet()) {
                 if (shown++ > 0) sb.append(", ");
                 ResourceLocation rl = nameMap.getOrDefault(e.getKey(), new ResourceLocation("minecraft", "unknown"));
                 sb.append(rl.getPath()).append(" x").append(e.getValue());
-                if (shown >= 3 && missing.size() > shown) { sb.append(", ..."); break; }
+                if (shown >= 3 && stillNeeded.size() > shown) { sb.append(", ..."); break; }
             }
-            if (!level.isClientSide()) {
-                p.displayClientMessage(Component.literal(sb.toString()), true);
-            }
-            return false;
+            p.displayClientMessage(Component.literal(sb.toString()), true);
         }
 
-        for (var e : needed.entrySet()) {
-            AEItemKey key = e.getKey();
-            long want = e.getValue();
-            long got = inv.extract(key, want, Actionable.MODULATE, src);
-            if (got < want && !level.isClientSide()) {
-                ResourceLocation rl = nameMap.getOrDefault(key, new ResourceLocation("minecraft", "unknown"));
-                p.displayClientMessage(Component.literal("Couldn't extract: " + rl + " x" + (want - got)), true);
-                return false;
-            }
-        }
-        return true;
+        return budget;
     }
 
     private void pasteNow(Level level, Player p, ItemStack stack, BlockPos originWorld, Direction pasteFacing) {
@@ -346,21 +360,26 @@ public class PortableAutobuilder extends WirelessTerminalItem implements IMenuIt
 
         Map<AEItemKey, ResourceLocation> prettyNames = new LinkedHashMap<>();
         Map<AEItemKey, Long> needed = computeRequirements(blockInfos, prettyNames);
-        if (!needed.isEmpty()) {
-            boolean ok = checkAndExtractFromME(stack, level, p, needed, prettyNames);
-            if (!ok) return;
-        }
+        Map<AEItemKey, Long> budget = needed.isEmpty()
+                ? new LinkedHashMap<>()
+                : extractAvailable(stack, level, p, needed, prettyNames);
 
         List<Runnable> pasteOps = new ArrayList<>();
         final int[] placedCounter = {0};
         for (TemplateUtil.BlockInfo info : blockInfos) {
             BlockPos wp = localToWorld(info.pos(), originWorld, basis);
             BlockState st = info.state();
+            var item = st.getBlock().asItem();
+            AEItemKey key = (item == Items.AIR) ? null : AEItemKey.of(item);
             pasteOps.add(() -> {
-                if (level.hasChunkAt(wp)) {
-                    level.setBlock(wp, st, 3);
-                    placedCounter[0]++;
+                if (!level.hasChunkAt(wp)) return;
+                if (key != null && !p.isCreative()) {
+                    long remaining = budget.getOrDefault(key, 0L);
+                    if (remaining <= 0) return;
+                    budget.put(key, remaining - 1);
                 }
+                level.setBlock(wp, st, 3);
+                placedCounter[0]++;
             });
         }
 

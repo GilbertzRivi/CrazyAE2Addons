@@ -142,6 +142,6 @@ public class EntityTickerPart extends UpgradeablePart implements IGridTickable, 
 
     @Override
     protected int getUpgradeSlots() {
-        return 8;
+        return CrazyConfig.COMMON.EntityTickerMaxSpeedCards.get();
     }
 }

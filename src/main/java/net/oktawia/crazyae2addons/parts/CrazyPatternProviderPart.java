@@ -19,6 +19,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraftforge.network.PacketDistributor;
 import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.CrazyConfig;
+import net.oktawia.crazyae2addons.IsModLoaded;
+import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.interfaces.IProviderLogicResizable;
@@ -69,7 +71,12 @@ public class CrazyPatternProviderPart extends PatternProviderPart implements IUp
     }
 
     private int added = 0;
-    public IUpgradeInventory upgrades = UpgradeInventories.forMachine(CrazyItemRegistrar.CRAZY_PATTERN_PROVIDER_PART.get(), 1, this::saveChanges);
+    public final IUpgradeInventory upgrades =
+            UpgradeInventories.forMachine(
+                    CrazyItemRegistrar.CRAZY_PATTERN_PROVIDER_PART.get(),
+                    IsModLoaded.isAppFluxLoaded() ? 2 : 1,
+                    this::saveChanges
+            );
 
     public CrazyPatternProviderPart(IPartItem<?> partItem) {
         super(partItem);

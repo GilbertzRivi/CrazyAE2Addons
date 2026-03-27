@@ -6,6 +6,7 @@ import appeng.core.definitions.AEParts;
 import com.glodblock.github.appflux.common.AFItemAndBlock;
 import de.mari_023.ae2wtlib.AE2wtlib;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.IsModLoaded;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
@@ -13,7 +14,7 @@ import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
 public class UpgradeCards {
     public UpgradeCards(final FMLCommonSetupEvent event) {
         event.enqueueWork(() -> {
-            Upgrades.add(AEItems.SPEED_CARD, CrazyItemRegistrar.ENTITY_TICKER_PART_ITEM.get(), 8, "group.entity_ticker.name");
+            Upgrades.add(AEItems.SPEED_CARD, CrazyItemRegistrar.ENTITY_TICKER_PART_ITEM.get(), CrazyConfig.COMMON.EntityTickerMaxSpeedCards.get(), "group.entity_ticker.name");
             Upgrades.add(AEItems.SPEED_CARD, CrazyItemRegistrar.ENERGY_EXPORTER_PART_ITEM.get(), 6, "group.energy_exporter.name");
             Upgrades.add(CrazyItemRegistrar.CIRCUIT_UPGRADE_CARD_ITEM.get(), AEParts.STORAGE_BUS, 1, "group.storage_bus.name");
             Upgrades.add(AEItems.INVERTER_CARD, CrazyItemRegistrar.MOB_FORMATION_PLANE.get(), 1, "group.mob_formation_plane.name");
@@ -34,11 +35,14 @@ public class UpgradeCards {
             Upgrades.add(AEItems.CRAFTING_CARD, CrazyItemRegistrar.PORTABLE_BUILDER.get(), 1, "group.portable_autobuilder.name");
             Upgrades.add(CrazyItemRegistrar.AUTOMATION_UPGRADE_CARD.get(), CrazyBlockRegistrar.CRAZY_PATTERN_PROVIDER_BLOCK.get(), 1, "group.crazy_pattern_provider.name");
             Upgrades.add(CrazyItemRegistrar.PLAYER_UPGRADE_CARD.get(), CrazyBlockRegistrar.CRAZY_PATTERN_PROVIDER_BLOCK.get(), 1, "group.crazy_pattern_provider.name");
+            Upgrades.add(CrazyItemRegistrar.AUTOMATION_UPGRADE_CARD.get(), CrazyItemRegistrar.CRAZY_PATTERN_PROVIDER_PART.get(), 1, "group.crazy_pattern_provider.name");
+            Upgrades.add(CrazyItemRegistrar.PLAYER_UPGRADE_CARD.get(), CrazyItemRegistrar.CRAZY_PATTERN_PROVIDER_PART.get(), 1, "group.crazy_pattern_provider.name");
             Upgrades.add(AEItems.FUZZY_CARD, CrazyItemRegistrar.MULTI_LEVEL_EMITTER_ITEM.get(), 1, "group.multi_level_emitter.name");
             Upgrades.add(AEItems.CRAFTING_CARD, CrazyItemRegistrar.MULTI_LEVEL_EMITTER_ITEM.get(), 1, "group.multi_level_emitter.name");
 
             if (IsModLoaded.isAppFluxLoaded()){
                 Upgrades.add(AFItemAndBlock.INDUCTION_CARD, CrazyBlockRegistrar.CRAZY_PATTERN_PROVIDER_BLOCK.get(), 1, "group.crazy_pattern_provider.name");
+                Upgrades.add(AFItemAndBlock.INDUCTION_CARD, CrazyItemRegistrar.CRAZY_PATTERN_PROVIDER_PART.get(), 1, "group.crazy_pattern_provider.name");
             }
         });
     }

@@ -24,6 +24,7 @@ public class CrazyConfig {
         public final ForgeConfigSpec.BooleanValue enablePeacefullSpawner;
         public final ForgeConfigSpec.BooleanValue enableEntityTicker;
         public final ForgeConfigSpec.IntValue     EntityTickerCost;
+        public final ForgeConfigSpec.IntValue     EntityTickerMaxSpeedCards;
         public final ForgeConfigSpec.ConfigValue<List<? extends String>> EntityTickerBlackList;
         public final ForgeConfigSpec.BooleanValue P2PWormholeNesting;
         public final ForgeConfigSpec.BooleanValue P2PWormholeTeleportation;
@@ -96,6 +97,10 @@ public class CrazyConfig {
             EntityTickerCost = builder
                     .comment("Power cost multiplier for Entity Ticker")
                     .defineInRange("EntityTickerCost", 512, 0, Integer.MAX_VALUE);
+
+            EntityTickerMaxSpeedCards = builder
+                    .comment("Maximum number of speed cards that can be installed in Entity Ticker")
+                    .defineInRange("entityTickerMaxSpeedCards", 8, 0, 8);
 
             EntityTickerBlackList = builder
                     .comment("Blocks on which Entity Ticker should not work")

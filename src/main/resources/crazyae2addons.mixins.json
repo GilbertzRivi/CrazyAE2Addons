@@ -1,0 +1,17 @@
+{
+  "required": true,
+  "package": "net.oktawia.crazyae2addons.mixins",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "MixinPatternProviderLogic",
+    "PatternProviderBlockEntityAccessor",
+    "SlotAccessor",
+    "WidgetContainerAccessor"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}

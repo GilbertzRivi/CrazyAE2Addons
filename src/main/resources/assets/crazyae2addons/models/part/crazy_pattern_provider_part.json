@@ -1,0 +1,6 @@
+{
+  "parent": "ae2:part/cable_pattern_provider",
+  "textures": {
+    "front": "crazyae2addons:block/crazy_pattern_provider"
+  }
+}

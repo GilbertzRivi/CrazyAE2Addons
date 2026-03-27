@@ -1,0 +1,12 @@
+{
+  "parent": "block/cube",
+  "textures": {
+    "particle": "crazyae2addons:block/crazy_pattern_provider",
+    "down": "crazyae2addons:block/crazy_pattern_provider_alternate",
+    "up": "crazyae2addons:block/crazy_pattern_provider_alternate_front",
+    "north": "crazyae2addons:block/crazy_pattern_provider_alternate_arrow",
+    "south": "crazyae2addons:block/crazy_pattern_provider_alternate_arrow",
+    "east": "crazyae2addons:block/crazy_pattern_provider_alternate_arrow",
+    "west": "crazyae2addons:block/crazy_pattern_provider_alternate_arrow"
+  }
+}

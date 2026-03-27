@@ -1,0 +1,33 @@
+{
+  "variants": {
+    "push_direction=all": {
+      "model": "crazyae2addons:block/crazy_pattern_provider"
+    },
+    "push_direction=down": {
+      "model": "crazyae2addons:block/crazy_pattern_provider_oriented",
+      "x": 180
+    },
+    "push_direction=east": {
+      "model": "crazyae2addons:block/crazy_pattern_provider_oriented",
+      "x": 90,
+      "y": 90
+    },
+    "push_direction=north": {
+      "model": "crazyae2addons:block/crazy_pattern_provider_oriented",
+      "x": 90
+    },
+    "push_direction=south": {
+      "model": "crazyae2addons:block/crazy_pattern_provider_oriented",
+      "x": 90,
+      "y": 180
+    },
+    "push_direction=up": {
+      "model": "crazyae2addons:block/crazy_pattern_provider_oriented"
+    },
+    "push_direction=west": {
+      "model": "crazyae2addons:block/crazy_pattern_provider_oriented",
+      "x": 90,
+      "y": 270
+    }
+  }
+}

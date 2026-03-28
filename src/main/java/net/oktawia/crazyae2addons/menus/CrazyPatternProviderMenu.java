@@ -14,6 +14,7 @@ import net.oktawia.crazyae2addons.IsModLoaded;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.entities.CrazyPatternProviderBE;
 import net.oktawia.crazyae2addons.network.packets.UpdatePatternsPacket;
+import net.oktawia.crazyae2addons.parts.CrazyPatternProviderPart;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,17 +38,24 @@ public class CrazyPatternProviderMenu extends PatternProviderMenu {
 
         if (host.getBlockEntity() instanceof CrazyPatternProviderBE crazyBE) {
             this.slotNum = crazyBE.getAdded() * COLS + (8 * COLS);
+        } else if (host instanceof CrazyPatternProviderPart crazyPart) {
+            this.slotNum = crazyPart.getAdded() * COLS + (8 * COLS);
         } else {
             this.slotNum = 8 * COLS;
         }
 
         registerClientAction(SYNC, Integer.class, this::handleRequestUpdate);
 
-        if (!IsModLoaded.isAppFluxLoaded()){
-            if (host.getBlockEntity() instanceof CrazyPatternProviderBE cpp){
-
-                for (int i = 0; i < cpp.getUpgrades().size(); i++) {
-                    var slot = new RestrictedInputSlot(RestrictedInputSlot.PlacableItemType.UPGRADES, cpp.getUpgrades(), i);
+        if (!IsModLoaded.isAppFluxLoaded()) {
+            appeng.api.upgrades.IUpgradeInventory upgradeInv = null;
+            if (host.getBlockEntity() instanceof CrazyPatternProviderBE crazyBE) {
+                upgradeInv = crazyBE.getUpgrades();
+            } else if (host instanceof CrazyPatternProviderPart crazyPart) {
+                upgradeInv = crazyPart.getUpgrades();
+            }
+            if (upgradeInv != null) {
+                for (int i = 0; i < upgradeInv.size(); i++) {
+                    var slot = new RestrictedInputSlot(RestrictedInputSlot.PlacableItemType.UPGRADES, upgradeInv, i);
                     slot.setNotDraggable();
                     this.addSlot(slot, SlotSemantics.UPGRADE);
                 }

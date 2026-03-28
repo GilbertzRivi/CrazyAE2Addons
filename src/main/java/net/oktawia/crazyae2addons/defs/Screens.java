@@ -56,10 +56,10 @@ public final class Screens {
         InitScreens.register(event, CrazyMenuRegistrar.CRAZY_PATTERN_PROVIDER_MENU.get(),
                 CrazyPatternProviderScreen<CrazyPatternProviderMenu>::new,
                 "/screens/crazy_pattern_provider.json");
-//
-//        InitScreens.register(CrazyMenuRegistrar.BROKEN_PATTERN_PROVIDER_MENU.get(),
-//                BrokenPatternProviderScreen<BrokenPatternProviderMenu>::new,
-//                "/screens/broken_pattern_provider.json");
+
+        InitScreens.register(event, CrazyMenuRegistrar.BROKEN_PATTERN_PROVIDER_MENU.get(),
+                BrokenPatternProviderScreen<BrokenPatternProviderMenu>::new,
+                "/screens/broken_pattern_provider.json");
 //
 //        InitScreens.register(CrazyMenuRegistrar.NBT_VIEW_CELL_MENU.get(),
 //                NbtViewCellScreen<NbtViewCellMenu>::new,

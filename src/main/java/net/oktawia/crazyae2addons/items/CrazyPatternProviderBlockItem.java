@@ -2,16 +2,13 @@ package net.oktawia.crazyae2addons.items;
 
 import appeng.block.AEBaseBlockItem;
 import net.minecraft.ChatFormatting;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.block.Block;
-import net.oktawia.crazyae2addons.defs.regs.CrazyDataComponents;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
@@ -23,20 +20,15 @@ public class CrazyPatternProviderBlockItem extends AEBaseBlockItem {
 
     @Override
     public void addCheckedInformation(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag advancedTooltips) {
-        CustomData tag = stack.getOrDefault(CrazyDataComponents.CRAZY_PROVIDER_DATA.get(), CustomData.EMPTY);
-        int addedRows = tag.contains("added") ? tag.copyTag().getInt("added") : 0;
+        CustomData customData = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
+        int addedRows = customData.contains("added") ? customData.copyTag().getInt("added") : 0;
         if (addedRows < 0) addedRows = 0;
-        int totalRows = 8 + addedRows;
-        int totalSlots = totalRows * 9;
+        int totalSlots = (8 + addedRows) * 9;
 
-        int filled = 0;
-        if (tag.contains("dainv")) {
-            ListTag invTag = tag.copyTag().getList("dainv", Tag.TAG_COMPOUND);
-            filled = invTag.size();
-        }
+        int filled = customData.contains("filled") ? customData.copyTag().getInt("filled") : 0;
 
         if (filled > totalSlots) filled = totalSlots;
-        int percent = totalSlots > 0 ? (int)Math.round(100.0 * filled / (double) totalSlots) : 0;
+        int percent = totalSlots > 0 ? (int) Math.round(100.0 * filled / (double) totalSlots) : 0;
 
         tooltip.add(Component.translatable("gui.crazyae2addons.crazy_provider_capacity_tooltip").append(String.valueOf(totalSlots))
                 .withStyle(ChatFormatting.GRAY));

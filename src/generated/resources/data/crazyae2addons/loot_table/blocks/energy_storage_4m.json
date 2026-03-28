@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "bonus_rolls": 0.0,
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        }
+      ],
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "crazyae2addons:energy_storage_4m"
+        }
+      ],
+      "rolls": 1.0
+    }
+  ],
+  "random_sequence": "crazyae2addons:blocks/energy_storage_4m"
+}

@@ -8,6 +8,7 @@ import appeng.api.stacks.AEItemKey;
 import appeng.api.upgrades.IUpgradeInventory;
 import appeng.api.upgrades.IUpgradeableObject;
 import appeng.api.upgrades.UpgradeInventories;
+import appeng.api.ids.AEComponents;
 import appeng.helpers.patternprovider.PatternProviderLogic;
 import appeng.items.parts.PartModels;
 import appeng.menu.ISubMenu;
@@ -16,6 +17,7 @@ import appeng.menu.locator.MenuLocators;
 import appeng.parts.PartModel;
 import appeng.parts.crafting.PatternProviderPart;
 import appeng.util.SettingsFrom;
+import appeng.util.inv.AppEngInternalInventory;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.core.component.DataComponents;
@@ -29,6 +31,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.item.component.ItemContainerContents;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.CrazyConfig;
@@ -168,9 +171,13 @@ public class CrazyPatternProviderPart extends PatternProviderPart implements IUp
     @Override
     public void exportSettings(SettingsFrom mode, DataComponentMap.Builder builder) {
         super.exportSettings(mode, builder);
-        if (mode == SettingsFrom.DISMANTLE_ITEM && added > 0) {
+        if (mode == SettingsFrom.DISMANTLE_ITEM) {
+            var patternContents = ((AppEngInternalInventory) getLogic().getPatternInv()).toItemContainerContents();
+            builder.set(AEComponents.EXPORTED_PATTERNS, patternContents);
+            int filled = (int) patternContents.nonEmptyStream().count();
             var tag = new CompoundTag();
             tag.putInt("added", added);
+            tag.putInt("filled", filled);
             builder.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
         }
     }
@@ -185,12 +192,13 @@ public class CrazyPatternProviderPart extends PatternProviderPart implements IUp
                 var level = getLevel();
                 if (level != null) applySize(level.registryAccess());
             }
+            var patterns = input.getOrDefault(AEComponents.EXPORTED_PATTERNS, ItemContainerContents.EMPTY);
+            ((AppEngInternalInventory) getLogic().getPatternInv()).fromItemContainerContents(patterns);
         }
     }
 
     @Override
     public void addAdditionalDrops(List<ItemStack> drops, boolean wrenched) {
-        super.addAdditionalDrops(drops, wrenched);
         for (int i = 0; i < upgrades.size(); i++) {
             var stack = upgrades.getStackInSlot(i);
             if (!stack.isEmpty()) drops.add(stack);

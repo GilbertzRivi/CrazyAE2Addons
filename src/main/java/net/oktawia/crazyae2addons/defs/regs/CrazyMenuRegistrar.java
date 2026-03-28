@@ -58,9 +58,9 @@ public class CrazyMenuRegistrar {
 //
     public static final DeferredHolder<MenuType<?>, MenuType<CrazyPatternProviderMenu>> CRAZY_PATTERN_PROVIDER_MENU =
             reg("crazy_pattern_provider", CrazyPatternProviderMenu::new, PatternProviderLogicHost.class);
-//
-//    public static final DeferredHolder<MenuType<?>, MenuType<BrokenPatternProviderMenu>> BROKEN_PATTERN_PROVIDER_MENU =
-//            reg("broken_pattern_provider", BrokenPatternProviderMenu::new, PatternProviderLogicHost.class);
+
+    public static final DeferredHolder<MenuType<?>, MenuType<BrokenPatternProviderMenu>> BROKEN_PATTERN_PROVIDER_MENU =
+            reg("broken_pattern_provider", BrokenPatternProviderMenu::new, PatternProviderLogicHost.class);
 //
 //    public static final DeferredHolder<MenuType<?>, MenuType<NbtViewCellMenu>> NBT_VIEW_CELL_MENU =
 //            reg("nbt_view_cell_menu", NbtViewCellMenu::new, ViewCellHost.class);

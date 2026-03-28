@@ -3,8 +3,6 @@ package net.oktawia.crazyae2addons.items;
 import appeng.items.parts.PartItem;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -25,15 +23,8 @@ public class CrazyPatternProviderPartItem extends PartItem<CrazyPatternProviderP
         CustomData data = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
         int addedRows = data.contains("added") ? data.copyTag().getInt("added") : 0;
         if (addedRows < 0) addedRows = 0;
-        int totalRows = 8 + addedRows;
-        int totalSlots = totalRows * 9;
-
-        int filled = 0;
-        if (data.contains("dainv")) {
-            ListTag invTag = data.copyTag().getList("dainv", Tag.TAG_COMPOUND);
-            filled = invTag.size();
-        }
-
+        int totalSlots = (8 + addedRows) * 9;
+        int filled = data.contains("filled") ? data.copyTag().getInt("filled") : 0;
         if (filled > totalSlots) filled = totalSlots;
         int percent = totalSlots > 0 ? (int) Math.round(100.0 * filled / (double) totalSlots) : 0;
 

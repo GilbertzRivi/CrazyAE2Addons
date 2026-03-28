@@ -1,5 +1,7 @@
 package net.oktawia.crazyae2addons;
 
+import appeng.api.AECapabilities;
+import appeng.api.networking.IInWorldGridNodeHost;
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
@@ -8,6 +10,7 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.registries.RegisterEvent;
 import net.oktawia.crazyae2addons.defs.UpgradeCards;
 import net.oktawia.crazyae2addons.defs.regs.*;
@@ -35,6 +38,7 @@ public class CrazyAddons {
 
         modEventBus.addListener(this::onRegister);
         modEventBus.addListener(this::registerCreativeTab);
+        modEventBus.addListener(this::registerCapabilities);
         modEventBus.addListener(NetworkHandler::registerMessages);
     }
 
@@ -52,6 +56,13 @@ public class CrazyAddons {
                     CrazyCreativeTabRegistrar.ID,
                     () -> CrazyCreativeTabRegistrar.TAB
             );
+        }
+    }
+
+    private void registerCapabilities(RegisterCapabilitiesEvent event) {
+        for (var beType : CrazyBlockEntityRegistrar.getEntities()) {
+            event.registerBlockEntity(AECapabilities.IN_WORLD_GRID_NODE_HOST, beType,
+                    (be, ctx) -> be instanceof IInWorldGridNodeHost host ? host : null);
         }
     }
 

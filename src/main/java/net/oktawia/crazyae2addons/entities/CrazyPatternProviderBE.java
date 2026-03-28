@@ -1,5 +1,6 @@
 package net.oktawia.crazyae2addons.entities;
 
+import appeng.api.ids.AEComponents;
 import appeng.api.inventories.ISegmentedInventory;
 import appeng.api.inventories.InternalInventory;
 import appeng.api.stacks.AEItemKey;
@@ -11,13 +12,19 @@ import appeng.helpers.patternprovider.PatternProviderLogic;
 import appeng.menu.ISubMenu;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuHostLocator;
+import appeng.util.SettingsFrom;
+import appeng.util.inv.AppEngInternalInventory;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.component.DataComponentMap;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.CustomData;
+import net.minecraft.world.item.component.ItemContainerContents;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
@@ -135,6 +142,34 @@ public class CrazyPatternProviderBE extends PatternProviderBlockEntity implement
     @Override
     public ItemStack getMainMenuIcon() {
         return CrazyBlockRegistrar.CRAZY_PATTERN_PROVIDER_BLOCK.get().asItem().getDefaultInstance();
+    }
+
+    @Override
+    public void exportSettings(SettingsFrom mode, DataComponentMap.Builder builder, @Nullable Player player) {
+        super.exportSettings(mode, builder, player);
+        if (mode == SettingsFrom.DISMANTLE_ITEM) {
+            var patternContents = ((AppEngInternalInventory) getLogic().getPatternInv()).toItemContainerContents();
+            builder.set(AEComponents.EXPORTED_PATTERNS, patternContents);
+            int filled = (int) patternContents.nonEmptyStream().count();
+            var tag = new CompoundTag();
+            tag.putInt("added", added);
+            tag.putInt("filled", filled);
+            builder.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+        }
+    }
+
+    @Override
+    public void importSettings(SettingsFrom mode, DataComponentMap input, @Nullable Player player) {
+        super.importSettings(mode, input, player);
+        if (mode == SettingsFrom.DISMANTLE_ITEM) {
+            var customData = input.get(DataComponents.CUSTOM_DATA);
+            if (customData != null && customData.contains("added")) {
+                added = customData.copyTag().getInt("added");
+                if (level != null) applySize(level.registryAccess());
+            }
+            var patterns = input.getOrDefault(AEComponents.EXPORTED_PATTERNS, ItemContainerContents.EMPTY);
+            ((AppEngInternalInventory) getLogic().getPatternInv()).fromItemContainerContents(patterns);
+        }
     }
 
     @Override

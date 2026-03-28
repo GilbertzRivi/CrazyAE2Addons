@@ -5,6 +5,7 @@ import appeng.blockentity.crafting.PatternProviderBlockEntity;
 import appeng.menu.locator.MenuLocators;
 import appeng.util.InteractionUtil;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -105,8 +106,21 @@ public class CrazyPatternProviderBlock extends PatternProviderBlock {
             tag.putInt("added", myBe.getAdded());
             myBe.getLogic().writeToNBT(tag, be.getLevel().registryAccess());
             myBe.getUpgrades().writeToNBT(tag, "upgrades", be.getLevel().registryAccess());
+
+            int filled = 0;
+            var patternInv = myBe.getLogic().getPatternInv();
+            for (int i = 0; i < patternInv.size(); i++) {
+                if (!patternInv.getStackInSlot(i).isEmpty()) filled++;
+            }
+            tag.putInt("filled", filled);
+
             stack.set(CrazyDataComponents.CRAZY_PROVIDER_DATA.get(), CustomData.of(tag));
-            myBe.getLogic().getPatternInv().clear();
+
+            var tooltipTag = new CompoundTag();
+            tooltipTag.putInt("added", myBe.getAdded());
+            tooltipTag.putInt("filled", filled);
+            stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tooltipTag));
+
             return List.of(stack);
         }
         return super.getDrops(state, builder);

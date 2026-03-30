@@ -36,6 +36,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.IsModLoaded;
+import net.oktawia.crazyae2addons.defs.LangDefs;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.interfaces.IProviderLogicResizable;
@@ -123,7 +124,7 @@ public class CrazyPatternProviderPart extends PatternProviderPart implements IUp
             if (!isClientSide()) {
                 int maxAdd = CrazyConfig.COMMON.CrazyProviderMaxAddRows.get();
                 if (maxAdd != -1 && added >= maxAdd) {
-                    player.displayClientMessage(Component.translatable("gui.crazyae2addons.provider_max"), true);
+                    player.displayClientMessage(Component.translatable(LangDefs.PROVIDER_MAX.getTranslationKey()), true);
                     return true;
                 }
                 heldItem.shrink(1);

@@ -19,6 +19,11 @@ public class CrazyConfig {
 
         public final ModConfigSpec.IntValue CrazyProviderMaxAddRows;
 
+        public final ModConfigSpec.IntValue AutobuilderPreviewLimit;
+        public final ModConfigSpec.DoubleValue AutobuilderCostMult;
+        public final ModConfigSpec.IntValue AutobuilderSpeed;
+        public final ModConfigSpec.IntValue AutobuilderMineDelay;
+
         public Common(ModConfigSpec.Builder builder) {
             builder.comment("Crazy AE2 Addons - Config").push("general");
             builder.push("Features");
@@ -34,6 +39,22 @@ public class CrazyConfig {
             CrazyProviderMaxAddRows = builder
                     .comment("How many times player can upgrade the provider; -1 to disable limit")
                     .defineInRange("crazyProviderMaxAddRows", -1, -1, Integer.MAX_VALUE);
+
+            AutobuilderPreviewLimit = builder
+                    .comment("Max number of blocks shown in AutoBuilder preview")
+                    .defineInRange("autobuilderPreviewLimit", 4096, 1, Integer.MAX_VALUE);
+
+            AutobuilderCostMult = builder
+                    .comment("Energy cost multiplier per block placed/mined by AutoBuilder")
+                    .defineInRange("autobuilderCostMult", 1.0, 0.0, Double.MAX_VALUE);
+
+            AutobuilderSpeed = builder
+                    .comment("Ticks of delay between AutoBuilder build steps (base)")
+                    .defineInRange("autobuilderSpeed", 20, 1, Integer.MAX_VALUE);
+
+            AutobuilderMineDelay = builder
+                    .comment("Extra tick delay after mining a block")
+                    .defineInRange("autobuilderMineDelay", 1, 1, Integer.MAX_VALUE);
 
             builder.pop();
         }

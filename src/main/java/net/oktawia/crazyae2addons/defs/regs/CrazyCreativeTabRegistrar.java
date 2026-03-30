@@ -9,13 +9,14 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.oktawia.crazyae2addons.CrazyAddons;
+import net.oktawia.crazyae2addons.defs.LangDefs;
 
 public final class CrazyCreativeTabRegistrar {
 
     public static final ResourceLocation ID = CrazyAddons.makeId("tab");
 
     public static final CreativeModeTab TAB = CreativeModeTab.builder()
-            .title(Component.literal("Crazy AE2 Addons"))
+            .title(Component.translatable(LangDefs.MOD_NAME.getTranslationKey()))
             .icon(() -> new ItemStack(CrazyBlockRegistrar.CRAZY_PATTERN_PROVIDER_BLOCK.get()))
             .displayItems(CrazyCreativeTabRegistrar::populate)
             .build();

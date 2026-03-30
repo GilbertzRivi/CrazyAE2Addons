@@ -9,7 +9,10 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.oktawia.crazyae2addons.CrazyAddons;
+import net.oktawia.crazyae2addons.blocks.AutoBuilderBlock;
+import net.oktawia.crazyae2addons.blocks.AutoBuilderCreativeSupplyBlock;
 import net.oktawia.crazyae2addons.blocks.BrokenPatternProviderBlock;
+import net.oktawia.crazyae2addons.blocks.CraftingSchedulerBlock;
 import net.oktawia.crazyae2addons.blocks.CrazyPatternProviderBlock;
 import net.oktawia.crazyae2addons.blocks.EnergyStorageBlock;
 import net.oktawia.crazyae2addons.items.CrazyPatternProviderBlockItem;
@@ -46,6 +49,13 @@ public class CrazyBlockRegistrar {
     public static final DeferredItem<BlockItem> BROKEN_PATTERN_PROVIDER_BLOCK_ITEM =
             BLOCK_ITEMS.register("broken_pattern_provider",
                     () -> new BlockItem(BROKEN_PATTERN_PROVIDER_BLOCK.get(), new Item.Properties()));
+
+    public static final DeferredBlock<CraftingSchedulerBlock> CRAFTING_SCHEDULER_BLOCK =
+            BLOCKS.register("crafting_scheduler", CraftingSchedulerBlock::new);
+
+    public static final DeferredItem<BlockItem> CRAFTING_SCHEDULER_BLOCK_ITEM =
+            BLOCK_ITEMS.register("crafting_scheduler",
+                    () -> new BlockItem(CRAFTING_SCHEDULER_BLOCK.get(), new Item.Properties()));
 
     public static final DeferredBlock<EnergyStorageBlock> ENERGY_STORAGE_1K =
             BLOCKS.register("energy_storage_1k", () -> new EnergyStorageBlock(1024L * 1024 * 8));
@@ -116,6 +126,20 @@ public class CrazyBlockRegistrar {
     public static final DeferredItem<Item> ENERGY_STORAGE_256M_ITEM =
             BLOCK_ITEMS.register("energy_storage_256m",
                     () -> new EnergyCellBlockItem(ENERGY_STORAGE_256M.get(), new Item.Properties()));
+
+    public static final DeferredBlock<AutoBuilderCreativeSupplyBlock> AUTO_BUILDER_CREATIVE_SUPPLY_BLOCK =
+            BLOCKS.register("auto_builder_creative_supply", AutoBuilderCreativeSupplyBlock::new);
+
+    public static final DeferredItem<BlockItem> AUTO_BUILDER_CREATIVE_SUPPLY_BLOCK_ITEM =
+            BLOCK_ITEMS.register("auto_builder_creative_supply",
+                    () -> new BlockItem(AUTO_BUILDER_CREATIVE_SUPPLY_BLOCK.get(), new Item.Properties()));
+
+    public static final DeferredBlock<AutoBuilderBlock> AUTO_BUILDER_BLOCK =
+            BLOCKS.register("auto_builder", AutoBuilderBlock::new);
+
+    public static final DeferredItem<BlockItem> AUTO_BUILDER_BLOCK_ITEM =
+            BLOCK_ITEMS.register("auto_builder",
+                    () -> new BlockItem(AUTO_BUILDER_BLOCK.get(), new Item.Properties()));
 
 
     private CrazyBlockRegistrar() {}

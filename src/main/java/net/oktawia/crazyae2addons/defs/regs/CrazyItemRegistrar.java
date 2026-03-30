@@ -9,6 +9,7 @@ import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.oktawia.crazyae2addons.CrazyAddons;
+import net.oktawia.crazyae2addons.items.BuilderPatternItem;
 import net.oktawia.crazyae2addons.items.CrazyPatternProviderPartItem;
 
 import java.util.List;
@@ -91,6 +92,9 @@ public class CrazyItemRegistrar {
 
     public static final DeferredItem<Item> CRAZY_UPGRADE =
             ITEMS.register("crazy_upgrade", () -> new Item(new Item.Properties()));
+
+    public static final DeferredItem<BuilderPatternItem> BUILDER_PATTERN =
+            ITEMS.register("builder_pattern", () -> new BuilderPatternItem(new Item.Properties().stacksTo(1)));
 //
 //    // =========================================================
 //

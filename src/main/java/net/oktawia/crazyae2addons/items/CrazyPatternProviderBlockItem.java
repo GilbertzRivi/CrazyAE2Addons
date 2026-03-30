@@ -9,6 +9,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.block.Block;
+import net.oktawia.crazyae2addons.defs.LangDefs;
 
 import java.util.List;
 
@@ -30,7 +31,7 @@ public class CrazyPatternProviderBlockItem extends AEBaseBlockItem {
         if (filled > totalSlots) filled = totalSlots;
         int percent = totalSlots > 0 ? (int) Math.round(100.0 * filled / (double) totalSlots) : 0;
 
-        tooltip.add(Component.translatable("gui.crazyae2addons.crazy_provider_capacity_tooltip").append(String.valueOf(totalSlots))
+        tooltip.add(Component.translatable(LangDefs.CRAZY_PROVIDER_CAPACITY_TOOLTIP.getTranslationKey()).append(String.valueOf(totalSlots))
                 .withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.literal("(" + percent + "%)")
                 .withStyle(ChatFormatting.AQUA));

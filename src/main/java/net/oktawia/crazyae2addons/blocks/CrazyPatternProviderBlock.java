@@ -25,6 +25,7 @@ import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.BlockHitResult;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.oktawia.crazyae2addons.CrazyConfig;
+import net.oktawia.crazyae2addons.defs.LangDefs;
 import net.oktawia.crazyae2addons.defs.regs.CrazyDataComponents;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
 import net.oktawia.crazyae2addons.entities.CrazyPatternProviderBE;
@@ -61,7 +62,7 @@ public class CrazyPatternProviderBlock extends PatternProviderBlock {
                 int cur = provider.getAdded();
                 if (maxAdd != -1 && cur >= maxAdd) {
                     player.displayClientMessage(
-                            Component.translatable("gui.crazyae2addons.provider_max"),
+                            Component.translatable(LangDefs.PROVIDER_MAX.getTranslationKey()),
                             true
                     );
                     return ItemInteractionResult.sidedSuccess(false);

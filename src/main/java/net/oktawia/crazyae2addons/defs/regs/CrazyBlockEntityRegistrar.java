@@ -8,7 +8,10 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.oktawia.crazyae2addons.CrazyAddons;
+import net.oktawia.crazyae2addons.entities.AutoBuilderBE;
+import net.oktawia.crazyae2addons.entities.AutoBuilderCreativeSupplyBE;
 import net.oktawia.crazyae2addons.entities.BrokenPatternProviderBE;
+import net.oktawia.crazyae2addons.entities.CraftingSchedulerBE;
 import net.oktawia.crazyae2addons.entities.CrazyPatternProviderBE;
 import net.oktawia.crazyae2addons.entities.EnergyStorageBE;
 
@@ -72,6 +75,9 @@ public class CrazyBlockEntityRegistrar {
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<BrokenPatternProviderBE>> BROKEN_PATTERN_PROVIDER_BE =
             reg("broken_pattern_provider_be", CrazyBlockRegistrar.BROKEN_PATTERN_PROVIDER_BLOCK, BrokenPatternProviderBE::new, BrokenPatternProviderBE.class);
 
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CraftingSchedulerBE>> CRAFTING_SCHEDULER_BE =
+            reg("crafting_scheduler_be", CrazyBlockRegistrar.CRAFTING_SCHEDULER_BLOCK, CraftingSchedulerBE::new, CraftingSchedulerBE.class);
+
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<EnergyStorageBE>> ENERGY_STORAGE_BE =
             regMulti("energy_storage_be", EnergyStorageBE::new, EnergyStorageBE.class,
                     CrazyBlockRegistrar.ENERGY_STORAGE_1K,
@@ -85,6 +91,12 @@ public class CrazyBlockEntityRegistrar {
                     CrazyBlockRegistrar.ENERGY_STORAGE_64M,
                     CrazyBlockRegistrar.ENERGY_STORAGE_256M
             );
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<AutoBuilderCreativeSupplyBE>> AUTO_BUILDER_CREATIVE_SUPPLY_BE =
+            reg("auto_builder_creative_supply_be", CrazyBlockRegistrar.AUTO_BUILDER_CREATIVE_SUPPLY_BLOCK, AutoBuilderCreativeSupplyBE::new, AutoBuilderCreativeSupplyBE.class);
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<AutoBuilderBE>> AUTO_BUILDER_BE =
+            reg("auto_builder_be", CrazyBlockRegistrar.AUTO_BUILDER_BLOCK, AutoBuilderBE::new, AutoBuilderBE.class);
 
 
     public static void setupBlockEntityTypes() {

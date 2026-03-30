@@ -37,10 +37,18 @@ public final class Screens {
 //                EjectorScreen<EjectorMenu>::new,
 //                "/screens/ejector.json");
 //
-//        InitScreens.register(CrazyMenuRegistrar.CRAFTING_SCHEDULER_MENU.get(),
-//                CraftingSchedulerScreen<CraftingSchedulerMenu>::new,
-//                "/screens/crafting_scheduler.json");
-//
+  InitScreens.register(event, CrazyMenuRegistrar.CRAFTING_SCHEDULER_MENU.get(),
+                CraftingSchedulerScreen<CraftingSchedulerMenu>::new,
+                "/screens/crafting_scheduler.json");
+
+        InitScreens.register(event, CrazyMenuRegistrar.AUTO_BUILDER_MENU.get(),
+                AutoBuilderScreen<AutoBuilderMenu>::new,
+                "/screens/auto_builder.json");
+
+        InitScreens.register(event, CrazyMenuRegistrar.BUILDER_PATTERN_MENU.get(),
+                BuilderPatternScreen<BuilderPatternMenu>::new,
+                "/screens/builder_pattern.json");
+
 //        InitScreens.register(CrazyMenuRegistrar.REDSTONE_EMITTER_MENU.get(),
 //                RedstoneEmitterScreen<RedstoneEmitterMenu>::new,
 //                "/screens/redstone_emitter.json");

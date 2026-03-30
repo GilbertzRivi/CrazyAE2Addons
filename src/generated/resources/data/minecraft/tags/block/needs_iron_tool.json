@@ -2,6 +2,7 @@
   "values": [
     "crazyae2addons:crazy_pattern_provider",
     "crazyae2addons:broken_pattern_provider",
+    "crazyae2addons:crafting_scheduler",
     "crazyae2addons:energy_storage_1k",
     "crazyae2addons:energy_storage_4k",
     "crazyae2addons:energy_storage_16k",
@@ -11,6 +12,8 @@
     "crazyae2addons:energy_storage_4m",
     "crazyae2addons:energy_storage_16m",
     "crazyae2addons:energy_storage_64m",
-    "crazyae2addons:energy_storage_256m"
+    "crazyae2addons:energy_storage_256m",
+    "crazyae2addons:auto_builder_creative_supply",
+    "crazyae2addons:auto_builder"
   ]
 }

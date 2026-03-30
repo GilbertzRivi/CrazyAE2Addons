@@ -8,7 +8,12 @@ import net.minecraft.world.inventory.MenuType;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.oktawia.crazyae2addons.CrazyAddons;
+import net.oktawia.crazyae2addons.entities.AutoBuilderBE;
+import net.oktawia.crazyae2addons.entities.CraftingSchedulerBE;
+import net.oktawia.crazyae2addons.logic.BuilderPatternHost;
 import net.oktawia.crazyae2addons.menus.*;
+import net.oktawia.crazyae2addons.menus.AutoBuilderMenu;
+import net.oktawia.crazyae2addons.menus.CraftingSchedulerMenu;
 
 public class CrazyMenuRegistrar {
 
@@ -47,9 +52,15 @@ public class CrazyMenuRegistrar {
 //    public static final DeferredHolder<MenuType<?>, MenuType<EjectorMenu>> EJECTOR_MENU =
 //            reg("ejector", EjectorMenu::new, EjectorBE.class);
 //
-//    public static final DeferredHolder<MenuType<?>, MenuType<CraftingSchedulerMenu>> CRAFTING_SCHEDULER_MENU =
-//            reg("crafting_scheduler", CraftingSchedulerMenu::new, CraftingSchedulerBE.class);
-//
+  public static final DeferredHolder<MenuType<?>, MenuType<CraftingSchedulerMenu>> CRAFTING_SCHEDULER_MENU =
+            reg("crafting_scheduler", CraftingSchedulerMenu::new, CraftingSchedulerBE.class);
+
+    public static final DeferredHolder<MenuType<?>, MenuType<AutoBuilderMenu>> AUTO_BUILDER_MENU =
+            reg("auto_builder", AutoBuilderMenu::new, AutoBuilderBE.class);
+
+    public static final DeferredHolder<MenuType<?>, MenuType<BuilderPatternMenu>> BUILDER_PATTERN_MENU =
+            reg("builder_pattern", BuilderPatternMenu::new, BuilderPatternHost.class);
+
 //    public static final DeferredHolder<MenuType<?>, MenuType<RedstoneEmitterMenu>> REDSTONE_EMITTER_MENU =
 //            reg("redstone_emitter", RedstoneEmitterMenu::new, RedstoneEmitterPart.class);
 //

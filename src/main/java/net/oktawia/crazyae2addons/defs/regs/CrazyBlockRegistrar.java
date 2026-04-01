@@ -9,11 +9,13 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.oktawia.crazyae2addons.CrazyAddons;
+import net.oktawia.crazyae2addons.blocks.AmpereMeterBlock;
 import net.oktawia.crazyae2addons.blocks.AutoBuilderBlock;
 import net.oktawia.crazyae2addons.blocks.AutoBuilderCreativeSupplyBlock;
 import net.oktawia.crazyae2addons.blocks.BrokenPatternProviderBlock;
 import net.oktawia.crazyae2addons.blocks.CraftingSchedulerBlock;
 import net.oktawia.crazyae2addons.blocks.CrazyPatternProviderBlock;
+import net.oktawia.crazyae2addons.blocks.EjectorBlock;
 import net.oktawia.crazyae2addons.blocks.EnergyStorageBlock;
 import net.oktawia.crazyae2addons.items.CrazyPatternProviderBlockItem;
 
@@ -141,6 +143,19 @@ public class CrazyBlockRegistrar {
             BLOCK_ITEMS.register("auto_builder",
                     () -> new BlockItem(AUTO_BUILDER_BLOCK.get(), new Item.Properties()));
 
+    public static final DeferredBlock<AmpereMeterBlock> AMPERE_METER_BLOCK =
+            BLOCKS.register("ampere_meter", AmpereMeterBlock::new);
+
+    public static final DeferredItem<BlockItem> AMPERE_METER_BLOCK_ITEM =
+            BLOCK_ITEMS.register("ampere_meter",
+                    () -> new BlockItem(AMPERE_METER_BLOCK.get(), new Item.Properties()));
+
+    public static final DeferredBlock<EjectorBlock> EJECTOR_BLOCK =
+            BLOCKS.register("ejector", EjectorBlock::new);
+
+    public static final DeferredItem<BlockItem> EJECTOR_BLOCK_ITEM =
+            BLOCK_ITEMS.register("ejector",
+                    () -> new appeng.block.AEBaseBlockItem(EJECTOR_BLOCK.get(), new Item.Properties()));
 
     private CrazyBlockRegistrar() {}
 }

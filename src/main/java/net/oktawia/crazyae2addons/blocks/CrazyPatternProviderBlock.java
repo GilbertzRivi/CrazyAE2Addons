@@ -5,7 +5,6 @@ import appeng.blockentity.crafting.PatternProviderBlockEntity;
 import appeng.menu.locator.MenuLocators;
 import appeng.util.InteractionUtil;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -27,6 +26,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.defs.LangDefs;
 import net.oktawia.crazyae2addons.defs.regs.CrazyDataComponents;
+import net.oktawia.crazyae2addons.defs.components.CrazyProviderDisplayData;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
 import net.oktawia.crazyae2addons.entities.CrazyPatternProviderBE;
 import net.oktawia.crazyae2addons.network.packets.SyncBlockClientPacket;
@@ -117,10 +117,8 @@ public class CrazyPatternProviderBlock extends PatternProviderBlock {
 
             stack.set(CrazyDataComponents.CRAZY_PROVIDER_DATA.get(), CustomData.of(tag));
 
-            var tooltipTag = new CompoundTag();
-            tooltipTag.putInt("added", myBe.getAdded());
-            tooltipTag.putInt("filled", filled);
-            stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tooltipTag));
+            stack.set(CrazyDataComponents.CRAZY_PROVIDER_DISPLAY.get(),
+                    new CrazyProviderDisplayData(myBe.getAdded(), filled));
 
             return List.of(stack);
         }

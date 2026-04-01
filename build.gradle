@@ -25,6 +25,33 @@ repositories {
         name = "Modrinth"
         url = "https://api.modrinth.com/maven"
     }
+    maven {
+        name = 'GTCEu Maven'
+        url = 'https://maven.gtceu.com'
+        content {
+            includeGroup 'com.gregtechceu.gtceu'
+        }
+    }
+    maven {
+        name = "firstdarkdev"
+        url = "https://maven.firstdarkdev.xyz/snapshots"
+        content {
+            includeGroup 'com.lowdragmc.ldlib'
+        }
+    }
+    maven {
+        url = "https://mvn.devos.one/snapshots/"
+        content {
+            includeGroup "com.tterrag.registrate"
+        }
+    }
+    maven {
+        url = "https://repo.repsy.io/mvn/toma/public"
+        content {
+            includeGroup "dev.toma.configuration"
+        }
+    }
+
 }
 
 base {
@@ -93,8 +120,14 @@ dependencies {
 
     compileOnly "maven.modrinth:applied-energistics-2-wireless-terminals:19.3.0"
     compileOnly "maven.modrinth:advancedae:1.6.9-1.21.1"
+    compileOnly "com.gregtechceu.gtceu:gtceu-1.21.1:7.5.0-SNAPSHOT"
 
     // END OF REQUIRED
+
+    // Gregtech
+    implementation "com.gregtechceu.gtceu:gtceu-1.21.1:7.5.0-SNAPSHOT"
+    implementation "maven.modrinth:kubejs:8nuqyxbw"
+    implementation "maven.modrinth:rhino:ZdLtebKH"
 
     implementation "maven.modrinth:jade:15.10.4+neoforge"
     implementation "maven.modrinth:jei:YAcQ6elZ"
@@ -130,6 +163,12 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
 
 sourceSets.main.resources.srcDir generateModMetadata
 neoForge.ideSyncTask generateModMetadata
+
+afterEvaluate {
+    tasks.named('runData').configure {
+        classpath = classpath.filter { file -> !file.absolutePath.contains('gtceu') && !file.absolutePath.contains('ldlib') && !file.absolutePath.contains('registrate') }
+    }
+}
 
 publishing {
     publications {

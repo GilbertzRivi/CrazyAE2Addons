@@ -2,9 +2,12 @@ package net.oktawia.crazyae2addons.defs;
 
 import appeng.init.client.InitScreens;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
+import net.oktawia.crazyae2addons.defs.LangDefs;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.menus.*;
 import net.oktawia.crazyae2addons.client.screens.*;
+import net.oktawia.crazyae2addons.client.screens.AmpereMeterScreen;
+import net.oktawia.crazyae2addons.client.screens.EjectorScreen;
 
 public final class Screens {
 
@@ -33,10 +36,15 @@ public final class Screens {
 //                CrazyEmitterMultiplierScreen<CrazyEmitterMultiplierMenu>::new,
 //                "/screens/crazy_emitter_multiplier.json");
 //
-//        InitScreens.register(CrazyMenuRegistrar.EJECTOR_MENU.get(),
-//                EjectorScreen<EjectorMenu>::new,
-//                "/screens/ejector.json");
-//
+        InitScreens.register(event, CrazyMenuRegistrar.EJECTOR_MENU.get(),
+                EjectorScreen<EjectorMenu>::new,
+                "/screens/ejector.json");
+
+
+        InitScreens.register(event, CrazyMenuRegistrar.AMPERE_METER_MENU.get(),
+                AmpereMeterScreen<AmpereMeterMenu>::new,
+                "/screens/ampere_meter.json");
+
   InitScreens.register(event, CrazyMenuRegistrar.CRAFTING_SCHEDULER_MENU.get(),
                 CraftingSchedulerScreen<CraftingSchedulerMenu>::new,
                 "/screens/crafting_scheduler.json");

@@ -10,6 +10,8 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.neoforge.capabilities.BlockCapability;
+import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.registries.RegisterEvent;
 import net.oktawia.crazyae2addons.defs.UpgradeCards;
@@ -63,6 +65,18 @@ public class CrazyAddons {
         for (var beType : CrazyBlockEntityRegistrar.getEntities()) {
             event.registerBlockEntity(AECapabilities.IN_WORLD_GRID_NODE_HOST, beType,
                     (be, ctx) -> be instanceof IInWorldGridNodeHost host ? host : null);
+        }
+
+        BlockCapability<net.neoforged.neoforge.energy.IEnergyStorage, net.minecraft.core.Direction> ENERGY_STORAGE = Capabilities.EnergyStorage.BLOCK;
+
+        event.registerBlockEntity(ENERGY_STORAGE,
+                net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar.AMPERE_METER_BE.get(),
+                (be, dir) -> be instanceof net.oktawia.crazyae2addons.entities.AmpereMeterBE ampereMeter ? ampereMeter.getEnergyStorage(dir) : null);
+
+        if (IsModLoaded.isGTCEuLoaded()) {
+            event.registerBlockEntity(com.gregtechceu.gtceu.api.capability.GTCapability.CAPABILITY_ENERGY_CONTAINER,
+                    net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar.AMPERE_METER_BE.get(),
+                    (be, dir) -> be instanceof net.oktawia.crazyae2addons.compat.gtceu.GTAmpereMeterBE gt ? gt.euLogic : null);
         }
     }
 

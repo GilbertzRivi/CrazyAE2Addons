@@ -40,7 +40,16 @@ public enum LangDefs implements LocalizationEnum {
     CORNER_SET_B("gui.crazyae2addons.corner_set_b", "Corner B set (origin)"),
     CORNER_RESET("gui.crazyae2addons.corner_reset", "Corners reset"),
     ENERGY_NEEDED("gui.crazyae2addons.energy_needed", "Energy needed: "),
-    NOTHING("gui.crazyae2addons.nothing", "nothing");
+    NOTHING("gui.crazyae2addons.nothing", "nothing"),
+    AMPERE_METER_DIRECTION_LEFT_TO_RIGHT("gui.crazyae2addons.ampere_meter_direction_left_to_right", "Send power from left to right"),
+    AMPERE_METER_DIRECTION_RIGHT_TO_LEFT("gui.crazyae2addons.ampere_meter_direction_right_to_left", "Send power from right to left"),
+    MIN("gui.crazyae2addons.min", "Min"),
+    MAX("gui.crazyae2addons.max", "Max"),
+    FE_PER_TICK("gui.crazyae2addons.fe_per_tick", "FE/t"),
+    FE_PER_TICK_OR_AMPERES("gui.crazyae2addons.fe_per_tick_or_amperes", "FE/t or Amperes"),
+    CONFIG("gui.crazyae2addons.config", "Config"),
+    EJECTOR_LOAD_PATTERN("gui.crazyae2addons.ejector_load_pattern", "Load settings from pattern"),
+    EJECTOR_MIDDLE_CLICK("gui.crazyae2addons.ejector_middle_click", "Middle mouse button to set amount");
 
     private final String key;
     private final String value;

@@ -2,14 +2,14 @@ package net.oktawia.crazyae2addons.items;
 
 import appeng.block.AEBaseBlockItem;
 import net.minecraft.ChatFormatting;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.block.Block;
 import net.oktawia.crazyae2addons.defs.LangDefs;
+import net.oktawia.crazyae2addons.defs.regs.CrazyDataComponents;
+import net.oktawia.crazyae2addons.defs.components.CrazyProviderDisplayData;
 
 import java.util.List;
 
@@ -21,14 +21,10 @@ public class CrazyPatternProviderBlockItem extends AEBaseBlockItem {
 
     @Override
     public void addCheckedInformation(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag advancedTooltips) {
-        CustomData customData = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY);
-        int addedRows = customData.contains("added") ? customData.copyTag().getInt("added") : 0;
-        if (addedRows < 0) addedRows = 0;
+        var data = stack.getOrDefault(CrazyDataComponents.CRAZY_PROVIDER_DISPLAY.get(), CrazyProviderDisplayData.DEFAULT);
+        int addedRows = Math.max(0, data.added());
         int totalSlots = (8 + addedRows) * 9;
-
-        int filled = customData.contains("filled") ? customData.copyTag().getInt("filled") : 0;
-
-        if (filled > totalSlots) filled = totalSlots;
+        int filled = Math.min(data.filled(), totalSlots);
         int percent = totalSlots > 0 ? (int) Math.round(100.0 * filled / (double) totalSlots) : 0;
 
         tooltip.add(Component.translatable(LangDefs.CRAZY_PROVIDER_CAPACITY_TOOLTIP.getTranslationKey()).append(String.valueOf(totalSlots))

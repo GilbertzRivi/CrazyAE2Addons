@@ -4,4 +4,5 @@ import net.neoforged.fml.ModList;
 
 public class IsModLoaded {
     public static boolean isAppFluxLoaded() { return ModList.get().isLoaded("appflux"); }
+    public static boolean isGTCEuLoaded() { return ModList.get().isLoaded("gtceu"); }
 }

@@ -8,11 +8,13 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.oktawia.crazyae2addons.CrazyAddons;
+import net.oktawia.crazyae2addons.entities.AmpereMeterBE;
 import net.oktawia.crazyae2addons.entities.AutoBuilderBE;
 import net.oktawia.crazyae2addons.entities.AutoBuilderCreativeSupplyBE;
 import net.oktawia.crazyae2addons.entities.BrokenPatternProviderBE;
 import net.oktawia.crazyae2addons.entities.CraftingSchedulerBE;
 import net.oktawia.crazyae2addons.entities.CrazyPatternProviderBE;
+import net.oktawia.crazyae2addons.entities.EjectorBE;
 import net.oktawia.crazyae2addons.entities.EnergyStorageBE;
 
 import java.util.ArrayList;
@@ -97,6 +99,16 @@ public class CrazyBlockEntityRegistrar {
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<AutoBuilderBE>> AUTO_BUILDER_BE =
             reg("auto_builder_be", CrazyBlockRegistrar.AUTO_BUILDER_BLOCK, AutoBuilderBE::new, AutoBuilderBE.class);
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<EjectorBE>> EJECTOR_BE =
+            reg("ejector_be", CrazyBlockRegistrar.EJECTOR_BLOCK, EjectorBE::new, EjectorBE.class);
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<AmpereMeterBE>> AMPERE_METER_BE =
+            reg("ampere_meter_be", CrazyBlockRegistrar.AMPERE_METER_BLOCK,
+                    (pos, state) -> net.oktawia.crazyae2addons.IsModLoaded.isGTCEuLoaded()
+                            ? new net.oktawia.crazyae2addons.compat.gtceu.GTAmpereMeterBE(pos, state)
+                            : new AmpereMeterBE(pos, state),
+                    AmpereMeterBE.class);
 
 
     public static void setupBlockEntityTypes() {

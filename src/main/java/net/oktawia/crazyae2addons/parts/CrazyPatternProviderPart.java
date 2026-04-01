@@ -20,7 +20,6 @@ import appeng.util.SettingsFrom;
 import appeng.util.inv.AppEngInternalInventory;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.component.DataComponentMap;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -28,7 +27,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.CustomData;
+import net.oktawia.crazyae2addons.defs.regs.CrazyDataComponents;
+import net.oktawia.crazyae2addons.defs.components.CrazyProviderDisplayData;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.item.component.ItemContainerContents;
@@ -176,10 +176,7 @@ public class CrazyPatternProviderPart extends PatternProviderPart implements IUp
             var patternContents = ((AppEngInternalInventory) getLogic().getPatternInv()).toItemContainerContents();
             builder.set(AEComponents.EXPORTED_PATTERNS, patternContents);
             int filled = (int) patternContents.nonEmptyStream().count();
-            var tag = new CompoundTag();
-            tag.putInt("added", added);
-            tag.putInt("filled", filled);
-            builder.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+            builder.set(CrazyDataComponents.CRAZY_PROVIDER_DISPLAY.get(), new CrazyProviderDisplayData(added, filled));
         }
     }
 
@@ -187,9 +184,9 @@ public class CrazyPatternProviderPart extends PatternProviderPart implements IUp
     public void importSettings(SettingsFrom mode, DataComponentMap input, @Nullable Player player) {
         super.importSettings(mode, input, player);
         if (mode == SettingsFrom.DISMANTLE_ITEM) {
-            var customData = input.get(DataComponents.CUSTOM_DATA);
-            if (customData != null && customData.contains("added")) {
-                added = customData.copyTag().getInt("added");
+            var display = input.get(CrazyDataComponents.CRAZY_PROVIDER_DISPLAY.get());
+            if (display != null) {
+                added = display.added();
                 var level = getLevel();
                 if (level != null) applySize(level.registryAccess());
             }

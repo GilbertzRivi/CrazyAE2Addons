@@ -8,10 +8,13 @@ import net.minecraft.world.inventory.MenuType;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.oktawia.crazyae2addons.CrazyAddons;
+import net.oktawia.crazyae2addons.entities.AmpereMeterBE;
 import net.oktawia.crazyae2addons.entities.AutoBuilderBE;
 import net.oktawia.crazyae2addons.entities.CraftingSchedulerBE;
+import net.oktawia.crazyae2addons.entities.EjectorBE;
 import net.oktawia.crazyae2addons.logic.BuilderPatternHost;
 import net.oktawia.crazyae2addons.menus.*;
+import net.oktawia.crazyae2addons.menus.AmpereMeterMenu;
 import net.oktawia.crazyae2addons.menus.AutoBuilderMenu;
 import net.oktawia.crazyae2addons.menus.CraftingSchedulerMenu;
 
@@ -40,18 +43,19 @@ public class CrazyMenuRegistrar {
 //    public static final DeferredHolder<MenuType<?>, MenuType<DisplayMenu>> DISPLAY_MENU =
 //            reg("display", DisplayMenu::new, DisplayPart.class);
 //
-//    public static final DeferredHolder<MenuType<?>, MenuType<AmpereMeterMenu>> AMPERE_METER_MENU =
-//            reg("ampere_meter", AmpereMeterMenu::new, AmpereMeterBE.class);
-//
+   public static final DeferredHolder<MenuType<?>, MenuType<AmpereMeterMenu>> AMPERE_METER_MENU =
+            reg("ampere_meter", AmpereMeterMenu::new, AmpereMeterBE.class);
+
 //    public static final DeferredHolder<MenuType<?>, MenuType<CrazyPatternMultiplierMenu>> CRAZY_PATTERN_MULTIPLIER_MENU =
 //            reg("crazy_pattern_multiplier", CrazyPatternMultiplierMenu::new, CrazyPatternMultiplierHost.class);
 //
 //    public static final DeferredHolder<MenuType<?>, MenuType<CrazyEmitterMultiplierMenu>> CRAZY_EMITTER_MULTIPLIER_MENU =
 //            reg("crazy_emitter_multiplier", CrazyEmitterMultiplierMenu::new, CrazyEmitterMultiplierHost.class);
 //
-//    public static final DeferredHolder<MenuType<?>, MenuType<EjectorMenu>> EJECTOR_MENU =
-//            reg("ejector", EjectorMenu::new, EjectorBE.class);
-//
+    public static final DeferredHolder<MenuType<?>, MenuType<EjectorMenu>> EJECTOR_MENU =
+            reg("ejector", EjectorMenu::new, EjectorBE.class);
+
+
   public static final DeferredHolder<MenuType<?>, MenuType<CraftingSchedulerMenu>> CRAFTING_SCHEDULER_MENU =
             reg("crafting_scheduler", CraftingSchedulerMenu::new, CraftingSchedulerBE.class);
 

@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "crazyae2addons:block/ampere_meter" },
+    "facing=east":  { "model": "crazyae2addons:block/ampere_meter", "y": 90 },
+    "facing=south": { "model": "crazyae2addons:block/ampere_meter", "y": 180 },
+    "facing=west":  { "model": "crazyae2addons:block/ampere_meter", "y": 270 }
+  }
+}

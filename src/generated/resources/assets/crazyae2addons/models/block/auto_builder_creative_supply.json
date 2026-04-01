@@ -1,0 +1,6 @@
+{
+    "parent": "minecraft:block/cube_all",
+    "textures": {
+        "all": "crazyae2addons:block/auto_builder_creative_supply"
+    }
+}

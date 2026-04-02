@@ -17,6 +17,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -29,7 +30,7 @@ public abstract class AAECraftingServiceMixin {
     /**
      * @author Oktawia
      * @reason Makes Crazy priorities work with Advanced AE,
-     * required because Advanced AE already made it an overwrite
+     * required because Advanced AE already made it an overwrite.
      */
     @Overwrite
     public long insertIntoCpus(AEKey what, long amount, Actionable type) {
@@ -44,15 +45,14 @@ public abstract class AAECraftingServiceMixin {
                 .toList();
 
         for (var cpu : sorted) {
-            if (inserted >= amount) break;
             inserted += cpu.craftingLogic.insert(what, amount - inserted, type);
         }
 
+        Set<AdvCraftingCPUCluster> seen = new HashSet<>();
         for (AdvCraftingBlockEntity be : this.grid.getMachines(AdvCraftingBlockEntity.class)) {
             AdvCraftingCPUCluster cluster = be.getCluster();
-            if (cluster != null) {
+            if (cluster != null && seen.add(cluster)) {
                 for (AdvCraftingCPU cpu : cluster.getActiveCPUs()) {
-                    if (inserted >= amount) return inserted;
                     inserted += cpu.craftingLogic.insert(what, amount - inserted, type);
                 }
             }

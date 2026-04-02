@@ -10,6 +10,10 @@ public class IsModLoaded {
         return ModList.get().isLoaded("apotheosis");
     }
     public static boolean isAppFluxLoaded() { return ModList.get().isLoaded("appflux"); }
-    public static boolean isIPLoaded() { return ModList.get().isLoaded("imm_ptl_core");  }
+    public static boolean isIPLoaded() { return ModList.get().isLoaded("imm_ptl_core"); }
+    public static boolean isMekanismLoaded() { return ModList.get().isLoaded("mekanism"); }
+    public static boolean isAppliedMekanisticsLoaded() { return ModList.get().isLoaded("appmek"); }
+    public static boolean isArsEnergistiqueLoaded() { return ModList.get().isLoaded("arseng"); }
+    public static boolean isAppliedBotanicsLoaded() { return ModList.get().isLoaded("appbot"); }
 }
 

@@ -3,13 +3,13 @@ package net.oktawia.crazyae2addons.screens;
 import appeng.client.gui.AEBaseScreen;
 import appeng.client.gui.Icon;
 import appeng.client.gui.style.ScreenStyle;
-import appeng.client.gui.widgets.Scrollbar;
 import appeng.client.gui.widgets.ToggleButton;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
+import net.oktawia.crazyae2addons.defs.LangDefs;
 import net.oktawia.crazyae2addons.menus.DisplayMenu;
 import net.oktawia.crazyae2addons.misc.IconButton;
 import net.oktawia.crazyae2addons.misc.MultilineTextFieldWidget;
@@ -19,22 +19,21 @@ public class DisplayScreen<C extends DisplayMenu> extends AEBaseScreen<C> {
 
     public MultilineTextFieldWidget value;
     public Button confirm;
+    public Button insertToken;
     public ToggleButton mode;
     public ToggleButton center;
     public ToggleButton margin;
     public boolean initialized = false;
-    public Scrollbar scrollbar;
-    private int lastScroll = -1;
 
     public DisplayScreen(C menu, Inventory playerInventory, Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
         setupGui();
         this.widgets.add("value", value);
         this.widgets.add("confirm", confirm);
+        this.widgets.add("insertToken", insertToken);
         this.widgets.add("mode", mode);
         this.widgets.add("center", center);
         this.widgets.add("margin", margin);
-        this.widgets.add("scroll", scrollbar);
     }
 
     @Override
@@ -49,16 +48,22 @@ public class DisplayScreen<C extends DisplayMenu> extends AEBaseScreen<C> {
         }
     }
 
-    private void setupGui(){
-        scrollbar = new Scrollbar();
-        scrollbar.setSize(12, 100);
-        scrollbar.setRange(0, 100, 4);
+    @Override
+    public boolean mouseScrolled(double x, double y, double delta) {
+        if (value.isMouseOver(x, y)) return value.mouseScrolled(x, y, delta);
+        return super.mouseScrolled(x, y, delta);
+    }
 
-        value = new MultilineTextFieldWidget(Minecraft.getInstance().font, 15, 15, 202, 135, Component.translatable("gui.crazyae2addons.display_type_here"));
+    private void setupGui(){
+        value = new MultilineTextFieldWidget(Minecraft.getInstance().font, 15, 15, 205, 135, Component.translatable("gui.crazyae2addons.display_type_here"));
         value.setTokenizer(SyntaxHighlighter::colorizeMarkdown);
 
         confirm = new IconButton(Icon.ENTER, btn -> save());
         confirm.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.display_submit")));
+
+        insertToken = new IconButton(Icon.HELP, btn ->
+                Minecraft.getInstance().setScreen(new DisplayInsertScreen(this, token -> value.insertText(token))));
+        insertToken.setTooltip(Tooltip.create(LangDefs.DISPLAY_INSERT_TOKEN.text()));
 
         mode = new ToggleButton(Icon.VALID, Icon.INVALID, this::changeMode);
         mode.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.display_join")));
@@ -87,24 +92,11 @@ public class DisplayScreen<C extends DisplayMenu> extends AEBaseScreen<C> {
         getMenu().syncValue(value.getValue().replace("\n", "&nl"));
     }
 
-
     @Override
-    public void containerTick() {
-        super.containerTick();
-
-        int maxScroll = (int) value.getMaxScroll();
-        scrollbar.setRange(0, maxScroll, 4);
-
-        int currentScrollbarPos = scrollbar.getCurrentScroll();
-        if (currentScrollbarPos != lastScroll) {
-            lastScroll = currentScrollbarPos;
-            value.setScrollAmount(currentScrollbarPos);
-        } else {
-            int currentInputScroll = (int) value.getScrollAmount();
-            if (currentInputScroll != currentScrollbarPos) {
-                scrollbar.setCurrentScroll(currentInputScroll);
-                lastScroll = currentInputScroll;
-            }
-        }
+    public boolean keyPressed(int key, int sc, int mod) {
+        value.keyPressed(key, sc, mod);
+        if (key == 256) { this.onClose(); return true; }
+        return true;
     }
+
 }

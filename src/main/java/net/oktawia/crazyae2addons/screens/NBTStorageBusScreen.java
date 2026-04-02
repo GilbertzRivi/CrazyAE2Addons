@@ -4,7 +4,6 @@ import appeng.api.config.*;
 import appeng.client.gui.Icon;
 import appeng.client.gui.implementations.UpgradeableScreen;
 import appeng.client.gui.style.ScreenStyle;
-import appeng.client.gui.widgets.Scrollbar;
 import appeng.client.gui.widgets.ServerSettingToggleButton;
 import appeng.client.gui.widgets.SettingToggleButton;
 import net.minecraft.client.gui.components.Tooltip;
@@ -18,12 +17,10 @@ public class NBTStorageBusScreen<C extends NBTStorageBusMenu> extends Upgradeabl
     private static IconButton confirm;
     private static MultilineTextFieldWidget input;
     public static boolean initialized;
-    private static Scrollbar scrollbar;
     public static IconButton load;
     private final SettingToggleButton<AccessRestriction> rwMode;
     private final SettingToggleButton<StorageFilter> storageFilter;
     private final SettingToggleButton<YesNo> filterOnExtract;
-    private int lastScroll = -1;
 
     @Override
     protected void updateBeforeRender(){
@@ -47,7 +44,6 @@ public class NBTStorageBusScreen<C extends NBTStorageBusMenu> extends Upgradeabl
         setupGui();
         this.widgets.add("confirm", confirm);
         this.widgets.add("data", input);
-        this.widgets.add("scroll", scrollbar);
         this.widgets.add("load", load);
         initialized = false;
         widgets.addOpenPriorityButton();
@@ -62,23 +58,9 @@ public class NBTStorageBusScreen<C extends NBTStorageBusMenu> extends Upgradeabl
     }
 
     @Override
-    public void containerTick() {
-        super.containerTick();
-        int maxScroll = (int) input.getMaxScroll();;
-        scrollbar.setRange(0, Math.max(0, maxScroll), 4);
-
-        int currentScrollbarPos = scrollbar.getCurrentScroll();
-        if (currentScrollbarPos != lastScroll) {
-            lastScroll = currentScrollbarPos;
-            input.setScrollAmount(currentScrollbarPos);
-        } else {
-            int currentInputScroll = (int) input.getScrollAmount();
-
-            if (currentInputScroll != currentScrollbarPos) {
-                scrollbar.setCurrentScroll(Math.min(currentInputScroll, maxScroll));
-                lastScroll = Math.min(currentInputScroll, maxScroll);
-            }
-        }
+    public boolean mouseScrolled(double x, double y, double delta) {
+        if (input.isMouseOver(x, y)) return input.mouseScrolled(x, y, delta);
+        return super.mouseScrolled(x, y, delta);
     }
 
     private void setupGui(){
@@ -86,14 +68,10 @@ public class NBTStorageBusScreen<C extends NBTStorageBusMenu> extends Upgradeabl
         confirm.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.nbt_storage_confirm")));
 
         input = new MultilineTextFieldWidget(
-                font, 0, 0, 202, 135,
+                font, 0, 0, 205, 135,
                 Component.translatable("gui.crazyae2addons.nbt_storage_input"));
 
         load = new IconButton(Icon.ENTER, (x) -> getMenu().loadNBT());
         load.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.nbt_storage_load")));
-
-        scrollbar = new Scrollbar();
-        scrollbar.setSize(16, 64);
-        scrollbar.setRange(0, 64, 4);
     }
 }

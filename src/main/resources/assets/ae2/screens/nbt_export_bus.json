@@ -46,7 +46,7 @@
     "data": {
       "left": 8,
       "top": 23,
-      "width": 202,
+      "width": 220,
       "height": 135
     },
     "load": {
@@ -54,12 +54,6 @@
       "top": 60,
       "width": 16,
       "height": 16
-    },
-    "scroll": {
-      "left": 212,
-      "top": 24,
-      "width": 10,
-      "height": 133
     },
     "confirm": {
       "left": 231,

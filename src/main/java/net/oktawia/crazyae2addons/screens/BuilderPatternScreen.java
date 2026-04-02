@@ -4,7 +4,6 @@ import appeng.client.gui.AEBaseScreen;
 import appeng.client.gui.Icon;
 import appeng.client.gui.style.ScreenStyle;
 import appeng.client.gui.widgets.AETextField;
-import appeng.client.gui.widgets.Scrollbar;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
@@ -19,10 +18,8 @@ import org.lwjgl.glfw.GLFW;
 public class BuilderPatternScreen<C extends BuilderPatternMenu> extends AEBaseScreen<C> {
     private IconButton confirm;
     private MultilineTextFieldWidget input;
-    private Scrollbar scrollbar;
     private AETextField delay;
     private final AETextField rename;
-    private int lastScroll = -1;
     public boolean initialized;
     private String program = "";
     private IconButton flipHBtn;
@@ -39,7 +36,6 @@ public class BuilderPatternScreen<C extends BuilderPatternMenu> extends AEBaseSc
         setupGui();
         this.widgets.add("confirm", confirm);
         this.widgets.add("data", input);
-        this.widgets.add("scroll", scrollbar);
         this.widgets.add("delay", delay);
         this.rename = new AETextField(style, Minecraft.getInstance().font, 0, 0, 0, 0);
         rename.setBordered(false);
@@ -67,23 +63,9 @@ public class BuilderPatternScreen<C extends BuilderPatternMenu> extends AEBaseSc
     }
 
     @Override
-    public void containerTick() {
-        super.containerTick();
-
-        int maxScroll = (int) input.getMaxScroll();
-        scrollbar.setRange(0, maxScroll, 4);
-
-        int currentScrollbarPos = scrollbar.getCurrentScroll();
-        if (currentScrollbarPos != lastScroll) {
-            lastScroll = currentScrollbarPos;
-            input.setScrollAmount(currentScrollbarPos);
-        } else {
-            int currentInputScroll = (int) input.getScrollAmount();
-            if (currentInputScroll != currentScrollbarPos) {
-                scrollbar.setCurrentScroll(currentInputScroll);
-                lastScroll = currentInputScroll;
-            }
-        }
+    public boolean mouseScrolled(double x, double y, double delta) {
+        if (input.isMouseOver(x, y)) return input.mouseScrolled(x, y, delta);
+        return super.mouseScrolled(x, y, delta);
     }
 
     private Tooltip wrapErrorText(String text) {
@@ -109,14 +91,10 @@ public class BuilderPatternScreen<C extends BuilderPatternMenu> extends AEBaseSc
         confirm.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.builder_pattern_confirm")));
 
         input = new MultilineTextFieldWidget(
-                font, 0, 0, 202, 135,
+                font, 0, 0, 205, 135,
                 Component.translatable("gui.crazyae2addons.builder_pattern_program")
         );
         input.setTokenizer(SyntaxHighlighter::tokenize);
-
-        scrollbar = new Scrollbar();
-        scrollbar.setSize(12, 100);
-        scrollbar.setRange(0, 100, 4);
 
         flipHBtn = new IconButton(Icon.ARROW_RIGHT, (btn) -> {
             this.input.setValue("");

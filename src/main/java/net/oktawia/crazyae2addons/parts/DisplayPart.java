@@ -8,8 +8,7 @@ import appeng.api.networking.ticking.TickingRequest;
 import appeng.api.parts.IPartCollisionHelper;
 import appeng.api.parts.IPartItem;
 import appeng.api.parts.IPartModel;
-import appeng.api.stacks.AEFluidKey;
-import appeng.api.stacks.AEItemKey;
+import appeng.api.stacks.*;
 import appeng.api.util.AECableType;
 import appeng.items.parts.PartModels;
 import appeng.menu.MenuOpener;
@@ -55,6 +54,7 @@ import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.oktawia.crazyae2addons.MathParser;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
+import net.oktawia.crazyae2addons.display.DisplayKeyCompatRegistry;
 import net.oktawia.crazyae2addons.menus.DisplayMenu;
 import net.oktawia.crazyae2addons.network.DisplayValuePacket;
 import net.oktawia.crazyae2addons.network.NetworkHandler;
@@ -76,12 +76,12 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
     private static final Pattern CLIENT_VAR_TOKEN = Pattern.compile(
             "&(d\\^[a-z0-9_\\.:]+(?:%\\d+[tsm])?@\\d+[tsm]|" +
                     "s\\^[a-z0-9_\\.:]+(?:%\\d+)?|" +
-                    "i\\^[a-z0-9_.\\-]+:[a-z0-9_./\\-]+|" +
+                    "i\\^[a-z0-9_.\\-]+(?::[a-z0-9_./\\-]+)+|" +
                     "[A-Za-z0-9_]+)",
             Pattern.CASE_INSENSITIVE
     );
     private static final Pattern CLIENT_STOCK_TOKEN = Pattern.compile("&s\\^([a-z0-9_\\.:]+)(?:%(\\d+))?", Pattern.CASE_INSENSITIVE);
-    private static final Pattern ICON_TOKEN = Pattern.compile("&i\\^([a-z0-9_.\\-]+:[a-z0-9_./\\-]+)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern ICON_TOKEN = Pattern.compile("&i\\^([a-z0-9_.\\-]+(?::[a-z0-9_./\\-]+)+)", Pattern.CASE_INSENSITIVE);
 
     private static final Pattern SERVER_STOCK_TOKEN = Pattern.compile("&(s\\^[\\w:]+(?:%\\d+)?)", Pattern.CASE_INSENSITIVE);
     private static final Pattern SERVER_DELTA_TOKEN = Pattern.compile("&(d\\^[a-z0-9_\\.:]+(?:%\\d+[tsm])?@\\d+[tsm])", Pattern.CASE_INSENSITIVE);
@@ -93,8 +93,35 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
 
     private static final Pattern LINE_SPLIT = Pattern.compile("(?:&nl|\\r\\n|\\r|\\n)");
 
-    // kolor/tylko do inline parsowania (&cRRGGBB / &bRRGGBB)
     private static final Pattern COLOR_TOKEN = Pattern.compile("(&[cb])([0-9A-Fa-f]{6})");
+
+    // ====== AEKey resolution ======
+
+    @Nullable
+    private static AEKey resolveKey(String rawId) {
+        int colon = rawId.indexOf(':');
+        if (colon > 0) {
+            String prefix = rawId.substring(0, colon);
+            String rest = rawId.substring(colon + 1);
+            if (prefix.equals("item")) {
+                var item = ForgeRegistries.ITEMS.getValue(new ResourceLocation(rest));
+                return (item != null && item != Items.AIR) ? AEItemKey.of(new ItemStack(item)) : null;
+            }
+            if (prefix.equals("fluid")) {
+                var fluid = ForgeRegistries.FLUIDS.getValue(new ResourceLocation(rest));
+                return (fluid != null && fluid != Fluids.EMPTY) ? AEFluidKey.of(new FluidStack(fluid, 1)) : null;
+            }
+            if (DisplayKeyCompatRegistry.hasPrefix(prefix)) {
+                return DisplayKeyCompatRegistry.resolve(prefix, rest);
+            }
+        }
+        // fallback without prefix: try item, then fluid
+        ResourceLocation rl = new ResourceLocation(rawId);
+        var item = ForgeRegistries.ITEMS.getValue(rl);
+        if (item != null && item != Items.AIR) return AEItemKey.of(new ItemStack(item));
+        var fluid = ForgeRegistries.FLUIDS.getValue(rl);
+        return (fluid != null && fluid != Fluids.EMPTY) ? AEFluidKey.of(new FluidStack(fluid, 1)) : null;
+    }
 
     public byte spin = 0; // 0-3
     public String textValue = "";
@@ -363,19 +390,8 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
             for (String id : ids) {
                 long amount = 0L;
                 try {
-                    ResourceLocation rl = new ResourceLocation(id);
-
-                    var item = ForgeRegistries.ITEMS.getValue(rl);
-                    if (item != null && item != Items.AIR) {
-                        var key = AEItemKey.of(new ItemStack(item));
-                        if (key != null) amount = byKey.getOrDefault(key, 0L);
-                    } else {
-                        var fluid = ForgeRegistries.FLUIDS.getValue(rl);
-                        if (fluid != null) {
-                            var fKey = AEFluidKey.of(new FluidStack(fluid, 1));
-                            if (fKey != null) amount = byKey.getOrDefault(fKey, 0L);
-                        }
-                    }
+                    var key = resolveKey(id);
+                    if (key != null) amount = byKey.getOrDefault(key, 0L);
                 } catch (Throwable ignored) { }
                 out.put(id, amount);
             }
@@ -846,27 +862,35 @@ public class DisplayPart extends AEBasePart implements MenuProvider, IGridTickab
     @OnlyIn(Dist.CLIENT)
     private @Nullable LineSeg makeIconSeg(String id) {
         try {
+            int colon = id.indexOf(':');
+            if (colon > 0) {
+                String prefix = id.substring(0, colon);
+                String rest = id.substring(colon + 1);
+                if (prefix.equals("item")) {
+                    var item = ForgeRegistries.ITEMS.getValue(new ResourceLocation(rest));
+                    return (item != null && item != Items.AIR) ? new ItemIconSeg(new ItemStack(item)) : null;
+                }
+                if (prefix.equals("fluid")) {
+                    var fluid = ForgeRegistries.FLUIDS.getValue(new ResourceLocation(rest));
+                    return (fluid != null && fluid != Fluids.EMPTY) ? new FluidIconSeg(new FluidStack(fluid, 1000)) : null;
+                }
+                if (DisplayKeyCompatRegistry.hasPrefix(prefix)) {
+                    var stack = DisplayKeyCompatRegistry.getIcon(prefix, rest);
+                    return (stack != null && !stack.isEmpty()) ? new ItemIconSeg(stack) : null;
+                }
+            }
+            // fallback without prefix: try item, block, fluid
             ResourceLocation rl = new ResourceLocation(id);
-
             var item = ForgeRegistries.ITEMS.getValue(rl);
-            if (item != null && item != Items.AIR) {
-                return new ItemIconSeg(new ItemStack(item));
-            }
-
+            if (item != null && item != Items.AIR) return new ItemIconSeg(new ItemStack(item));
             Block block = ForgeRegistries.BLOCKS.getValue(rl);
-            if (block != null && block != Blocks.AIR && block.asItem() != Items.AIR) {
+            if (block != null && block != Blocks.AIR && block.asItem() != Items.AIR)
                 return new ItemIconSeg(new ItemStack(block));
-            }
-
             var fluid = ForgeRegistries.FLUIDS.getValue(rl);
-            if (fluid != null && fluid != Fluids.EMPTY) {
+            if (fluid != null && fluid != Fluids.EMPTY)
                 return new FluidIconSeg(new FluidStack(fluid, 1000));
-            }
-
             return null;
-        } catch (Throwable t) {
-            return null;
-        }
+        } catch (Throwable t) { return null; }
     }
 
     @OnlyIn(Dist.CLIENT)

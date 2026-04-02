@@ -40,7 +40,7 @@
     "value": {
       "left": 8,
       "top": 22,
-      "width": 202,
+      "width": 220,
       "height": 135
     },
     "mode": {
@@ -61,15 +61,15 @@
       "width": 25,
       "height": 12
     },
-    "scroll": {
-      "left": 212,
-      "top": 23,
-      "width": 10,
-      "height": 133
-    },
     "confirm": {
       "left": 231,
-      "top": 16,
+      "top": 22,
+      "width": 16,
+      "height": 16
+    },
+    "insertToken": {
+      "left": 231,
+      "top": 120,
       "width": 16,
       "height": 16
     }

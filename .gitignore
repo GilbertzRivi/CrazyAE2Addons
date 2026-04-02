@@ -26,3 +26,5 @@ forge*changelog.txt
 .cache
 /run-data/
 libs
+/1.20.1/
+/compat/

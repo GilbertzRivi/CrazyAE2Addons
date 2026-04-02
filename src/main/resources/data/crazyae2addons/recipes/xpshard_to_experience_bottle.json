@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "minecraft:glass_bottle"
+    },
+    {
+      "item": "crazyae2addons:xp_shard"
+    },
+    {
+      "item": "crazyae2addons:xp_shard"
+    }
+  ],
+  "result": {
+    "item": "minecraft:experience_bottle"
+  }
+}

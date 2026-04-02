@@ -32,14 +32,8 @@
     "data": {
       "left": 8,
       "top": 22,
-      "width": 202,
+      "width": 220,
       "height": 135
-    },
-    "scroll": {
-      "left": 212,
-      "top": 23,
-      "width": 10,
-      "height": 133
     },
     "confirm": {
       "left": 231,

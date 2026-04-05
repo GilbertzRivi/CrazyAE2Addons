@@ -4,6 +4,7 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "MixinPatternProviderLogic",
+    "P2PTunnelPartAccessor",
     "PatternProviderBlockEntityAccessor",
     "SlotAccessor",
     "WidgetContainerAccessor"

@@ -17,6 +17,7 @@
     "block.crazyae2addons.energy_storage_64k": "Energy Storage 64K",
     "block.crazyae2addons.energy_storage_64m": "Energy Storage 64M",
     "gui.crazyae2addons.amount": "Amount",
+    "gui.crazyae2addons.amperage": "Amperage",
     "gui.crazyae2addons.ampere_meter_direction_left_to_right": "Send power from left to right",
     "gui.crazyae2addons.ampere_meter_direction_right_to_left": "Send power from right to left",
     "gui.crazyae2addons.axis_x": "X",
@@ -50,6 +51,7 @@
     "gui.crazyae2addons.move_up": "Move up",
     "gui.crazyae2addons.nothing": "nothing",
     "gui.crazyae2addons.offset": "Offset",
+    "gui.crazyae2addons.output": "Output",
     "gui.crazyae2addons.pattern": "Pattern",
     "gui.crazyae2addons.program_changes_failed": "Failed to apply changes",
     "gui.crazyae2addons.program_invalid": "Pattern is invalid",
@@ -62,8 +64,10 @@
     "gui.crazyae2addons.skip_missing": "Skip Missing",
     "gui.crazyae2addons.skip_missing_tooltip": "Skip blocks that are missing from the network",
     "gui.crazyae2addons.target": "Target",
+    "gui.crazyae2addons.voltage": "Voltage",
     "item.crazyae2addons.builder_pattern": "Builder Pattern",
     "item.crazyae2addons.crazy_pattern_provider_part": "Crazy Pattern Provider Part",
     "item.crazyae2addons.crazy_upgrade": "Crazy Upgrade",
+    "item.crazyae2addons.round_robin_item_p2p_tunnel": "Round Robin Item P2P Tunnel",
     "key": "val"
 }

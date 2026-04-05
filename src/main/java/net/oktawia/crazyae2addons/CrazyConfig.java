@@ -16,6 +16,8 @@ public class CrazyConfig {
     public static class Common {
         public final ModConfigSpec.BooleanValue P2PWormholeNesting;
         public final ModConfigSpec.BooleanValue P2PWormholeTeleportation;
+        public final ModConfigSpec.BooleanValue EnergyInterfaceEnabled;
+        public final ModConfigSpec.BooleanValue EnergyExporterEnabled;
 
         public final ModConfigSpec.IntValue CrazyProviderMaxAddRows;
 
@@ -35,6 +37,14 @@ public class CrazyConfig {
             P2PWormholeTeleportation = builder
                     .comment("Allow teleporting through a Wormhole P2P")
                     .define("wormholeP2PTeleportation", true);
+
+            EnergyInterfaceEnabled = builder
+                    .comment("Enable Energy Interface Part - exposes Forge Energy capability to AE2 grid")
+                    .define("energyInterfaceEnabled", true);
+
+            EnergyExporterEnabled = builder
+                    .comment("Enable Energy Exporter Part - exports energy from ME to adjacent block")
+                    .define("energyExporterEnabled", true);
 
             CrazyProviderMaxAddRows = builder
                     .comment("How many times player can upgrade the provider; -1 to disable limit")

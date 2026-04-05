@@ -55,7 +55,6 @@ public class CrazyMenuRegistrar {
     public static final DeferredHolder<MenuType<?>, MenuType<EjectorMenu>> EJECTOR_MENU =
             reg("ejector", EjectorMenu::new, EjectorBE.class);
 
-
   public static final DeferredHolder<MenuType<?>, MenuType<CraftingSchedulerMenu>> CRAFTING_SCHEDULER_MENU =
             reg("crafting_scheduler", CraftingSchedulerMenu::new, CraftingSchedulerBE.class);
 

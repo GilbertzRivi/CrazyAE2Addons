@@ -1,5 +1,6 @@
 package net.oktawia.crazyae2addons.defs.regs;
 
+import com.mojang.serialization.Codec;
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.component.CustomData;
@@ -46,6 +47,12 @@ public final class CrazyDataComponents {
             COMPONENTS.registerComponentType(
                     "ejector_data",
                     builder -> builder.persistent(EjectorData.CODEC)
+            );
+
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<String>> RR_ITEM_P2P_TYPE =
+            COMPONENTS.registerComponentType(
+                    "rr_item_p2p_type",
+                    builder -> builder.persistent(Codec.STRING)
             );
 
     private CrazyDataComponents() {}

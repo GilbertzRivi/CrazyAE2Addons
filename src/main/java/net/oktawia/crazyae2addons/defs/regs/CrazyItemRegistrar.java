@@ -5,12 +5,14 @@ import appeng.api.parts.IPart;
 import appeng.items.parts.PartItem;
 import appeng.items.parts.PartModelsHelper;
 import net.minecraft.world.item.Item;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.items.BuilderPatternItem;
 import net.oktawia.crazyae2addons.items.CrazyPatternProviderPartItem;
+import net.oktawia.crazyae2addons.parts.RRItemP2PTunnelPart;
 
 import java.util.List;
 
@@ -34,7 +36,7 @@ public class CrazyItemRegistrar {
                 .toList();
     }
 
-    public static void registerPartModels() {
+    public static void registerPartModels(FMLCommonSetupEvent event) {
         for (Item item : getParts()) {
             if (item instanceof PartItem<?> partItem) {
                 Class<?> partClass = partItem.getPartClass();
@@ -54,9 +56,6 @@ public class CrazyItemRegistrar {
 //            ITEMS.register("nbt_storage_bus", () -> new NBTStorageBusPartItem(new Item.Properties()));
 //
 //    // =========================================================
-//
-//    public static final DeferredItem<RRItemP2PTunnelPartItem> RR_ITEM_P2P_TUNNEL_PART =
-//            ITEMS.register("round_robin_item_p2p_tunnel", () -> new RRItemP2PTunnelPartItem(new Item.Properties()));
 //
 //    public static final DeferredItem<RRFluidP2PTunnelPartItem> RR_FLUID_P2P_TUNNEL_PART =
 //            ITEMS.register("round_robin_fluid_p2p_tunnel", () -> new RRFluidP2PTunnelPartItem(new Item.Properties()));
@@ -86,6 +85,9 @@ public class CrazyItemRegistrar {
 //
 //    public static final DeferredItem<AutomationUpgradeCard> PLAYER_UPGRADE_CARD =
 //            ITEMS.register("player_upgrade_card", () -> new AutomationUpgradeCard(new Item.Properties()));
+
+    public static final DeferredItem<PartItem<RRItemP2PTunnelPart>> RR_ITEM_P2P_TUNNEL_PART =
+            ITEMS.register("round_robin_item_p2p_tunnel", () -> new PartItem<>(new Item.Properties(), RRItemP2PTunnelPart.class, RRItemP2PTunnelPart::new));
 
     public static final DeferredItem<CrazyPatternProviderPartItem> CRAZY_PATTERN_PROVIDER_PART =
             ITEMS.register("crazy_pattern_provider_part", () -> new CrazyPatternProviderPartItem(new Item.Properties()));

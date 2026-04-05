@@ -31,8 +31,10 @@ import net.oktawia.crazyae2addons.defs.UpgradeCards;
 import net.oktawia.crazyae2addons.defs.regs.*;
 import net.oktawia.crazyae2addons.items.PortableAutobuilder;
 import net.oktawia.crazyae2addons.items.PortableSpatialStorage;
+import net.oktawia.crazyae2addons.logic.WirelessEmitterTerminalItemLogicHost;
 import net.oktawia.crazyae2addons.logic.WirelessNotificationTerminalItemLogicHost;
 import net.oktawia.crazyae2addons.logic.WirelessRedstoneTerminalItemLogicHost;
+import net.oktawia.crazyae2addons.menus.WirelessEmitterTerminalMenu;
 import net.oktawia.crazyae2addons.menus.WirelessNotificationTerminalMenu;
 import net.oktawia.crazyae2addons.menus.WirelessRedstoneTerminalMenu;
 import net.oktawia.crazyae2addons.mobstorage.EntityTypeRenderer;
@@ -85,10 +87,13 @@ public class CrazyAddons {
             if (event.getRegistryKey().equals(ForgeRegistries.ITEMS.getRegistryKey())) {
                 GridLinkables.register(CrazyItemRegistrar.WIRELESS_REDSTONE_TERMINAL.get(), WirelessTerminalItem.LINKABLE_HANDLER);
                 GridLinkables.register(CrazyItemRegistrar.WIRELESS_NOTIFICATION_TERMINAL.get(), WirelessTerminalItem.LINKABLE_HANDLER);
+                GridLinkables.register(CrazyItemRegistrar.WIRELESS_EMITTER_TERMINAL.get(), WirelessTerminalItem.LINKABLE_HANDLER);
                 IUniversalWirelessTerminalItem term = CrazyItemRegistrar.WIRELESS_REDSTONE_TERMINAL.get();
                 IUniversalWirelessTerminalItem term2 = CrazyItemRegistrar.WIRELESS_NOTIFICATION_TERMINAL.get();
+                IUniversalWirelessTerminalItem term3 = CrazyItemRegistrar.WIRELESS_EMITTER_TERMINAL.get();
                 Objects.requireNonNull(term);
                 Objects.requireNonNull(term2);
+                Objects.requireNonNull(term3);
                 WUTHandler.addTerminal("wireless_redstone_terminal",
                         term::tryOpen,
                         WirelessRedstoneTerminalItemLogicHost::new,
@@ -104,6 +109,14 @@ public class CrazyAddons {
                         term2,
                         "wireless_notification_terminal",
                         "item.crazyae2addons.wireless_notification_terminal"
+                );
+                WUTHandler.addTerminal("wireless_emitter_terminal",
+                        term3::tryOpen,
+                        WirelessEmitterTerminalItemLogicHost::new,
+                        WirelessEmitterTerminalMenu.TYPE,
+                        term3,
+                        "wireless_emitter_terminal",
+                        "item.crazyae2addons.wireless_emitter_terminal"
                 );}
             }
         );

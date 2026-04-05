@@ -37,6 +37,7 @@
     "PatternProviderTargetCacheAccessor",
     "RestrictedInputSlotMixin",
     "SlotAccessor",
+    "StorageLevelEmitterPartMixin",
     "ViewCellItemMixin"
   ],
   "client": [

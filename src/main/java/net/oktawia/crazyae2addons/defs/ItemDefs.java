@@ -240,6 +240,25 @@ public class ItemDefs {
         );
 
         item(
+                CrazyItemRegistrar.WIRELESS_EMITTER_TERMINAL.get(),
+                "R/T/D",
+                Map.of(
+                        "R", AEItems.WIRELESS_RECEIVER.asItem(),
+                        "T", CrazyItemRegistrar.EMITTER_TERMINAL.get(),
+                        "D", AEBlocks.DENSE_ENERGY_CELL.asItem()
+                )
+        );
+
+        item(
+                CrazyItemRegistrar.EMITTER_TERMINAL.get(),
+                "TR",
+                Map.of(
+                        "R", AEParts.LEVEL_EMITTER.asItem(),
+                        "T", AEParts.TERMINAL.asItem()
+                )
+        );
+
+        item(
                 CrazyItemRegistrar.CRAZY_UPGRADE.get(),
                 "PPP/PDP/PPP",
                 Map.of(

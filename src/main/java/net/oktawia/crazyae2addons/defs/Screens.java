@@ -274,6 +274,18 @@ public final class Screens {
                 MultiLevelEmitterScreen<MultiLevelEmitterMenu>::new,
                 "/screens/multi_level_emitter.json"
         );
+
+        InitScreens.register(
+                CrazyMenuRegistrar.EMITTER_TERMINAL_MENU.get(),
+                EmitterTerminalScreen<EmitterTerminalMenu>::new,
+                "/screens/storage_emitter_terminal.json"
+        );
+
+        InitScreens.register(
+                CrazyMenuRegistrar.WIRELESS_EMITTER_TERMINAL_MENU.get(),
+                WirelessEmitterTerminalScreen<WirelessEmitterTerminalMenu>::new,
+                "/screens/wireless_emitter_terminal.json"
+        );
     }
 
     private Screens() {}

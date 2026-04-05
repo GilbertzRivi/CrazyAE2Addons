@@ -39,6 +39,9 @@ public class CrazyMenuRegistrar {
     public static final RegistryObject<MenuType<WirelessNotificationTerminalMenu>> WIRELESS_NOTIFICATION_TERMINAL_MENU =
             MENU_TYPES.register(id("wireless_notification_terminal"), () -> WirelessNotificationTerminalMenu.TYPE);
 
+    public static final RegistryObject<MenuType<WirelessEmitterTerminalMenu>> WIRELESS_EMITTER_TERMINAL_MENU =
+            MENU_TYPES.register(id("wireless_emitter_terminal"), () -> WirelessEmitterTerminalMenu.TYPE);
+
     private static String id(String s) { return s; }
 
     public static final RegistryObject<MenuType<EntityTickerMenu>> ENTITY_TICKER_MENU =
@@ -179,6 +182,9 @@ public class CrazyMenuRegistrar {
 
     public static final RegistryObject<MenuType<MultiLevelEmitterMenu>> MULTI_LEVEL_EMITTER_MENU =
             reg(id("multi_level_emitter_menu"), MultiLevelEmitterMenu::new, MultiStorageLevelEmitterPart.class);
+
+    public static final RegistryObject<MenuType<EmitterTerminalMenu>> EMITTER_TERMINAL_MENU =
+            reg(id("emitter_terminal_menu"), EmitterTerminalMenu::new, EmitterTerminalPart.class);
 
     private CrazyMenuRegistrar() {}
 }

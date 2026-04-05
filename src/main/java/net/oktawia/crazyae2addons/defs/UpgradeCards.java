@@ -26,10 +26,12 @@ public class UpgradeCards {
             Upgrades.add(AEItems.VOID_CARD, CrazyItemRegistrar.NBT_STORAGE_BUS_PART_ITEM.get(), 1, "group.nbt_storage_bus.name");
             Upgrades.add(AEItems.ENERGY_CARD, CrazyItemRegistrar.WIRELESS_REDSTONE_TERMINAL.get(), 1, "group.wireless_redstone_terminal.name");
             Upgrades.add(AEItems.ENERGY_CARD, CrazyItemRegistrar.WIRELESS_NOTIFICATION_TERMINAL.get(), 1, "group.wireless_redstone_terminal.name");
+            Upgrades.add(AEItems.ENERGY_CARD, CrazyItemRegistrar.WIRELESS_EMITTER_TERMINAL.get(), 1, "group.wireless_redstone_terminal.name");
             Upgrades.add(AEItems.SPEED_CARD, CrazyBlockRegistrar.AUTO_BUILDER_BLOCK.get(), 6, "group.auto_builder.name");
             Upgrades.add(AEItems.CRAFTING_CARD, CrazyBlockRegistrar.AUTO_BUILDER_BLOCK.get(), 1, "group.auto_builder.name");
             Upgrades.add(AE2wtlib.QUANTUM_BRIDGE_CARD, CrazyItemRegistrar.WIRELESS_REDSTONE_TERMINAL.get(), 1, "group.wireless_redstone_terminal.name");
             Upgrades.add(AE2wtlib.QUANTUM_BRIDGE_CARD, CrazyItemRegistrar.WIRELESS_NOTIFICATION_TERMINAL.get(), 1, "group.wireless_redstone_terminal.name");
+            Upgrades.add(AE2wtlib.QUANTUM_BRIDGE_CARD, CrazyItemRegistrar.WIRELESS_EMITTER_TERMINAL.get(), 1, "group.wireless_redstone_terminal.name");
             Upgrades.add(AEItems.ENERGY_CARD, CrazyItemRegistrar.PORTABLE_SPATIAL_IO.get(), 4, "group.portable_spatial_storage.name");
             Upgrades.add(AEItems.ENERGY_CARD, CrazyItemRegistrar.PORTABLE_BUILDER.get(), 4, "group.portable_autobuilder.name");
             Upgrades.add(AEItems.CRAFTING_CARD, CrazyItemRegistrar.PORTABLE_BUILDER.get(), 1, "group.portable_autobuilder.name");

@@ -1,0 +1,8 @@
+{
+  "parent": "ae2:item/terminal",
+  "textures": {
+    "lightsBright": "crazyae2addons:part/storage_emitter_terminal_bright",
+    "lightsMedium": "crazyae2addons:part/storage_emitter_terminal",
+    "lightsDark": "crazyae2addons:part/storage_emitter_terminal_dark"
+  }
+}

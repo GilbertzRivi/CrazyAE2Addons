@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "R": {
+      "item": "ae2:level_emitter"
+    },
+    "T": {
+      "item": "ae2:terminal"
+    }
+  },
+  "pattern": [
+    "TR"
+  ],
+  "result": {
+    "item": "crazyae2addons:emitter_terminal"
+  },
+  "show_notification": true
+}

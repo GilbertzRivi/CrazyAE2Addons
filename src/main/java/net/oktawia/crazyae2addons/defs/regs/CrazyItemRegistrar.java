@@ -138,6 +138,10 @@ public class CrazyItemRegistrar {
             ITEMS.register("redstone_terminal",
                     () -> new RedstoneTerminalPartItem(new Item.Properties()));
 
+    public static final RegistryObject<PartItem<EmitterTerminalPart>> EMITTER_TERMINAL =
+            ITEMS.register("emitter_terminal",
+                    () -> new PartItem<>(new Item.Properties(), EmitterTerminalPart.class, EmitterTerminalPart::new));
+
     // =========================================================
     // =========================================================
 
@@ -264,6 +268,10 @@ public class CrazyItemRegistrar {
     public static final RegistryObject<WirelessRedstoneTerminal> WIRELESS_REDSTONE_TERMINAL =
             ITEMS.register("wireless_redstone_terminal",
                     WirelessRedstoneTerminal::new);
+
+    public static final RegistryObject<WirelessEmitterTerminal> WIRELESS_EMITTER_TERMINAL =
+            ITEMS.register("wireless_emitter_terminal",
+                    WirelessEmitterTerminal::new);
 
     public static final RegistryObject<WirelessNotificationTerminal> WIRELESS_NOTIFICATION_TERMINAL =
             ITEMS.register("wireless_notification_terminal",

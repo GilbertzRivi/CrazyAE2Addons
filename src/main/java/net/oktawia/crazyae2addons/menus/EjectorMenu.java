@@ -18,7 +18,7 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.entities.EjectorBE;
-import net.oktawia.crazyae2addons.misc.AppEngFilteredSlot;
+import net.oktawia.crazyae2addons.client.misc.AppEngFilteredSlot;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
 

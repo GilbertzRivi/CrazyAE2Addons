@@ -11,10 +11,10 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.oktawia.crazyae2addons.defs.LangDefs;
 import net.oktawia.crazyae2addons.menus.BuilderPatternMenu;
-import net.oktawia.crazyae2addons.misc.IconButton;
-import net.oktawia.crazyae2addons.misc.MultilineTextFieldWidget;
+import net.oktawia.crazyae2addons.client.misc.IconButton;
+import net.oktawia.crazyae2addons.client.misc.MultilineTextFieldWidget;
 import net.oktawia.crazyae2addons.misc.ProgramExpander;
-import net.oktawia.crazyae2addons.misc.SyntaxHighlighter;
+import net.oktawia.crazyae2addons.client.misc.SyntaxHighlighter;
 import net.oktawia.crazyae2addons.network.packets.SendLongStringToClientPacket;
 import org.lwjgl.glfw.GLFW;
 

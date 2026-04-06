@@ -18,7 +18,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.oktawia.crazyae2addons.defs.LangDefs;
 import net.oktawia.crazyae2addons.menus.AutoBuilderMenu;
-import net.oktawia.crazyae2addons.misc.IconButton;
+import net.oktawia.crazyae2addons.client.misc.IconButton;
 
 import java.util.Objects;
 import java.util.regex.Matcher;

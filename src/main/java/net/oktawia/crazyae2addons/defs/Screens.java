@@ -2,12 +2,14 @@ package net.oktawia.crazyae2addons.defs;
 
 import appeng.init.client.InitScreens;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
-import net.oktawia.crazyae2addons.defs.LangDefs;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.menus.*;
 import net.oktawia.crazyae2addons.client.screens.*;
 import net.oktawia.crazyae2addons.client.screens.AmpereMeterScreen;
+import net.oktawia.crazyae2addons.client.screens.ChunkyFluidP2PTunnelScreen;
 import net.oktawia.crazyae2addons.client.screens.EjectorScreen;
+import net.oktawia.crazyae2addons.client.screens.EmitterTerminalScreen;
+import net.oktawia.crazyae2addons.items.wireless.WirelessEmitterTerminalMenu;
 
 public final class Screens {
 
@@ -36,10 +38,21 @@ public final class Screens {
 //                CrazyEmitterMultiplierScreen<CrazyEmitterMultiplierMenu>::new,
 //                "/screens/crazy_emitter_multiplier.json");
 //
+        InitScreens.register(event, CrazyMenuRegistrar.EMITTER_TERMINAL_MENU.get(),
+                EmitterTerminalScreen<EmitterTerminalMenu>::new,
+                "/screens/emitter_terminal.json");
+
+        InitScreens.register(event, WirelessEmitterTerminalMenu.TYPE,
+                EmitterTerminalScreen<WirelessEmitterTerminalMenu>::new,
+                "/screens/emitter_terminal.json");
+
         InitScreens.register(event, CrazyMenuRegistrar.EJECTOR_MENU.get(),
                 EjectorScreen<EjectorMenu>::new,
                 "/screens/ejector.json");
 
+        InitScreens.register(event, CrazyMenuRegistrar.CHUNKY_FLUID_P2P_TUNNEL_MENU.get(),
+                ChunkyFluidP2PTunnelScreen<ChunkyFluidP2PTunnelMenu>::new,
+                "/screens/chunky_fluid_p2p_tunnel.json");
 
         InitScreens.register(event, CrazyMenuRegistrar.AMPERE_METER_MENU.get(),
                 AmpereMeterScreen<AmpereMeterMenu>::new,

@@ -7,6 +7,7 @@
     "P2PTunnelPartAccessor",
     "PatternProviderBlockEntityAccessor",
     "SlotAccessor",
+    "StorageLevelEmitterPartMixin",
     "WidgetContainerAccessor"
   ],
   "injectors": {

@@ -1,4 +1,4 @@
-package net.oktawia.crazyae2addons.misc;
+package net.oktawia.crazyae2addons.client.misc;
 
 import appeng.client.gui.Icon;
 

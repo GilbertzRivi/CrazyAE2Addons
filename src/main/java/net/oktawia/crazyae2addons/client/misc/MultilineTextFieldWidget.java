@@ -1,4 +1,4 @@
-package net.oktawia.crazyae2addons.misc;
+package net.oktawia.crazyae2addons.client.misc;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.Util;

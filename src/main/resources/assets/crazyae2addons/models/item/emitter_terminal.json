@@ -1,0 +1,9 @@
+{
+  "parent": "ae2:item/display_base",
+  "textures": {
+    "front": "crazyae2addons:part/emitter_terminal",
+    "front_bright": "crazyae2addons:part/emitter_terminal",
+    "front_medium": "crazyae2addons:part/emitter_terminal",
+    "front_dark": "crazyae2addons:part/emitter_terminal"
+  }
+}

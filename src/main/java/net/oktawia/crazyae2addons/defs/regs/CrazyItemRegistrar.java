@@ -12,7 +12,10 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.items.BuilderPatternItem;
 import net.oktawia.crazyae2addons.items.CrazyPatternProviderPartItem;
+import net.oktawia.crazyae2addons.parts.ChunkyFluidP2PTunnelPart;
+import net.oktawia.crazyae2addons.parts.EmitterTerminalPart;
 import net.oktawia.crazyae2addons.parts.RRItemP2PTunnelPart;
+import net.oktawia.crazyae2addons.items.wireless.WirelessEmitterTerminalItem;
 
 import java.util.List;
 
@@ -86,8 +89,14 @@ public class CrazyItemRegistrar {
 //    public static final DeferredItem<AutomationUpgradeCard> PLAYER_UPGRADE_CARD =
 //            ITEMS.register("player_upgrade_card", () -> new AutomationUpgradeCard(new Item.Properties()));
 
+    public static final DeferredItem<PartItem<EmitterTerminalPart>> EMITTER_TERMINAL_PART =
+            ITEMS.register("emitter_terminal", () -> new PartItem<>(new Item.Properties(), EmitterTerminalPart.class, EmitterTerminalPart::new));
+
     public static final DeferredItem<PartItem<RRItemP2PTunnelPart>> RR_ITEM_P2P_TUNNEL_PART =
             ITEMS.register("round_robin_item_p2p_tunnel", () -> new PartItem<>(new Item.Properties(), RRItemP2PTunnelPart.class, RRItemP2PTunnelPart::new));
+
+    public static final DeferredItem<PartItem<ChunkyFluidP2PTunnelPart>> CHUNKY_FLUID_P2P_TUNNEL_PART =
+            ITEMS.register("chunky_fluid_p2p_tunnel", () -> new PartItem<>(new Item.Properties(), ChunkyFluidP2PTunnelPart.class, ChunkyFluidP2PTunnelPart::new));
 
     public static final DeferredItem<CrazyPatternProviderPartItem> CRAZY_PATTERN_PROVIDER_PART =
             ITEMS.register("crazy_pattern_provider_part", () -> new CrazyPatternProviderPartItem(new Item.Properties()));
@@ -97,31 +106,9 @@ public class CrazyItemRegistrar {
 
     public static final DeferredItem<BuilderPatternItem> BUILDER_PATTERN =
             ITEMS.register("builder_pattern", () -> new BuilderPatternItem(new Item.Properties().stacksTo(1)));
-//
-//    // =========================================================
-//
-//    public static final DeferredItem<CrazyPatternMultiplierItem> CRAZY_PATTERN_MULTIPLIER_ITEM =
-//            ITEMS.register("crazy_pattern_multiplier", () -> new CrazyPatternMultiplierItem(new Item.Properties()));
-//
-//    public static final DeferredItem<CrazyEmitterMultiplierItem> CRAZY_EMITTER_MULTIPLIER_ITEM =
-//            ITEMS.register("crazy_emitter_multiplier", () -> new CrazyEmitterMultiplierItem(new Item.Properties()));
-//
-//    public static final DeferredItem<CpuPrioTunerItem> CPU_PRIO_TUNER =
-//            ITEMS.register("cpu_prio_tuner", () -> new CpuPrioTunerItem(new Item.Properties()));
-//
-//    public static final DeferredItem<NbtViewCellItem> NBT_VIEW_CELL =
-//            ITEMS.register("nbt_view_cell", () -> new NbtViewCellItem(new Item.Properties()));
-//
-//    public static final DeferredItem<TagViewCellItem> TAG_VIEW_CELL =
-//            ITEMS.register("tag_view_cell", () -> new TagViewCellItem(new Item.Properties()));
-//
-//    // =========================================================
-//
-//    public static final DeferredItem<WirelessRedstoneTerminal> WIRELESS_REDSTONE_TERMINAL =
-//            ITEMS.register("wireless_redstone_terminal", WirelessRedstoneTerminal::new);
-//
-//    public static final DeferredItem<WirelessNotificationTerminal> WIRELESS_NOTIFICATION_TERMINAL =
-//            ITEMS.register("wireless_notification_terminal", WirelessNotificationTerminal::new);
+
+    public static final DeferredItem<WirelessEmitterTerminalItem> WIRELESS_EMITTER_TERMINAL =
+            ITEMS.register("wireless_emitter_terminal", WirelessEmitterTerminalItem::new);
 
     private CrazyItemRegistrar() {}
 }

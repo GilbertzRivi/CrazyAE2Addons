@@ -51,6 +51,12 @@ repositories {
             includeGroup "dev.toma.configuration"
         }
     }
+    maven {
+        url = uri("https://modmaven.dev/")
+        content {
+            includeGroup "de.mari_023"
+        }
+    }
 
 }
 
@@ -114,11 +120,20 @@ configurations {
 dependencies {
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 
-    implementation "maven.modrinth:ae2:19.2.17"
-    implementation "maven.modrinth:guideme:21.1.15"
+    // AE2
+    compileOnly "org.appliedenergistics:appliedenergistics2:19.2.17:api"
+    implementation "org.appliedenergistics:appliedenergistics2:19.2.17"
+
+    // GuideME
+    compileOnly "org.appliedenergistics:guideme:2.3.1:api"
+    implementation "org.appliedenergistics:guideme:2.3.1"
+
+    // AE2WtLib
+    compileOnly "de.mari_023:ae2wtlib_api:19.4.1"
+    implementation "de.mari_023:ae2wtlib:19.4.1"
+
     implementation(jarJar("io.github.llamalad7:mixinextras-neoforge:0.5.3"))
 
-    compileOnly "maven.modrinth:applied-energistics-2-wireless-terminals:19.3.0"
     compileOnly "maven.modrinth:advancedae:1.6.9-1.21.1"
     compileOnly "com.gregtechceu.gtceu:gtceu-1.21.1:7.5.0-SNAPSHOT"
 

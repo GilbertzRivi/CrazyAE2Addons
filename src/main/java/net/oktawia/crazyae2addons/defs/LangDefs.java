@@ -52,7 +52,10 @@ public enum LangDefs implements LocalizationEnum {
     EJECTOR_MIDDLE_CLICK("gui.crazyae2addons.ejector_middle_click", "Middle mouse button to set amount"),
     OUTPUT("gui.crazyae2addons.output", "Output"),
     VOLTAGE("gui.crazyae2addons.voltage", "Voltage"),
-    AMPERAGE("gui.crazyae2addons.amperage", "Amperage");
+    AMPERAGE("gui.crazyae2addons.amperage", "Amperage"),
+    UNIT_SIZE("gui.crazyae2addons.unit_size", "Unit Size (mB)"),
+    REDSTONE_TERMINAL_SEARCH("gui.crazyae2addons.redstone_terminal_search", "Search"),
+    OUT_OF_RANGE("gui.crazyae2addons.out_of_range", "Wireless out of range");
 
     private final String key;
     private final String value;

@@ -1,4 +1,4 @@
-package net.oktawia.crazyae2addons.misc;
+package net.oktawia.crazyae2addons.client.misc;
 
 import java.util.ArrayList;
 import java.util.List;

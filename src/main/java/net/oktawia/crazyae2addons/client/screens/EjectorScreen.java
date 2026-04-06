@@ -17,7 +17,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.oktawia.crazyae2addons.defs.LangDefs;
 import net.oktawia.crazyae2addons.menus.EjectorMenu;
-import net.oktawia.crazyae2addons.misc.IconButton;
+import net.oktawia.crazyae2addons.client.misc.IconButton;
 import net.oktawia.crazyae2addons.network.packets.SetConfigAmountPacket;
 
 import java.util.regex.Matcher;

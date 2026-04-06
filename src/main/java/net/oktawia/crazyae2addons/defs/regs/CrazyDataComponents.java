@@ -55,5 +55,11 @@ public final class CrazyDataComponents {
                     builder -> builder.persistent(Codec.STRING)
             );
 
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<String>> CHUNKY_FLUID_P2P_TYPE =
+            COMPONENTS.registerComponentType(
+                    "chunky_fluid_p2p_type",
+                    builder -> builder.persistent(Codec.STRING)
+            );
+
     private CrazyDataComponents() {}
 }

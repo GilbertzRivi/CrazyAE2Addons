@@ -1,7 +1,7 @@
 package net.oktawia.crazyae2addons.interfaces;
 
-import net.oktawia.crazyae2addons.misc.HighlighterState;
-import net.oktawia.crazyae2addons.misc.SyntaxHighlighter;
+import net.oktawia.crazyae2addons.client.misc.HighlighterState;
+import net.oktawia.crazyae2addons.client.misc.SyntaxHighlighter;
 
 import java.util.List;
 

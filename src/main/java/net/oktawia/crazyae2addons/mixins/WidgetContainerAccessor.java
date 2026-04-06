@@ -6,7 +6,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 import java.util.Map;
 
-@Mixin(WidgetContainer.class)
+@Mixin(value = WidgetContainer.class, remap = false)
 public interface WidgetContainerAccessor {
     @Accessor("compositeWidgets")
     Map<String, ICompositeWidget> getCompositeWidgets();

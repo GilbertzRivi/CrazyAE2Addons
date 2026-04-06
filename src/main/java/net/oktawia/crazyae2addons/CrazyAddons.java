@@ -1,9 +1,12 @@
 package net.oktawia.crazyae2addons;
 
 import appeng.api.AECapabilities;
+import appeng.api.features.GridLinkables;
 import appeng.api.networking.IInWorldGridNodeHost;
 import appeng.api.parts.RegisterPartCapabilitiesEvent;
 import com.mojang.logging.LogUtils;
+import de.mari_023.ae2wtlib.api.gui.Icon;
+import de.mari_023.ae2wtlib.api.registration.AddTerminalEvent;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.bus.api.IEventBus;
@@ -20,7 +23,11 @@ import net.oktawia.crazyae2addons.defs.UpgradeCards;
 import net.oktawia.crazyae2addons.defs.regs.*;
 import net.oktawia.crazyae2addons.entities.AmpereMeterBE;
 import net.oktawia.crazyae2addons.network.NetworkHandler;
+import net.oktawia.crazyae2addons.parts.ChunkyFluidP2PTunnelPart;
 import net.oktawia.crazyae2addons.parts.RRItemP2PTunnelPart;
+import net.oktawia.crazyae2addons.items.wireless.EmitterTerminalMenuHost;
+import net.oktawia.crazyae2addons.items.wireless.WirelessEmitterTerminalItem;
+import net.oktawia.crazyae2addons.items.wireless.WirelessEmitterTerminalMenu;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 
@@ -48,6 +55,18 @@ public class CrazyAddons {
         modEventBus.addListener(this::registerCapabilities);
         modEventBus.addListener(this::registerPartCapabilities);
         modEventBus.addListener(NetworkHandler::registerMessages);
+
+        AddTerminalEvent.register(TerminalEvent -> {
+            TerminalEvent.builder(
+                    "emitter_terminal",
+                    EmitterTerminalMenuHost::new,
+                    WirelessEmitterTerminalMenu.TYPE,
+                    CrazyItemRegistrar.WIRELESS_EMITTER_TERMINAL.get(),
+                    Icon.CRAFTING
+            )
+            .upgradeCount(1)
+            .addTerminal();
+        });
     }
 
     public static @NotNull ResourceLocation makeId(String path) {
@@ -55,6 +74,9 @@ public class CrazyAddons {
     }
 
     private void onRegister(RegisterEvent event) {
+        if (event.getRegistryKey().equals(Registries.MENU)) {
+            event.register(Registries.MENU, WirelessEmitterTerminalMenu.ID, () -> WirelessEmitterTerminalMenu.TYPE);
+        }
     }
 
     private void registerCreativeTab(final RegisterEvent event) {
@@ -88,12 +110,14 @@ public class CrazyAddons {
 
     private void registerPartCapabilities(RegisterPartCapabilitiesEvent event) {
         event.register(Capabilities.ItemHandler.BLOCK, (part, dir) -> part.getExposedApi(), RRItemP2PTunnelPart.class);
+        event.register(Capabilities.FluidHandler.BLOCK, (part, dir) -> part.getExposedApi(), ChunkyFluidP2PTunnelPart.class);
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
         event.enqueueWork(() -> {
             new UpgradeCards(event);
             CrazyBlockEntityRegistrar.setupBlockEntityTypes();
+            GridLinkables.register(CrazyItemRegistrar.WIRELESS_EMITTER_TERMINAL.get(), WirelessEmitterTerminalItem.LINKABLE_HANDLER);
         });
     }
 }

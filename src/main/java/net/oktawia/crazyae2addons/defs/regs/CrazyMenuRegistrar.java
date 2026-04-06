@@ -17,6 +17,8 @@ import net.oktawia.crazyae2addons.menus.*;
 import net.oktawia.crazyae2addons.menus.AmpereMeterMenu;
 import net.oktawia.crazyae2addons.menus.AutoBuilderMenu;
 import net.oktawia.crazyae2addons.menus.CraftingSchedulerMenu;
+import net.oktawia.crazyae2addons.parts.ChunkyFluidP2PTunnelPart;
+import net.oktawia.crazyae2addons.parts.EmitterTerminalPart;
 
 public class CrazyMenuRegistrar {
 
@@ -52,8 +54,14 @@ public class CrazyMenuRegistrar {
 //    public static final DeferredHolder<MenuType<?>, MenuType<CrazyEmitterMultiplierMenu>> CRAZY_EMITTER_MULTIPLIER_MENU =
 //            reg("crazy_emitter_multiplier", CrazyEmitterMultiplierMenu::new, CrazyEmitterMultiplierHost.class);
 //
+    public static final DeferredHolder<MenuType<?>, MenuType<EmitterTerminalMenu>> EMITTER_TERMINAL_MENU =
+            reg("emitter_terminal", EmitterTerminalMenu::new, EmitterTerminalPart.class);
+
     public static final DeferredHolder<MenuType<?>, MenuType<EjectorMenu>> EJECTOR_MENU =
             reg("ejector", EjectorMenu::new, EjectorBE.class);
+
+    public static final DeferredHolder<MenuType<?>, MenuType<ChunkyFluidP2PTunnelMenu>> CHUNKY_FLUID_P2P_TUNNEL_MENU =
+            reg("chunky_p2p", ChunkyFluidP2PTunnelMenu::new, ChunkyFluidP2PTunnelPart.class);
 
   public static final DeferredHolder<MenuType<?>, MenuType<CraftingSchedulerMenu>> CRAFTING_SCHEDULER_MENU =
             reg("crafting_scheduler", CraftingSchedulerMenu::new, CraftingSchedulerBE.class);

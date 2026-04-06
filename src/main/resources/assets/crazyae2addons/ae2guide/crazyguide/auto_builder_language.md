@@ -100,6 +100,34 @@ Breaks the block at the current position.
 
 ---
 
+### Conditional Break
+
+X==(n)
+
+Breaks the block at the current position **only if** it matches block `n` from the block map.
+
+X!=(n)
+
+Breaks the block at the current position **only if** it does **not** match block `n`.
+
+Block comparison is by block type only — block state properties (e.g. axis, waterlogged) are ignored.
+
+---
+
+### Conditional Place
+
+P(m)==(n)
+
+Places block `m` **only if** the block at the current position matches block `n`.
+
+P(m)!=(n)
+
+Places block `m` **only if** the block at the current position does **not** match block `n`.
+
+If `m` is `minecraft:air`, the instruction acts as a conditional break (with the same delay as X).
+
+---
+
 ### Loops
 
 3{ ... }
@@ -200,6 +228,22 @@ Build a path 4 blocks to the front, then return to start.
 
 - Defines a "line" of stone (3 blocks to the front).
 - Defines "top" as 1 layer higher with the same line.
+
+---
+
+### 6. Clear only stone from a 5-block row
+
+0(minecraft:stone) | 5{X==(0)F}
+
+Moves 5 blocks forward, breaking only stone and skipping everything else.
+
+---
+
+### 7. Fill only air with planks
+
+0(minecraft:oak_planks),1(minecraft:air) | 5{P(0)==(1)F}
+
+Places oak planks but only where there is air, leaving existing blocks untouched.
 
 ---
 

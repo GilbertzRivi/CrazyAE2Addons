@@ -544,6 +544,15 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements
                 } catch (NumberFormatException ignored) {
                     continue;
                 }
+            } else if (inst.startsWith("PEQ|") || inst.startsWith("PNE|")) {
+                String[] parts = inst.substring(4).split("\\|", 2);
+                String blockKey = parts[0];
+                int idx = previewPalette.indexOf(blockKey);
+                if (idx < 0) {
+                    previewPalette.add(blockKey);
+                    idx = previewPalette.size() - 1;
+                }
+                paletteIndex = idx;
             } else {
                 continue;
             }
@@ -590,6 +599,15 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements
         }
         this.setPreviewDirty(true);
         if (level != null && level.isClientSide) this.setPreviewInfo(null);
+    }
+
+    public void updateSkipEmptyFromCode() {
+        if (this.code.isEmpty()) {
+            this.skipEmpty = false;
+            return;
+        }
+        boolean hasConditionals = ProgramExpander.hasConditionalInstructions(String.join("/", this.code));
+        this.skipEmpty = hasConditionals;
     }
 
     private CompoundTag writeInventoryToTag() {
@@ -682,6 +700,12 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements
             }
 
             if (inst.startsWith("P|") || (inst.startsWith("P(") && inst.endsWith(")"))) {
+                requiredEnergyAE += calcStepCostAE(cursor);
+            }
+            else if (inst.startsWith("PEQ|") || inst.startsWith("PNE|")) {
+                requiredEnergyAE += calcStepCostAE(cursor);
+            }
+            else if (inst.startsWith("XEQ|") || inst.startsWith("XNE|")) {
                 requiredEnergyAE += calcStepCostAE(cursor);
             }
         }
@@ -960,140 +984,41 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements
                 case "H" -> resetGhostToHome();
 
                 case "X" -> {
-                    var grid = getMainNode().getGrid();
-                    boolean didDestroy = false;
-                    BlockPos pos = getGhostRenderPos();
-
-                    if (grid != null) {
-                        BlockState state = level.getBlockState(pos);
-                        if (!state.isAir() && isBreakable(state, level, pos)) {
-                            var drops = getSilkTouchDrops(state, (ServerLevel) level, pos);
-
-                            long inserted = 0;
-                            for (var drop : drops) {
-                                inserted += StorageHelper.poweredInsert(
-                                        grid.getEnergyService(),
-                                        grid.getStorageService().getInventory(),
-                                        AEItemKey.of(drop.getItem()),
-                                        1,
-                                        IActionSource.ofMachine(this),
-                                        Actionable.MODULATE
-                                );
-                            }
-
-                            if (inserted > 0 || drops.isEmpty()) {
-                                if (getLevel().destroyBlock(pos, false)) {
-                                    didDestroy = true;
-                                }
-                            }
-                        }
-
-                        var fs = getLevel().getFluidState(pos);
-                        if (!fs.isEmpty()) {
-                            if (fs.isSource()) {
-                                StorageHelper.poweredInsert(
-                                        grid.getEnergyService(),
-                                        grid.getStorageService().getInventory(),
-                                        AEFluidKey.of(fs.getType()),
-                                        1000,
-                                        IActionSource.ofMachine(this),
-                                        Actionable.MODULATE
-                                );
-                            }
-                            if (getLevel().setBlock(pos, Blocks.AIR.defaultBlockState(), 3)) {
-                                didDestroy = true;
-                            }
-                        }
-                    }
-
-                    if (didDestroy) {
+                    if (executeBreak()) {
                         currentInstruction++;
-                        tickDelayLeft = Math.max(tickDelayLeft, CrazyConfig.COMMON.AutobuilderMineDelay.get());
                         return TickRateModulation.URGENT;
                     }
                 }
                 default -> {
                     if (inst.startsWith("P|")) {
-                        String blockIdRaw = inst.substring(2);
-
-                        try {
-                            String blockIdClean;
-                            Map<String, String> props = new HashMap<>();
-                            int idx = blockIdRaw.indexOf('[');
-                            if (idx > 0 && blockIdRaw.endsWith("]")) {
-                                blockIdClean = blockIdRaw.substring(0, idx);
-                                String propString = blockIdRaw.substring(idx + 1, blockIdRaw.length() - 1);
-                                for (String pair : propString.split(",")) {
-                                    String[] kv = pair.split("=", 2);
-                                    if (kv.length == 2) {
-                                        props.put(kv[0], kv[1]);
-                                    }
-                                }
-                            } else {
-                                blockIdClean = blockIdRaw;
+                        var r = executePlaceBlock(inst.substring(2));
+                        if (r != null) return r;
+                    } else if (inst.startsWith("XEQ|") || inst.startsWith("XNE|")) {
+                        boolean isEq = inst.startsWith("XEQ|");
+                        String checkBlockId = inst.substring(4);
+                        Block cursorBlock = level.getBlockState(getGhostRenderPos()).getBlock();
+                        Block targetBlock = ForgeRegistries.BLOCKS.getValue(new ResourceLocation(checkBlockId));
+                        boolean matches = targetBlock != null && cursorBlock == targetBlock;
+                        if (isEq ? matches : !matches) {
+                            if (executeBreak()) {
+                                currentInstruction++;
+                                return TickRateModulation.URGENT;
                             }
-
-                            Block block = ForgeRegistries.BLOCKS.getValue(new ResourceLocation(blockIdClean));
-                            if (block != null && block != Blocks.AIR) {
-                                var grid = getMainNode().getGrid();
-                                if (grid != null) {
-                                    BlockPos target = getGhostRenderPos();
-
-                                    if (isBreakable(level.getBlockState(getGhostRenderPos()), level, getGhostRenderPos())) {
-                                        var drops = getSilkTouchDrops(level.getBlockState(getGhostRenderPos()), (ServerLevel) level, getGhostRenderPos());
-                                        long inserted = 0;
-                                        for (var drop : drops) {
-                                            inserted += StorageHelper.poweredInsert(
-                                                    grid.getEnergyService(),
-                                                    grid.getStorageService().getInventory(),
-                                                    AEItemKey.of(drop.getItem()),
-                                                    1,
-                                                    IActionSource.ofMachine(this),
-                                                    Actionable.MODULATE
-                                            );
-                                        }
-                                        if (inserted <= 0 && !drops.isEmpty()) {
-                                            currentInstruction++;
-                                            return TickRateModulation.URGENT;
-                                        }
-                                    }
-
-                                    boolean creative = !getMainNode().getGrid().getMachines(AutoBuilderCreativeSupplyBE.class).isEmpty();
-
-                                    long extracted = 0;
-                                    if (!creative) {
-                                        AEItemKey key = AEItemKey.of(block.asItem());
-
-                                        // BUILD STRICT: tylko bufor. Jeśli brak -> stop + flush.
-                                        extracted = bufferExtract(key, 1);
-                                        if (extracted <= 0) {
-                                            this.missingItems = new GenericStack(key, 1);
-                                            this.isRunning = false;
-                                            this.energyPrepaid = false;
-                                            beginFlushBuffer();
-                                            return TickRateModulation.URGENT;
-                                        }
-                                    }
-
-                                    if (extracted > 0 || creative) {
-                                        BlockState state = block.defaultBlockState();
-                                        if (!props.isEmpty()) {
-                                            for (Map.Entry<String, String> entry : props.entrySet()) {
-                                                Property<?> property = state.getBlock().getStateDefinition().getProperty(entry.getKey());
-                                                if (property != null) {
-                                                    state = applyProperty(state, property, entry.getValue());
-                                                }
-                                            }
-                                        }
-
-                                        int delta = Math.floorMod(yawStepsFromNorth(getFacing()) - yawStepsFromNorth(this.sourceFacing), 4);
-                                        state = rotateStateByDelta(state, delta);
-
-                                        level.setBlock(target, state, 3);
-                                    }
-                                }
+                        }
+                    } else if (inst.startsWith("PEQ|") || inst.startsWith("PNE|")) {
+                        boolean isEq = inst.startsWith("PEQ|");
+                        String[] parts = inst.substring(4).split("\\|", 2);
+                        Block cursorBlock = level.getBlockState(getGhostRenderPos()).getBlock();
+                        Block checkBlock = ForgeRegistries.BLOCKS.getValue(new ResourceLocation(parts[1]));
+                        boolean matches = checkBlock != null && cursorBlock == checkBlock;
+                        if (isEq ? matches : !matches) {
+                            boolean didBreak = executeBreak();
+                            var r = executePlaceBlock(parts[0]);
+                            if (r != null) return r;
+                            if (didBreak) {
+                                currentInstruction++;
+                                return TickRateModulation.URGENT;
                             }
-                        } catch (Exception ignored) {
                         }
                     }
                 }
@@ -1227,6 +1152,140 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements
 
     public void resetGhostToHome() {
         setGhostRenderPos(homePos());
+    }
+
+    private boolean executeBreak() {
+        var grid = getMainNode().getGrid();
+        boolean didDestroy = false;
+        BlockPos pos = getGhostRenderPos();
+
+        if (grid != null) {
+            BlockState state = level.getBlockState(pos);
+            if (!state.isAir() && isBreakable(state, level, pos)) {
+                var drops = getSilkTouchDrops(state, (ServerLevel) level, pos);
+                long inserted = 0;
+                for (var drop : drops) {
+                    inserted += StorageHelper.poweredInsert(
+                            grid.getEnergyService(),
+                            grid.getStorageService().getInventory(),
+                            AEItemKey.of(drop.getItem()),
+                            1,
+                            IActionSource.ofMachine(this),
+                            Actionable.MODULATE
+                    );
+                }
+                if (inserted > 0 || drops.isEmpty()) {
+                    if (getLevel().destroyBlock(pos, false)) {
+                        didDestroy = true;
+                    }
+                }
+            }
+
+            var fs = getLevel().getFluidState(pos);
+            if (!fs.isEmpty()) {
+                if (fs.isSource()) {
+                    StorageHelper.poweredInsert(
+                            grid.getEnergyService(),
+                            grid.getStorageService().getInventory(),
+                            AEFluidKey.of(fs.getType()),
+                            1000,
+                            IActionSource.ofMachine(this),
+                            Actionable.MODULATE
+                    );
+                }
+                if (getLevel().setBlock(pos, Blocks.AIR.defaultBlockState(), 3)) {
+                    didDestroy = true;
+                }
+            }
+        }
+
+        if (didDestroy) {
+            tickDelayLeft = Math.max(tickDelayLeft, CrazyConfig.COMMON.AutobuilderMineDelay.get());
+        }
+        return didDestroy;
+    }
+
+    private TickRateModulation executePlaceBlock(String blockSpec) {
+        try {
+            String blockIdClean;
+            Map<String, String> props = new HashMap<>();
+            int idx = blockSpec.indexOf('[');
+            if (idx > 0 && blockSpec.endsWith("]")) {
+                blockIdClean = blockSpec.substring(0, idx);
+                String propString = blockSpec.substring(idx + 1, blockSpec.length() - 1);
+                for (String pair : propString.split(",")) {
+                    String[] kv = pair.split("=", 2);
+                    if (kv.length == 2) props.put(kv[0], kv[1]);
+                }
+            } else {
+                blockIdClean = blockSpec;
+            }
+
+            Block block = ForgeRegistries.BLOCKS.getValue(new ResourceLocation(blockIdClean));
+
+            if (block == null || block == Blocks.AIR) {
+                if (executeBreak()) {
+                    currentInstruction++;
+                    return TickRateModulation.URGENT;
+                }
+                return null;
+            }
+
+            var grid = getMainNode().getGrid();
+            if (grid != null) {
+                BlockPos target = getGhostRenderPos();
+
+                if (isBreakable(level.getBlockState(target), level, target)) {
+                    var drops = getSilkTouchDrops(level.getBlockState(target), (ServerLevel) level, target);
+                    long inserted = 0;
+                    for (var drop : drops) {
+                        inserted += StorageHelper.poweredInsert(
+                                grid.getEnergyService(),
+                                grid.getStorageService().getInventory(),
+                                AEItemKey.of(drop.getItem()),
+                                1,
+                                IActionSource.ofMachine(this),
+                                Actionable.MODULATE
+                        );
+                    }
+                    if (inserted <= 0 && !drops.isEmpty()) {
+                        currentInstruction++;
+                        return TickRateModulation.URGENT;
+                    }
+                }
+
+                boolean creative = !getMainNode().getGrid().getMachines(AutoBuilderCreativeSupplyBE.class).isEmpty();
+                long extracted = 0;
+                if (!creative) {
+                    AEItemKey key = AEItemKey.of(block.asItem());
+                    extracted = bufferExtract(key, 1);
+                    if (extracted <= 0) {
+                        this.missingItems = new GenericStack(key, 1);
+                        this.isRunning = false;
+                        this.energyPrepaid = false;
+                        beginFlushBuffer();
+                        return TickRateModulation.URGENT;
+                    }
+                }
+
+                if (extracted > 0 || creative) {
+                    BlockState state = block.defaultBlockState();
+                    if (!props.isEmpty()) {
+                        for (Map.Entry<String, String> entry : props.entrySet()) {
+                            Property<?> property = state.getBlock().getStateDefinition().getProperty(entry.getKey());
+                            if (property != null) {
+                                state = applyProperty(state, property, entry.getValue());
+                            }
+                        }
+                    }
+                    int delta = Math.floorMod(yawStepsFromNorth(getFacing()) - yawStepsFromNorth(this.sourceFacing), 4);
+                    state = rotateStateByDelta(state, delta);
+                    level.setBlock(target, state, 3);
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
     }
 
     public static List<ItemStack> getSilkTouchDrops(BlockState state, ServerLevel level, BlockPos pos) {
@@ -1451,8 +1510,11 @@ public class AutoBuilderBE extends AENetworkInvBlockEntity implements
         }
         this.setChanged();
         loadCode();
+        updateSkipEmptyFromCode();
         recalculateRequiredEnergy();
         if (getMenu() != null) {
+            getMenu().skipEmpty = this.skipEmpty;
+            getMenu().skipEmptyLocked = this.skipEmpty;
             getMenu().pushEnergyDisplay();
         }
 

@@ -29,6 +29,8 @@ public class AutoBuilderMenu extends UpgradeableMenu<AutoBuilderBE> {
     private String TOGGLE_PREVIEW = "actionTogglePreview";
     @GuiSync(932)
     public boolean skipEmpty = false;
+    @GuiSync(941)
+    public boolean skipEmptyLocked = false;
 
     public AutoBuilderMenu(int id, Inventory playerInventory, AutoBuilderBE host) {
         super(CrazyMenuRegistrar.AUTO_BUILDER_MENU.get(), id, playerInventory, host);
@@ -52,6 +54,9 @@ public class AutoBuilderMenu extends UpgradeableMenu<AutoBuilderBE> {
         this.registerClientAction(TOGGLE_PREVIEW, this::togglePreview);
 
         getHost().loadCode();
+        getHost().updateSkipEmptyFromCode();
+        this.skipEmpty = getHost().skipEmpty;
+        this.skipEmptyLocked = getHost().skipEmpty;
         getHost().recalculateRequiredEnergy();
         pushEnergyDisplay();
     }

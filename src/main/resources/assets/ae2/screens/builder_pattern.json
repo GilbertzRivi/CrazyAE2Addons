@@ -70,6 +70,12 @@
       "top": 94,
       "width": 16,
       "height": 16
+    },
+    "visualAssist": {
+      "left": 231,
+      "top": 112,
+      "width": 16,
+      "height": 16
     }
   }
 }

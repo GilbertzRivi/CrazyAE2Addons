@@ -120,7 +120,7 @@ public class BuilderPatternItem extends AEBaseItem implements IMenuItem {
                         BlockPos targetLocal = worldToLocal(currentWorld, origin, basis);
                         pattern.append(moveCursorRelative(cursorLocal, targetLocal));
                         cursorLocal = targetLocal;
-                        pattern.append("P(").append(blockMap.get(key)).append(")");
+                        pattern.append("P(").append(blockMap.get(key)).append(")\n");
                     }
                 }
             }

@@ -14,10 +14,11 @@ import net.oktawia.crazyae2addons.misc.MultilineTextFieldWidget;
 import net.oktawia.crazyae2addons.misc.ProgramExpander;
 import net.oktawia.crazyae2addons.misc.SyntaxHighlighter;
 import org.lwjgl.glfw.GLFW;
+import java.util.Objects;
 
 public class BuilderPatternScreen<C extends BuilderPatternMenu> extends AEBaseScreen<C> {
     private IconButton confirm;
-    private MultilineTextFieldWidget input;
+    MultilineTextFieldWidget input;
     private AETextField delay;
     private final AETextField rename;
     public boolean initialized;
@@ -25,6 +26,7 @@ public class BuilderPatternScreen<C extends BuilderPatternMenu> extends AEBaseSc
     private IconButton flipHBtn;
     private IconButton flipVBtn;
     private IconButton rotateBtn;
+    private IconButton visualAssistBtn;
 
     public BuilderPatternScreen(C menu, Inventory playerInventory, Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
@@ -49,6 +51,7 @@ public class BuilderPatternScreen<C extends BuilderPatternMenu> extends AEBaseSc
         this.widgets.add("flipH", flipHBtn);
         this.widgets.add("flipV", flipVBtn);
         this.widgets.add("rotate", rotateBtn);
+        this.widgets.add("visualAssist", visualAssistBtn);
         getMenu().requestData();
     }
 
@@ -113,6 +116,15 @@ public class BuilderPatternScreen<C extends BuilderPatternMenu> extends AEBaseSc
             getMenu().rotateCW(1);
         });
         rotateBtn.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.builder_pattern_rotate")));
+
+        visualAssistBtn = new IconButton(Icon.HELP, btn ->
+                Objects.requireNonNull(minecraft).setScreen(new VisualAssistScreen(this)));
+        visualAssistBtn.setTooltip(Tooltip.create(Component.literal("Visual Assistance - fill region helper")));
+    }
+
+    public void setGeneratedProgram(String code) {
+        this.program = code;
+        input.setValue(code);
     }
 
     @Override

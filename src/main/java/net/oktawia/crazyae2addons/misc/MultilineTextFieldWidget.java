@@ -151,13 +151,10 @@ public class MultilineTextFieldWidget extends AbstractWidget {
     }
 
     @Override public boolean mouseDragged(double mx, double my, int btn, double dx, double dy) {
-        // Scrollbar dragging is handled via GLFW polling in renderWidget because
-        // AEBaseScreen's mouseDragged does not forward events to AbstractWidget children.
         if (dragging && isFocused()) { moveCursorToMouse(mx, my); return true; }
         return false;
     }
 
-    /** Polls GLFW mouse state to update scrollbar drag. Called each frame from renderWidget. */
     private void updateScrollbarDrag() {
         if (scrollbarDrag == ScrollbarDrag.NONE) return;
 
@@ -227,7 +224,10 @@ public class MultilineTextFieldWidget extends AbstractWidget {
         int viewW   = textAreaWidth();
         int curLine = textField.lineAtCursor();
         Line ln     = textField.line(curLine);
-        int caretX  = font.width(textField.value().substring(ln.begin(), textField.cursor()));
+        int caretX = 0;
+        try {
+            caretX  = font.width(textField.value().substring(Math.min(ln.begin(), textField.value().length()), textField.cursor()));
+        } catch (Exception ignored) {}
 
         double left  = scrollX;
         double right = scrollX + viewW - font.lineHeight;

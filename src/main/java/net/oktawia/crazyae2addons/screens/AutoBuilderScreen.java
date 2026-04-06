@@ -171,6 +171,8 @@ public class AutoBuilderScreen<C extends AutoBuilderMenu> extends UpgradeableScr
             ));
             initialized = true;
         }
+        this.skipMissing.setSelected(getMenu().skipEmpty);
+        this.skipMissing.active = !getMenu().skipEmptyLocked;
     }
 
     private void parseMissing(String s) {

@@ -162,9 +162,39 @@ public class ProgramExpander {
                 if (!idStr.matches("\\d+")) throw new Exception("Invalid block ID in P(n) at position " + i);
                 int id = Integer.parseInt(idStr);
                 if (!blockMap.containsKey(id)) throw new Exception("Block ID [" + id + "] not defined in map at position " + i);
-                tokens.add("P|" + blockMap.get(id));
+                String placeBlock = blockMap.get(id);
                 i = j + 1;
-            } else if ("FBLRUDXH".indexOf(c) != -1) {
+                if (input.startsWith("==(", i) || input.startsWith("!=(", i)) {
+                    String op = input.startsWith("==(", i) ? "EQ" : "NE";
+                    int k = i + 3;
+                    while (k < input.length() && input.charAt(k) != ')') k++;
+                    if (k >= input.length()) throw new Exception("Unclosed condition in P(n)op(m) at position " + i);
+                    String condIdStr = input.substring(i + 3, k);
+                    if (!condIdStr.matches("\\d+")) throw new Exception("Invalid block ID in condition at position " + i);
+                    int condId = Integer.parseInt(condIdStr);
+                    if (!blockMap.containsKey(condId)) throw new Exception("Block ID [" + condId + "] not defined in map at position " + i);
+                    tokens.add("P" + op + "|" + placeBlock + "|" + blockMap.get(condId));
+                    i = k + 1;
+                } else {
+                    tokens.add("P|" + placeBlock);
+                }
+            } else if (c == 'X') {
+                if (input.startsWith("==(", i + 1) || input.startsWith("!=(", i + 1)) {
+                    String op = input.startsWith("==(", i + 1) ? "EQ" : "NE";
+                    int j = i + 4;
+                    while (j < input.length() && input.charAt(j) != ')') j++;
+                    if (j >= input.length()) throw new Exception("Unclosed condition in X op(n) at position " + i);
+                    String condIdStr = input.substring(i + 4, j);
+                    if (!condIdStr.matches("\\d+")) throw new Exception("Invalid block ID in X condition at position " + i);
+                    int condId = Integer.parseInt(condIdStr);
+                    if (!blockMap.containsKey(condId)) throw new Exception("Block ID [" + condId + "] not defined in map at position " + i);
+                    tokens.add("X" + op + "|" + blockMap.get(condId));
+                    i = j + 1;
+                } else {
+                    tokens.add("X");
+                    i++;
+                }
+            } else if ("FBLRUDH".indexOf(c) != -1) {
                 tokens.add(String.valueOf(c));
                 i++;
             } else if (Character.isDigit(c)) {
@@ -229,12 +259,30 @@ public class ProgramExpander {
             for (String token : tokens) {
                 if (token.startsWith("P|")) {
                     String block = token.substring(2);
-                    usage.put(block.split("\\[")[0], usage.getOrDefault(block.split("\\[")[0], 0) + 1);
+                    String blockId = block.split("\\[")[0];
+                    if (!blockId.equals("minecraft:air")) {
+                        usage.put(blockId, usage.getOrDefault(blockId, 0) + 1);
+                    }
                 }
             }
         } catch (Exception e) {
             return Collections.emptyMap();
         }
         return usage;
+    }
+
+    public static boolean hasConditionalInstructions(String compiledCode) {
+        try {
+            String[] tokens = compiledCode.split("/");
+            for (String token : tokens) {
+                if (token.startsWith("PEQ|") || token.startsWith("PNE|") ||
+                    token.startsWith("XEQ|") || token.startsWith("XNE|")) {
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            return false;
+        }
+        return false;
     }
 }

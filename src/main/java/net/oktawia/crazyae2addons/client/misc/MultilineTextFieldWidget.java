@@ -1,5 +1,6 @@
 package net.oktawia.crazyae2addons.client.misc;
 
+import com.lowdragmc.lowdraglib2.gui.ui.elements.codeeditor.CodeEditor;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
@@ -47,6 +48,8 @@ public class MultilineTextFieldWidget extends AbstractWidget {
 
     public String getValue()                { return textField.value(); }
     public void   setValue(String v)        { textField.setValue(v);    }
+    public void   insertText(String t)      { textField.insertText(t);  }
+    public int    getCursorPos()            { return textField.cursor(); }
 
     public double getScrollAmount()         { return scrollAmount;      }
     public void   setScrollAmount(double a) { scrollAmount = Mth.clamp(a, 0, getMaxScroll()); }
@@ -178,7 +181,10 @@ public class MultilineTextFieldWidget extends AbstractWidget {
         if (isFocused() && blink()) {
             int curLine = textField.lineAtCursor();
             Line ln = textField.line(curLine);
-            int cx = clipL + font.width(textField.value().substring(ln.begin(), textField.cursor()));
+            int cx = 0;
+            try {
+                cx = clipL + font.width(textField.value().substring(Math.min(ln.begin(), textField.value().length()), textField.cursor()));
+            } catch (Exception ignored) {}
             int cy = clipT + curLine * font.lineHeight - (int) scrollAmount;
             if (cy >= clipT && cy < clipB) g.fill(cx, cy, cx + 1, cy + font.lineHeight, 0xFFFFFFFF);
         }

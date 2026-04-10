@@ -1,6 +1,7 @@
 package net.oktawia.crazyae2addons.menus;
 
 import appeng.menu.AEBaseMenu;
+import appeng.menu.MenuOpener;
 import appeng.menu.guisync.GuiSync;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
@@ -10,18 +11,19 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.items.BuilderPatternItem;
-import net.oktawia.crazyae2addons.logic.BuilderPatternHost;
+import net.oktawia.crazyae2addons.logic.builder.BuilderPatternHost;
 import net.oktawia.crazyae2addons.network.packets.SendLongStringToClientPacket;
 import net.oktawia.crazyae2addons.network.packets.SendLongStringToServerPacket;
 
 public class BuilderPatternMenu extends AEBaseMenu {
 
-    public static final String SEND_DELAY    = "SendDelay";
-    public static final String REQUEST_DATA  = "requestData";
-    public static final String RENAME        = "renameAction";
-    public static final String FLIP_H        = "flipH";
-    public static final String FLIP_V        = "flipV";
-    public static final String ROTATE        = "rotateCW";
+    private static final String SEND_DELAY          = "SendDelay";
+    private static final String REQUEST_DATA        = "requestData";
+    private static final String RENAME              = "renameAction";
+    private static final String FLIP_H              = "flipH";
+    private static final String FLIP_V              = "flipV";
+    private static final String ROTATE              = "rotateCW";
+    private static final String ACTION_OPEN_SUBMENU = "OpenSubMenu" ;
 
     public String program;
     public BuilderPatternHost host;
@@ -39,9 +41,9 @@ public class BuilderPatternMenu extends AEBaseMenu {
         registerClientAction(FLIP_H, this::flipH);
         registerClientAction(FLIP_V, this::flipV);
         registerClientAction(ROTATE, Integer.class, this::rotateCW);
+        registerClientAction(ACTION_OPEN_SUBMENU, this::openSubMenu);
         this.host = host;
         String displayName = host.getItemStack().getDisplayName().getString();
-        // strip surrounding brackets added by some display name implementations
         if (displayName.startsWith("[") && displayName.endsWith("]")) {
             displayName = displayName.substring(1, displayName.length() - 1);
         }
@@ -127,6 +129,15 @@ public class BuilderPatternMenu extends AEBaseMenu {
             sendClientAction(RENAME, name);
         } else {
             host.getItemStack().set(DataComponents.CUSTOM_NAME, Component.literal(name));
+        }
+    }
+
+    public void openSubMenu() {
+        if (isClientSide()) {
+            sendClientAction(ACTION_OPEN_SUBMENU);
+        } else {
+
+            MenuOpener.open(CrazyMenuRegistrar.BUILDER_PATTERN_SUBMENU.get(), getPlayer(), this.getLocator());
         }
     }
 }

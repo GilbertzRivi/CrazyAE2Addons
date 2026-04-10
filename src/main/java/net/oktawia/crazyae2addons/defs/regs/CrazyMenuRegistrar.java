@@ -12,12 +12,15 @@ import net.oktawia.crazyae2addons.entities.AmpereMeterBE;
 import net.oktawia.crazyae2addons.entities.AutoBuilderBE;
 import net.oktawia.crazyae2addons.entities.CraftingSchedulerBE;
 import net.oktawia.crazyae2addons.entities.EjectorBE;
-import net.oktawia.crazyae2addons.logic.BuilderPatternHost;
+import net.oktawia.crazyae2addons.logic.builder.BuilderPatternHost;
 import net.oktawia.crazyae2addons.menus.*;
 import net.oktawia.crazyae2addons.menus.AmpereMeterMenu;
 import net.oktawia.crazyae2addons.menus.AutoBuilderMenu;
 import net.oktawia.crazyae2addons.menus.CraftingSchedulerMenu;
+import net.oktawia.crazyae2addons.menus.DisplayMenu;
+import net.oktawia.crazyae2addons.menus.DisplaySubMenu;
 import net.oktawia.crazyae2addons.parts.ChunkyFluidP2PTunnelPart;
+import net.oktawia.crazyae2addons.parts.DisplayPart;
 import net.oktawia.crazyae2addons.parts.EmitterTerminalPart;
 
 public class CrazyMenuRegistrar {
@@ -42,8 +45,11 @@ public class CrazyMenuRegistrar {
 //    public static final DeferredHolder<MenuType<?>, MenuType<NBTStorageBusMenu>> NBT_STORAGE_BUS_MENU =
 //            reg("nbt_storage_bus", NBTStorageBusMenu::new, NBTStorageBusPart.class);
 //
-//    public static final DeferredHolder<MenuType<?>, MenuType<DisplayMenu>> DISPLAY_MENU =
-//            reg("display", DisplayMenu::new, DisplayPart.class);
+    public static final DeferredHolder<MenuType<?>, MenuType<DisplayMenu>> DISPLAY_MENU =
+            reg("display", DisplayMenu::new, DisplayPart.class);
+
+    public static final DeferredHolder<MenuType<?>, MenuType<DisplaySubMenu>> DISPLAY_SUBMENU =
+            reg("display_sub", DisplaySubMenu::new, DisplayPart.class);
 //
    public static final DeferredHolder<MenuType<?>, MenuType<AmpereMeterMenu>> AMPERE_METER_MENU =
             reg("ampere_meter", AmpereMeterMenu::new, AmpereMeterBE.class);
@@ -71,6 +77,9 @@ public class CrazyMenuRegistrar {
 
     public static final DeferredHolder<MenuType<?>, MenuType<BuilderPatternMenu>> BUILDER_PATTERN_MENU =
             reg("builder_pattern", BuilderPatternMenu::new, BuilderPatternHost.class);
+
+    public static final DeferredHolder<MenuType<?>, MenuType<BuilderPatternSubMenu>> BUILDER_PATTERN_SUBMENU =
+            reg("visual_assist", BuilderPatternSubMenu::new, BuilderPatternHost.class);
 
 //    public static final DeferredHolder<MenuType<?>, MenuType<RedstoneEmitterMenu>> REDSTONE_EMITTER_MENU =
 //            reg("redstone_emitter", RedstoneEmitterMenu::new, RedstoneEmitterPart.class);

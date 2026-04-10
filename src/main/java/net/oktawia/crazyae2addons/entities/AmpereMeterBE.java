@@ -37,8 +37,6 @@ public class AmpereMeterBE extends AEBaseBlockEntity implements MenuProvider {
     public String unit = "-";
     public Integer numTransfer = 0;
     public HashMap<Integer, Integer> maxTrans = new HashMap<>();
-    private int lastTick = 0;
-    private long secondBuffer = 0;
 
     public int minFePerTick = 0;
     public int maxFePerTick = 1000;
@@ -175,7 +173,9 @@ public class AmpereMeterBE extends AEBaseBlockEntity implements MenuProvider {
     }
 
     public void markActive() {
-        this.lastActiveTick = getLevel().getGameTime();
+        if (getLevel() != null){
+            this.lastActiveTick = getLevel().getGameTime();
+        }
     }
 
     private static final IEnergyStorage DUMMY_OUTPUT = new IEnergyStorage() {

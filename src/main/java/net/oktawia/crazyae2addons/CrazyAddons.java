@@ -18,7 +18,6 @@ import net.neoforged.neoforge.capabilities.BlockCapability;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.registries.RegisterEvent;
-import net.oktawia.crazyae2addons.compat.gtceu.GTAmpereMeterBE;
 import net.oktawia.crazyae2addons.defs.UpgradeCards;
 import net.oktawia.crazyae2addons.defs.regs.*;
 import net.oktawia.crazyae2addons.entities.AmpereMeterBE;
@@ -100,12 +99,6 @@ public class CrazyAddons {
         event.registerBlockEntity(ENERGY_STORAGE,
                 CrazyBlockEntityRegistrar.AMPERE_METER_BE.get(),
                 (be, dir) -> be instanceof AmpereMeterBE ampereMeter ? ampereMeter.getEnergyStorage(dir) : null);
-
-        if (IsModLoaded.isGTCEuLoaded()) {
-            event.registerBlockEntity(com.gregtechceu.gtceu.api.capability.GTCapability.CAPABILITY_ENERGY_CONTAINER,
-                    CrazyBlockEntityRegistrar.AMPERE_METER_BE.get(),
-                    (be, dir) -> be instanceof GTAmpereMeterBE gt ? gt.euLogic : null);
-        }
     }
 
     private void registerPartCapabilities(RegisterPartCapabilitiesEvent event) {

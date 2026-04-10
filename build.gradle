@@ -26,29 +26,10 @@ repositories {
         url = "https://api.modrinth.com/maven"
     }
     maven {
-        name = 'GTCEu Maven'
-        url = 'https://maven.gtceu.com'
-        content {
-            includeGroup 'com.gregtechceu.gtceu'
-        }
-    }
-    maven {
         name = "firstdarkdev"
         url = "https://maven.firstdarkdev.xyz/snapshots"
         content {
-            includeGroup 'com.lowdragmc.ldlib'
-        }
-    }
-    maven {
-        url = "https://mvn.devos.one/snapshots/"
-        content {
-            includeGroup "com.tterrag.registrate"
-        }
-    }
-    maven {
-        url = "https://repo.repsy.io/mvn/toma/public"
-        content {
-            includeGroup "dev.toma.configuration"
+            includeGroup 'com.lowdragmc.ldlib2'
         }
     }
     maven {
@@ -132,18 +113,25 @@ dependencies {
     compileOnly "de.mari_023:ae2wtlib_api:19.4.1"
     implementation "de.mari_023:ae2wtlib:19.4.1"
 
-    implementation(jarJar("io.github.llamalad7:mixinextras-neoforge:0.5.3"))
+    // LDLib2
+    implementation "com.lowdragmc.ldlib2:ldlib2-neoforge-1.21.1:2.2.5"
 
-    compileOnly "maven.modrinth:advancedae:1.6.9-1.21.1"
-    compileOnly "com.gregtechceu.gtceu:gtceu-1.21.1:7.5.0-SNAPSHOT"
+    // AEKeyTypes Deps
+    compileOnly "maven.modrinth:appflux:1.21-2.1.4-neoforge"
+    compileOnly "maven.modrinth:ars-energistique:2.1.1-beta"
+    compileOnly "maven.modrinth:applied-mekanistics:1.6.3"
+
+    implementation(jarJar("io.github.llamalad7:mixinextras-neoforge:0.5.3"))
 
     // END OF REQUIRED
 
-    // Gregtech
-    implementation "com.gregtechceu.gtceu:gtceu-1.21.1:7.5.0-SNAPSHOT"
-    implementation "maven.modrinth:kubejs:8nuqyxbw"
-    implementation "maven.modrinth:rhino:ZdLtebKH"
-
+    implementation "maven.modrinth:advancedae:1.6.9-1.21.1"
+    implementation "maven.modrinth:geckolib:gFmrC8Ru"
+    implementation "maven.modrinth:appflux:1.21-2.1.4-neoforge"
+    implementation "maven.modrinth:ars-energistique:2.1.1-beta"
+    implementation "maven.modrinth:ars-nouveau:5.11.3"
+    implementation "maven.modrinth:curios:9.5.1+1.21.1"
+    implementation "maven.modrinth:applied-mekanistics:1.6.3"
     implementation "maven.modrinth:jade:15.10.4+neoforge"
     implementation "maven.modrinth:jei:YAcQ6elZ"
     implementation "maven.modrinth:emi:1.1.22+1.21.1+neoforge"

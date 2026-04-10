@@ -7,6 +7,7 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import net.oktawia.crazyae2addons.network.packets.SendLongStringToClientPacket;
 import net.oktawia.crazyae2addons.network.packets.SendLongStringToServerPacket;
 import net.oktawia.crazyae2addons.network.packets.SetConfigAmountPacket;
+import net.oktawia.crazyae2addons.network.packets.DisplaySyncPacket;
 import net.oktawia.crazyae2addons.network.packets.SyncBlockClientPacket;
 import net.oktawia.crazyae2addons.network.packets.UpdatePatternsPacket;
 
@@ -18,6 +19,12 @@ public final class NetworkHandler {
 
     public static void registerMessages(final RegisterPayloadHandlersEvent event) {
         final PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
+
+        registrar.playToClient(
+                DisplaySyncPacket.TYPE,
+                DisplaySyncPacket.STREAM_CODEC,
+                DisplaySyncPacket::handle
+        );
 
         registrar.playToClient(
                 SyncBlockClientPacket.TYPE,

@@ -7,7 +7,10 @@ import net.minecraft.world.item.component.CustomData;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.oktawia.crazyae2addons.CrazyAddons;
+import net.oktawia.crazyae2addons.defs.components.AEItemBufferData;
 import net.oktawia.crazyae2addons.defs.components.AmpereMeterData;
+import net.oktawia.crazyae2addons.defs.components.AutoBuilderPreviewData;
+import net.oktawia.crazyae2addons.defs.components.AutoBuilderStateData;
 import net.oktawia.crazyae2addons.defs.components.BuilderPatternData;
 import net.oktawia.crazyae2addons.defs.components.CrazyProviderDisplayData;
 import net.oktawia.crazyae2addons.defs.components.EjectorData;
@@ -47,6 +50,26 @@ public final class CrazyDataComponents {
             COMPONENTS.registerComponentType(
                     "ejector_data",
                     builder -> builder.persistent(EjectorData.CODEC)
+            );
+
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<AutoBuilderStateData>> AUTOBUILDER_STATE =
+            COMPONENTS.registerComponentType(
+                    "autobuilder_state",
+                    builder -> builder.persistent(AutoBuilderStateData.CODEC)
+            );
+
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<AutoBuilderPreviewData>> AUTOBUILDER_PREVIEW =
+            COMPONENTS.registerComponentType(
+                    "autobuilder_preview",
+                    builder -> builder
+                            .persistent(AutoBuilderPreviewData.CODEC)
+                            .networkSynchronized(AutoBuilderPreviewData.STREAM_CODEC)
+            );
+
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<AEItemBufferData>> AE_ITEM_BUFFER =
+            COMPONENTS.registerComponentType(
+                    "ae_item_buffer",
+                    builder -> builder.persistent(AEItemBufferData.CODEC)
             );
 
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<String>> RR_ITEM_P2P_TYPE =

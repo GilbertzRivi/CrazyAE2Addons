@@ -4,12 +4,14 @@ import appeng.client.gui.AEBaseScreen;
 import appeng.client.gui.Icon;
 import appeng.client.gui.style.ScreenStyle;
 import appeng.client.gui.widgets.AETextField;
+import appeng.menu.MenuOpener;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.oktawia.crazyae2addons.defs.LangDefs;
+import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.menus.BuilderPatternMenu;
 import net.oktawia.crazyae2addons.client.misc.IconButton;
 import net.oktawia.crazyae2addons.client.misc.MultilineTextFieldWidget;
@@ -69,7 +71,15 @@ public class BuilderPatternScreen<C extends BuilderPatternMenu> extends AEBaseSc
         rotateBtn.setTooltip(Tooltip.create(Component.translatable(LangDefs.ROTATE_CW.getTranslationKey())));
         widgets.add("rotate", rotateBtn);
 
+        var visualAssistBtn = new IconButton(Icon.HELP, btn -> getMenu().openSubMenu());
+        visualAssistBtn.setTooltip(Tooltip.create(Component.literal("Visual Assistance - fill region helper")));
+        widgets.add("visualAssist", visualAssistBtn);
+
         SendLongStringToClientPacket.clientHandler = data -> textEditor.setValue(data);
+    }
+
+    public void setGeneratedProgram(String code) {
+        this.textEditor.setValue(code);
     }
 
     @Override
@@ -140,12 +150,12 @@ public class BuilderPatternScreen<C extends BuilderPatternMenu> extends AEBaseSc
             }
             statusText = Component.translatable(LangDefs.PROGRAM_SAVED.getTranslationKey()).getString();
             statusColor = 0xFF00CC00;
-            confirmBtn.setTooltip(Tooltip.create(Component.translatable(LangDefs.CONFIRM.getTranslationKey())));
+            confirmBtn.setTooltip(Tooltip.create(Component.translatable(LangDefs.PROGRAM_SAVED.getTranslationKey())));
         } else {
             statusText = Component.translatable(LangDefs.PROGRAM_INVALID.getTranslationKey()).getString();
             statusColor = 0xFFCC0000;
             confirmBtn.setTooltip(Tooltip.create(Component.literal("Syntax error: " + result.error)));
         }
-        statusTimer = 100;
+        statusTimer = 250;
     }
 }

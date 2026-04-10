@@ -14,6 +14,7 @@ import net.oktawia.crazyae2addons.items.BuilderPatternItem;
 import net.oktawia.crazyae2addons.items.CrazyPatternProviderPartItem;
 import net.oktawia.crazyae2addons.parts.ChunkyFluidP2PTunnelPart;
 import net.oktawia.crazyae2addons.parts.EmitterTerminalPart;
+import net.oktawia.crazyae2addons.parts.DisplayPart;
 import net.oktawia.crazyae2addons.parts.RRItemP2PTunnelPart;
 import net.oktawia.crazyae2addons.items.wireless.WirelessEmitterTerminalItem;
 
@@ -68,8 +69,9 @@ public class CrazyItemRegistrar {
 //
 //    // =========================================================
 //
-//    public static final DeferredItem<DisplayPartItem> DISPLAY_MONITOR_PART_ITEM =
-//            ITEMS.register("display_monitor", () -> new DisplayPartItem(new Item.Properties()));
+    public static final DeferredItem<PartItem<DisplayPart>> DISPLAY_MONITOR_PART =
+            ITEMS.register("display_monitor", () -> new PartItem<>(new Item.Properties(), DisplayPart.class, DisplayPart::new));
+//    (old DisplayPartItem removed — use plain PartItem<DisplayPart>)
 //
 //    public static final DeferredItem<PartItem<MultiStorageLevelEmitterPart>> MULTI_LEVEL_EMITTER_ITEM =
 //            ITEMS.register("multi_level_emitter",

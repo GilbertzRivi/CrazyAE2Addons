@@ -1,7 +1,11 @@
-package net.oktawia.crazyae2addons.logic;
+package net.oktawia.crazyae2addons.logic.builder;
 
 import appeng.api.implementations.menuobjects.ItemMenuHost;
+import appeng.api.storage.ISubMenuHost;
+import appeng.menu.ISubMenu;
+import appeng.menu.MenuOpener;
 import appeng.menu.locator.ItemMenuHostLocator;
+import appeng.menu.locator.MenuLocators;
 import com.mojang.logging.LogUtils;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.entity.player.Player;
@@ -9,6 +13,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.storage.LevelResource;
 import net.oktawia.crazyae2addons.defs.components.BuilderPatternData;
 import net.oktawia.crazyae2addons.defs.regs.CrazyDataComponents;
+import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
+import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.items.BuilderPatternItem;
 import net.oktawia.crazyae2addons.misc.ProgramExpander;
 
@@ -18,7 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
 
-public class BuilderPatternHost extends ItemMenuHost<BuilderPatternItem> {
+public class BuilderPatternHost extends ItemMenuHost<BuilderPatternItem> implements ISubMenuHost {
 
     private boolean code;
     private int delay = 0;
@@ -83,5 +89,15 @@ public class BuilderPatternHost extends ItemMenuHost<BuilderPatternItem> {
         } catch (IOException e) {
             LogUtils.getLogger().info(e.toString());
         }
+    }
+
+    @Override
+    public void returnToMainMenu(Player player, ISubMenu subMenu) {
+        MenuOpener.open(CrazyMenuRegistrar.BUILDER_PATTERN_MENU.get(), player, MenuLocators.forHand(player, player.getUsedItemHand()), true);
+    }
+
+    @Override
+    public ItemStack getMainMenuIcon() {
+        return CrazyItemRegistrar.BUILDER_PATTERN.toStack();
     }
 }

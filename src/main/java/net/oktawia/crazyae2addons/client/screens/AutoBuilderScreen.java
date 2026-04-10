@@ -164,6 +164,7 @@ public class AutoBuilderScreen<C extends AutoBuilderMenu> extends UpgradeableScr
 
         if (!this.initialized) {
             this.skipMissing.setSelected(getMenu().skipEmpty);
+            this.skipMissing.active = !getMenu().skipEmptyLocked;
             initialized = true;
         }
     }

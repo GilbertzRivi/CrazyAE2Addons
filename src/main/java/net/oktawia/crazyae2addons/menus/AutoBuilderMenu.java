@@ -28,6 +28,8 @@ public class AutoBuilderMenu extends UpgradeableMenu<AutoBuilderBE> {
     public String missingItem = "";
     @GuiSync(932)
     public boolean skipEmpty = false;
+    @GuiSync(941)
+    public boolean skipEmptyLocked = false;
 
     private static final String MISSING = "actionUpdateMissing";
     private static final String OFFSET = "actionUpdateOffset";
@@ -57,6 +59,9 @@ public class AutoBuilderMenu extends UpgradeableMenu<AutoBuilderBE> {
         this.registerClientAction(TOGGLE_PREVIEW, this::togglePreview);
 
         getHost().loadCode();
+        getHost().updateSkipEmptyFromCode();
+        this.skipEmpty = getHost().skipEmpty;
+        this.skipEmptyLocked = getHost().skipEmpty;
         getHost().recalculateRequiredEnergy();
         pushEnergyDisplay();
     }

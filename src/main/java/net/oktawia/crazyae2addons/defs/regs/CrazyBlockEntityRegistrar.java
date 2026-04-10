@@ -104,11 +104,7 @@ public class CrazyBlockEntityRegistrar {
             reg("ejector_be", CrazyBlockRegistrar.EJECTOR_BLOCK, EjectorBE::new, EjectorBE.class);
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<AmpereMeterBE>> AMPERE_METER_BE =
-            reg("ampere_meter_be", CrazyBlockRegistrar.AMPERE_METER_BLOCK,
-                    (pos, state) -> net.oktawia.crazyae2addons.IsModLoaded.isGTCEuLoaded()
-                            ? new net.oktawia.crazyae2addons.compat.gtceu.GTAmpereMeterBE(pos, state)
-                            : new AmpereMeterBE(pos, state),
-                    AmpereMeterBE.class);
+            reg("ampere_meter_be", CrazyBlockRegistrar.AMPERE_METER_BLOCK, AmpereMeterBE::new, AmpereMeterBE.class);
 
 
     public static void setupBlockEntityTypes() {

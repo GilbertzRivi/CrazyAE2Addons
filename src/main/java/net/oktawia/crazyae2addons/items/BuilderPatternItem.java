@@ -6,7 +6,6 @@ import appeng.menu.locator.ItemMenuHostLocator;
 import appeng.items.AEBaseItem;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuLocators;
-import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -24,26 +23,20 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
-import net.minecraft.world.level.storage.LevelResource;
 import net.oktawia.crazyae2addons.defs.components.BuilderPatternData;
 import net.oktawia.crazyae2addons.defs.LangDefs;
 import net.oktawia.crazyae2addons.defs.regs.CrazyDataComponents;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
-import net.oktawia.crazyae2addons.logic.BuilderPatternHost;
+import net.oktawia.crazyae2addons.logic.builder.BuilderPatternHost;
 import net.oktawia.crazyae2addons.misc.ProgramExpander;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class BuilderPatternItem extends AEBaseItem implements IMenuItem {
 
@@ -117,7 +110,7 @@ public class BuilderPatternItem extends AEBaseItem implements IMenuItem {
                         BlockPos targetLocal = worldToLocal(currentWorld, origin, basis);
                         pattern.append(moveCursorRelative(cursorLocal, targetLocal));
                         cursorLocal = targetLocal;
-                        pattern.append("P(").append(blockMap.get(key)).append(")");
+                        pattern.append("P(").append(blockMap.get(key)).append(")\n");
                     }
                 }
             }
@@ -135,7 +128,7 @@ public class BuilderPatternItem extends AEBaseItem implements IMenuItem {
                 stack.set(CrazyDataComponents.BUILDER_PATTERN_DATA.get(),
                         new BuilderPatternData(programId, 0, Optional.of(originFacing)));
 
-                saveProgramToFile(programId, finalCode, p.getServer());
+                BuilderPatternHost.saveProgramToFile(programId, finalCode, p.getServer());
                 p.displayClientMessage(
                         Component.translatable(LangDefs.PROGRAM_SAVED.getTranslationKey())
                                 .append(String.valueOf(finalCode.length())),
@@ -153,17 +146,6 @@ public class BuilderPatternItem extends AEBaseItem implements IMenuItem {
 
         return new InteractionResultHolder<>(
                 InteractionResult.sidedSuccess(level.isClientSide()), p.getItemInHand(hand));
-    }
-
-    public static void saveProgramToFile(String id, String code, MinecraftServer server) {
-        Path file = server.getWorldPath(new LevelResource("serverdata"))
-                .resolve("autobuilder").resolve(id);
-        try {
-            Files.createDirectories(file.getParent());
-            Files.writeString(file, code, UTF_8);
-        } catch (IOException e) {
-            LogUtils.getLogger().info(e.toString());
-        }
     }
 
     private static String moveCursorRelative(BlockPos fromLocal, BlockPos toLocal) {
@@ -261,19 +243,11 @@ public class BuilderPatternItem extends AEBaseItem implements IMenuItem {
         }
         String bodyOut = flipBodyInPlace(body, axis);
         String updated = (header.isEmpty() ? "" : header + SEP) + bodyOut;
-        try {
-            var existing = stack.getOrDefault(CrazyDataComponents.BUILDER_PATTERN_DATA.get(), BuilderPatternData.DEFAULT);
-            String id = existing.hasCode() ? existing.programId() : UUID.randomUUID().toString();
-            Path file = server.getWorldPath(new LevelResource("serverdata"))
-                    .resolve("autobuilder").resolve(id);
-            Files.createDirectories(file.getParent());
-            Files.writeString(file, updated, UTF_8);
-            stack.set(CrazyDataComponents.BUILDER_PATTERN_DATA.get(),
-                    new BuilderPatternData(id, existing.delay(), existing.srcFacing()));
-        } catch (Exception e) {
-            LogUtils.getLogger().info(e.toString());
-            if (player != null) player.displayClientMessage(Component.translatable(LangDefs.PROGRAM_CHANGES_FAILED.getTranslationKey()), true);
-        }
+        var existing = stack.getOrDefault(CrazyDataComponents.BUILDER_PATTERN_DATA.get(), BuilderPatternData.DEFAULT);
+        String id = existing.hasCode() ? existing.programId() : UUID.randomUUID().toString();
+        BuilderPatternHost.saveProgramToFile(id, updated, server);
+        stack.set(CrazyDataComponents.BUILDER_PATTERN_DATA.get(),
+                new BuilderPatternData(id, existing.delay(), existing.srcFacing()));
     }
 
     private static BlockPos stepCursor(BlockPos cursor, char ch) {
@@ -393,13 +367,9 @@ public class BuilderPatternItem extends AEBaseItem implements IMenuItem {
 
         var existing = stack.getOrDefault(CrazyDataComponents.BUILDER_PATTERN_DATA.get(), BuilderPatternData.DEFAULT);
         String id = existing.hasCode() ? existing.programId() : UUID.randomUUID().toString();
-        Path file = server.getWorldPath(new LevelResource("serverdata")).resolve("autobuilder").resolve(id);
-        try {
-            Files.createDirectories(file.getParent());
-            Files.writeString(file, updated, UTF_8);
-            stack.set(CrazyDataComponents.BUILDER_PATTERN_DATA.get(),
-                    new BuilderPatternData(id, existing.delay(), existing.srcFacing()));
-        } catch (IOException ignored) {}
+        BuilderPatternHost.saveProgramToFile(id, updated, server);
+        stack.set(CrazyDataComponents.BUILDER_PATTERN_DATA.get(),
+                new BuilderPatternData(id, existing.delay(), existing.srcFacing()));
     }
 
     private static String rotateBodyInPlace(String s, int times) {

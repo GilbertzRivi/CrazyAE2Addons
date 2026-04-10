@@ -108,9 +108,9 @@ public class EjectorBlock extends AEBaseEntityBlock<EjectorBE> implements IUpgra
             if (be instanceof EjectorBE myBE) {
                 myBE.doWork();
             }
-            level.setBlock(pos, state.setValue(POWERED, true), 3);
+            level.setBlock(pos, level.getBlockState(pos).setValue(POWERED, true), 3);
         } else if (wasPowered && !isPoweredNow) {
-            level.setBlock(pos, state.setValue(POWERED, false), 3);
+            level.setBlock(pos, level.getBlockState(pos).setValue(POWERED, false), 3);
         }
     }
 

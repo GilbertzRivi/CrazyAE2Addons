@@ -32,7 +32,7 @@ public class AmpereMeterScreen<C extends AmpereMeterMenu> extends AEBaseScreen<C
         minFe.setBordered(false);
         minFe.setFilter(s -> s.isEmpty() || s.chars().allMatch(Character::isDigit));
         minFe.setPlaceholder(Component.translatable(LangDefs.MIN.getTranslationKey()));
-        var unitTooltipKey = IsModLoaded.isGTCEuLoaded() ? LangDefs.FE_PER_TICK_OR_AMPERES : LangDefs.FE_PER_TICK;
+        var unitTooltipKey = LangDefs.FE_PER_TICK;
         minFe.setTooltipMessage(List.of(Component.translatable(unitTooltipKey.getTranslationKey())));
         minFe.setMaxLength(10);
         minFe.setResponder(this::onMinChanged);

@@ -13,6 +13,7 @@ import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import net.neoforged.neoforge.common.NeoForge;
 import net.oktawia.crazyae2addons.defs.Screens;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
+import net.oktawia.crazyae2addons.client.renderer.DisplayPartRenderer;
 import net.oktawia.crazyae2addons.client.renderer.preview.AutoBuilderPreviewRenderer;
 
 @Mod(value = CrazyAddons.MODID, dist = Dist.CLIENT)
@@ -22,6 +23,6 @@ public class CrazyAddonsClient {
         container.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
         modEventBus.addListener(Screens::register);
         NeoForge.EVENT_BUS.addListener(AutoBuilderPreviewRenderer::onRender);
-        // Part models są rejestrowane automatycznie w statycznym inicjatorze CrazyItemRegistrar
+        NeoForge.EVENT_BUS.addListener(DisplayPartRenderer::onRender);
     }
 }

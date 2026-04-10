@@ -4,7 +4,6 @@ import appeng.block.AEBaseEntityBlock;
 import appeng.menu.locator.MenuLocators;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -19,8 +18,6 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.phys.BlockHitResult;
-import net.oktawia.crazyae2addons.IsModLoaded;
-import net.oktawia.crazyae2addons.compat.gtceu.GTAmpereMeterBE;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.entities.AmpereMeterBE;
 import org.jetbrains.annotations.Nullable;
@@ -35,11 +32,7 @@ public class AmpereMeterBlock extends AEBaseEntityBlock<AmpereMeterBE> {
     @Nullable
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
-        if (IsModLoaded.isGTCEuLoaded()) {
-            return new GTAmpereMeterBE(pos, state);
-        } else {
-            return new AmpereMeterBE(pos, state);
-        }
+        return new AmpereMeterBE(pos, state);
     }
 
     @Override

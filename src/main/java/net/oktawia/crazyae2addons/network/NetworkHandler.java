@@ -4,12 +4,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
-import net.oktawia.crazyae2addons.network.packets.SendLongStringToClientPacket;
-import net.oktawia.crazyae2addons.network.packets.SendLongStringToServerPacket;
-import net.oktawia.crazyae2addons.network.packets.SetConfigAmountPacket;
-import net.oktawia.crazyae2addons.network.packets.DisplaySyncPacket;
-import net.oktawia.crazyae2addons.network.packets.SyncBlockClientPacket;
-import net.oktawia.crazyae2addons.network.packets.UpdatePatternsPacket;
+import net.oktawia.crazyae2addons.network.packets.*;
 
 public final class NetworkHandler {
 
@@ -54,6 +49,18 @@ public final class NetworkHandler {
                 SetConfigAmountPacket.TYPE,
                 SetConfigAmountPacket.STREAM_CODEC,
                 SetConfigAmountPacket::handle
+        );
+
+        registrar.playToServer(
+                UploadDisplayImagePacket.TYPE,
+                UploadDisplayImagePacket.STREAM_CODEC,
+                UploadDisplayImagePacket::handle
+        );
+
+        registrar.playToClient(
+                SyncDisplayImagePreviewPacket.TYPE,
+                SyncDisplayImagePreviewPacket.STREAM_CODEC,
+                SyncDisplayImagePreviewPacket::handle
         );
     }
 }

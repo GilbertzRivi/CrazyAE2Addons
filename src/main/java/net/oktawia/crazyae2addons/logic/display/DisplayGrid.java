@@ -40,18 +40,6 @@ public final class DisplayGrid {
         return fallback;
     }
 
-    public static Set<DisplayPart> getConnectedGrid(DisplayPart origin) {
-        return getRenderGroup(origin).parts();
-    }
-
-    public static DisplayPart getCachedRenderOrigin(DisplayPart origin) {
-        return getRenderGroup(origin).renderOrigin();
-    }
-
-    public static AABB getCachedAABB(DisplayPart origin) {
-        return getRenderGroup(origin).aabb();
-    }
-
     private static void rebuildClientCache() {
         CLIENT_RENDER_GROUP_CACHE.clear();
 
@@ -185,8 +173,10 @@ public final class DisplayGrid {
     private static int partCol(DisplayPart part, Direction side) {
         BlockPos pos = part.getBlockEntity().getBlockPos();
         return switch (side) {
-            case NORTH, SOUTH -> pos.getX();
-            case EAST, WEST -> pos.getZ();
+            case NORTH -> pos.getX();
+            case SOUTH -> -pos.getX();
+            case EAST -> pos.getZ();
+            case WEST -> -pos.getZ();
             default -> pos.getX();
         };
     }
@@ -336,5 +326,74 @@ public final class DisplayGrid {
         }
 
         return new AABB(minX, minY, minZ, maxX, maxY, maxZ);
+    }
+
+    public static Pair<Integer, Integer> computePreviewGridSize(DisplayPart origin) {
+        if (origin == null || !origin.isPowered()) {
+            return Pair.of(1, 1);
+        }
+
+        Direction side = origin.getSide();
+        if (side == Direction.UP || side == Direction.DOWN) {
+            return Pair.of(1, 1);
+        }
+
+        Set<DisplayPart> component = getPreviewConnectedComponent(origin, side);
+        if (component.isEmpty()) {
+            return Pair.of(1, 1);
+        }
+
+        RenderGroup group = buildRenderGroupForActiveComponent(component, side);
+        if (group.parts().isEmpty()) {
+            return Pair.of(1, 1);
+        }
+
+        var dims = getGridSize(new ArrayList<>(group.parts()), group.renderOrigin().getSide());
+        return Pair.of(Math.max(1, dims.getFirst()), Math.max(1, dims.getSecond()));
+    }
+
+    private static Set<DisplayPart> getPreviewConnectedComponent(DisplayPart origin, Direction side) {
+        Set<DisplayPart> all = new LinkedHashSet<>();
+        Deque<DisplayPart> queue = new ArrayDeque<>();
+
+        all.add(origin);
+        queue.add(origin);
+
+        Direction[] dirs = {
+                Direction.UP,
+                Direction.DOWN,
+                side.getClockWise(),
+                side.getCounterClockWise()
+        };
+
+        while (!queue.isEmpty()) {
+            DisplayPart cur = queue.poll();
+
+            for (Direction dir : dirs) {
+                DisplayPart nb = getNeighbor(cur, dir);
+                if (nb != null && nb.getSide() == side && nb.isPowered() && nb.mode && all.add(nb)) {
+                    queue.add(nb);
+                }
+            }
+        }
+
+        return all;
+    }
+
+    public static DisplayPart resolveMenuOrigin(DisplayPart clicked) {
+        if (clicked == null) {
+            return null;
+        }
+
+        RenderGroup group = buildStandaloneRenderGroup(clicked);
+        if (group.parts().isEmpty()) {
+            return clicked;
+        }
+
+        if (group.parts().contains(clicked)) {
+            return group.renderOrigin();
+        }
+
+        return clicked;
     }
 }

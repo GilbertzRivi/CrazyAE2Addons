@@ -2,18 +2,18 @@
   "$schema": "schema.json",
   "includes": ["common/common.json", "common/player_inventory.json"],
   "background": {
-    "texture": "guis/builder_pattern.png",
+    "texture": "guis/display.png",
     "srcRect": [0, 0, 256, 256]
   },
   "slots": {
     "PLAYER_INVENTORY": {
       "left": 47,
-      "bottom": 82,
+      "bottom": 84,
       "grid": "BREAK_AFTER_9COLS"
     },
     "PLAYER_HOTBAR": {
       "left": 47,
-      "bottom": 24,
+      "bottom": 26,
       "grid": "HORIZONTAL"
     }
   },
@@ -38,35 +38,59 @@
     }
   },
   "widgets": {
-    "value": {
-      "left": 8,
-      "top": 22,
-      "width": 220,
-      "height": 135
-    },
-    "confirm": {
-      "left": 231,
-      "top": 22,
+    "insertToken": {
+      "left": 94,
+      "top": 4,
       "width": 16,
       "height": 16
     },
-    "insertToken": {
-      "left": 231,
-      "top": 42,
+    "images": {
+      "left": 114,
+      "top": 4,
+      "width": 16,
+      "height": 16
+    },
+    "confirm": {
+      "left": 134,
+      "top": 4,
+      "width": 16,
+      "height": 16
+    },
+    "margin": {
+      "left": 154,
+      "top": 4,
+      "width": 16,
+      "height": 16
+    },
+    "center": {
+      "left": 174,
+      "top": 4,
       "width": 16,
       "height": 16
     },
     "mode": {
-      "left": 231,
-      "top": 66
+      "left": 194,
+      "top": 4,
+      "width": 16,
+      "height": 16
     },
-    "center": {
-      "left": 231,
-      "top": 86
+    "backgroundColor": {
+      "left": 214,
+      "top": 6,
+      "width": 16,
+      "height": 16
     },
-    "margin": {
-      "left": 231,
-      "top": 106
+    "selectedTextColor": {
+      "left": 234,
+      "top": 6,
+      "width": 16,
+      "height": 16
+    },
+    "value": {
+      "left": 8,
+      "top": 26,
+      "width": 240,
+      "height": 135
     }
   }
 }

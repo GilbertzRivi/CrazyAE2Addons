@@ -9,221 +9,372 @@ item_ids:
   - crazyae2addonslite:display_monitor
 ---
 
-# Display Monitor — User Guide
+# Display Monitor - User Guide
 
 ## Short Reference
-* &cRRGGBB — text color
-* &bRRGGBB — background color
-* &i^namespace:id — inline icon (item/block/fluid)
-* &s^namespace:id — ME stock amount
-* &s^namespace:id%N — ME stock scaled by 10 to the power of N (rounded)
-* &d^namespace:id@WINDOW — rate over WINDOW, scaled to per 1 second
-* &d^namespace:id%PER@WINDOW — rate over WINDOW, scaled to PER
-* &( ... ) — math expression evaluation for example &( 2 + 2 )
-* some other Markdown tokens also work
 
-![Display](../img/display.png)
+### Formatting
 
-This guide explains how to configure, format text, and build multi-block walls with the Display Monitor part in CrazyAE2Addons.
+* `**bold**`
+* `*italic*`
+* `__underline__`
+* `~~strikethrough~~`
+* `#`, `##`, `###`, ... — headings
+* `* ` or `- ` at line start — bullet
+* `>>` at line start — indentation marker
+* real newlines or `&nl` — line breaks
 
-## [Video Tutorial](https://youtu.be/49oCeCdQrXg&list=PLB8Rr5Xojkr5T1qoPr_4JdETiBkF4qF6r)
+### Colors
+
+* `&cRRGGBB` — set text color for following text
+* `&cRRGGBB(...)` — color only the text inside the parentheses
+* `&bRRGGBB` — set display background color
+
+### Tokens
+
+* `&i^id` — inline icon
+* `&s^id` — ME stock amount
+* `&s^id%N` — ME stock divided by `10^N`, rounded
+* `&d^id@WINDOW` — average delta over `WINDOW`, shown per 1 second
+* `&d^id%PER@WINDOW` — average delta over `WINDOW`, shown per `PER`
+* `&( expression )` — math expression, evaluated after token resolution
+
+### Tables
+
+Markdown-style tables are supported, including alignment markers:
+
+* `|:---|` — left
+* `|:---:|` — center
+* `|---:|` — right
 
 ---
 
-## What it is
+## What it does
 
-The Display Monitor is a flat AE2 part you place on a cable face. When powered, 
-it renders text (with simple formatting, colors, and inline icons) and can show live ME stock values and deltas.
-
-Power: idle draw is minimal (about 1 AE/t). The monitor must be powered and active on your AE network to render.
+The Display Monitor renders formatted text with inline icons, ME stock values, rates, math expressions, headings, bullets, indentation, tables and images.
 
 ---
 
 ## Quick Start
 
-1. Place the Display Monitor on the desired cable face.
-2. Right-click it to open the Display menu.
-3. In the text box, type your message. Example:
+Type text into the monitor and use tokens directly.
 
-System Online
-\* &i^minecraft:iron_ingot stock: &s^minecraft:iron_ingot
-\*  &i^minecraft:iron_ingot /s: &d^minecraft:iron_ingot%1s@1m
+Example:
 
-4. Apply/Save. If the monitor is powered, the text appears.
-
-![Display](../img/display1.png)
-
----
-
-## New lines
-
-You can use either real new lines (Enter) or the token &nl.
+```text
+&b101820# System
+* &i^minecraft:iron_ingot stock: &s^minecraft:iron_ingot
+* &i^minecraft:iron_ingot /s: &d^minecraft:iron_ingot@10s
+* stacks: &(&s^minecraft:iron_ingot / 64)
+```
 
 ---
 
-## Text formatting
+## New Lines
 
-### Inline styles (markdown-like)
+You can use:
 
-* **bold** using \*\*double asterisks\*\*
-* *italic* using single \*asterisks\*
-* __underline__ using double \_\_underscores\_\_
-* ~~strikethrough~~ using double \~\~tildes\~\~
+* real new lines
+* `&nl`
+
+Example:
+
+```text
+line one&nlline two
+```
+
+---
+
+## Text Formatting
+
+Supported inline styles:
+
+* `**bold**`
+* `*italic*`
+* `__underline__`
+* `~~strikethrough~~`
+
+Example:
+
+```text
+**bold** *italic* __underline__ ~~strikethrough~~
+```
 
 ### Headings
 
-Lines starting with one or more # become headings and render larger:
+Lines starting with `#` scale up automatically.
 
-* \# Heading 1
-* \#\# Heading 2
-* \#\#\# Heading 3
+Examples:
 
-### Bullets and indentation
+```text
+# Heading 1
+## Heading 2
+### Heading 3
+```
 
-* Start a line with "* " or "- " to get a bullet (•)
-* Begin a line with one or more ">>" to add visible indentation markers
+### Bullets
+
+A line starting with `* ` or `- ` becomes a bullet.
+
+Example:
+
+```text
+* first
+- second
+```
+
+### Indentation
+
+A line starting with one or more `>>` gets visual indentation markers.
+
+Example:
+
+```text
+>> once
+>>>> twice
+```
 
 ---
 
 ## Colors
 
-* Text color: &cRRGGBB (hex), affects following text until changed again.
-  * Example: &cFF0000 makes following text red.
-* Background color: &bRRGGBB (hex), sets the whole panel background (opaque).
-  * Background is global per linked wall (set it once anywhere in the text).
+### Text Color
+
+`&cRRGGBB` changes the current text color.
 
 Example:
 
-&b002020Status: &cF000E0\*\*ONLINE\*\*
+```text
+&cFF0000red &c00FF00green &cFFFFFFwhite
+```
 
-![Display](../img/display2.png)
+### Scoped Text Color
+
+`&cRRGGBB(...)` applies the color only inside the parentheses.
+
+Example:
+
+```text
+normal &cFF0000(red only) normal again
+```
+
+### Background Color
+
+`&bRRGGBB` sets the display background color.
+
+Example:
+
+```text
+&b202020hello
+```
+
+Background color is global for the rendered display. If multiple background tokens appear, the last one wins.
 
 ---
 
-## Inline icons
+## Inline Icons
 
-You can render item, block, or fluid icons inline using:
+Use:
 
-&i^namespace:id
+```text
+&i^id
+```
+
+### Supported lookup forms
+
+#### Auto-resolved
+
+The monitor tries, in order:
+
+1. item
+2. block
+3. fluid
 
 Examples:
 
-* &i^minecraft:diamond
-* &i^minecraft:oak_log
-* &i^minecraft:water
+```text
+&i^minecraft:diamond
+&i^minecraft:oak_log
+&i^minecraft:water
+```
 
-If the id cannot be resolved, the token stays as text.
+#### Explicit type prefix
+
+You can force the type:
+
+```text
+&i^item:minecraft:iron_ingot
+&i^fluid:minecraft:water
+```
+
+#### Compat key prefixes
+
+Compat-specific prefixes registered by the mod are also supported.
+
+If an icon cannot be resolved, the token is rendered as plain text.
 
 ---
 
-## ME Stock tokens (auto-count from Storage)
+## ME Stock Tokens
 
-You can display current amounts in your ME storage with:
+Use:
 
-&s^namespace:id
-&s^namespace:id%N
-
-* &s^minecraft:oak_log shows the exact amount.
-* Optional %N scales the number by 10 to the power of N with rounding.
-
-Examples (if ME has 64):
-
-* &s^minecraft:oak_log -> 64
-* &s^minecraft:oak_log%1 -> 6
-* &s^minecraft:oak_log%2 -> 1 (rounding)
- 
----
-
-## Delta / rate tokens (change over time)
-
-You can show a rate of change using:
-
-&d^namespace:id@WINDOW
-&d^namespace:id%PER@WINDOW
-
-Units:
-
-* t = ticks
-* s = seconds
-* m = minutes
-
-Meaning:
-
-* WINDOW decides how far back the monitor looks when computing the change.
-* PER decides what unit the value is scaled to (per second, per minute, etc.). If omitted, it defaults to per 1 second.
+```text
+&s^id
+&s^id%N
+```
 
 Examples:
 
-* &d^minecraft:iron_ingot@10s
-  Shows the average change rate over the last 10 seconds, scaled to per 1 second.
-* &d^minecraft:iron_ingot%1m@5m
-  Shows the average change rate over the last 5 minutes, scaled to per 1 minute.
-* &d^minecraft:water@30s
-  Works for fluids too (by id).
+```text
+&s^minecraft:iron_ingot
+&s^fluid:minecraft:water
+&s^minecraft:iron_ingot%1
+&s^minecraft:iron_ingot%2
+```
 
-Notes:
+### Meaning of `%N`
 
-* The window is clamped to at least 1 second and at most 30 minutes.
-* Output is signed: positive shows +, negative shows -.
+The value is divided by `10^N` and rounded.
+
+If storage has `64`:
+
+* `&s^minecraft:iron_ingot` → `64`
+* `&s^minecraft:iron_ingot%1` → `6`
+* `&s^minecraft:iron_ingot%2` → `1`
+
+### Key resolution
+
+Stock tokens support:
+
+* plain ids like `minecraft:iron_ingot`
+* explicit prefixes like `item:minecraft:iron_ingot`
+* explicit prefixes like `fluid:minecraft:water`
+* compat prefixes registered by the mod
+
+If the key resolves but the network has none of it, the result is `0`.
 
 ---
 
-## Math expressions
+## Delta / Rate Tokens
 
-You can evaluate math expressions using:
+Use:
 
+```text
+&d^id@WINDOW
+&d^id%PER@WINDOW
+```
+
+### Units
+
+* `t` = ticks
+* `s` = seconds
+* `m` = minutes
+
+### Meaning
+
+* `WINDOW` = how far back the monitor looks
+* `PER` = what unit the result is scaled to
+
+If `%PER` is omitted, the result is shown per 1 second.
+
+Examples:
+
+```text
+&d^minecraft:iron_ingot@10s
+&d^minecraft:iron_ingot%1m@5m
+&d^fluid:minecraft:water@30s
+```
+
+### Notes
+
+* minimum window: `1s`
+* maximum window: `30m`
+* output is signed:
+
+  * positive values show `+`
+  * negative values show `-`
+
+---
+
+## Math Expressions
+
+Use:
+
+```text
 &( expression )
+```
 
-The monitor evaluates these after tokens are resolved, so you can do things like:
+Math is evaluated after token resolution.
 
-Stored stacks (rounded): &(&s^minecraft:iron_ingot / 64)
+Examples:
 
-If parsing fails, the result becomes ERR.
+```text
+&(&s^minecraft:iron_ingot / 64)
+&((&s^minecraft:iron_ingot / 64) * 2 + 1)
+```
 
-![Display](../img/display3.png)
+Nested expressions are supported.
 
----
+If parsing fails, the result is:
 
-## Multi-Monitor Walls (Linked Mode)
-
-You can stitch several monitors into a single large display on a wall (N/E/S/W facing).
-
-### Requirements
-
-All monitors must:
-
-* Be on the same wall face (same side/facing).
-* Be powered and active.
-* Have Linked Mode enabled (toggle in each monitor’s menu (default on)).
-* Form a perfect rectangle (no gaps).
-
-Ceiling/floor monitors (UP/DOWN) do not link into walls; they render as single tiles.
-
-### How rendering works
-
-Only one monitor in the rectangle actually draws the text; the rest provide surface area.
-
-The renderer uses the top-left tile of the rectangle (from the wall’s perspective) as the origin tile. Put your text on that one monitor to render across the whole wall.
-
-### Building steps
-
-1. Place your monitors in a perfect rectangle on a wall.
-2. Power the cable(s) behind them.
-3. Enable Linked Mode on each.
-4. Open the top-left monitor and configure the text.
+```text
+ERR
+```
 
 ---
 
-## Placement & rotation
+## Tables
 
-* On walls (N/E/S/W): the text follows the wall orientation.
-* On floor/ceiling (UP/DOWN): the monitor stores a spin captured from your facing at placement. To change it, break and place again while facing a different direction.
+Markdown-style tables are supported.
+
+Example:
+
+```text
+| Item | Icon | Stock | Rate |
+|:-----|:----:|------:|:----:|
+| Iron | &i^minecraft:iron_ingot | &s^minecraft:iron_ingot | &d^minecraft:iron_ingot@10s |
+| Water | &i^fluid:minecraft:water | &s^fluid:minecraft:water | &d^fluid:minecraft:water@30s |
+```
+
+### Alignment
+
+* `|:---|` → left
+* `|:---:|` → center
+* `|---:|` → right
+
+### Notes
+
+* cells can contain inline formatting
+* cells can contain icons
+* cells can contain stock / delta / math tokens
+* color tokens placed before the first `|` on a row are applied to that whole row
 
 ---
 
-## Tips & Troubleshooting
+## Example
 
-* No text shows: ensure the monitor is powered and active; for linked walls, edit the top-left tile.
-* Wall not linking: check Linked Mode is enabled on every tile.
+```text
+&b101820# Display
+**bold** *italic* __underline__ ~~strike~~ &cFF4444(red)&nl>> scoped &c55FF55green
+* Item &i^minecraft:iron_ingot &s^minecraft:iron_ingot
+* Block &i^minecraft:oak_log
+* Fluid &i^fluid:minecraft:water &s^fluid:minecraft:water
+* Rate &d^minecraft:iron_ingot@10s / &d^minecraft:iron_ingot%1m@5m
+* Math &(&s^minecraft:iron_ingot / 64)
+| Name | Icon | Stock | Rate |
+|:-----|:----:|------:|:----:|
+| Iron | &i^minecraft:iron_ingot | &s^minecraft:iron_ingot | &d^minecraft:iron_ingot@10s |
+| Water | &i^fluid:minecraft:water | &s^fluid:minecraft:water | &d^fluid:minecraft:water@30s |
+```
+
+---
+
+## Troubleshooting
+
+* unresolved icon token → shown as plain text
+* invalid math expression → `ERR`
+* valid ME key with no stored amount → `0`
+* delta may show `0` until enough history is collected
 
 ---

@@ -18,9 +18,13 @@ public final class Screens {
                 DisplayScreen<DisplayMenu>::new,
                 "/screens/display.json");
 
-        InitScreens.register(event, CrazyMenuRegistrar.DISPLAY_SUBMENU.get(),
-                DisplaySubScreen::new,
-                "/screens/display_subscreen.json");
+        InitScreens.register(event, CrazyMenuRegistrar.DISPLAY_TOKEN_SUBMENU.get(),
+                DisplayTokenSubScreen::new,
+                "/screens/display_token_subscreen.json");
+
+        InitScreens.register(event, CrazyMenuRegistrar.DISPLAY_IMAGES_SUBMENU.get(),
+                DisplayImagesSubScreen::new,
+                "/screens/display_images_subscreen.json");
 
         InitScreens.register(event, CrazyMenuRegistrar.EMITTER_TERMINAL_MENU.get(),
                 EmitterTerminalScreen<EmitterTerminalMenu>::new,

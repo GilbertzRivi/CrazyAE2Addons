@@ -16,7 +16,6 @@ public class UpgradeCards {
         event.enqueueWork(() -> {
             Upgrades.add(AEItems.SPEED_CARD, CrazyItemRegistrar.ENTITY_TICKER_PART_ITEM.get(), CrazyConfig.COMMON.EntityTickerMaxSpeedCards.get(), "group.entity_ticker.name");
             Upgrades.add(AEItems.SPEED_CARD, CrazyItemRegistrar.ENERGY_EXPORTER_PART_ITEM.get(), 6, "group.energy_exporter.name");
-            Upgrades.add(CrazyItemRegistrar.CIRCUIT_UPGRADE_CARD_ITEM.get(), AEParts.STORAGE_BUS, 1, "group.storage_bus.name");
             Upgrades.add(AEItems.INVERTER_CARD, CrazyItemRegistrar.MOB_FORMATION_PLANE.get(), 1, "group.mob_formation_plane.name");
             Upgrades.add(AEItems.CAPACITY_CARD, CrazyItemRegistrar.MOB_FORMATION_PLANE.get(), 4, "group.mob_formation_plane.name");
             Upgrades.add(AEItems.SPEED_CARD, CrazyBlockRegistrar.SPAWNER_EXTRACTOR_CONTROLLER.get(), 4, "group.spawner_extractor_controller.name");

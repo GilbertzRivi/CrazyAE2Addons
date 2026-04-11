@@ -25,10 +25,6 @@ public final class Screens {
                 NBTStorageBusScreen<NBTStorageBusMenu>::new,
                 "/screens/nbt_storage_bus.json");
 
-        InitScreens.register(CrazyMenuRegistrar.CRAZY_PATTERN_MODIFIER_MENU.get(),
-                CrazyPatternModifierScreen<CrazyPatternModifierMenu>::new,
-                "/screens/crazy_pattern_modifier.json");
-
         InitScreens.register(CrazyMenuRegistrar.DISPLAY_MENU.get(),
                 DisplayScreen<DisplayMenu>::new,
                 "/screens/display.json");
@@ -159,12 +155,6 @@ public final class Screens {
                 CrazyMenuRegistrar.ENTROPY_CRADLE_CONTROLLER_MENU.get(),
                 EntropyCradleControllerScreen<EntropyCradleControllerMenu>::new,
                 "/screens/entropy_cradle_controller.json"
-        );
-
-        InitScreens.register(
-                CrazyMenuRegistrar.CRAZY_PATTERN_MODIFIER_MENU_PP.get(),
-                CrazyPatternModifierScreenPP<CrazyPatternModifierMenuPP>::new,
-                "/screens/crazy_pattern_modifier_pp.json"
         );
 
         InitScreens.register(

@@ -145,10 +145,6 @@ public class CrazyItemRegistrar {
     // =========================================================
     // =========================================================
 
-    public static final RegistryObject<CircuitUpgradeCard> CIRCUIT_UPGRADE_CARD_ITEM =
-            ITEMS.register("circuit_upgrade_card",
-                    () -> new CircuitUpgradeCard(new Item.Properties()));
-
     public static final RegistryObject<AutomationUpgradeCard> AUTOMATION_UPGRADE_CARD =
             ITEMS.register("automation_upgrade_card",
                     () -> new AutomationUpgradeCard(new Item.Properties()));
@@ -171,10 +167,6 @@ public class CrazyItemRegistrar {
 
     // =========================================================
     // =========================================================
-
-    public static final RegistryObject<CrazyPatternModifierItem> CRAZY_PATTERN_MODIFIER_ITEM =
-            ITEMS.register("crazy_pattern_modifier",
-                    () -> new CrazyPatternModifierItem(new Item.Properties()));
 
     public static final RegistryObject<CrazyPatternMultiplierItem> CRAZY_PATTERN_MULTIPLIER_ITEM =
             ITEMS.register("crazy_pattern_multiplier",

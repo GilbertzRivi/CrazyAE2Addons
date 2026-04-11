@@ -20,7 +20,6 @@ public class CrazyConfig {
 
     public static class Common {
 
-        public final ForgeConfigSpec.BooleanValue enableCPP;
         public final ForgeConfigSpec.BooleanValue enablePeacefullSpawner;
         public final ForgeConfigSpec.BooleanValue enableEntityTicker;
         public final ForgeConfigSpec.IntValue     EntityTickerCost;
@@ -82,10 +81,6 @@ public class CrazyConfig {
             builder.comment("Crazy AE2 Addons - Config").push("general");
 
             builder.push("Features");
-            enableCPP = builder
-                    .comment("Enable Pattern Providers to set GregTech machine circuit when pushing")
-                    .define("enableCPP", true);
-
             enablePeacefullSpawner = builder
                     .comment("Allow Spawner Controller to work in Peaceful mode")
                     .define("enablePeacefullSpawner", true);

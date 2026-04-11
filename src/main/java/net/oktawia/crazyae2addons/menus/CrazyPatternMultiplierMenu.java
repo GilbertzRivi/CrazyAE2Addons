@@ -23,7 +23,7 @@ public class CrazyPatternMultiplierMenu extends AEBaseMenu {
 
     public static String ACTION_MODIFY_PATTERNS = "actionModifyPatterns";
     public static String CLEAR = "clearPatterns";
-    public static String CIRCUIT = "circuitAction";
+    public static String CHANGE_IGNORE_NBT = "changeIgnoreNBT";
     public static String LIMIT = "limitAction";
     public CrazyPatternMultiplierHost host;
 
@@ -31,6 +31,8 @@ public class CrazyPatternMultiplierMenu extends AEBaseMenu {
     public double mult;
     @GuiSync(74)
     public Integer limit;
+    @GuiSync(892)
+    public boolean ignoreNbt = false;
 
     public CrazyPatternMultiplierMenu(int id, Inventory ip, CrazyPatternMultiplierHost host) {
         super(CrazyMenuRegistrar.CRAZY_PATTERN_MULTIPLIER_MENU.get(), id, ip, host);
@@ -48,8 +50,47 @@ public class CrazyPatternMultiplierMenu extends AEBaseMenu {
         }
         registerClientAction(ACTION_MODIFY_PATTERNS, Double.class, this::modifyPatterns);
         registerClientAction(CLEAR, this::clearPatterns);
-        registerClientAction(CIRCUIT, Integer.class, this::setCircuit);
+        registerClientAction(CHANGE_IGNORE_NBT, this::changeNBT);
         registerClientAction(LIMIT, Integer.class, this::setLimit);
+    }
+
+    @Override
+    public void broadcastChanges() {
+        super.broadcastChanges();
+        if (!isClientSide()) {
+            boolean allHave = true;
+            boolean any = false;
+            for (int i = 0; i < host.inv.size(); i++) {
+                ItemStack is = host.inv.getStackInSlot(i);
+                if (!is.isEmpty()) {
+                    any = true;
+                    if (is.getTag() == null || !is.getTag().contains("ignorenbt")) {
+                        allHave = false;
+                    }
+                }
+            }
+            this.ignoreNbt = any && allHave;
+        }
+    }
+
+    public void changeNBT() {
+        if (isClientSide()) {
+            sendClientAction(CHANGE_IGNORE_NBT);
+            return;
+        }
+        boolean add = !this.ignoreNbt;
+        for (int i = 0; i < host.inv.size(); i++) {
+            ItemStack item = host.inv.getStackInSlot(i);
+            if (item.isEmpty()) continue;
+            CompoundTag tag = item.getOrCreateTag();
+            if (add) {
+                tag.putBoolean("ignorenbt", true);
+            } else {
+                tag.remove("ignorenbt");
+            }
+            item.setTag(tag);
+        }
+        this.ignoreNbt = add;
     }
 
     public void modifyPatterns(Double multiplier) {
@@ -73,10 +114,6 @@ public class CrazyPatternMultiplierMenu extends AEBaseMenu {
 
         var originalTag = stack.getTag();
         var ignoreNbtTag = originalTag != null && originalTag.contains("ignorenbt") ? originalTag.get("ignorenbt").copy() : null;
-        var circuitTag = originalTag != null && originalTag.contains("circuit") ? originalTag.get("circuit").copy() : null;
-        var customModelDataTag = originalTag != null && originalTag.contains("CustomModelData")
-                ? originalTag.get("CustomModelData").copy()
-                : null;
 
         var detail = pattern.decode(stack, level, false);
         if (!(detail instanceof AEProcessingPattern process))
@@ -149,12 +186,6 @@ public class CrazyPatternMultiplierMenu extends AEBaseMenu {
         if (ignoreNbtTag != null) {
             modifiedStack.getOrCreateTag().put("ignorenbt", ignoreNbtTag);
         }
-        if (circuitTag != null) {
-            modifiedStack.getOrCreateTag().put("circuit", circuitTag);
-        }
-        if (customModelDataTag != null) {
-            modifiedStack.getOrCreateTag().put("CustomModelData", customModelDataTag);
-        }
 
         return modifiedStack;
     }
@@ -169,28 +200,6 @@ public class CrazyPatternMultiplierMenu extends AEBaseMenu {
                 if (!host.inv.getStackInSlot(i).isEmpty()){
                     this.host.inv.setItemDirect(i, is.copyWithCount(1));
                 }
-            }
-        }
-    }
-
-    public void setCircuit(Integer circuit){
-        if (isClientSide()) {
-            sendClientAction(CIRCUIT, circuit);
-        } else {
-            for (int i = 0; i < host.inv.size(); i++) {
-
-                ItemStack item = host.inv.getStackInSlot(i);
-                CompoundTag tag = item.getOrCreateTag();
-
-                if (circuit == -1) {
-                    tag.remove("circuit");
-                    tag.remove("CustomModelData");
-                } else {
-                    tag.putInt("circuit", circuit);
-                    tag.putInt("CustomModelData", circuit == 0 ? 33 : circuit);
-                }
-
-                item.setTag(tag);
             }
         }
     }

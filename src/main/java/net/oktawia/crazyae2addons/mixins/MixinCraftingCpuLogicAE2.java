@@ -169,10 +169,6 @@ public abstract class MixinCraftingCpuLogicAE2 {
             remap = false
     )
     private boolean redirectPushPattern(ICraftingProvider instance, IPatternDetails details, KeyCounter[] inputs) {
-        if (instance instanceof IPatternProviderCpu provider) {
-            provider.setPatternDetails(details);
-        }
-
         boolean result = instance.pushPattern(details, inputs);
 
         if (result) {

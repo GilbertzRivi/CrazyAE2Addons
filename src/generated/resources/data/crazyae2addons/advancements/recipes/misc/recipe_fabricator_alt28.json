@@ -1,0 +1,35 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_controller": {
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "ae2:controller"
+            ]
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "crazyae2addons:recipe_fabricator_alt28"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_controller",
+      "has_the_recipe"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "crazyae2addons:recipe_fabricator_alt28"
+    ]
+  },
+  "sends_telemetry_event": false
+}

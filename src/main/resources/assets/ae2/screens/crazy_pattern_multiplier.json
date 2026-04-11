@@ -30,6 +30,13 @@
         "left": 8,
         "top": 31
       }
+    },
+    "info1": {
+      "position": {
+        "left": 88,
+        "top": 14
+      },
+      "align": "CENTER"
     }
   },
   "widgets": {
@@ -40,20 +47,14 @@
     "value": {
       "left": 30,
       "top": 130,
-      "width": 65,
+      "width": 90,
       "height": 16
     },
     "confirm": {
-      "left": 100,
+      "left": 124,
       "top": 128
     },
-    "circuitVal": {
-      "left": 123,
-      "top": 130,
-      "width": 25,
-      "height": 16
-    },
-    "circuit": {
+    "nbt": {
       "left": 152,
       "top": 128
     },

@@ -23,15 +23,6 @@ public class ItemDefs {
 
     public static void registerRecipes(){
         item(
-                CrazyItemRegistrar.CIRCUIT_UPGRADE_CARD_ITEM.get(),
-                "CT",
-                Map.of(
-                        "C", AEItems.ADVANCED_CARD.asItem(),
-                        "T", AEItems.LOGIC_PROCESSOR.asItem()
-                )
-        );
-
-        item(
             CrazyItemRegistrar.RR_ITEM_P2P_TUNNEL_PART.get(),
             "PE",
             Map.of(
@@ -82,7 +73,7 @@ public class ItemDefs {
                 CrazyItemRegistrar.CRAZY_PATTERN_MULTIPLIER_ITEM.get(),
                 "PZ",
                 Map.of(
-                        "P", CrazyItemRegistrar.CRAZY_PATTERN_MODIFIER_ITEM.get(),
+                        "P", AEItems.ADVANCED_CARD.asItem(),
                         "Z", AEItems.CALCULATION_PROCESSOR.asItem()
                 )
         );
@@ -289,7 +280,7 @@ public class ItemDefs {
                 CrazyItemRegistrar.MOB_KEY_SELECTOR_ITEM.get(),
                 "CE",
                 Map.of(
-                        "C", CrazyItemRegistrar.CRAZY_PATTERN_MODIFIER_ITEM.get().asItem(),
+                        "C", AEItems.ADVANCED_CARD.asItem(),
                         "E", AEItems.ENGINEERING_PROCESSOR.asItem()
                 )
         );

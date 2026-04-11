@@ -16,7 +16,6 @@ import com.mojang.logging.LogUtils;
 import net.minecraft.nbt.CompoundTag;
 import net.oktawia.crazyae2addons.interfaces.IAdvPatternProviderCpu;
 import net.oktawia.crazyae2addons.interfaces.IIgnoreNBT;
-import net.oktawia.crazyae2addons.interfaces.IPatternProviderCpu;
 import net.pedroksl.advanced_ae.common.cluster.AdvCraftingCPU;
 import net.pedroksl.advanced_ae.common.logic.AdvCraftingCPULogic;
 import net.pedroksl.advanced_ae.common.logic.ExecutingCraftingJob;
@@ -81,9 +80,6 @@ public abstract class MixinAAE {
     private boolean redirectPushPattern(
             ICraftingProvider instance, IPatternDetails iPatternDetails, KeyCounter[] keyCounters
     ) {
-        if (instance instanceof IPatternProviderCpu provider){
-            provider.setPatternDetails(iPatternDetails);
-        }
         boolean result = instance.pushPattern(iPatternDetails, keyCounters);
         if (result) {
             if (instance instanceof IAdvPatternProviderCpu provider) {

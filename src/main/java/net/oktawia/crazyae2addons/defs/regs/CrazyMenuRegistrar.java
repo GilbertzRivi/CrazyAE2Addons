@@ -53,9 +53,6 @@ public class CrazyMenuRegistrar {
     public static final RegistryObject<MenuType<NBTStorageBusMenu>> NBT_STORAGE_BUS_MENU =
             reg(id("nbt_storage_bus"), NBTStorageBusMenu::new, NBTStorageBusPart.class);
 
-    public static final RegistryObject<MenuType<CrazyPatternModifierMenu>> CRAZY_PATTERN_MODIFIER_MENU =
-            reg(id("crazy_pattern_modifier"), CrazyPatternModifierMenu::new, CrazyPatternModifierHost.class);
-
     public static final RegistryObject<MenuType<DisplayMenu>> DISPLAY_MENU =
             reg(id("display"), DisplayMenu::new, DisplayPart.class);
 
@@ -128,9 +125,6 @@ public class CrazyMenuRegistrar {
 
     public static final RegistryObject<MenuType<EntropyCradleControllerMenu>> ENTROPY_CRADLE_CONTROLLER_MENU =
             reg(id("entropy_cradle_controller"), EntropyCradleControllerMenu::new, EntropyCradleControllerBE.class);
-
-    public static final RegistryObject<MenuType<CrazyPatternModifierMenuPP>> CRAZY_PATTERN_MODIFIER_MENU_PP =
-            reg(id("crazy_pattern_modifier_menu_pp"), CrazyPatternModifierMenuPP::new, CrazyPatternModifierHost.class);
 
     public static final RegistryObject<MenuType<NbtViewCellMenu>> NBT_VIEW_CELL_MENU =
             reg(id("nbt_view_cell_menu"), NbtViewCellMenu::new, ViewCellHost.class);

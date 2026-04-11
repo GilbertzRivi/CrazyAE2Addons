@@ -17,10 +17,9 @@ import net.oktawia.crazyae2addons.misc.IconButton;
 public class CrazyPatternMultiplierScreen<C extends CrazyPatternMultiplierMenu> extends AEBaseScreen<C> {
 
     public IconButton clear;
-    public IconButton circuit;
+    public IconButton nbt;
     public IconButton confirm;
     public AETextField value;
-    public AETextField circuitValue;
     public AETextField limit;
     private boolean initialized = false;
 
@@ -33,13 +32,8 @@ public class CrazyPatternMultiplierScreen<C extends CrazyPatternMultiplierMenu> 
         this.clear = new IconButton(Icon.CLEAR, this::clear);
         this.clear.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.pattern_mult_clear")));
 
-        this.circuit = new IconButton(Icon.ENTER, this::circuit);
-        this.circuit.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.pattern_mult_set_circuit")));
-
-        this.circuitValue = new AETextField(style, Minecraft.getInstance().font, 0, 0, 0, 0);
-        this.circuitValue.setBordered(false);
-        this.circuitValue.setMaxLength(2);
-        this.circuitValue.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.pattern_mult_circuit_input")));
+        this.nbt = new IconButton(Icon.ENTER, this::changeNbt);
+        this.nbt.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.modifier_ignore_nbt_tooltip")));
 
         this.value = new AETextField(style, Minecraft.getInstance().font, 0,0,0,0);
         this.value.setBordered(false);
@@ -61,17 +55,12 @@ public class CrazyPatternMultiplierScreen<C extends CrazyPatternMultiplierMenu> 
         this.widgets.add("confirm", this.confirm);
         this.widgets.add("value", this.value);
         this.widgets.add("clear", this.clear);
-        this.widgets.add("circuit", this.circuit);
-        this.widgets.add("circuitVal", this.circuitValue);
+        this.widgets.add("nbt", this.nbt);
         this.widgets.add("limit", this.limit);
     }
 
-    private void circuit(Button button) {
-        if (circuitValue.getValue().isEmpty()){
-            this.getMenu().setCircuit(-1);
-        } else if ((circuitValue.getValue().chars().allMatch(Character::isDigit) && !circuitValue.getValue().isEmpty() && Integer.parseInt(circuitValue.getValue()) <= 32)){
-            this.getMenu().setCircuit(Integer.parseInt(circuitValue.getValue()));
-        }
+    private void changeNbt(Button button) {
+        this.getMenu().changeNBT();
     }
 
     public void clear(Button button) {
@@ -86,6 +75,12 @@ public class CrazyPatternMultiplierScreen<C extends CrazyPatternMultiplierMenu> 
             this.limit.setValue(String.valueOf(getMenu().limit));
             this.initialized = true;
         }
+        setTextContent(
+                "info1",
+                getMenu().ignoreNbt
+                        ? Component.translatable("gui.crazyae2addons.modifier_info_ignore_nbt")
+                        : Component.translatable("gui.crazyae2addons.modifier_info_do_not_ignore_nbt")
+        );
     }
 
     public void modify(Button btn) {
@@ -114,10 +109,6 @@ public class CrazyPatternMultiplierScreen<C extends CrazyPatternMultiplierMenu> 
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
         boolean handled = super.mouseClicked(mouseX, mouseY, button);
 
-        if (button == 1 && this.circuitValue != null && this.circuitValue.isMouseOver(mouseX, mouseY)) {
-            this.circuitValue.setValue("");
-            return true;
-        }
         if (button == 1 && this.value != null && this.value.isMouseOver(mouseX, mouseY)) {
             this.value.setValue("");
             return true;

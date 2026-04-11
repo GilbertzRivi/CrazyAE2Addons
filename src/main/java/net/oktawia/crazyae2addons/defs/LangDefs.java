@@ -33,6 +33,7 @@ public enum LangDefs implements LocalizationEnum {
     RENAME("gui.crazyae2addons.rename", "Rename"),
     DELAY("gui.crazyae2addons.delay", "Tick Delay"),
     PROGRAM_SAVED("gui.crazyae2addons.program_saved", "Pattern saved!"),
+    SYNTAX_ERROR("gui.crazyae2addons.syntax_error", "Syntax Error!"),
     PROGRAM_INVALID("gui.crazyae2addons.program_invalid", "Pattern is invalid"),
     PROGRAM_NO_CODE("gui.crazyae2addons.program_no_code", "No program loaded"),
     PROGRAM_CHANGES_FAILED("gui.crazyae2addons.program_changes_failed", "Failed to apply changes"),

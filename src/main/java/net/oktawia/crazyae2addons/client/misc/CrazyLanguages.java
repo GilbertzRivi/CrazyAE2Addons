@@ -86,17 +86,26 @@ public final class CrazyLanguages {
     public static final TokenType COUNT = new TokenType("ProgCount")
             .setPattern("\\b\\d+(?=\\()");
 
-    public static final TokenType LABEL = new TokenType("ProgLabel")
-            .setPattern("\\b[A-Za-z][A-Za-z0-9_]*:[A-Za-z0-9_]*\\b");
+    public static final TokenType COMMAND_WORD = new TokenType("ProgCommandWord")
+            .setPattern("(?<![A-Za-z0-9_])(?:AND|OR|XOR|NAND)(?![A-Za-z0-9_])");
 
-    public static final TokenType KEYWORD = new TokenType("ProgKeyword")
-            .setPattern("\\b(?:AND|OR|XOR|NAND|P|Z|X|F|B|U|D|R|L|H)\\b");
+    public static final TokenType COMMAND = new TokenType("ProgCommand")
+            .setPattern("[PZXFBUDRLHF]");
+
+    public static final TokenType RESOURCE = new TokenType("ProgResource")
+            .setPattern("(?:[a-z0-9_.-]+:)?[a-z0-9_./-]+");
+
+    public static final TokenType PROP_KEY = new TokenType("ProgPropKey")
+            .setPattern("(?<=[\\[,])[a-z_][a-z0-9_]*(?==)");
+
+    public static final TokenType PROP_VALUE = new TokenType("ProgPropValue")
+            .setPattern("(?<==)(?:true|false|[a-z_][a-z0-9_]*|-?\\d+(?:\\.\\d+)?)");
 
     public static final TokenType NUMBER = new TokenType("ProgNumber")
             .setPattern("-?\\d+(?:\\.\\d+)?");
 
-    public static final TokenType PUNCT = new TokenType("ProgPunct")
-            .setPattern("[:,=]");
+    public static final TokenType OPERATOR = new TokenType("ProgOperator")
+            .setPattern("==|!=|<=|>=|[:,=]");
 
     public static final TokenType PAREN = new TokenType("ProgParen")
             .setPattern("[()]");
@@ -106,6 +115,9 @@ public final class CrazyLanguages {
 
     public static final TokenType BRACE = new TokenType("ProgBrace")
             .setPattern("[{}]");
+
+    public static final TokenType PIPE = new TokenType("ProgPipe")
+            .setPattern("\\|+");
 
     public static final TokenType IDENT = new TokenType("ProgIdent")
             .setPattern("\\b[A-Za-z_][A-Za-z0-9_]*\\b");
@@ -121,13 +133,17 @@ public final class CrazyLanguages {
             List.of(
                     STRING,
                     COUNT,
-                    LABEL,
-                    KEYWORD,
+                    COMMAND_WORD,
+                    COMMAND,
+                    PROP_KEY,
+                    PROP_VALUE,
+                    RESOURCE,
                     NUMBER,
-                    PUNCT,
+                    OPERATOR,
                     PAREN,
                     BRACKET,
                     BRACE,
+                    PIPE,
                     IDENT,
                     WS,
                     OTHER
@@ -144,16 +160,19 @@ public final class CrazyLanguages {
             if (type == COUNT) {
                 return Style.EMPTY.withColor(COUNT_COLOR);
             }
-            if (type == LABEL) {
-                return Style.EMPTY.withColor(LABEL_COLOR);
-            }
-            if (type == KEYWORD) {
+            if (type == COMMAND || type == COMMAND_WORD) {
                 return Style.EMPTY.withColor(COL_RED);
             }
-            if (type == NUMBER) {
+            if (type == RESOURCE) {
+                return Style.EMPTY.withColor(LABEL_COLOR);
+            }
+            if (type == PROP_KEY) {
+                return Style.EMPTY.withColor(0xFF55FFAA);
+            }
+            if (type == PROP_VALUE || type == NUMBER) {
                 return Style.EMPTY.withColor(COL_CYAN);
             }
-            if (type == PUNCT) {
+            if (type == OPERATOR || type == PIPE) {
                 return Style.EMPTY.withColor(COL_GRAY);
             }
             if (type == PAREN) {

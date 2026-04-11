@@ -2,6 +2,7 @@ package net.oktawia.crazyae2addons.logic.buffer;
 
 import appeng.api.config.Actionable;
 import appeng.api.crafting.PatternDetailsHelper;
+import appeng.api.networking.IGrid;
 import appeng.api.networking.IManagedGridNode;
 import appeng.api.networking.crafting.CalculationStrategy;
 import appeng.api.networking.crafting.ICraftingLink;
@@ -20,6 +21,8 @@ import appeng.me.helpers.MachineSource;
 import com.google.common.collect.ImmutableSet;
 import it.unimi.dsi.fastutil.objects.Object2LongMap;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
+import lombok.Getter;
+import lombok.Setter;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.component.CustomData;
@@ -47,9 +50,12 @@ public class ManagedBuffer {
     private final List<Future<ICraftingPlan>> pendingPlans = new ArrayList<>();
     private final List<ICraftingLink> activeLinks = new ArrayList<>();
 
+    @Getter
     private boolean flushPending = false;
     private int flushTickAcc = 0;
     private long readyAtTick = 0;
+
+    @Setter
     private boolean canCraft = true;
 
     public ManagedBuffer(IManagedGridNode mainNode, PatternProviderLogicHost logicHost,
@@ -93,11 +99,6 @@ public class ManagedBuffer {
 
     public boolean isEmpty() {
         return items.isEmpty();
-    }
-
-    public void clear() {
-        items.clear();
-        onDirty.run();
     }
 
     public void collectFromNetwork(List<GenericStack> required, Supplier<Boolean> hasCreative) {
@@ -187,8 +188,6 @@ public class ManagedBuffer {
         onDirty.run();
         return !stillHasExcess;
     }
-
-    public void setCanCraft(boolean canCraft) { this.canCraft = canCraft; }
 
     public boolean requestCrafting(List<GenericStack> inputs) {
         if (!canCraft || hasActiveCrafting()) return false;
@@ -304,7 +303,10 @@ public class ManagedBuffer {
                 readyAtTick = level().getGameTime() + 1;
             }
         } else if (link.isCanceled()) {
-            if (readyAtTick == 0 && pendingPlans.isEmpty() && activeLinks.isEmpty()) {
+            if (readyAtTick == 0
+                    && pendingPlans.isEmpty()
+                    && activeLinks.isEmpty()
+                    && !isActive.get()) {
                 beginFlush();
             }
         }
@@ -350,10 +352,6 @@ public class ManagedBuffer {
         onDirty.run();
     }
 
-    public boolean isFlushPending() {
-        return flushPending;
-    }
-
     public AEItemBufferData toData() {
         List<GenericStack> entries = new ArrayList<>(items.size());
         for (Object2LongMap.Entry<AEKey> e : items.object2LongEntrySet()) {
@@ -383,16 +381,9 @@ public class ManagedBuffer {
         if (actionHost instanceof ICraftingRequester requester) {
             for (var lt : data.links()) {
                 var link = StorageHelper.loadCraftingLink(lt, requester);
-                if (link != null) activeLinks.add(link);
+                activeLinks.add(link);
             }
         }
-    }
-
-    public void cancelCrafting() {
-        readyAtTick = 0;
-        clearPattern();
-        cancelAllLinks();
-        if (!items.isEmpty()) beginFlush();
     }
 
     public boolean hasActiveCrafting() {
@@ -428,7 +419,7 @@ public class ManagedBuffer {
         return logicHost.getBlockEntity().getLevel();
     }
 
-    private @Nullable appeng.api.networking.IGrid grid() {
+    private IGrid grid() {
         return mainNode.getGrid();
     }
 }

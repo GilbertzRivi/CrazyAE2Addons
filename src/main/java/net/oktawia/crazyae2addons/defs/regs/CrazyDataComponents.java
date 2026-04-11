@@ -8,9 +8,6 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.defs.components.AEItemBufferData;
-import net.oktawia.crazyae2addons.defs.components.AmpereMeterData;
-import net.oktawia.crazyae2addons.defs.components.AutoBuilderPreviewData;
-import net.oktawia.crazyae2addons.defs.components.AutoBuilderStateData;
 import net.oktawia.crazyae2addons.defs.components.BuilderPatternData;
 import net.oktawia.crazyae2addons.defs.components.CrazyProviderDisplayData;
 import net.oktawia.crazyae2addons.defs.components.EjectorData;
@@ -39,31 +36,10 @@ public final class CrazyDataComponents {
                                       .networkSynchronized(CrazyProviderDisplayData.STREAM_CODEC)
             );
 
-    public static final DeferredHolder<DataComponentType<?>, DataComponentType<AmpereMeterData>> AMPERE_METER_DATA =
-            COMPONENTS.registerComponentType(
-                    "ampere_meter_data",
-                    builder -> builder.persistent(AmpereMeterData.CODEC)
-                                      .networkSynchronized(AmpereMeterData.STREAM_CODEC)
-            );
-
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<EjectorData>> EJECTOR_DATA =
             COMPONENTS.registerComponentType(
                     "ejector_data",
                     builder -> builder.persistent(EjectorData.CODEC)
-            );
-
-    public static final DeferredHolder<DataComponentType<?>, DataComponentType<AutoBuilderStateData>> AUTOBUILDER_STATE =
-            COMPONENTS.registerComponentType(
-                    "autobuilder_state",
-                    builder -> builder.persistent(AutoBuilderStateData.CODEC)
-            );
-
-    public static final DeferredHolder<DataComponentType<?>, DataComponentType<AutoBuilderPreviewData>> AUTOBUILDER_PREVIEW =
-            COMPONENTS.registerComponentType(
-                    "autobuilder_preview",
-                    builder -> builder
-                            .persistent(AutoBuilderPreviewData.CODEC)
-                            .networkSynchronized(AutoBuilderPreviewData.STREAM_CODEC)
             );
 
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<AEItemBufferData>> AE_ITEM_BUFFER =

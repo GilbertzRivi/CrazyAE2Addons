@@ -57,7 +57,6 @@ public class EjectorMenu extends AEBaseMenu {
             this.cantCraft = "nothing";
         }
 
-        host.setMenu(this);
         registerClientAction(APPLY_PATTERN, this::applyPatternToConfig);
     }
 

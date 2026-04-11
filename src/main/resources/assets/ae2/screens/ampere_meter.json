@@ -1,8 +1,8 @@
 {
   "$schema": "schema.json",
-  "includes": ["common/common.json"],
+  "includes": ["common/common.json", "common/player_inventory.json"],
   "background": {
-    "texture": "guis/blank_background_no_inv.png",
+    "texture": "guis/blank_background.png",
     "srcRect": [0, 0, 176, 205]
   },
   "text": {
@@ -38,7 +38,7 @@
     },
     "direction": {
       "left": 80,
-      "top": 50,
+      "top": 46,
       "width": 16,
       "height": 16
     }

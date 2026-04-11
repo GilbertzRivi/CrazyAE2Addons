@@ -8,12 +8,12 @@
   "slots": {
     "PLAYER_INVENTORY": {
       "left": 47,
-      "bottom": 82,
+      "bottom": 84,
       "grid": "BREAK_AFTER_9COLS"
     },
     "PLAYER_HOTBAR": {
       "left": 47,
-      "bottom": 24,
+      "bottom": 26,
       "grid": "HORIZONTAL"
     }
   },
@@ -31,21 +31,9 @@
   "widgets": {
     "data": {
       "left": 8,
-      "top": 22,
-      "width": 202,
+      "top": 26,
+      "width": 240,
       "height": 135
-    },
-    "confirm": {
-      "left": 231,
-      "top": 16,
-      "width": 16,
-      "height": 16
-    },
-    "delay": {
-      "left": 227,
-      "top": 40,
-      "width": 25,
-      "height": 12
     },
     "rename": {
       "left": 8,
@@ -53,27 +41,33 @@
       "width": 120,
       "height": 16
     },
+    "confirm": {
+      "left": 151,
+      "top": 4,
+      "width": 16,
+      "height": 16
+    },
     "flipH": {
-      "left": 231,
-      "top": 58,
+      "left": 171,
+      "top": 4,
       "width": 16,
       "height": 16
     },
     "flipV": {
-      "left": 231,
-      "top": 76,
+      "left": 191,
+      "top": 4,
       "width": 16,
       "height": 16
     },
     "rotate": {
-      "left": 231,
-      "top": 94,
+      "left": 211,
+      "top": 4,
       "width": 16,
       "height": 16
     },
     "visualAssist": {
       "left": 231,
-      "top": 112,
+      "top": 4,
       "width": 16,
       "height": 16
     }

@@ -3,12 +3,14 @@ package net.oktawia.crazyae2addons.entities;
 import appeng.blockentity.AEBaseBlockEntity;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuHostLocator;
+import com.lowdragmc.lowdraglib2.syncdata.annotation.DescSynced;
+import com.lowdragmc.lowdraglib2.syncdata.annotation.Persisted;
+import com.lowdragmc.lowdraglib2.syncdata.holder.blockentity.ISyncPersistRPCBlockEntity;
+import com.lowdragmc.lowdraglib2.syncdata.storage.FieldManagedStorage;
+import com.lowdragmc.lowdraglib2.syncdata.storage.IManagedStorage;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
@@ -19,26 +21,29 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.oktawia.crazyae2addons.Utils;
-import net.oktawia.crazyae2addons.defs.components.AmpereMeterData;
-import net.oktawia.crazyae2addons.defs.regs.CrazyDataComponents;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.menus.AmpereMeterMenu;
-import org.jetbrains.annotations.Nullable;
+import lombok.Getter;
 
 import java.util.HashMap;
-import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
 
-public class AmpereMeterBE extends AEBaseBlockEntity implements MenuProvider {
+public class AmpereMeterBE extends AEBaseBlockEntity implements MenuProvider, ISyncPersistRPCBlockEntity {
 
-    public AmpereMeterMenu menu;
+    @Getter
+    private final FieldManagedStorage syncStorage = new FieldManagedStorage(this);
+
+    @Persisted @DescSynced
     public boolean direction = false;
+    @DescSynced
     public String transfer = "-";
+    @DescSynced
     public String unit = "-";
-    public Integer numTransfer = 0;
-    public HashMap<Integer, Integer> maxTrans = new HashMap<>();
+    private Integer numTransfer = 0;
+    private HashMap<Integer, Integer> maxTrans = new HashMap<>();
 
+    @Persisted @DescSynced
     public int minFePerTick = 0;
+    @Persisted @DescSynced
     public int maxFePerTick = 1000;
 
     private long lastActiveTick = -1;
@@ -49,66 +54,9 @@ public class AmpereMeterBE extends AEBaseBlockEntity implements MenuProvider {
         super(CrazyBlockEntityRegistrar.AMPERE_METER_BE.get(), pos, blockState);
     }
 
-    public void setMenu(AmpereMeterMenu menu) {
-        this.menu = menu;
-    }
-
-    public AmpereMeterMenu getMenu() {
-        return this.menu;
-    }
-
-    @Override
-    public void loadTag(CompoundTag data, HolderLookup.Provider registries) {
-        super.loadTag(data, registries);
-        if (data.contains("dir")) {
-            this.direction = data.getBoolean("dir");
-        }
-        if (data.contains("minFe")) {
-            this.minFePerTick = data.getInt("minFe");
-        }
-        if (data.contains("maxFe")) {
-            this.maxFePerTick = data.getInt("maxFe");
-        }
-
-        if (this.minFePerTick < 0) this.minFePerTick = 0;
-        if (this.maxFePerTick < this.minFePerTick) this.maxFePerTick = this.minFePerTick;
-    }
-
-    @Override
-    public void saveAdditional(CompoundTag data, HolderLookup.Provider registries) {
-        super.saveAdditional(data, registries);
-        data.putBoolean("dir", this.direction);
-        data.putInt("minFe", this.minFePerTick);
-        data.putInt("maxFe", this.maxFePerTick);
-    }
-
-    @Override
-    protected void writeToStream(RegistryFriendlyByteBuf data) {
-        data.writeBoolean(this.direction);
-        data.writeInt(this.minFePerTick);
-        data.writeInt(this.maxFePerTick);
-    }
-
-    @Override
-    protected boolean readFromStream(RegistryFriendlyByteBuf data) {
-        boolean changed = false;
-        if (data.readBoolean() != this.direction) {
-            this.direction = !this.direction;
-            changed = true;
-        }
-        int minFe = data.readInt();
-        int maxFe = data.readInt();
-        if (minFe != this.minFePerTick || maxFe != this.maxFePerTick) {
-            this.minFePerTick = minFe;
-            this.maxFePerTick = maxFe;
-            changed = true;
-        }
-        return changed;
-    }
-
     @Override
     public Component getDisplayName() {
-        return Component.translatable("block.crazyae2addons.ampere_meter");
+        return this.getBlockState().getBlock().getName();
     }
 
     @Override
@@ -145,10 +93,6 @@ public class AmpereMeterBE extends AEBaseBlockEntity implements MenuProvider {
         this.numTransfer = 0;
         this.unit = "-";
         this.maxTrans.clear();
-        if (this.getMenu() != null) {
-            this.getMenu().transfer = "-";
-            this.getMenu().unit = "-";
-        }
         setChanged();
     }
 
@@ -176,6 +120,45 @@ public class AmpereMeterBE extends AEBaseBlockEntity implements MenuProvider {
         if (getLevel() != null){
             this.lastActiveTick = getLevel().getGameTime();
         }
+    }
+
+    private void sendUpdate() {
+        if (getLevel() != null) {
+            setChanged();
+            getLevel().sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
+            getLevel().invalidateCapabilities(getBlockPos());
+        }
+    }
+
+    public void setDirection(boolean direction) {
+        if (this.direction == direction) return;
+        this.direction = direction;
+        setChanged();
+        needsNetworkRebuild = true;
+        resetTransfer();
+        sendUpdate();
+    }
+
+    public void setMinFePerTick(int min) {
+        min = Math.max(0, min);
+        if (min > this.maxFePerTick) min = this.maxFePerTick;
+        if (this.minFePerTick == min) return;
+
+        this.minFePerTick = min;
+        setChanged();
+        updateComparator();
+        sendUpdate();
+    }
+
+    public void setMaxFePerTick(int max) {
+        max = Math.max(0, max);
+        if (max < this.minFePerTick) max = this.minFePerTick;
+        if (this.maxFePerTick == max) return;
+
+        this.maxFePerTick = max;
+        setChanged();
+        updateComparator();
+        sendUpdate();
     }
 
     private static final IEnergyStorage DUMMY_OUTPUT = new IEnergyStorage() {
@@ -227,11 +210,6 @@ public class AmpereMeterBE extends AEBaseBlockEntity implements MenuProvider {
                     AmpereMeterBE.this.numTransfer = max;
                     AmpereMeterBE.this.transfer = Utils.shortenNumber(max);
                     AmpereMeterBE.this.unit = "FE/t";
-
-                    if (AmpereMeterBE.this.getMenu() != null) {
-                        AmpereMeterBE.this.getMenu().transfer = AmpereMeterBE.this.transfer;
-                        AmpereMeterBE.this.getMenu().unit = AmpereMeterBE.this.unit;
-                    }
 
                     AmpereMeterBE.this.setChanged();
                     int newSignal = AmpereMeterBE.this.getComparatorSignal();

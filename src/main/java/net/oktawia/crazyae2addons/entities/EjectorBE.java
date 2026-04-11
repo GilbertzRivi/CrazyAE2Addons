@@ -243,10 +243,6 @@ public class EjectorBE extends AENetworkedBlockEntity implements MenuProvider, I
         MenuOpener.open(CrazyMenuRegistrar.EJECTOR_MENU.get(), player, locator);
     }
 
-    public void setMenu(EjectorMenu ejectorMenu) {
-        this.menu = ejectorMenu;
-    }
-
     @Override
     public AEItemKey getTerminalIcon() {
         return AEItemKey.of(CrazyBlockRegistrar.EJECTOR_BLOCK.get());

@@ -6,17 +6,12 @@
   ],
   "background": {
     "texture": "guis/auto_builder.png",
-    "srcRect": [
-      0,
-      0,
-      176,
-      205
-    ]
+    "srcRect": [0, 0, 176, 205]
   },
   "slots": {
     "CONFIG": {
-      "left": 120,
-      "top": 76,
+      "left": 118,
+      "top": 66,
       "grid": "HORIZONTAL"
     }
   },
@@ -35,8 +30,8 @@
         "translate": "gui.crazyae2addons.pattern"
       },
       "position": {
-        "left": 128,
-        "top": 64
+        "left": 136,
+        "top": 50
       },
       "align": "CENTER"
     },
@@ -45,100 +40,89 @@
         "translate": "gui.crazyae2addons.offset"
       },
       "position": {
-        "left": 44,
-        "top": 50
+        "left": 52,
+        "top": 32
       },
       "align": "CENTER"
     },
     "missing": {
       "position": {
-        "left": 88,
-        "top": 26
-      },
-      "align": "CENTER"
-    },
-    "missing2": {
-      "text": {
-        "translate": "gui.crazyae2addons.missing"
-      },
-      "position": {
-        "left": 88,
-        "top": 16
+        "left": 110,
+        "top": 6
       },
       "align": "CENTER"
     },
     "energy": {
       "position": {
-        "left": 88,
-        "top": 38
-      },
-      "align": "CENTER"
+        "left": 8,
+        "top": 16
+      }
     }
   },
   "widgets": {
     "skipmissing": {
-      "left": 112,
-      "top": 96,
-      "width": 35,
+      "left": 124,
+      "top": 90,
+      "width": 32,
       "height": 16
     },
-    "n": {
-      "left": 10,
-      "top": 62,
+    "right": {
+      "left": 18,
+      "top": 44,
       "width": 16,
       "height": 16
     },
     "xl": {
-      "left": 6,
-      "top": 80,
+      "left": 14,
+      "top": 68,
       "width": 24,
       "height": 16
     },
-    "s": {
-      "left": 10,
-      "top": 94,
+    "left": {
+      "left": 18,
+      "top": 84,
       "width": 16,
       "height": 16
     },
-    "u": {
-      "left": 36,
-      "top": 62,
+    "up": {
+      "left": 44,
+      "top": 44,
       "width": 16,
       "height": 16
     },
     "yl": {
-      "left": 32,
-      "top": 80,
+      "left": 40,
+      "top": 68,
       "width": 24,
       "height": 16
     },
-    "d": {
-      "left": 36,
-      "top": 94,
+    "down": {
+      "left": 44,
+      "top": 84,
       "width": 16,
       "height": 16
     },
-    "e": {
-      "left": 62,
-      "top": 62,
+    "front": {
+      "left": 70,
+      "top": 44,
       "width": 16,
       "height": 16
     },
     "zl": {
-      "left": 58,
-      "top": 80,
+      "left": 66,
+      "top": 68,
       "width": 24,
       "height": 16
     },
-    "w": {
-      "left": 62,
-      "top": 94,
+    "back": {
+      "left": 70,
+      "top": 84,
       "width": 16,
       "height": 16
     },
     "preview": {
       "right": 24,
-      "top": 8,
+      "top": 4,
       "width": 16,
       "height": 16
     }

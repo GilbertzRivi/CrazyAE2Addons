@@ -30,7 +30,7 @@ import java.util.List;
 
 public class BuilderPreviewRenderer {
 
-    public static float BUILDER_ALPHA = 1.0f;
+    public static float BUILDER_ALPHA = 0.7f;
     public static int MAX_DIST_SQ = 64 * 64;
 
     public static void render(PreviewInfo previewInfo, RenderLevelStageEvent event) {
@@ -72,7 +72,7 @@ public class BuilderPreviewRenderer {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.enableDepthTest();
-        RenderSystem.depthMask(false);
+        RenderSystem.depthMask(true);
         RenderSystem.disableCull();
         RenderSystem.setShaderColor(1f, 1f, 1f, BUILDER_ALPHA);
 
@@ -86,7 +86,7 @@ public class BuilderPreviewRenderer {
             BakedModel model = blockRenderer.getBlockModel(state);
 
             poseStack.pushPose();
-            final float SCALE = 0.99f;
+            final float SCALE = 0.95f;
             final float DELTA = (1.0f - SCALE) * 0.5f;
             poseStack.translate(pos.getX() + DELTA, pos.getY() + DELTA, pos.getZ() + DELTA);
             poseStack.scale(SCALE, SCALE, SCALE);

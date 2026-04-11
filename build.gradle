@@ -99,7 +99,10 @@ configurations {
 }
 
 dependencies {
+    // Mixin and lombok
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+    annotationProcessor("org.projectlombok:lombok:1.18.44")
+    compileOnly("org.projectlombok:lombok:1.18.44")
 
     // AE2
     compileOnly "org.appliedenergistics:appliedenergistics2:19.2.17:api"

@@ -4,6 +4,9 @@ import appeng.api.stacks.GenericStack;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
 
 import java.util.List;
 
@@ -21,4 +24,7 @@ public record AEItemBufferData(
             Codec.INT.optionalFieldOf("flushTickAcc", 0).forGetter(AEItemBufferData::flushTickAcc),
             CompoundTag.CODEC.listOf().optionalFieldOf("links", List.of()).forGetter(AEItemBufferData::links)
     ).apply(inst, AEItemBufferData::new));
+
+    public static final StreamCodec<RegistryFriendlyByteBuf, AEItemBufferData> STREAM_CODEC =
+            ByteBufCodecs.fromCodecWithRegistries(CODEC);
 }

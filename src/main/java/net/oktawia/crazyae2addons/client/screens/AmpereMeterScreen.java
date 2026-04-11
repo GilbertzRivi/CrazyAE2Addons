@@ -53,11 +53,11 @@ public class AmpereMeterScreen<C extends AmpereMeterMenu> extends AEBaseScreen<C
         super.init();
 
         if (minFe != null) {
-            minFe.setValue(String.valueOf(getMenu().minFePerTick));
+            minFe.setValue(String.valueOf(getMenu().host.minFePerTick));
         }
 
         if (maxFe != null) {
-            maxFe.setValue(String.valueOf(getMenu().maxFePerTick));
+            maxFe.setValue(String.valueOf(getMenu().host.maxFePerTick));
         }
     }
 
@@ -73,7 +73,7 @@ public class AmpereMeterScreen<C extends AmpereMeterMenu> extends AEBaseScreen<C
             }
         }
 
-        if (parsed != getMenu().minFePerTick) {
+        if (parsed != getMenu().host.minFePerTick) {
             getMenu().changeMin(parsed);
         }
     }
@@ -90,7 +90,7 @@ public class AmpereMeterScreen<C extends AmpereMeterMenu> extends AEBaseScreen<C
             }
         }
 
-        if (parsed != getMenu().maxFePerTick) {
+        if (parsed != getMenu().host.maxFePerTick) {
             getMenu().changeMax(parsed);
         }
     }
@@ -104,18 +104,18 @@ public class AmpereMeterScreen<C extends AmpereMeterMenu> extends AEBaseScreen<C
     protected void updateBeforeRender(){
         super.updateBeforeRender();
 
-        direction.setState(getMenu().direction);
-        setTextContent("energy", Component.literal(String.format("Transferring: %s %s", getMenu().transfer, getMenu().unit)));
+        direction.setState(getMenu().host.direction);
+        setTextContent("energy", Component.literal(String.format("Transferring: %s %s", getMenu().host.transfer, getMenu().host.unit)));
 
         if (minFe != null && !minFe.isFocused()) {
-            String v = String.valueOf(getMenu().minFePerTick);
+            String v = String.valueOf(getMenu().host.minFePerTick);
             if (!v.equals(minFe.getValue())) {
                 minFe.setValue(v);
             }
         }
 
         if (maxFe != null && !maxFe.isFocused()) {
-            String v = String.valueOf(getMenu().maxFePerTick);
+            String v = String.valueOf(getMenu().host.maxFePerTick);
             if (!v.equals(maxFe.getValue())) {
                 maxFe.setValue(v);
             }

@@ -22,12 +22,8 @@ public class BuilderPatternScreen<C extends BuilderPatternMenu> extends AEBaseSc
 
     private final LDLibCodeEditorAdapter textEditor;
     private final AETextField renameField;
-    private final AETextField delayField;
     private IconButton confirmBtn;
     private boolean initialized = false;
-    private String statusText = "";
-    private int statusColor = 0xFF00CC00;
-    private int statusTimer = 0;
 
     public BuilderPatternScreen(C menu, Inventory playerInventory, Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
@@ -42,11 +38,7 @@ public class BuilderPatternScreen<C extends BuilderPatternMenu> extends AEBaseSc
         renameField.setBordered(false);
         widgets.add("rename", renameField);
 
-        delayField = new AETextField(style, Minecraft.getInstance().font, 0, 0, 25, 12);
-        delayField.setBordered(false);
-        widgets.add("delay", delayField);
-
-        confirmBtn = new IconButton(Icon.VALID, btn -> save());
+        confirmBtn = new IconButton(Icon.ENTER, btn -> save());
         confirmBtn.setTooltip(Tooltip.create(Component.translatable(LangDefs.CONFIRM.getTranslationKey())));
         widgets.add("confirm", confirmBtn);
 
@@ -82,20 +74,10 @@ public class BuilderPatternScreen<C extends BuilderPatternMenu> extends AEBaseSc
     protected void updateBeforeRender() {
         super.updateBeforeRender();
         textEditor.tick();
-        if (statusTimer > 0) statusTimer--;
         if (!initialized) {
             renameField.setValue(getMenu().name != null ? getMenu().name : "");
-            delayField.setValue(String.valueOf(getMenu().delay != null ? getMenu().delay : 0));
             getMenu().requestData();
             initialized = true;
-        }
-    }
-
-    @Override
-    public void render(GuiGraphics g, int mouseX, int mouseY, float partial) {
-        super.render(g, mouseX, mouseY, partial);
-        if (statusTimer > 0 && !statusText.isEmpty()) {
-            g.drawString(font, statusText, leftPos + 130, topPos + 8, statusColor, false);
         }
     }
 
@@ -152,42 +134,10 @@ public class BuilderPatternScreen<C extends BuilderPatternMenu> extends AEBaseSc
             getMenu().updateData(text);
             String newName = renameField.getValue();
             if (!newName.isEmpty()) getMenu().rename(newName);
-            String delayStr = delayField.getValue();
-            if (!delayStr.isEmpty()) {
-                try {
-                    getMenu().updateDelay(Integer.parseInt(delayStr));
-                } catch (NumberFormatException ignored) {}
-            }
-            statusText = Component.translatable(LangDefs.PROGRAM_SAVED.getTranslationKey()).getString();
-            statusColor = 0xFF00CC00;
             confirmBtn.setTooltip(Tooltip.create(Component.translatable(LangDefs.PROGRAM_SAVED.getTranslationKey())));
         } else {
-            statusText = Component.translatable(LangDefs.PROGRAM_INVALID.getTranslationKey()).getString();
-            statusColor = 0xFFCC0000;
-            confirmBtn.setTooltip(Tooltip.create(Component.literal("Syntax error: " + result.error)));
+            confirmBtn.setTooltip(Tooltip.create(Component.translatable(LangDefs.SYNTAX_ERROR.getTranslationKey()).append(" ").append(result.error)));
         }
-        statusTimer = 250;
-    }
-
-    @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (textEditor.isMouseOver(mouseX, mouseY)) {
-            if (textEditor.mouseClicked(mouseX, mouseY, button)) {
-                setFocused(textEditor);
-                return true;
-            }
-        }
-        return super.mouseClicked(mouseX, mouseY, button);
-    }
-
-    @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        if (textEditor.isFocused()) {
-            if (textEditor.mouseReleased(mouseX, mouseY, button)) {
-                return true;
-            }
-        }
-        return super.mouseReleased(mouseX, mouseY, button);
     }
 
     @Override

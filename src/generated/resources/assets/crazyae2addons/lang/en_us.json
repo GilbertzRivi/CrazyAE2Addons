@@ -131,6 +131,7 @@
   "gui.crazyae2addons.skip_missing_tooltip": "Skip blocks that are missing from the network",
   "gui.crazyae2addons.stock": "Stock",
   "gui.crazyae2addons.submit": "Submit",
+  "gui.crazyae2addons.syntax_error": "Syntax Error!",
   "gui.crazyae2addons.target": "Target",
   "gui.crazyae2addons.type_label": "Type:",
   "gui.crazyae2addons.types_header": "Types",

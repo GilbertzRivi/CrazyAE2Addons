@@ -34,8 +34,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtOps;
-import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.MenuProvider;
@@ -50,7 +48,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.client.renderer.preview.PreviewInfo;
-import net.oktawia.crazyae2addons.defs.components.AEItemBufferData;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
@@ -198,6 +195,7 @@ public class AutoBuilderBE extends AENetworkedBlockEntity implements
 
         getMainNode()
                 .addService(IGridTickable.class, this)
+                .addService(ICraftingRequester.class, this)
                 .setFlags(GridFlags.REQUIRE_CHANNEL)
                 .setIdlePowerUsage(4)
                 .setVisualRepresentation(
@@ -345,6 +343,11 @@ public class AutoBuilderBE extends AENetworkedBlockEntity implements
         if (level != null && !level.isClientSide) {
             loadCode();
             recalculateRequiredEnergy();
+            buffer.onLoad();
+
+            if (!buffer.isFlushPending() && !buffer.isEmpty() && !isRunning && !isCrafting) {
+                buffer.beginFlush();
+            }
 
             if (previewEnabled && (!inventory.getStackInSlot(0).isEmpty() || !inventory.getStackInSlot(1).isEmpty())) {
                 AutoBuilderPreviewOps.rebuildPreviewFromCode(this);
@@ -377,43 +380,6 @@ public class AutoBuilderBE extends AENetworkedBlockEntity implements
                 drops.add(s);
             }
         }
-    }
-
-    @Override
-    public void loadTag(CompoundTag tag, HolderLookup.Provider registries) {
-        super.loadTag(tag, registries);
-
-        this.upgrades.readFromNBT(tag, "myupgrades", registries);
-        this.inventory.readFromNBT(tag, "inv", registries);
-        buffer.getLogic().readFromNBT(tag, registries);
-
-        if (tag.contains("buffer", Tag.TAG_COMPOUND)) {
-            AEItemBufferData b = AEItemBufferData.CODEC
-                    .parse(NbtOps.INSTANCE, tag.getCompound("buffer"))
-                    .getOrThrow();
-            buffer.fromData(b);
-            if (!b.flushPending() && !buffer.isEmpty() && !isRunning && !isCrafting) {
-                buffer.beginFlush();
-            }
-        }
-
-        this.previewDirty = true;
-        if (level != null && level.isClientSide) {
-            this.previewInfo = null;
-        }
-    }
-
-    @Override
-    public void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
-
-        this.upgrades.writeToNBT(tag, "myupgrades", registries);
-        this.inventory.writeToNBT(tag, "inv", registries);
-        buffer.getLogic().writeToNBT(tag, registries);
-
-        tag.put("buffer", AEItemBufferData.CODEC
-                .encodeStart(NbtOps.INSTANCE, buffer.toData())
-                .getOrThrow());
     }
 
     @Override

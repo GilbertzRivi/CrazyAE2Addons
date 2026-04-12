@@ -14,6 +14,7 @@ import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuHostLocator;
 import appeng.util.SettingsFrom;
 import appeng.util.inv.AppEngInternalInventory;
+import lombok.Getter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.component.DataComponentMap;
@@ -44,6 +45,7 @@ public class CrazyPatternProviderBE extends PatternProviderBlockEntity implement
     private static final int BASE_SIZE = 8 * 9;
     private static final int ROW_SIZE = 9;
 
+    @Getter
     private int added = 0;
 
     public final IUpgradeInventory upgrades = UpgradeInventories.forMachine(
@@ -68,10 +70,6 @@ public class CrazyPatternProviderBE extends PatternProviderBlockEntity implement
                 new ChunkPos(getBlockPos()),
                 new SyncBlockClientPacket(getBlockPos(), added)
         );
-    }
-
-    public int getAdded() {
-        return added;
     }
 
     public void setAdded(int newAdded) {

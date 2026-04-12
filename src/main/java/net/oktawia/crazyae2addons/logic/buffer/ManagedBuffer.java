@@ -25,6 +25,7 @@ import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.Level;
 import net.oktawia.crazyae2addons.defs.components.AEItemBufferData;
@@ -364,7 +365,8 @@ public class ManagedBuffer {
             link.writeToNBT(lt);
             linkTags.add(lt);
         }
-        return new AEItemBufferData(entries, flushPending, flushTickAcc, linkTags);
+        var patternSlot = logic.getPatternInv().getStackInSlot(0);
+        return new AEItemBufferData(entries, flushPending, flushTickAcc, linkTags, patternSlot);
     }
 
     public void fromData(AEItemBufferData data) {
@@ -384,6 +386,18 @@ public class ManagedBuffer {
                 activeLinks.add(link);
             }
         }
+        var patternSlot = data.patternSlot();
+        if (!patternSlot.isEmpty()) {
+            logic.getPatternInv().setItemDirect(0, patternSlot);
+            // updatePatterns() nie jest tu wołane — level jest null przy deserializacji.
+            // Zostanie wywołane z onLoad() gdy level jest już dostępny.
+        }
+    }
+
+    public void onLoad() {
+        if (!logic.getPatternInv().getStackInSlot(0).isEmpty()) {
+            logic.updatePatterns();
+        }
     }
 
     public boolean hasActiveCrafting() {
@@ -391,7 +405,7 @@ public class ManagedBuffer {
     }
 
     private void clearPattern() {
-        logic.getPatternInv().setItemDirect(0, net.minecraft.world.item.ItemStack.EMPTY);
+        logic.getPatternInv().setItemDirect(0, ItemStack.EMPTY);
         logic.updatePatterns();
     }
 

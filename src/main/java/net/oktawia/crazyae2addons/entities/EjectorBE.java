@@ -19,12 +19,12 @@ import appeng.menu.locator.MenuHostLocator;
 import appeng.util.ConfigInventory;
 import appeng.util.inv.AppEngInternalInventory;
 import com.google.common.collect.ImmutableSet;
+import com.lowdragmc.lowdraglib2.syncdata.annotation.Persisted;
+import com.lowdragmc.lowdraglib2.syncdata.holder.blockentity.ISyncPersistRPCBlockEntity;
+import com.lowdragmc.lowdraglib2.syncdata.storage.FieldManagedStorage;
+import lombok.Getter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtOps;
-import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
@@ -34,7 +34,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.oktawia.crazyae2addons.blocks.EjectorBlock;
-import net.oktawia.crazyae2addons.defs.components.AEItemBufferData;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
@@ -46,14 +45,20 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 
-public class EjectorBE extends AENetworkedBlockEntity implements MenuProvider, IGridTickable, PatternProviderLogicHost, ICraftingRequester {
+public class EjectorBE extends AENetworkedBlockEntity implements MenuProvider, IGridTickable, PatternProviderLogicHost, ICraftingRequester, ISyncPersistRPCBlockEntity {
 
-    public ConfigInventory config = ConfigInventory.configStacks(36).build();
-    public AppEngInternalInventory pattern = new AppEngInternalInventory(1);
+    @Getter
+    private final FieldManagedStorage syncStorage = new FieldManagedStorage(this);
+
+    @Persisted
+    public final ConfigInventory config = ConfigInventory.configStacks(36).build();
+    @Persisted
+    public final AppEngInternalInventory pattern = new AppEngInternalInventory(1);
     public GenericStack cantCraft = null;
     public EjectorMenu menu = null;
     private boolean isCrafting = false;
 
+    @Persisted
     private final ManagedBuffer buffer = new ManagedBuffer(
             getMainNode(), this, this, this::setChanged, this::ejectFromBuffer, () -> isCrafting
     );
@@ -64,7 +69,16 @@ public class EjectorBE extends AENetworkedBlockEntity implements MenuProvider, I
                 .setIdlePowerUsage(2.0F)
                 .setFlags(GridFlags.REQUIRE_CHANNEL)
                 .addService(IGridTickable.class, this)
+                .addService(ICraftingRequester.class, this)
                 .setVisualRepresentation(new ItemStack(CrazyBlockRegistrar.EJECTOR_BLOCK.get().asItem()));
+    }
+
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        if (level != null && !level.isClientSide) {
+            buffer.onLoad();
+        }
     }
 
     @Override
@@ -191,31 +205,6 @@ public class EjectorBE extends AENetworkedBlockEntity implements MenuProvider, I
 
         if (!buffer.isEmpty()) buffer.beginFlush();
         getLevel().setBlockAndUpdate(getBlockPos(), getBlockState().setValue(EjectorBlock.ISCRAFTING, false));
-    }
-
-    @Override
-    public void loadTag(CompoundTag data, HolderLookup.Provider registries) {
-        super.loadTag(data, registries);
-        if (data.contains("config")) {
-            this.config.readFromChildTag(data, "config", registries);
-        }
-        if (data.contains("pattern")) {
-            this.pattern.readFromNBT(data, "pattern", registries);
-        }
-        if (data.contains("buffer", Tag.TAG_COMPOUND)) {
-            AEItemBufferData.CODEC.parse(NbtOps.INSTANCE, data.getCompound("buffer"))
-                    .result().ifPresent(buffer::fromData);
-        }
-        isCrafting = buffer.hasActiveCrafting();
-    }
-
-    @Override
-    public void saveAdditional(CompoundTag data, HolderLookup.Provider registries) {
-        super.saveAdditional(data, registries);
-        this.config.writeToChildTag(data, "config", registries);
-        this.pattern.writeToNBT(data, "pattern", registries);
-        AEItemBufferData.CODEC.encodeStart(NbtOps.INSTANCE, buffer.toData())
-                .result().ifPresent(tag -> data.put("buffer", tag));
     }
 
     @Override

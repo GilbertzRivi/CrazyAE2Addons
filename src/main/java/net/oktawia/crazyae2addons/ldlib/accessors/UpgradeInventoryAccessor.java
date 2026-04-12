@@ -15,7 +15,7 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.common.CommonHooks;
 import org.jetbrains.annotations.NotNull;
 
-public final class AE2UpgradeInventoryAccessor implements IReadOnlyAccessor<IUpgradeInventory> {
+public final class UpgradeInventoryAccessor implements IReadOnlyAccessor<IUpgradeInventory> {
     private static final String SUBTAG = "inv";
 
     @Override

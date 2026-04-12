@@ -12,13 +12,9 @@ public class CraftingSchedulerMenu extends AEBaseMenu {
     public CraftingSchedulerBE host;
     public String SAVE = "actionSave";
 
-    @GuiSync(493)
-    public Integer amount;
-
     public CraftingSchedulerMenu(int id, Inventory ip, CraftingSchedulerBE host) {
         super(CrazyMenuRegistrar.CRAFTING_SCHEDULER_MENU.get(), id, ip, host);
         this.host = host;
-        this.amount = host.amount;
         addSlot(new FakeSlot(host.inv.createMenuWrapper(), 0), SlotSemantics.CONFIG);
         registerClientAction(SAVE, Integer.class, this::save);
         createPlayerInventorySlots(ip);

@@ -10,7 +10,7 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import org.jetbrains.annotations.NotNull;
 
-public final class AE2InventoryAccessor implements IReadOnlyAccessor<AppEngInternalInventory> {
+public final class InventoryAccessor implements IReadOnlyAccessor<AppEngInternalInventory> {
 
     @Override
     public boolean test(Class<?> type) {

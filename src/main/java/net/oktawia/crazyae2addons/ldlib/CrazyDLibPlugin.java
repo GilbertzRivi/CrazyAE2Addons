@@ -9,8 +9,10 @@ import net.oktawia.crazyae2addons.ldlib.accessors.*;
 public final class CrazyDLibPlugin implements ILDLibPlugin {
     @Override
     public void onLoad() {
-        AccessorRegistries.registerAccessor(new AE2InventoryAccessor(), 1500);
-        AccessorRegistries.registerAccessor(new AE2UpgradeInventoryAccessor(), 1500);
+        AccessorRegistries.registerAccessor(new InventoryAccessor(), 1500);
+        AccessorRegistries.registerAccessor(new UpgradeInventoryAccessor(), 1500);
         AccessorRegistries.registerAccessor(new ManagedBufferAccessor(), 1500);
+        AccessorRegistries.registerAccessor(new ConfigInventoryAccessor(), 1500);
+        AccessorRegistries.registerAccessor(new CraftingLinkAccessor(), 1000);
     }
 }

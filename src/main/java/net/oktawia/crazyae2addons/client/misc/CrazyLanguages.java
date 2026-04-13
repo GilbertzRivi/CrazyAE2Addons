@@ -22,6 +22,8 @@ public final class CrazyLanguages {
     private static final int MD_MARKER_COLOR  = 0xFFFFC800;
     private static final int MD_COMMAND_COLOR = 0xFF00FFC8;
     private static final int MD_INDENT_COLOR  = 0xFF888888;
+    private static final int MD_TABLE_COLOR   = 0xFFB8B8B8;
+    private static final int MD_CODE_COLOR    = 0xFFFFDD55;
     private static final int LABEL_COLOR      = 0xFF66CCFF;
     private static final int COUNT_COLOR      = 0xFFFFDD55;
 
@@ -37,17 +39,44 @@ public final class CrazyLanguages {
     public static final TokenType MD_INDENT = new TokenType("MdIndent")
             .setPattern(">>");
 
+    public static final TokenType MD_HEADING = new TokenType("MdHeading")
+            .setPattern("(?m)^(#{1,6})(?=\\s)");
+
+    public static final TokenType MD_BLOCKQUOTE = new TokenType("MdBlockquote")
+            .setPattern("(?m)^[ \\t]{0,3}(?:>[ \\t]?)+");
+
     public static final TokenType MD_LIST_MARKER = new TokenType("MdListMarker")
-            .setPattern("(?:(?<=^)|(?<=\\s))[*-](?=\\s)");
+            .setPattern("(?m)^[ \\t]{0,3}(?:[*+-]|\\d+\\.)(?=\\s)");
+
+    public static final TokenType MD_TABLE_PIPE = new TokenType("MdTablePipe")
+            .setPattern("\\|");
+
+    public static final TokenType MD_TABLE_SEPARATOR = new TokenType("MdTableSeparator")
+            .setPattern("(?m):?-{3,}:?");
+
+    public static final TokenType MD_CODE_FENCE = new TokenType("MdCodeFence")
+            .setPattern("(?m)^```[A-Za-z0-9_-]*\\s*$");
+
+    public static final TokenType MD_INLINE_CODE = new TokenType("MdInlineCode")
+            .setPattern("`[^`\\r\\n]+`");
 
     public static final TokenType MD_STRONG = new TokenType("MdStrong")
             .setPattern("\\*\\*|__|~~");
 
     public static final TokenType MD_EM = new TokenType("MdEm")
-            .setPattern("(?<!\\*)\\*(?!\\*)");
+            .setPattern("(?<!\\*)\\*(?!\\*)|(?<!_)_(?!_)");
+
+    public static final TokenType MD_WS = new TokenType("MdWhitespace")
+            .setPattern("[ \\t]+");
+
+    public static final TokenType MD_NL = new TokenType("MdNewline")
+            .setPattern("\\R");
 
     public static final TokenType MD_TEXT = new TokenType("MdText")
-            .setPattern("[^&^*_~>\\-]+|.");
+            .setPattern("[^\\r\\n&^`*_~|>#-]+");
+
+    public static final TokenType MD_OTHER = new TokenType("MdOther")
+            .setPattern(".");
 
     public static final ILanguageDefinition MARKDOWN = new LanguageDefinition(
             "crazy_markdown",
@@ -56,10 +85,19 @@ public final class CrazyLanguages {
                     MD_TYPED_TOKEN,
                     MD_STYLE_CMD,
                     MD_INDENT,
+                    MD_HEADING,
+                    MD_BLOCKQUOTE,
                     MD_LIST_MARKER,
+                    MD_CODE_FENCE,
+                    MD_INLINE_CODE,
+                    MD_TABLE_PIPE,
+                    MD_TABLE_SEPARATOR,
                     MD_STRONG,
                     MD_EM,
-                    MD_TEXT
+                    MD_WS,
+                    MD_NL,
+                    MD_TEXT,
+                    MD_OTHER
             ),
             Set.of()
     ).compileTokenPattern();
@@ -70,11 +108,17 @@ public final class CrazyLanguages {
             if (type == MD_HEX_CMD || type == MD_TYPED_TOKEN || type == MD_STYLE_CMD) {
                 return Style.EMPTY.withColor(MD_COMMAND_COLOR);
             }
-            if (type == MD_INDENT) {
+            if (type == MD_INDENT || type == MD_BLOCKQUOTE) {
                 return Style.EMPTY.withColor(MD_INDENT_COLOR);
             }
-            if (type == MD_LIST_MARKER || type == MD_STRONG || type == MD_EM) {
+            if (type == MD_HEADING || type == MD_LIST_MARKER || type == MD_STRONG || type == MD_EM) {
                 return Style.EMPTY.withColor(MD_MARKER_COLOR);
+            }
+            if (type == MD_TABLE_PIPE || type == MD_TABLE_SEPARATOR) {
+                return Style.EMPTY.withColor(MD_TABLE_COLOR);
+            }
+            if (type == MD_CODE_FENCE || type == MD_INLINE_CODE) {
+                return Style.EMPTY.withColor(MD_CODE_COLOR);
             }
             return Style.EMPTY.withColor(DEFAULT_COLOR);
         }

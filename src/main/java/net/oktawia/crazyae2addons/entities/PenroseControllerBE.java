@@ -59,6 +59,7 @@ public class PenroseControllerBE extends AENetworkInvBlockEntity
         implements Previewable, MenuProvider, IUpgradeableObject, IGridTickable {
 
     public static final Set<PenroseControllerBE> CLIENT_INSTANCES = new HashSet<>();
+    public List<BlockEntity> gregHatches = new ArrayList<>();
 
     /*
      * ===== Units glossary =====
@@ -162,7 +163,7 @@ public class PenroseControllerBE extends AENetworkInvBlockEntity
 
     // ===== ENERGY =====
     private static final long MAX_STORED_ENERGY = Long.MAX_VALUE;
-    private long storedEnergy = 0L;
+    public long storedEnergy = 0L;
 
     // >>> UI telemetry
     private long storedEnergyInDisk = 0L;
@@ -172,7 +173,7 @@ public class PenroseControllerBE extends AENetworkInvBlockEntity
     public boolean preview = false;
 
     private PreviewInfo previewInfo = null;
-    private boolean formed = false;
+    public boolean formed = false;
 
     private boolean blackHoleActive = false;
     private long   bhMass = 0L;   // MU
@@ -807,7 +808,7 @@ public class PenroseControllerBE extends AENetworkInvBlockEntity
         return (long) Math.round(e);
     }
 
-    private void recomputeUiEnergy() {
+    public void recomputeUiEnergy() {
         if (!blackHoleActive) {
             storedEnergyInDisk = 0L;
             lastGeneratedFePerTickGross = 0L;
@@ -874,7 +875,7 @@ public class PenroseControllerBE extends AENetworkInvBlockEntity
         else storedEnergy += add;
     }
 
-    private long takeStoredEnergy(long want) {
+    public long takeStoredEnergy(long want) {
         if (want <= 0 || storedEnergy <= 0) return 0L;
         long got = Math.min(storedEnergy, want);
         storedEnergy -= got;
@@ -935,13 +936,14 @@ public class PenroseControllerBE extends AENetworkInvBlockEntity
                 injectionPorts.clear();
                 heatVents.clear();
                 hawkingVents.clear();
+                gregHatches.clear();
 
                 pendingFeedMu = 0;
                 pendingCoolingHeat = 0.0;
                 pendingEvaporation = 0L;
             }
 
-            structureTickCounter -= 20;
+            structureTickCounter = 0;
         }
 
         if (!blackHoleActive) {
@@ -949,15 +951,13 @@ public class PenroseControllerBE extends AENetworkInvBlockEntity
             pendingCoolingHeat = 0.0;
             pendingEvaporation = 0L;
             clearDisk();
-            tickPorts(t);
             return TickRateModulation.IDLE;
         }
 
         var grid = getMainNode().getGrid();
         boolean ioEnabled = formed && grid != null && level != null && !level.isClientSide;
 
-        // snapshots dzieci (server only, tylko jeśli IO działa)
-        ArrayList<PenroseInjectionPortBE> injSnapshot = new ArrayList<>();
+        ArrayList<PenroseInjectionPortBE> injSnapshot;
         ArrayList<PenroseHeatVentBE> heatSnapshot = new ArrayList<>();
         ArrayList<PenroseHawkingVentBE> hawkSnapshot = new ArrayList<>();
 
@@ -966,7 +966,6 @@ public class PenroseControllerBE extends AENetworkInvBlockEntity
             heatSnapshot = snapshotValid(heatVents);
             hawkSnapshot = snapshotValid(hawkingVents);
 
-            // jeśli jakikolwiek hawking vent jest "armed" => blokuj injection w tej paczce ticków
             if (!hawkSnapshot.isEmpty()) {
                 boolean anyArmed = false;
                 for (PenroseHawkingVentBE v : hawkSnapshot) {
@@ -980,7 +979,6 @@ public class PenroseControllerBE extends AENetworkInvBlockEntity
                 if (anyArmed) requestVentingLock(Math.min(40, t + 1));
             }
 
-            // tick injection portów (raz na paczkę ticków)
             if (!injSnapshot.isEmpty() && !isVentingLocked()) {
                 for (PenroseInjectionPortBE p : injSnapshot) {
                     p.tickFromController(t);
@@ -994,7 +992,6 @@ public class PenroseControllerBE extends AENetworkInvBlockEntity
             pendingEvaporation = 0L;
         }
 
-        // external cooling/evap (inne źródła) – tylko gdy IO działa
         double coolTotal = ioEnabled ? Math.max(0.0, pendingCoolingHeat) : 0.0;
         long evapTotal = ioEnabled ? Math.max(0L, pendingEvaporation) : 0L;
         pendingCoolingHeat = 0.0;
@@ -1010,7 +1007,6 @@ public class PenroseControllerBE extends AENetworkInvBlockEntity
         for (int step = 0; step < t; step++) {
             long massBefore = bhMass;
 
-            // feed tylko jeśli IO działa i nie vent locked
             int feedThisTick;
             if (!ioEnabled || isVentingLocked()) {
                 pendingFeedMu = 0;
@@ -1022,36 +1018,29 @@ public class PenroseControllerBE extends AENetworkInvBlockEntity
             }
             lastFeedMu = feedThisTick;
 
-            // injectMu = MU injected into disk this tick
             double injectMu = (feedThisTick > 0) ? ((double) feedThisTick * (double) MU_PER_SINGU) : 0.0;
             diskAdvanceOneTick(injectMu);
 
-            // diskFlow = "singu/t" equivalent
             double diskFlow = diskMassMu / (double) DISK_MEAN_TICKS;
             if (diskFlow < 0.0) diskFlow = 0.0;
 
             double mFactor = computeMassFactorSweet();
 
-            // accretion heat (GK/t)
             heat += heatPerFlow * diskFlow * mFactor;
 
-            // external cooling (średnia)
             heat -= coolPerTick;
             if (heat < 0) heat = 0.0;
 
             if (heat >= maxHeatGK) {
                 triggerMeltdown("Accretion disk overheated");
-                tickPorts(1);
                 return TickRateModulation.IDLE;
             }
 
-            // external hawking evap (średnia)
             long evapExt = evapBase + (step < evapRem ? 1L : 0L);
             if (evapExt > 0L) {
                 applyEvaporationInternal(evapExt);
             }
 
-            // ===== GROSS GENERATION (budget na ten tick) =====
             long generatedGross = 0L;
             if (diskMassMu > 0.0) {
                 double heatEff = computeHeatEff();
@@ -1063,7 +1052,6 @@ public class PenroseControllerBE extends AENetworkInvBlockEntity
             long genBudget = generatedGross;
             long consumedThisTick = 0L;
 
-            // ===== HEAT VENTS =====
             if (ioEnabled && !heatSnapshot.isEmpty()) {
                 for (PenroseHeatVentBE v : heatSnapshot) {
                     var lv = v.getLevel();
@@ -1103,7 +1091,6 @@ public class PenroseControllerBE extends AENetworkInvBlockEntity
                 }
             }
 
-            // ===== HAWKING VENTS =====
             if (ioEnabled && !hawkSnapshot.isEmpty()) {
                 for (PenroseHawkingVentBE v : hawkSnapshot) {
                     var lv = v.getLevel();
@@ -1111,7 +1098,6 @@ public class PenroseControllerBE extends AENetworkInvBlockEntity
                     if (v.desiredEvap <= 0.0) continue;
                     if (!lv.hasNeighborSignal(v.getBlockPos())) continue;
 
-                    // vent aktywny -> blokuj injection niezależnie od FE
                     bumpVentingLock(2);
 
                     long cost = PenroseHawkingVentBE.computeCostForEvap(v.desiredEvap);
@@ -1150,20 +1136,16 @@ public class PenroseControllerBE extends AENetworkInvBlockEntity
 
             if (heat >= maxHeatGK) {
                 triggerMeltdown("Accretion disk overheated");
-                tickPorts(1);
                 return TickRateModulation.IDLE;
             }
 
             if (bhMass >= maxMassMu) {
                 triggerMeltdown("Black hole mass limit exceeded");
-                tickPorts(1);
                 return TickRateModulation.IDLE;
             }
 
-            // ===== store leftover generation after costs =====
             if (genBudget > 0) addStoredEnergyCapped(genBudget);
 
-            // telemetry ΔM/s
             long dM = bhMass - massBefore;
             secMassDeltaAcc += dM;
             secTickCounter++;
@@ -1177,9 +1159,11 @@ public class PenroseControllerBE extends AENetworkInvBlockEntity
         lastGeneratedFePerTickGross = genGrossAcc / (long) t;
         lastConsumedFePerTick = consumedAcc / (long) t;
 
+        if (CrazyConfig.COMMON.PenroseFEOutputEnabled.get()) {
+            tickPorts(t);
+        }
         recomputeUiEnergy();
 
-        tickPorts(t);
         setChanged();
         return TickRateModulation.IDLE;
     }
@@ -1244,15 +1228,31 @@ public class PenroseControllerBE extends AENetworkInvBlockEntity
 
     @Override
     public <T> @NotNull LazyOptional<T> getCapability(@NotNull Capability<T> cap, Direction side) {
-        if (cap == ForgeCapabilities.ENERGY) return energyCap.cast();
-        if (cap == ForgeCapabilities.ITEM_HANDLER) return LazyOptional.empty();
+        if (cap == ForgeCapabilities.ENERGY) {
+            if (!CrazyConfig.COMMON.PenroseFEOutputEnabled.get()) {
+                return LazyOptional.empty();
+            }
+        }
         return super.getCapability(cap, side);
     }
 
     @Override
     public <T> @NotNull LazyOptional<T> getCapability(@NotNull Capability<T> cap) {
-        if (cap == ForgeCapabilities.ENERGY) return energyCap.cast();
-        if (cap == ForgeCapabilities.ITEM_HANDLER) return LazyOptional.empty();
+        if (cap == ForgeCapabilities.ENERGY) {
+            if (!CrazyConfig.COMMON.PenroseFEOutputEnabled.get()) {
+                return LazyOptional.empty();
+            }
+        }
         return super.getCapability(cap);
+    }
+
+    public void clearDynamoHatches() {
+        this.gregHatches.clear();
+    }
+
+    public void registerDynamoHatch(BlockEntity be) {
+        if (be != null && !be.isRemoved() && !gregHatches.contains(be)) {
+            gregHatches.add(be);
+        }
     }
 }

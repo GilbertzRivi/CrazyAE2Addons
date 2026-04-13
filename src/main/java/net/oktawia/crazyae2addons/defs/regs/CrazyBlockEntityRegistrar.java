@@ -70,8 +70,22 @@ public class CrazyBlockEntityRegistrar {
     public static final RegistryObject<BlockEntityType<PenrosePortBE>> PENROSE_PORT_BE =
             reg("penrose_port_be", CrazyBlockRegistrar.PENROSE_PORT, PenrosePortBE::new, PenrosePortBE.class);
 
-    public static final RegistryObject<BlockEntityType<PenroseControllerBE>> PENROSE_CONTROLLER_BE =
-            reg("penrose_controller_be", CrazyBlockRegistrar.PENROSE_CONTROLLER, PenroseControllerBE::new, PenroseControllerBE.class);
+    public static final RegistryObject<BlockEntityType<? extends PenroseControllerBE>> PENROSE_CONTROLLER_BE =
+            BLOCK_ENTITIES.register("penrose_controller_be", () -> {
+                var blk = CrazyBlockRegistrar.PENROSE_CONTROLLER.get();
+
+                if (IsModLoaded.isGTCEuLoaded()) {
+                    var type = BlockEntityType.Builder.of(GTPenroseControllerBE::new, blk).build(null);
+                    BLOCK_ENTITY_SETUP.add(() ->
+                            ((AEBaseEntityBlock) blk).setBlockEntity(GTPenroseControllerBE.class, type, null, null));
+                    return type;
+                } else {
+                    var type = BlockEntityType.Builder.of(PenroseControllerBE::new, blk).build(null);
+                    BLOCK_ENTITY_SETUP.add(() ->
+                            ((AEBaseEntityBlock) blk).setBlockEntity(PenroseControllerBE.class, type, null, null));
+                    return type;
+                }
+            });
 
     public static final RegistryObject<BlockEntityType<CrazyPatternProviderBE>> CRAZY_PATTERN_PROVIDER_BE =
             reg("crazy_pattern_provider_be", CrazyBlockRegistrar.CRAZY_PATTERN_PROVIDER_BLOCK, CrazyPatternProviderBE::new, CrazyPatternProviderBE.class);

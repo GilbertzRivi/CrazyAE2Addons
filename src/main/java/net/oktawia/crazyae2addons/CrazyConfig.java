@@ -48,6 +48,10 @@ public class CrazyConfig {
         public final ForgeConfigSpec.BooleanValue PenroseMeltdownExplosionsEnabled;
         public final ForgeConfigSpec.IntValue     PenroseMeltdownFieldRadius;
 
+        public final ForgeConfigSpec.BooleanValue PenroseFEOutputEnabled;
+        public final ForgeConfigSpec.BooleanValue PenroseEUOutputEnabled;
+        public final ForgeConfigSpec.ConfigValue<List<? extends String>> PenroseGtTiers;
+
         public final ForgeConfigSpec.LongValue    PenroseStartupCostSingu;
 
         public final ForgeConfigSpec.LongValue    PenroseInitialMassMu;
@@ -176,8 +180,37 @@ public class CrazyConfig {
             builder.pop();
 
 
-            // ===== Penrose Controller (multiblock) =====
+            // ===== Penrose Sphere =====
             builder.push("PenroseSphere");
+
+            PenroseFEOutputEnabled = builder
+                    .comment(
+                            "Enable FE output from Penrose Sphere.",
+                            "Set to false to completely disable FE output."
+                    )
+                    .define("penroseFeOutputEnabled", true);
+
+            PenroseEUOutputEnabled = builder
+                    .comment(
+                            "Enable EU output from Penrose Sphere.",
+                            "Set to true if Penrose should give GregTech EU output."
+                    )
+                    .define("penroseEuOutputEnabled", false);
+
+            PenroseGtTiers = builder
+                    .comment(
+                            "GT hatch tiers allowed for the Penrose Sphere.",
+                            "Works only when penroseEuOutputEnabled is set to true.",
+                            "Default: ULV, LV, MV, HV, EV, IV, LuV, ZPM, UV, UHV, UEV, UIV, UXV, OpV, MAX"
+                    )
+                    .defineList(
+                            "penroseGtTiers",
+                            List.of(
+                                    "ULV", "LV", "MV", "HV", "EV", "IV", "LuV", "ZPM",
+                                    "UV", "UHV", "UEV", "UIV", "UXV", "OpV", "MAX"
+                            ),
+                            o -> o instanceof String s && !s.isBlank()
+                    );
 
             builder.push("Meltdown");
             PenroseMeltdownExplosionsEnabled = builder
@@ -272,7 +305,7 @@ public class CrazyConfig {
                     .defineInRange("penroseMaxFeedPerTick", 4_096, 0, Integer.MAX_VALUE);
             builder.pop();
 
-            builder.pop(); // PenroseController
+            builder.pop(); // PenroseSphere
 
 
             builder.push("Research");
@@ -297,7 +330,7 @@ public class CrazyConfig {
                                     Object val = e.getValue();
 
                                     if (key == null || ResourceLocation.tryParse(key) == null) return false;
-                                    if (!(val instanceof Number)) return false; // TOML może dać Int/Long
+                                    if (!(val instanceof Number)) return false;
                                 }
                                 return true;
                             }
@@ -336,6 +369,7 @@ public class CrazyConfig {
                     .comment("Extract speed for Item P2P (items/t)")
                     .defineInRange("itemp2pSpeed", 16, 0, Integer.MAX_VALUE);
             builder.pop();
+
             builder.pop();
         }
     }

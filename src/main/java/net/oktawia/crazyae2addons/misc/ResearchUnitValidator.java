@@ -140,7 +140,6 @@ public class ResearchUnitValidator implements PenroseValidator {
             throw new IllegalStateException("Pattern does not contain origin symbol 'C'");
         }
 
-        // === Dodatkowe bloki do symbolu Q z configa: MAPA rl -> int (int na razie ignorowany) ===
         extendSymbolFromConfigMap("Q", CrazyConfig.COMMON.ResearchUnitExtraQBlocks.get());
     }
 

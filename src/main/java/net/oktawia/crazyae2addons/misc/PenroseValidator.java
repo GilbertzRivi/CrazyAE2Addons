@@ -6,7 +6,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -14,14 +13,11 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraftforge.registries.ForgeRegistries;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.blocks.PenroseFrameBlock;
-import net.oktawia.crazyae2addons.blocks.PenroseHeatVent;
 import net.oktawia.crazyae2addons.entities.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class PenroseValidator implements net.oktawia.crazyae2addons.interfaces.PenroseValidator {
 
@@ -49,7 +45,11 @@ public class PenroseValidator implements net.oktawia.crazyae2addons.interfaces.P
                  ],
                  "P": [
                    "crazyae2addons:penrose_port",
-                   "crazyae2addons:penrose_coil"
+                   "crazyae2addons:penrose_coil",
+                   "gtceu:*_energy_output_hatch",
+                   "gtceu:*_energy_output_hatch_4a",
+                   "gtceu:*_energy_output_hatch_16a",
+                   "gtceu:*_substation_output_hatch_64a"
                  ]
                },
               "layers": [
@@ -562,23 +562,94 @@ public class PenroseValidator implements net.oktawia.crazyae2addons.interfaces.P
 
     private final Map<String, List<Block>> symbols = new HashMap<>();
     private final List<List<String>> layers = new ArrayList<>();
+    private final List<String> GT_TIERS = CrazyConfig.COMMON.PenroseGtTiers.get().stream()
+            .map(String::valueOf)
+            .map(String::trim)
+            .filter(s -> !s.isEmpty())
+            .map(s -> s.toLowerCase(java.util.Locale.ROOT))
+            .toList();
     private int originInPatternX = -1;
     private int originInPatternY = -1;
     private int originInPatternZ = -1;
+
+    private void addBlocksByWildcard(List<Block> out, String wildcard) {
+        int sep = wildcard.indexOf(':');
+        if (sep <= 0 || sep == wildcard.length() - 1) {
+            return;
+        }
+
+        String namespace = wildcard.substring(0, sep);
+        String pathPattern = wildcard.substring(sep + 1);
+
+        int firstStar = pathPattern.indexOf('*');
+        if (firstStar < 0 || firstStar != pathPattern.lastIndexOf('*')) {
+            return;
+        }
+
+        for (String tier : GT_TIERS) {
+            String resolvedPath = pathPattern.replace("*", tier);
+            ResourceLocation id = new ResourceLocation(namespace, resolvedPath);
+
+            if (!ForgeRegistries.BLOCKS.containsKey(id)) {
+                continue;
+            }
+
+            Block block = ForgeRegistries.BLOCKS.getValue(id);
+            if (block != null && !out.contains(block)) {
+                out.add(block);
+            }
+        }
+    }
+
+    private List<Block> resolveBlockEntries(JsonArray arr) {
+        List<Block> result = new ArrayList<>();
+
+        for (JsonElement el : arr) {
+            String raw = el.getAsString().trim();
+
+            if (raw.isEmpty()) continue;
+
+            if (raw.contains("*")) {
+                addBlocksByWildcard(result, raw);
+                continue;
+            }
+
+            try {
+                ResourceLocation id = new ResourceLocation(raw);
+                if (ForgeRegistries.BLOCKS.containsKey(id)) {
+                    Block block = ForgeRegistries.BLOCKS.getValue(id);
+                    if (block != null && !result.contains(block)) {
+                        result.add(block);
+                    }
+                }
+            } catch (Exception ignored) {}
+        }
+
+        return result;
+    }
+
+    private boolean isGregEnergyOutputHatch(Block block) {
+        ResourceLocation id = ForgeRegistries.BLOCKS.getKey(block);
+        if (id == null) return false;
+
+        String ns = id.getNamespace();
+        if (!ns.equals("gtceu")) {
+            return false;
+        }
+
+        String path = id.getPath();
+        return path.endsWith("_energy_output_hatch")
+                || path.endsWith("_energy_output_hatch_4a")
+                || path.endsWith("_energy_output_hatch_16a")
+                || path.endsWith("_substation_output_hatch_64a");
+    }
 
     public PenroseValidator() {
         JsonObject json = JsonParser.parseString(STRUCTURE_JSON).getAsJsonObject();
 
         JsonObject symbolsJson = json.getAsJsonObject("symbols");
-        for (Map.Entry<String, JsonElement> entry : symbolsJson.entrySet()) {
-            List<Block> blocks = new ArrayList<>();
-            for (JsonElement el : entry.getValue().getAsJsonArray()) {
-                ResourceLocation id = new ResourceLocation(el.getAsString());
-                Block block = BuiltInRegistries.BLOCK.getOptional(id).orElse(null);
-                if (block != null) {
-                    blocks.add(block);
-                }
-            }
+        for (var entry : symbolsJson.entrySet()) {
+            List<Block> blocks = resolveBlockEntries(entry.getValue().getAsJsonArray());
             symbols.put(entry.getKey(), blocks);
         }
 
@@ -607,6 +678,8 @@ public class PenroseValidator implements net.oktawia.crazyae2addons.interfaces.P
     }
 
     public boolean matchesStructure(Level level, BlockPos origin, BlockState state, PenroseControllerBE controller) {
+        controller.clearDynamoHatches();
+
         Direction facing = state.getValue(BlockStateProperties.HORIZONTAL_FACING).getOpposite();
 
         int height = layers.size();
@@ -636,20 +709,30 @@ public class PenroseValidator implements net.oktawia.crazyae2addons.interfaces.P
                     List<Block> allowed = symbols.get(symbol);
 
                     if (allowed == null || !allowed.contains(block)) {
+                        controller.clearDynamoHatches();
                         markWalls(level, origin, state, PenroseFrameBlock.FORMED, false, controller);
                         return false;
+                    }
+
+                    if ("P".equals(symbol) && isGregEnergyOutputHatch(block)) {
+                        var be = level.getBlockEntity(checkPos);
+                        if (be != null) {
+                            controller.registerDynamoHatch(be);
+                        }
                     }
 
                     ResourceLocation id = ForgeRegistries.BLOCKS.getKey(block);
                     if (HEAT_VENT_ID.equals(id)) {
                         heatVent++;
                         if (heatVent > 1) {
+                            controller.clearDynamoHatches();
                             markWalls(level, origin, state, PenroseFrameBlock.FORMED, false, controller);
                             return false;
                         }
                     } else if (HAWKING_VENT_ID.equals(id)) {
                         hawkingVent++;
                         if (hawkingVent > 1) {
+                            controller.clearDynamoHatches();
                             markWalls(level, origin, state, PenroseFrameBlock.FORMED, false, controller);
                             return false;
                         }

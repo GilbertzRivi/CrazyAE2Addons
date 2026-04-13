@@ -11,6 +11,7 @@ import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.energy.IEnergyStorage;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import org.jetbrains.annotations.NotNull;
@@ -23,6 +24,8 @@ public class PenroseFrameBE extends AENetworkBlockEntity {
         @Override
         public int getEnergyStored() {
             if (controller == null) return 0;
+            if (!CrazyConfig.COMMON.PenroseFEOutputEnabled.get()) return 0;
+
             var srcOpt = controller.getCapability(ForgeCapabilities.ENERGY, null);
             IEnergyStorage src = srcOpt.orElse(null);
             return src != null ? src.getEnergyStored() : 0;
@@ -31,6 +34,8 @@ public class PenroseFrameBE extends AENetworkBlockEntity {
         @Override
         public int getMaxEnergyStored() {
             if (controller == null) return 0;
+            if (!CrazyConfig.COMMON.PenroseFEOutputEnabled.get()) return 0;
+
             var srcOpt = controller.getCapability(ForgeCapabilities.ENERGY, null);
             IEnergyStorage src = srcOpt.orElse(null);
             return src != null ? src.getMaxEnergyStored() : 0;
@@ -38,12 +43,14 @@ public class PenroseFrameBE extends AENetworkBlockEntity {
 
         @Override
         public boolean canExtract() {
-            return controller != null;
+            return controller != null && CrazyConfig.COMMON.PenroseFEOutputEnabled.get();
         }
 
         @Override
         public int extractEnergy(int maxExtract, boolean simulate) {
             if (controller == null || maxExtract <= 0) return 0;
+            if (!CrazyConfig.COMMON.PenroseFEOutputEnabled.get()) return 0;
+
             var srcOpt = controller.getCapability(ForgeCapabilities.ENERGY, null);
             IEnergyStorage src = srcOpt.orElse(null);
             if (src == null) return 0;
@@ -90,6 +97,9 @@ public class PenroseFrameBE extends AENetworkBlockEntity {
     @Override
     public <T> @NotNull LazyOptional<T> getCapability(@NotNull Capability<T> cap, Direction side) {
         if (cap == ForgeCapabilities.ENERGY) {
+            if (!CrazyConfig.COMMON.PenroseFEOutputEnabled.get()) {
+                return LazyOptional.empty();
+            }
             return energyCap.cast();
         }
         return super.getCapability(cap, side);
@@ -98,6 +108,9 @@ public class PenroseFrameBE extends AENetworkBlockEntity {
     @Override
     public <T> @NotNull LazyOptional<T> getCapability(@NotNull Capability<T> cap) {
         if (cap == ForgeCapabilities.ENERGY) {
+            if (!CrazyConfig.COMMON.PenroseFEOutputEnabled.get()) {
+                return LazyOptional.empty();
+            }
             return energyCap.cast();
         }
         return super.getCapability(cap);

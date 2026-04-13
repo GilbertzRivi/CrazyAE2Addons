@@ -15,7 +15,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "crazyae2addons:research_pedestal_bottom_alt3"
+        "recipe": "crazyae2addons:research_unit_alt10"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -28,7 +28,7 @@
   ],
   "rewards": {
     "recipes": [
-      "crazyae2addons:research_pedestal_bottom_alt3"
+      "crazyae2addons:research_unit_alt10"
     ]
   },
   "sends_telemetry_event": false

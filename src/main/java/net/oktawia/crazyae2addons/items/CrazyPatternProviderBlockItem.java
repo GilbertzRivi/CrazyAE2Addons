@@ -11,6 +11,8 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 
+import java.util.List;
+
 
 public class CrazyPatternProviderBlockItem extends AEBaseBlockItem {
     public CrazyPatternProviderBlockItem(Block block, Properties properties) {
@@ -18,10 +20,7 @@ public class CrazyPatternProviderBlockItem extends AEBaseBlockItem {
     }
 
     @Override
-    public void addCheckedInformation(ItemStack stack,
-                                @org.jetbrains.annotations.Nullable Level level,
-                                java.util.List<Component> tooltip,
-                                TooltipFlag flag) {
+    public void addCheckedInformation(ItemStack stack, Level level, List<Component> tooltip, TooltipFlag flag) {
         CompoundTag tag = stack.getOrCreateTag();
         int addedRows = tag.contains("added") ? tag.getInt("added") : 0;
         if (addedRows < 0) addedRows = 0;

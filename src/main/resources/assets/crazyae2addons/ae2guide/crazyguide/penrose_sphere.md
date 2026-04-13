@@ -96,7 +96,7 @@ If black hole mass reaches the configured **max mass**, the sphere **melts down*
 
 ## Feeding, cooling, and mass control
 
-### Injection (feeding Super Singularities)
+### Injection (feeding NORMAL Singularities)
 
 Injection is handled via the multiblock’s injection components (e.g. Injection Ports). Internally, the controller has a hard cap of **MaxFeedPerTick** (default: **4096**).
 

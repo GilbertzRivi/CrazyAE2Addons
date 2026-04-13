@@ -15,7 +15,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "crazyae2addons:entropy_cradle_capacitor_alt11"
+        "recipe": "crazyae2addons:reinforced_matter_condenser_alt6"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -28,7 +28,7 @@
   ],
   "rewards": {
     "recipes": [
-      "crazyae2addons:entropy_cradle_capacitor_alt11"
+      "crazyae2addons:reinforced_matter_condenser_alt6"
     ]
   },
   "sends_telemetry_event": false

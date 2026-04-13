@@ -15,7 +15,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "crazyae2addons:crafting_scheduler_alt25"
+        "recipe": "crazyae2addons:recipe_fabricator_alt18"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -28,7 +28,7 @@
   ],
   "rewards": {
     "recipes": [
-      "crazyae2addons:crafting_scheduler_alt25"
+      "crazyae2addons:recipe_fabricator_alt18"
     ]
   },
   "sends_telemetry_event": false

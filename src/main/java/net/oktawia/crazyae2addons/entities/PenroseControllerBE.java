@@ -574,14 +574,6 @@ public class PenroseControllerBE extends AENetworkInvBlockEntity
         hawkingVents.clear();
     }
 
-    @Override
-    public void addAdditionalDrops(Level level, BlockPos pos, java.util.List<ItemStack> drops) {
-        ItemStack stack = CrazyBlockRegistrar.PENROSE_CONTROLLER.get().asItem().getDefaultInstance();
-        stack.addTagElement("BlockEntityTag", makePortableTag());
-        drops = List.of(stack);
-        super.addAdditionalDrops(level, pos, drops);
-    }
-
     // === MENU ===
     @Override
     public @Nullable AbstractContainerMenu createMenu(int i, Inventory inventory, Player player) {

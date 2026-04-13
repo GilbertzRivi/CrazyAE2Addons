@@ -15,7 +15,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "crazyae2addons:spawner_extractor_wall_alt20"
+        "recipe": "crazyae2addons:entropy_cradle_capacitor_alt25"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -28,7 +28,7 @@
   ],
   "rewards": {
     "recipes": [
-      "crazyae2addons:spawner_extractor_wall_alt20"
+      "crazyae2addons:entropy_cradle_capacitor_alt25"
     ]
   },
   "sends_telemetry_event": false

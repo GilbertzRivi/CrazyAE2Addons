@@ -17,7 +17,13 @@
   },
   "widgets": {
     "bh": { "left": 8, "top": 22, "width": 232, "height": 118 },
-    "start": { "left": 8, "top": 144, "width": 16, "height": 16 }
+    "start": { "left": 8, "top": 144, "width": 16, "height": 16 },
+    "prevbtn": {
+      "right": 20,
+      "top": 4,
+      "width": 16,
+      "height": 16
+    }
   },
   "slots": {
     "STORAGE_CELL": { "left": 28, "top": 144 },

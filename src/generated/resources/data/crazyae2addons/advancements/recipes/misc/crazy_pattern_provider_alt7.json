@@ -15,7 +15,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "crazyae2addons:penrose_coil_alt12"
+        "recipe": "crazyae2addons:crazy_pattern_provider_alt7"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -28,7 +28,7 @@
   ],
   "rewards": {
     "recipes": [
-      "crazyae2addons:penrose_coil_alt12"
+      "crazyae2addons:crazy_pattern_provider_alt7"
     ]
   },
   "sends_telemetry_event": false

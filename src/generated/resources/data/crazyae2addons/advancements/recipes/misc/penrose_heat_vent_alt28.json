@@ -15,7 +15,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "crazyae2addons:research_station_alt5"
+        "recipe": "crazyae2addons:penrose_heat_vent_alt28"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -28,7 +28,7 @@
   ],
   "rewards": {
     "recipes": [
-      "crazyae2addons:research_station_alt5"
+      "crazyae2addons:penrose_heat_vent_alt28"
     ]
   },
   "sends_telemetry_event": false

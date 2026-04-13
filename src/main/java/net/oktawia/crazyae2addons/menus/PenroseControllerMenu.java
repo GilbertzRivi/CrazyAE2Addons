@@ -15,6 +15,7 @@ public class PenroseControllerMenu extends AEBaseMenu {
     public final RestrictedInputSlot diskSlot;
 
     public static final String START = "actionStartBh";
+    public String PREVIEW = "actionPrev";
 
     @GuiSync(0) public boolean blackHoleActive;
     @GuiSync(1) public long bhMass;
@@ -22,7 +23,6 @@ public class PenroseControllerMenu extends AEBaseMenu {
     @GuiSync(3) public long storedEnergy;
     @GuiSync(4) public long massDeltaPerSec;
 
-    // telemetry dysku
     @GuiSync(5) public long diskMassSingu;
     @GuiSync(6) public int diskFlowSinguPerTick;
     @GuiSync(7) public int accretionSinguPerTick;
@@ -30,14 +30,17 @@ public class PenroseControllerMenu extends AEBaseMenu {
 
     @GuiSync(9)  public long storedEnergyInDisk;
 
-    // >>> nowe:
     @GuiSync(10) public long feGeneratedGrossPerTick;
     @GuiSync(11) public long feConsumedPerTick;
+
+    @GuiSync(893)
+    public boolean preview;
 
     public PenroseControllerMenu(int id, Inventory ip, PenroseControllerBE host) {
         super(CrazyMenuRegistrar.PENROSE_CONTROLLER_MENU.get(), id, ip, host);
         this.createPlayerInventorySlots(ip);
         this.host = host;
+        this.preview = host.preview;
 
         this.blackHoleActive = host.isBlackHoleActive();
         this.bhMass = host.getBlackHoleMass();
@@ -59,6 +62,7 @@ public class PenroseControllerMenu extends AEBaseMenu {
                 SlotSemantics.STORAGE_CELL);
 
         this.registerClientAction(START, this::startBlackHole);
+        this.registerClientAction(PREVIEW, Boolean.class, this::changePreview);
     }
 
     @Override
@@ -86,6 +90,14 @@ public class PenroseControllerMenu extends AEBaseMenu {
         host.startBlackHole();
         if (isClientSide()) {
             sendClientAction(START);
+        }
+    }
+
+    public void changePreview(Boolean preview) {
+        host.preview = preview;
+        this.preview = preview;
+        if (isClientSide()){
+            sendClientAction(PREVIEW, preview);
         }
     }
 }

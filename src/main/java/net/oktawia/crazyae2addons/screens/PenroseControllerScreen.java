@@ -26,6 +26,9 @@ public class PenroseControllerScreen<C extends PenroseControllerMenu> extends AE
         var startBtn = new IconButton(Icon.ENTER, btn -> getMenu().startBlackHole());
         startBtn.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.penrose_start_bh")));
         this.widgets.add("start", startBtn);
+        var prevBtn = new IconButton(Icon.ENTER, btn -> getMenu().changePreview(!getMenu().preview));
+        prevBtn.setTooltip(Tooltip.create(Component.translatable("gui.crazyae2addons.mobfarm_preview_tooltip")));
+        this.widgets.add("prevbtn", prevBtn);
     }
 
     @Override

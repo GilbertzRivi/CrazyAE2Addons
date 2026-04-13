@@ -15,7 +15,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "crazyae2addons:auto_builder_alt27"
+        "recipe": "crazyae2addons:research_cable_alt14"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -28,7 +28,7 @@
   ],
   "rewards": {
     "recipes": [
-      "crazyae2addons:auto_builder_alt27"
+      "crazyae2addons:research_cable_alt14"
     ]
   },
   "sends_telemetry_event": false

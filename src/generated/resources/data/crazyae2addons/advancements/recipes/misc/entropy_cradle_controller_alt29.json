@@ -15,7 +15,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "crazyae2addons:mob_farm_collector_alt24"
+        "recipe": "crazyae2addons:entropy_cradle_controller_alt29"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -28,7 +28,7 @@
   ],
   "rewards": {
     "recipes": [
-      "crazyae2addons:mob_farm_collector_alt24"
+      "crazyae2addons:entropy_cradle_controller_alt29"
     ]
   },
   "sends_telemetry_event": false

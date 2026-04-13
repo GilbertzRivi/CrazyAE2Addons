@@ -15,7 +15,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "crazyae2addons:entropy_cradle_alt29"
+        "recipe": "crazyae2addons:penrose_coil_alt2"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -28,7 +28,7 @@
   ],
   "rewards": {
     "recipes": [
-      "crazyae2addons:entropy_cradle_alt29"
+      "crazyae2addons:penrose_coil_alt2"
     ]
   },
   "sends_telemetry_event": false

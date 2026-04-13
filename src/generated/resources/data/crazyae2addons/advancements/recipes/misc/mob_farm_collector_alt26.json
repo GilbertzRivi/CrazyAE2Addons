@@ -15,7 +15,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "crazyae2addons:penrose_injection_port_alt7"
+        "recipe": "crazyae2addons:mob_farm_collector_alt26"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -28,7 +28,7 @@
   ],
   "rewards": {
     "recipes": [
-      "crazyae2addons:penrose_injection_port_alt7"
+      "crazyae2addons:mob_farm_collector_alt26"
     ]
   },
   "sends_telemetry_event": false

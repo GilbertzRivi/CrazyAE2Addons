@@ -454,6 +454,7 @@ public class MultiStorageLevelEmitterPart extends AbstractLevelEmitterPart imple
     public void readFromNBT(CompoundTag data) {
         super.readFromNBT(data);
         config.readFromChildTag(data, NBT_CONFIG);
+        getUpgrades().readFromNBT(data, "myupgrades");
         importSettings(SettingsFrom.MEMORY_CARD, data, null);
     }
 
@@ -461,6 +462,7 @@ public class MultiStorageLevelEmitterPart extends AbstractLevelEmitterPart imple
     public void writeToNBT(CompoundTag data) {
         super.writeToNBT(data);
         config.writeToChildTag(data, NBT_CONFIG);
+        getUpgrades().writeToNBT(data, "myupgrades");
         exportSettings(SettingsFrom.MEMORY_CARD, data);
     }
 

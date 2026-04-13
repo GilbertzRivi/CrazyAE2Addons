@@ -15,7 +15,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "crazyae2addons:reinforced_matter_condenser_alt13"
+        "recipe": "crazyae2addons:mob_farm_damage_alt5"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -28,7 +28,7 @@
   ],
   "rewards": {
     "recipes": [
-      "crazyae2addons:reinforced_matter_condenser_alt13"
+      "crazyae2addons:mob_farm_damage_alt5"
     ]
   },
   "sends_telemetry_event": false

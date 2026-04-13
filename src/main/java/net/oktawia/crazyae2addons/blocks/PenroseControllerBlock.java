@@ -23,7 +23,8 @@ import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.BlockHitResult;
-import net.oktawia.crazyae2addons.entities.CrazyPatternProviderBE;
+import net.oktawia.crazyae2addons.IsModLoaded;
+import net.oktawia.crazyae2addons.compat.GregTech.GTPenroseControllerBE;
 import net.oktawia.crazyae2addons.entities.PenroseControllerBE;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -40,6 +41,9 @@ public class PenroseControllerBlock extends AEBaseEntityBlock<PenroseControllerB
     @Nullable
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+        if (IsModLoaded.isGTCEuLoaded()) {
+            return new GTPenroseControllerBE(pos, state);
+        }
         return new PenroseControllerBE(pos, state);
     }
 

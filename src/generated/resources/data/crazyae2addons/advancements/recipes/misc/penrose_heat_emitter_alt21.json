@@ -15,7 +15,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "crazyae2addons:research_cable_alt8"
+        "recipe": "crazyae2addons:penrose_heat_emitter_alt21"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -28,7 +28,7 @@
   ],
   "rewards": {
     "recipes": [
-      "crazyae2addons:research_cable_alt8"
+      "crazyae2addons:penrose_heat_emitter_alt21"
     ]
   },
   "sends_telemetry_event": false

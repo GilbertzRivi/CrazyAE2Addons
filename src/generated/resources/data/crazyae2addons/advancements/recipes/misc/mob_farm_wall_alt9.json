@@ -15,7 +15,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "crazyae2addons:research_unit_alt19"
+        "recipe": "crazyae2addons:mob_farm_wall_alt9"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -28,7 +28,7 @@
   ],
   "rewards": {
     "recipes": [
-      "crazyae2addons:research_unit_alt19"
+      "crazyae2addons:mob_farm_wall_alt9"
     ]
   },
   "sends_telemetry_event": false

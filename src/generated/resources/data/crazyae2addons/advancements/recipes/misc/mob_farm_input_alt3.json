@@ -15,7 +15,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "crazyae2addons:research_pedestal_top_alt18"
+        "recipe": "crazyae2addons:mob_farm_input_alt3"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -28,7 +28,7 @@
   ],
   "rewards": {
     "recipes": [
-      "crazyae2addons:research_pedestal_top_alt18"
+      "crazyae2addons:mob_farm_input_alt3"
     ]
   },
   "sends_telemetry_event": false

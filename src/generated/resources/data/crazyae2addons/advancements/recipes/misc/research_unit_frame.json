@@ -15,7 +15,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "crazyae2addons:penrose_port_alt23"
+        "recipe": "crazyae2addons:research_unit_frame"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -28,7 +28,7 @@
   ],
   "rewards": {
     "recipes": [
-      "crazyae2addons:penrose_port_alt23"
+      "crazyae2addons:research_unit_frame"
     ]
   },
   "sends_telemetry_event": false

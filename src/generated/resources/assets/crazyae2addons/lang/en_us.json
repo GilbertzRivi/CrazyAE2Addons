@@ -261,6 +261,7 @@
   "gui.crazyae2addons.penrose_injection_port_rate_label": "Injection rate (singu/t):",
   "gui.crazyae2addons.penrose_injection_port_rate_tooltip": "How many singularities per tick to inject from the ME network",
   "gui.crazyae2addons.penrose_injection_port_submit": "Apply",
+  "gui.crazyae2addons.penrose_injection_tooltip": "It uses normal singularities to fuel the sphere!",
   "gui.crazyae2addons.penrose_insert": "Insert singularities",
   "gui.crazyae2addons.penrose_item_consume": "Item to consume",
   "gui.crazyae2addons.penrose_line_disk_mass": "Disk mass: %s MU",

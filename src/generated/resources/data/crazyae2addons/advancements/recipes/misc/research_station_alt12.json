@@ -15,7 +15,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "crazyae2addons:penrose_controller_alt21"
+        "recipe": "crazyae2addons:research_station_alt12"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -28,7 +28,7 @@
   ],
   "rewards": {
     "recipes": [
-      "crazyae2addons:penrose_controller_alt21"
+      "crazyae2addons:research_station_alt12"
     ]
   },
   "sends_telemetry_event": false

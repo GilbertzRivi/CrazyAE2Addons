@@ -364,7 +364,7 @@ public class CrazyBlockRegistrar {
 
     public static final RegistryObject<BlockItem> PENROSE_INJECTION_PORT_BLOCK_ITEM =
             BLOCK_ITEMS.register("penrose_injection_port",
-                    () -> new AEBaseBlockItem(CrazyBlockRegistrar.PENROSE_INJECTION_PORT.get(), new Item.Properties()));
+                    () -> new PenroseInjectionPortItem(CrazyBlockRegistrar.PENROSE_INJECTION_PORT.get(), new Item.Properties()));
 
     public static final RegistryObject<PenroseHeatVent> PENROSE_HEAT_VENT =
             BLOCKS.register("penrose_heat_vent", PenroseHeatVent::new);

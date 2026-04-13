@@ -15,7 +15,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "crazyae2addons:penrose_hawking_vent_alt9"
+        "recipe": "crazyae2addons:research_pedestal_top_alt19"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -28,7 +28,7 @@
   ],
   "rewards": {
     "recipes": [
-      "crazyae2addons:penrose_hawking_vent_alt9"
+      "crazyae2addons:research_pedestal_top_alt19"
     ]
   },
   "sends_telemetry_event": false

@@ -195,6 +195,7 @@ public enum LangDefs implements LocalizationEnum {
     FABRICATOR_DRIVE("gui.crazyae2addons.fabricator_drive", "Drive"),
     FABRICATOR_OUTPUT("gui.crazyae2addons.fabricator_output", "Output"),
     PENROSE_ITEM_CONSUME("gui.crazyae2addons.penrose_item_consume", "Item to consume"),
+    PENROSE_INJECTION_TOOLTIP("gui.crazyae2addons.penrose_injection_tooltip", "It uses normal singularities to fuel the sphere!"),
     PENROSE_MATTER_BALLS("gui.crazyae2addons.penrose_matter_balls", "Matter Balls: Power x8"),
     PENROSE_SINGULARITIES("gui.crazyae2addons.penrose_singularities", "Singularities: Power x64"),
     REDSTONE_EMITTER_LABEL_NAME("gui.crazyae2addons.redstone_emitter_label_name", "Name"),

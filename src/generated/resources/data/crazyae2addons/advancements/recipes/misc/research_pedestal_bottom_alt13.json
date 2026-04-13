@@ -15,7 +15,7 @@
     },
     "has_the_recipe": {
       "conditions": {
-        "recipe": "crazyae2addons:entropy_cradle_controller_alt22"
+        "recipe": "crazyae2addons:research_pedestal_bottom_alt13"
       },
       "trigger": "minecraft:recipe_unlocked"
     }
@@ -28,7 +28,7 @@
   ],
   "rewards": {
     "recipes": [
-      "crazyae2addons:entropy_cradle_controller_alt22"
+      "crazyae2addons:research_pedestal_bottom_alt13"
     ]
   },
   "sends_telemetry_event": false

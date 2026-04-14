@@ -6,6 +6,7 @@ import appeng.util.InteractionUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
@@ -68,6 +69,9 @@ public class PenroseControllerBlock extends AEBaseEntityBlock<PenroseControllerB
             CompoundTag bet = stack.getTagElement("saved_state");
             if (bet != null) {
                 ctrl.applyPortableTag(bet.copy());
+            }
+            if (placer instanceof ServerPlayer sp) {
+                ctrl.setPlayer(sp);
             }
         }
     }

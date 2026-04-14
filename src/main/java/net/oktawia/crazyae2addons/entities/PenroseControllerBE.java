@@ -23,6 +23,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -33,6 +34,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.util.LazyOptional;
@@ -46,6 +48,7 @@ import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
+import net.oktawia.crazyae2addons.events.PenroseSphereFormedEvent;
 import net.oktawia.crazyae2addons.menus.PenroseControllerMenu;
 import net.oktawia.crazyae2addons.misc.PenroseValidator;
 import net.oktawia.crazyae2addons.renderer.preview.PreviewInfo;
@@ -60,6 +63,7 @@ public class PenroseControllerBE extends AENetworkInvBlockEntity
 
     public static final Set<PenroseControllerBE> CLIENT_INSTANCES = new HashSet<>();
     public List<BlockEntity> gregHatches = new ArrayList<>();
+    private ServerPlayer placer;
 
     /*
      * ===== Units glossary =====
@@ -921,9 +925,18 @@ public class PenroseControllerBE extends AENetworkInvBlockEntity
 
         structureTickCounter += t;
         while (structureTickCounter >= 20) {
-            this.formed = validator.matchesStructure(getLevel(), getBlockPos(), getBlockState(), this);
+            boolean oldFormed = this.formed;
+            boolean newFormed = validator.matchesStructure(getLevel(), getBlockPos(), getBlockState(), this);
 
-            if (!formed) {
+            this.formed = newFormed;
+
+            if (!oldFormed && newFormed && level instanceof ServerLevel serverLevel) {
+                MinecraftForge.EVENT_BUS.post(
+                    new PenroseSphereFormedEvent(serverLevel, getBlockPos(), this, this.placer)
+                );
+            }
+
+            if (!newFormed) {
                 ports.clear();
                 injectionPorts.clear();
                 heatVents.clear();
@@ -1246,5 +1259,9 @@ public class PenroseControllerBE extends AENetworkInvBlockEntity
         if (be != null && !be.isRemoved() && !gregHatches.contains(be)) {
             gregHatches.add(be);
         }
+    }
+
+    public void setPlayer(ServerPlayer sp) {
+        this.placer = sp;
     }
 }

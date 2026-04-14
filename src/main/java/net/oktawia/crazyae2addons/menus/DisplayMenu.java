@@ -70,10 +70,10 @@ public class DisplayMenu extends AEBaseMenu {
         super(CrazyMenuRegistrar.DISPLAY_MENU.get(), id, inv, host);
         this.host = host;
 
-        this.displayValue = host.textValue;
-        this.mode = host.mode;
-        this.margin = host.margin;
-        this.centerText = host.center;
+        this.displayValue = host.getTextValue();
+        this.mode = host.isMergeMode();
+        this.margin = host.isAddMargin();
+        this.centerText = host.getCenterText();
 
         String pending = host.pendingInsert;
         if (pending != null) {
@@ -161,7 +161,7 @@ public class DisplayMenu extends AEBaseMenu {
 
     public void syncValue(String value) {
         this.displayValue = value;
-        host.textValue = value;
+        host.setTextValue(value);
         host.getHost().markForSave();
         host.getHost().markForUpdate();
         syncPreviewData();
@@ -173,7 +173,7 @@ public class DisplayMenu extends AEBaseMenu {
 
     public void changeMode(boolean v) {
         this.mode = v;
-        host.mode = v;
+        host.setMergeMode(v);
         host.getHost().markForUpdate();
         syncPreviewData();
 
@@ -185,7 +185,7 @@ public class DisplayMenu extends AEBaseMenu {
 
     public void changeMargin(boolean v) {
         this.margin = v;
-        host.margin = v;
+        host.setAddMargin(v);
         host.getHost().markForUpdate();
         syncPreviewData();
 
@@ -196,7 +196,7 @@ public class DisplayMenu extends AEBaseMenu {
 
     public void changeCenter(boolean v) {
         this.centerText = v;
-        host.center = v;
+        host.setCenterText(v);
         host.getHost().markForUpdate();
         syncPreviewData();
 

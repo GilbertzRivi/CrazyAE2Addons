@@ -17,13 +17,14 @@ public class ChunkyFluidP2PTunnelMenu extends AEBaseMenu {
     public ChunkyFluidP2PTunnelMenu(int id, Inventory ip, ChunkyFluidP2PTunnelPart host) {
         super(CrazyMenuRegistrar.CHUNKY_FLUID_P2P_TUNNEL_MENU.get(), id, ip, host);
         this.host = host;
-        this.value = host.unitSize;
+        this.value = host.getUnitSize();
         registerClientAction(ACTION_SYNC_VALUE, Integer.class, this::syncValue);
+        createPlayerInventorySlots(ip);
     }
 
     public void syncValue(Integer value) {
         this.value = value;
-        host.unitSize = value;
+        host.setUnitSize(value);
         if (isClientSide()) {
             sendClientAction(ACTION_SYNC_VALUE, value);
         }

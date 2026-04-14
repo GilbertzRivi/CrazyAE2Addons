@@ -1,4 +1,4 @@
-package net.oktawia.crazyae2addons.client.screens;
+package net.oktawia.crazyae2addons.client.screens.block;
 
 import appeng.client.gui.Icon;
 import appeng.client.gui.implementations.UpgradeableScreen;
@@ -8,21 +8,13 @@ import appeng.client.gui.widgets.AETextField;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Tooltip;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.level.block.Blocks;
-import net.oktawia.crazyae2addons.client.misc.CrazyLanguages;
 import net.oktawia.crazyae2addons.defs.LangDefs;
 import net.oktawia.crazyae2addons.menus.AutoBuilderMenu;
 import net.oktawia.crazyae2addons.client.misc.IconButton;
 
-import java.util.Objects;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class AutoBuilderScreen<C extends AutoBuilderMenu> extends UpgradeableScreen<C> {

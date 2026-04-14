@@ -1,8 +1,8 @@
 {
   "$schema": "schema.json",
-  "includes": ["common/common.json"],
+  "includes": ["common/common.json", "common/player_inventory.json"],
   "background": {
-    "texture": "guis/blank_background_no_inv.png",
+    "texture": "guis/blank_background.png",
     "srcRect": [0, 0, 176, 205]
   },
   "text": {
@@ -15,9 +15,12 @@
         "top": 6
       }
     },
-    "info1": {
+    "unit": {
+      "text": {
+        "translate": "gui.crazyae2addons.chunk_size"
+      },
       "position": {
-        "top": 30,
+        "top": 50,
         "left": 88
       },
       "align": "CENTER"
@@ -25,9 +28,9 @@
   },
   "widgets": {
     "value": {
-      "left": 15,
-      "top": 77,
-      "width": 110,
+      "left": 48,
+      "top": 68,
+      "width": 80,
       "height": 16
     },
     "confirm": {

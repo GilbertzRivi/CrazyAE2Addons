@@ -8,7 +8,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.oktawia.crazyae2addons.CrazyAddons;
-import net.oktawia.crazyae2addons.client.screens.CrazyPatternProviderScreen;
+import net.oktawia.crazyae2addons.client.screens.block.CrazyPatternProviderScreen;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,9 +47,6 @@ public record UpdatePatternsPacket(int startIndex, List<ItemStack> patterns) imp
 
     public static void handle(UpdatePatternsPacket pkt, IPayloadContext ctx) {
         ctx.enqueueWork(() -> {
-            var player = ctx.player();
-            if (player == null) return;
-
             if (Minecraft.getInstance().screen instanceof CrazyPatternProviderScreen<?> screen) {
                 screen.updatePatternsFromServer(pkt.startIndex, pkt.patterns);
             }

@@ -1,4 +1,4 @@
-package net.oktawia.crazyae2addons.client.screens;
+package net.oktawia.crazyae2addons.client.screens.block;
 
 import appeng.api.stacks.GenericStack;
 import appeng.client.gui.AEBaseScreen;
@@ -15,6 +15,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
 import net.neoforged.neoforge.network.PacketDistributor;
+import net.oktawia.crazyae2addons.client.screens.SetConfigAmountScreen;
 import net.oktawia.crazyae2addons.defs.LangDefs;
 import net.oktawia.crazyae2addons.menus.EjectorMenu;
 import net.oktawia.crazyae2addons.client.misc.IconButton;

@@ -56,10 +56,10 @@ public final class DisplayRendererCommon {
         var dims = DisplayGrid.getGridSize(new ArrayList<>(grid), renderOrigin.getSide());
         return prepare(
                 font,
-                renderOrigin.textValue,
+                renderOrigin.getTextValue(),
                 renderOrigin.resolvedTokens,
-                renderOrigin.center,
-                renderOrigin.margin,
+                renderOrigin.getCenterText(),
+                renderOrigin.isAddMargin(),
                 dims.getFirst(),
                 dims.getSecond(),
                 renderOrigin.getDisplayImages(),

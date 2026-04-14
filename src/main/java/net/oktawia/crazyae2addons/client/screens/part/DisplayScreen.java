@@ -1,4 +1,4 @@
-package net.oktawia.crazyae2addons.client.screens;
+package net.oktawia.crazyae2addons.client.screens.part;
 
 import appeng.client.gui.AEBaseScreen;
 import appeng.client.gui.Icon;
@@ -92,7 +92,7 @@ public class DisplayScreen<C extends DisplayMenu> extends AEBaseScreen<C> {
             value.rememberSelectionForColorApply();
         });
 
-        var imagesBtn = new IconButton(Icon.HELP, btn -> {
+        var imagesBtn = new IconButton(Icon.CRAFT_HAMMER, btn -> {
             save();
             getMenu().openImages();
         });
@@ -101,18 +101,18 @@ public class DisplayScreen<C extends DisplayMenu> extends AEBaseScreen<C> {
         ));
         widgets.add("images", imagesBtn);
 
-        var confirm = new IconButton(Icon.ENTER, btn -> save());
-        confirm.setTooltip(Tooltip.create(Component.translatable(LangDefs.SUBMIT.getTranslationKey())));
+        var confirm = new IconButton(Icon.COPY_MODE_ON, btn -> save());
+        confirm.setTooltip(Tooltip.create(Component.translatable(LangDefs.SAVE.getTranslationKey())));
 
-        var insertToken = new IconButton(Icon.HELP, btn -> {
+        var insertToken = new IconButton(Icon.CRAFT_HAMMER, btn -> {
             save();
             getMenu().openInsert(value.getCursorPos());
         });
         insertToken.setTooltip(Tooltip.create(Component.translatable(LangDefs.INSERT_TOKEN.getTranslationKey())));
 
-        mode = new ToggleButton(Icon.VALID, Icon.INVALID, this::changeMode);
-        center = new ToggleButton(Icon.VALID, Icon.INVALID, this::changeCenter);
-        margin = new ToggleButton(Icon.VALID, Icon.INVALID, this::changeMargin);
+        mode = new ToggleButton(Icon.ENTER, Icon.CLEAR, this::changeMode);
+        center = new ToggleButton(Icon.ENTER, Icon.CLEAR, this::changeCenter);
+        margin = new ToggleButton(Icon.ENTER, Icon.CLEAR, this::changeMargin);
 
         mode.setTooltip(Tooltip.create(Component.translatable(LangDefs.JOIN_DISPLAYS.getTranslationKey())));
         center.setTooltip(Tooltip.create(Component.translatable(LangDefs.CENTER_TEXT.getTranslationKey())));

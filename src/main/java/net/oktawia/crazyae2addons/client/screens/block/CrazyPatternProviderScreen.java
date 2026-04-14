@@ -1,4 +1,4 @@
-package net.oktawia.crazyae2addons.client.screens;
+package net.oktawia.crazyae2addons.client.screens.block;
 
 import appeng.client.gui.implementations.PatternProviderScreen;
 import appeng.client.gui.style.ScreenStyle;
@@ -37,7 +37,9 @@ public class CrazyPatternProviderScreen<C extends CrazyPatternProviderMenu> exte
         super.updateBeforeRender();
 
         this.setTextContent("patterninfo",
-                Component.translatable(LangDefs.CRAZY_PROVIDER_CAPACITY_TOOLTIP.getTranslationKey()).append(Component.literal(getMenu().slotNum + " patterns")));
+                Component.translatable(LangDefs.CRAZY_PROVIDER_CAPACITY_TOOLTIP.getTranslationKey())
+                        .append(getMenu().slotNum + " ")
+                        .append(Component.translatable(LangDefs.PATTERNS.getTranslationKey())));
 
         scrollbar.setRange(0, Math.max(0, (getMenu().slotNum / COLS) - VISIBLE_ROWS), 1);
 

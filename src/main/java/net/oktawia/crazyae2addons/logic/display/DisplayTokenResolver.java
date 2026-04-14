@@ -42,7 +42,7 @@ public final class DisplayTokenResolver {
         var level = part.getLevel();
         if (level == null || level.isClientSide()) return;
 
-        String txt = part.textValue == null ? "" : part.textValue;
+        String txt = part.getTextValue() == null ? "" : part.getTextValue();
 
         List<String> stockTokens = new ArrayList<>();
         List<DeltaToken> deltaTokens = new ArrayList<>();

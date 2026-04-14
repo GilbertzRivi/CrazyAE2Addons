@@ -1,4 +1,4 @@
-package net.oktawia.crazyae2addons.client.screens;
+package net.oktawia.crazyae2addons.client.screens.part;
 
 import appeng.api.upgrades.Upgrades;
 import appeng.client.gui.AEBaseScreen;

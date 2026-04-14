@@ -142,7 +142,7 @@ public final class DisplayWorldRenderer {
         float spin = 0f;
 
         if (xRot == 90f) {
-            switch (part.spin) {
+            switch (part.getSpin()) {
                 case 0 -> {
                     spin = 0f;
                     ps.translate(-1f, 1f, 0f);
@@ -161,7 +161,7 @@ public final class DisplayWorldRenderer {
                 }
             }
         } else {
-            switch (part.spin) {
+            switch (part.getSpin()) {
                 case 0 -> {
                     spin = 0f;
                     ps.translate(0f, 0f, 0f);

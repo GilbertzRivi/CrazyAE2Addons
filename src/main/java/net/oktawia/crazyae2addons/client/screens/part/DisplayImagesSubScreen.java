@@ -1,4 +1,4 @@
-package net.oktawia.crazyae2addons.client.screens;
+package net.oktawia.crazyae2addons.client.screens.part;
 
 import appeng.client.gui.AEBaseScreen;
 import appeng.client.gui.Icon;
@@ -72,7 +72,6 @@ public class DisplayImagesSubScreen extends AEBaseScreen<DisplayImagesSubMenu> {
                 Component.translatable(LangDefs.BACK.getTranslationKey()),
                 btn -> AESubScreen.goBack()
         );
-        backBtn.setTooltip(Tooltip.create(Component.translatable(LangDefs.BACK.getTranslationKey())));
         widgets.add("back", backBtn);
 
         var pickFileBtn = new AE2Button(

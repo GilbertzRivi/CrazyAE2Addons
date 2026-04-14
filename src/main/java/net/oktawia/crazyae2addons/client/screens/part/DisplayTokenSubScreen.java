@@ -1,4 +1,4 @@
-package net.oktawia.crazyae2addons.client.screens;
+package net.oktawia.crazyae2addons.client.screens.part;
 
 import appeng.client.gui.AEBaseScreen;
 import appeng.client.gui.Icon;
@@ -80,7 +80,7 @@ public class DisplayTokenSubScreen extends AEBaseScreen<DisplayTokenSubMenu> {
 
         widgets.add("back", new TabButton(
                 Icon.BACK,
-                Component.translatable(LangDefs.GO_BACK.getTranslationKey()),
+                Component.translatable(LangDefs.BACK.getTranslationKey()),
                 btn -> AESubScreen.goBack()
         ));
 

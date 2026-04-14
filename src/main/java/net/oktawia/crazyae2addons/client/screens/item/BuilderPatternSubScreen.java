@@ -1,4 +1,4 @@
-package net.oktawia.crazyae2addons.client.screens;
+package net.oktawia.crazyae2addons.client.screens.item;
 
 import appeng.client.gui.AEBaseScreen;
 import appeng.client.gui.Icon;
@@ -172,7 +172,7 @@ public class BuilderPatternSubScreen<C extends BuilderPatternSubMenu> extends AE
                 "back",
                 new TabButton(
                         Icon.BACK,
-                        Component.translatable(LangDefs.GO_BACK.getTranslationKey()),
+                        Component.translatable(LangDefs.BACK.getTranslationKey()),
                         btn -> AESubScreen.goBack()
                 )
         );

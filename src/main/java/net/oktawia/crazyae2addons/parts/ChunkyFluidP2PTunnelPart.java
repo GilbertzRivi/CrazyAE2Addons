@@ -19,10 +19,13 @@ import appeng.parts.p2p.CapabilityP2PTunnelPart;
 import appeng.util.InteractionUtil;
 import appeng.util.Platform;
 import appeng.util.SettingsFrom;
+import com.lowdragmc.lowdraglib2.syncdata.IPersistedSerializable;
+import com.lowdragmc.lowdraglib2.syncdata.annotation.Persisted;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.core.component.DataComponentMap.Builder;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
@@ -33,8 +36,8 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import net.neoforged.neoforge.fluids.FluidStack;
+import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import net.oktawia.crazyae2addons.Utils;
 import net.oktawia.crazyae2addons.defs.regs.CrazyDataComponents;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
@@ -51,12 +54,14 @@ public class ChunkyFluidP2PTunnelPart extends CapabilityP2PTunnelPart<ChunkyFlui
     private static final ResourceLocation MODEL_STATUS_HAS_CHANNEL = AppEng.makeId("part/p2p/p2p_tunnel_status_has_channel");
     private static final ResourceLocation MODEL_FREQUENCY = AppEng.makeId("part/p2p/p2p_tunnel_frequency");
     private static final ResourceLocation FRONT_MODEL = AppEng.makeId("part/p2p/chunky_fluid_p2p_tunnel");
+
     private static final IPartModel MODELS_OFF = new PartModel(MODEL_STATUS_OFF, MODEL_FREQUENCY, FRONT_MODEL);
     private static final IPartModel MODELS_ON = new PartModel(MODEL_STATUS_ON, MODEL_FREQUENCY, FRONT_MODEL);
     private static final IPartModel MODELS_HAS_CHANNEL = new PartModel(MODEL_STATUS_HAS_CHANNEL, MODEL_FREQUENCY, FRONT_MODEL);
+
     private static final IFluidHandler NULL_FLUID_HANDLER = new NullFluidHandler();
-    private int containerIndex;
-    public int unitSize = 1000;
+
+    private final PartState persisted = new PartState();
 
     @PartModels
     public static List<IPartModel> getModels() {
@@ -68,7 +73,14 @@ public class ChunkyFluidP2PTunnelPart extends CapabilityP2PTunnelPart<ChunkyFlui
         inputHandler = new InputFluidHandler();
         outputHandler = new OutputFluidHandler();
         emptyHandler = NULL_FLUID_HANDLER;
-        containerIndex = 0;
+    }
+
+    public int getUnitSize() {
+        return persisted.unitSize;
+    }
+
+    public void setUnitSize(int unitSize) {
+        persisted.unitSize = unitSize;
     }
 
     @Override
@@ -94,12 +106,15 @@ public class ChunkyFluidP2PTunnelPart extends CapabilityP2PTunnelPart<ChunkyFlui
 
     @Override
     public boolean onUseWithoutItem(Player player, Vec3 pos) {
-        // Open menu with empty hand
         if (!isClientSide()) {
-            appeng.menu.MenuOpener.open(CrazyMenuRegistrar.CHUNKY_FLUID_P2P_TUNNEL_MENU.get(), player, appeng.menu.locator.MenuLocators.forPart(this));
+            appeng.menu.MenuOpener.open(
+                    CrazyMenuRegistrar.CHUNKY_FLUID_P2P_TUNNEL_MENU.get(),
+                    player,
+                    appeng.menu.locator.MenuLocators.forPart(this)
+            );
             return true;
         }
-        return isClientSide();
+        return true;
     }
 
     @Override
@@ -108,14 +123,13 @@ public class ChunkyFluidP2PTunnelPart extends CapabilityP2PTunnelPart<ChunkyFlui
             return false;
         }
 
-        // Memory card handling (same pattern as RRItemP2PTunnelPart)
         if (heldItem.getItem() instanceof IMemoryCard mc) {
-            // Shift+click = save settings to card
             if (InteractionUtil.isInAlternateUseMode(player)) {
-                heldItem.get(AEComponents.EXPORTED_P2P_FREQUENCY);
                 short newFreq = getFrequency();
                 boolean wasOutput = isOutput();
+
                 ((P2PTunnelPartAccessor) this).setOutputField(false);
+
                 boolean needsNewFrequency = wasOutput || newFreq == 0;
                 IGrid grid = getMainNode().getGrid();
                 if (grid != null) {
@@ -125,10 +139,13 @@ public class ChunkyFluidP2PTunnelPart extends CapabilityP2PTunnelPart<ChunkyFlui
                     }
                     p2p.updateFreq(this, newFreq);
                 }
+
                 onTunnelConfigChange();
+
                 MemoryCardItem.clearCard(heldItem);
                 heldItem.set(AEComponents.EXPORTED_SETTINGS_SOURCE, getPartItem().asItem().getDescription());
                 heldItem.applyComponents(exportSettings(SettingsFrom.MEMORY_CARD));
+
                 if (needsNewFrequency) {
                     mc.notifyUser(player, MemoryCardMessages.SETTINGS_RESET);
                 } else {
@@ -137,7 +154,6 @@ public class ChunkyFluidP2PTunnelPart extends CapabilityP2PTunnelPart<ChunkyFlui
                 return true;
             }
 
-            // Click = load settings from card
             if (heldItem.get(AEComponents.EXPORTED_P2P_TYPE) != null
                     || !heldItem.has(CrazyDataComponents.CHUNKY_FLUID_P2P_TYPE)) {
                 mc.notifyUser(player, MemoryCardMessages.INVALID_MACHINE);
@@ -173,12 +189,19 @@ public class ChunkyFluidP2PTunnelPart extends CapabilityP2PTunnelPart<ChunkyFlui
     public void exportSettings(SettingsFrom mode, Builder output) {
         if (mode == SettingsFrom.MEMORY_CARD) {
             output.set(CrazyDataComponents.CHUNKY_FLUID_P2P_TYPE, getPartItem().asItem().getDescription().getString());
+
             if (getFrequency() != 0) {
                 output.set(AEComponents.EXPORTED_P2P_FREQUENCY, getFrequency());
                 var colors = Platform.p2p().toColors(getFrequency());
-                output.set(AEComponents.MEMORY_CARD_COLORS,
-                        new MemoryCardColors(colors[0], colors[0], colors[1], colors[1],
-                                colors[2], colors[2], colors[3], colors[3]));
+                output.set(
+                        AEComponents.MEMORY_CARD_COLORS,
+                        new MemoryCardColors(
+                                colors[0], colors[0],
+                                colors[1], colors[1],
+                                colors[2], colors[2],
+                                colors[3], colors[3]
+                        )
+                );
             }
         }
     }
@@ -186,27 +209,36 @@ public class ChunkyFluidP2PTunnelPart extends CapabilityP2PTunnelPart<ChunkyFlui
     @Override
     public void readFromNBT(CompoundTag data, HolderLookup.Provider registries) {
         super.readFromNBT(data, registries);
-        data.putInt("containerIndex", containerIndex);
+
+        if (data.contains("crazy_state", Tag.TAG_COMPOUND)) {
+            persisted.deserializeNBT(registries, data.getCompound("crazy_state"));
+        }
     }
 
     @Override
     public void writeToNBT(CompoundTag data, HolderLookup.Provider registries) {
         super.writeToNBT(data, registries);
-        data.putInt("containerIndex", containerIndex);
+        data.put("crazy_state", persisted.serializeNBT(registries));
     }
 
     @Override
     public boolean readFromStream(RegistryFriendlyByteBuf data) {
         boolean changed = super.readFromStream(data);
-        int oldIndex = containerIndex;
-        containerIndex = data.readInt();
-        return changed || oldIndex != containerIndex;
+
+        int oldContainerIndex = persisted.containerIndex;
+        int oldUnitSize = persisted.unitSize;
+
+        persisted.readFromBuff(data);
+
+        return changed
+                || oldContainerIndex != persisted.containerIndex
+                || oldUnitSize != persisted.unitSize;
     }
 
     @Override
     public void writeToStream(RegistryFriendlyByteBuf data) {
         super.writeToStream(data);
-        data.writeInt(containerIndex);
+        persisted.writeToBuff(data);
     }
 
     @Override
@@ -214,7 +246,7 @@ public class ChunkyFluidP2PTunnelPart extends CapabilityP2PTunnelPart<ChunkyFlui
         return 1.0f;
     }
 
-    private class InputFluidHandler implements IFluidHandler {
+    private final class InputFluidHandler implements IFluidHandler {
 
         @Override
         public int getTanks() {
@@ -237,26 +269,34 @@ public class ChunkyFluidP2PTunnelPart extends CapabilityP2PTunnelPart<ChunkyFlui
         }
 
         @Override
-        public int fill(FluidStack resource, IFluidHandler.FluidAction action) {
+        public int fill(FluidStack resource, FluidAction action) {
             int total = 0;
             final int outputTunnels = ChunkyFluidP2PTunnelPart.this.getOutputs().size();
             final int amount = resource.getAmount();
-            final int unit = ChunkyFluidP2PTunnelPart.this.unitSize;
-            if (outputTunnels == 0 || amount < unit) return 0;
+            final int unit = persisted.unitSize;
+
+            if (outputTunnels == 0 || amount < unit) {
+                return 0;
+            }
 
             int availableUnits = amount / unit;
             final int unitsPerOutput = availableUnits / outputTunnels;
             int overflowUnits = unitsPerOutput == 0 ? availableUnits : availableUnits % unitsPerOutput;
 
-            List<ChunkyFluidP2PTunnelPart> outputs = Utils.rotate(ChunkyFluidP2PTunnelPart.this.getOutputs(), containerIndex);
+            List<ChunkyFluidP2PTunnelPart> outputs =
+                    Utils.rotate(ChunkyFluidP2PTunnelPart.this.getOutputs(), persisted.containerIndex);
 
             for (ChunkyFluidP2PTunnelPart target : outputs) {
                 try (CapabilityGuard capabilityGuard = target.getAdjacentCapability()) {
                     final IFluidHandler output = capabilityGuard.get();
                     final int toSendUnits = unitsPerOutput + overflowUnits;
-                    if (toSendUnits <= 0) break;
+                    if (toSendUnits <= 0) {
+                        break;
+                    }
+
                     FluidStack fillStack = resource.copy();
                     fillStack.setAmount(toSendUnits * unit);
+
                     final int received = output.fill(fillStack, action);
                     int transferredUnits = received / unit;
                     overflowUnits = toSendUnits - transferredUnits;
@@ -264,11 +304,11 @@ public class ChunkyFluidP2PTunnelPart extends CapabilityP2PTunnelPart<ChunkyFlui
                 }
             }
 
-            if (action == IFluidHandler.FluidAction.EXECUTE) {
+            if (action == FluidAction.EXECUTE) {
                 deductTransportCost(total, AEKeyType.fluids());
-                containerIndex++;
-                if (containerIndex >= outputTunnels) {
-                    containerIndex = 0;
+                persisted.containerIndex++;
+                if (persisted.containerIndex >= outputTunnels) {
+                    persisted.containerIndex = 0;
                 }
             }
 
@@ -276,17 +316,17 @@ public class ChunkyFluidP2PTunnelPart extends CapabilityP2PTunnelPart<ChunkyFlui
         }
 
         @Override
-        public FluidStack drain(FluidStack resource, IFluidHandler.FluidAction action) {
+        public FluidStack drain(FluidStack resource, FluidAction action) {
             return FluidStack.EMPTY;
         }
 
         @Override
-        public FluidStack drain(int maxDrain, IFluidHandler.FluidAction action) {
+        public FluidStack drain(int maxDrain, FluidAction action) {
             return FluidStack.EMPTY;
         }
     }
 
-    private class OutputFluidHandler implements IFluidHandler {
+    private final class OutputFluidHandler implements IFluidHandler {
         @Override
         public int getTanks() {
             try (CapabilityGuard input = getInputCapability()) {
@@ -316,12 +356,12 @@ public class ChunkyFluidP2PTunnelPart extends CapabilityP2PTunnelPart<ChunkyFlui
         }
 
         @Override
-        public int fill(FluidStack resource, IFluidHandler.FluidAction action) {
+        public int fill(FluidStack resource, FluidAction action) {
             return 0;
         }
 
         @Override
-        public FluidStack drain(FluidStack resource, IFluidHandler.FluidAction action) {
+        public FluidStack drain(FluidStack resource, FluidAction action) {
             try (CapabilityGuard input = getInputCapability()) {
                 FluidStack result = input.get().drain(resource, action);
 
@@ -334,7 +374,7 @@ public class ChunkyFluidP2PTunnelPart extends CapabilityP2PTunnelPart<ChunkyFlui
         }
 
         @Override
-        public FluidStack drain(int maxDrain, IFluidHandler.FluidAction action) {
+        public FluidStack drain(int maxDrain, FluidAction action) {
             try (CapabilityGuard input = getInputCapability()) {
                 FluidStack result = input.get().drain(maxDrain, action);
 
@@ -347,7 +387,7 @@ public class ChunkyFluidP2PTunnelPart extends CapabilityP2PTunnelPart<ChunkyFlui
         }
     }
 
-    private static class NullFluidHandler implements IFluidHandler {
+    private static final class NullFluidHandler implements IFluidHandler {
 
         @Override
         public int getTanks() {
@@ -370,18 +410,26 @@ public class ChunkyFluidP2PTunnelPart extends CapabilityP2PTunnelPart<ChunkyFlui
         }
 
         @Override
-        public int fill(FluidStack resource, IFluidHandler.FluidAction action) {
+        public int fill(FluidStack resource, FluidAction action) {
             return 0;
         }
 
         @Override
-        public FluidStack drain(FluidStack resource, IFluidHandler.FluidAction action) {
+        public FluidStack drain(FluidStack resource, FluidAction action) {
             return FluidStack.EMPTY;
         }
 
         @Override
-        public FluidStack drain(int maxDrain, IFluidHandler.FluidAction action) {
+        public FluidStack drain(int maxDrain, FluidAction action) {
             return FluidStack.EMPTY;
         }
+    }
+
+    private static final class PartState implements IPersistedSerializable {
+        @Persisted
+        private int containerIndex = 0;
+
+        @Persisted
+        private int unitSize = 1000;
     }
 }

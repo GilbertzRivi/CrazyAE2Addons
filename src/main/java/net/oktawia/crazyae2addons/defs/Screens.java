@@ -2,13 +2,17 @@ package net.oktawia.crazyae2addons.defs;
 
 import appeng.init.client.InitScreens;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
+import net.oktawia.crazyae2addons.client.screens.block.*;
+import net.oktawia.crazyae2addons.client.screens.item.BuilderPatternScreen;
+import net.oktawia.crazyae2addons.client.screens.item.BuilderPatternSubScreen;
+import net.oktawia.crazyae2addons.client.screens.part.DisplayImagesSubScreen;
+import net.oktawia.crazyae2addons.client.screens.part.DisplayScreen;
+import net.oktawia.crazyae2addons.client.screens.part.DisplayTokenSubScreen;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.menus.*;
-import net.oktawia.crazyae2addons.client.screens.*;
-import net.oktawia.crazyae2addons.client.screens.AmpereMeterScreen;
-import net.oktawia.crazyae2addons.client.screens.ChunkyFluidP2PTunnelScreen;
-import net.oktawia.crazyae2addons.client.screens.EjectorScreen;
-import net.oktawia.crazyae2addons.client.screens.EmitterTerminalScreen;
+import net.oktawia.crazyae2addons.client.screens.part.ChunkyFluidP2PTunnelScreen;
+import net.oktawia.crazyae2addons.client.screens.block.EjectorScreen;
+import net.oktawia.crazyae2addons.client.screens.part.EmitterTerminalScreen;
 import net.oktawia.crazyae2addons.items.wireless.WirelessEmitterTerminalMenu;
 
 public final class Screens {

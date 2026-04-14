@@ -59,7 +59,7 @@ public final class DisplayGrid {
 
             Direction side = part.getSide();
 
-            if (side == Direction.UP || side == Direction.DOWN || !part.isPowered() || !part.mode) {
+            if (side == Direction.UP || side == Direction.DOWN || !part.isPowered() || !part.isMergeMode()) {
                 RenderGroup singleton = buildSingletonRenderGroup(part);
                 CLIENT_RENDER_GROUP_CACHE.put(part, singleton);
                 assigned.add(part);
@@ -98,7 +98,7 @@ public final class DisplayGrid {
 
         Direction side = origin.getSide();
 
-        if (side == Direction.UP || side == Direction.DOWN || !origin.isPowered() || !origin.mode) {
+        if (side == Direction.UP || side == Direction.DOWN || !origin.isPowered() || !origin.isMergeMode()) {
             return buildSingletonRenderGroup(origin);
         }
 
@@ -151,7 +151,7 @@ public final class DisplayGrid {
 
             for (Direction dir : dirs) {
                 DisplayPart nb = getNeighbor(cur, dir);
-                if (nb != null && nb.getSide() == side && nb.isPowered() && nb.mode && all.add(nb)) {
+                if (nb != null && nb.getSide() == side && nb.isPowered() && nb.isMergeMode() && all.add(nb)) {
                     queue.add(nb);
                 }
             }
@@ -371,7 +371,7 @@ public final class DisplayGrid {
 
             for (Direction dir : dirs) {
                 DisplayPart nb = getNeighbor(cur, dir);
-                if (nb != null && nb.getSide() == side && nb.isPowered() && nb.mode && all.add(nb)) {
+                if (nb != null && nb.getSide() == side && nb.isPowered() && nb.isMergeMode() && all.add(nb)) {
                     queue.add(nb);
                 }
             }

@@ -9,8 +9,8 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.oktawia.crazyae2addons.CrazyAddons;
-import net.oktawia.crazyae2addons.client.screens.DisplayImagesSubScreen;
-import net.oktawia.crazyae2addons.client.screens.DisplayScreen;
+import net.oktawia.crazyae2addons.client.screens.part.DisplayImagesSubScreen;
+import net.oktawia.crazyae2addons.client.screens.part.DisplayScreen;
 
 public record SyncDisplayImagePreviewPacket(
         String imageId,

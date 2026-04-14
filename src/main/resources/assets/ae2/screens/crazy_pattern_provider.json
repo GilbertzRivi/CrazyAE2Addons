@@ -3,7 +3,7 @@
   "includes": ["common/common.json", "common/player_inventory.json"],
   "background": {
     "texture": "guis/crazy_pattern_provider.png",
-    "srcRect": [0, 0, 195, 243]
+    "srcRect": [0, 0, 192, 243]
   },
   "slots": {
     "ENCODED_PATTERN": {
@@ -45,8 +45,8 @@
   },
   "widgets": {
     "openPriority": {
-      "left": 154,
-      "top": 0
+      "left": 168,
+      "top": -5
     },
     "lockReason": {
       "left": 5,

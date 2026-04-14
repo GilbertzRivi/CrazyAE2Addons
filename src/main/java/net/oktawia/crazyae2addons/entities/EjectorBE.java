@@ -49,7 +49,6 @@ public class EjectorBE extends AENetworkedBlockEntity implements MenuProvider, I
 
     @Getter
     private final FieldManagedStorage syncStorage = new FieldManagedStorage(this);
-
     @Persisted
     public final ConfigInventory config = ConfigInventory.configStacks(36).build();
     @Persisted
@@ -125,7 +124,9 @@ public class EjectorBE extends AENetworkedBlockEntity implements MenuProvider, I
         boolean crafting = buffer.hasActiveCrafting();
         if (isCrafting != crafting) {
             isCrafting = crafting;
-            getLevel().setBlockAndUpdate(getBlockPos(), getBlockState().setValue(EjectorBlock.ISCRAFTING, crafting));
+            if (getLevel() != null) {
+                getLevel().setBlockAndUpdate(getBlockPos(), getBlockState().setValue(EjectorBlock.ISCRAFTING, crafting));
+            }
         }
         return (crafting || buffer.isFlushPending()) ? TickRateModulation.URGENT : TickRateModulation.IDLE;
     }
@@ -145,7 +146,9 @@ public class EjectorBE extends AENetworkedBlockEntity implements MenuProvider, I
 
         if (buffer.request(required)) {
             isCrafting = true;
-            getLevel().setBlockAndUpdate(getBlockPos(), getBlockState().setValue(EjectorBlock.ISCRAFTING, true));
+            if (getLevel() != null) {
+                getLevel().setBlockAndUpdate(getBlockPos(), getBlockState().setValue(EjectorBlock.ISCRAFTING, true));
+            }
         }
     }
 
@@ -158,7 +161,9 @@ public class EjectorBE extends AENetworkedBlockEntity implements MenuProvider, I
         var grid = getGrid();
         if (level == null || grid == null) {
             if (!buffer.isEmpty()) buffer.beginFlush();
-            getLevel().setBlockAndUpdate(getBlockPos(), getBlockState().setValue(EjectorBlock.ISCRAFTING, false));
+            if (getLevel() != null) {
+                getLevel().setBlockAndUpdate(getBlockPos(), getBlockState().setValue(EjectorBlock.ISCRAFTING, false));
+            }
             return;
         }
 

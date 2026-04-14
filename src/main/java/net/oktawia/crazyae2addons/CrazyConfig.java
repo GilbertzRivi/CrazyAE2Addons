@@ -3,6 +3,8 @@ package net.oktawia.crazyae2addons;
 import net.neoforged.neoforge.common.ModConfigSpec;
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.util.List;
+
 public class CrazyConfig {
     public static final ModConfigSpec COMMON_SPEC;
     public static final Common COMMON;
@@ -25,6 +27,8 @@ public class CrazyConfig {
         public final ModConfigSpec.DoubleValue AutobuilderCostMult;
         public final ModConfigSpec.IntValue AutobuilderSpeed;
         public final ModConfigSpec.IntValue AutobuilderMineDelay;
+
+        public final ModConfigSpec.ConfigValue<List<? extends String>> PenroseGtTiers;
 
         public Common(ModConfigSpec.Builder builder) {
             builder.comment("Crazy AE2 Addons - Config").push("general");
@@ -65,6 +69,15 @@ public class CrazyConfig {
             AutobuilderMineDelay = builder
                     .comment("Extra tick delay after mining a block")
                     .defineInRange("autobuilderMineDelay", 1, 1, Integer.MAX_VALUE);
+
+            PenroseGtTiers = builder
+                    .comment("GregTech energy hatch tiers accepted in Penrose Sphere structure.\n" +
+                             "Used when a block ID contains '#' as a tier wildcard, e.g. \"gtceu:#_energy_output_hatch\".\n" +
+                             "Each entry replaces '#' and the result is looked up in the block registry.")
+                    .defineListAllowEmpty("penroseGtTiers",
+                            List.of("ulv", "lv", "mv", "hv", "ev", "iv", "luv", "zpm", "uv",
+                                    "uhv", "uev", "uiv", "uxv", "opv", "max"),
+                            obj -> obj instanceof String s && !s.isBlank());
 
             builder.pop();
         }

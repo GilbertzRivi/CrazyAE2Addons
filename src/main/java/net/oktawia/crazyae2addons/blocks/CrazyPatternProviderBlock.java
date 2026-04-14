@@ -124,26 +124,4 @@ public class CrazyPatternProviderBlock extends PatternProviderBlock {
         }
         return super.getDrops(state, builder);
     }
-
-    @Override
-    public void setPlacedBy(Level level, BlockPos pos, BlockState state,
-                            LivingEntity placer, ItemStack stack) {
-        if (level.isClientSide()) return;
-
-        BlockEntity be = level.getBlockEntity(pos);
-        if (!(be instanceof CrazyPatternProviderBE myBe)) return;
-
-        CustomData data = stack.get(CrazyDataComponents.CRAZY_PROVIDER_DATA.get());
-        if (data == null || data.isEmpty()) return;
-
-        CompoundTag tag = data.copyTag();
-        if (!tag.contains("added")) return;
-
-        myBe.loadTag(tag, level.registryAccess());
-        PacketDistributor.sendToPlayersTrackingChunk(
-                (ServerLevel) level,
-                new ChunkPos(pos),
-                new SyncBlockClientPacket(pos, tag.getInt("added"))
-        );
-    }
 }

@@ -9,7 +9,7 @@ import appeng.client.gui.widgets.NumberEntryWidget;
 import appeng.client.gui.widgets.TabButton;
 import appeng.core.localization.GuiText;
 import appeng.menu.SlotSemantics;
-import net.minecraft.network.chat.Component;
+import net.oktawia.crazyae2addons.client.screens.block.EjectorScreen;
 import net.oktawia.crazyae2addons.menus.EjectorMenu;
 
 import java.util.function.Consumer;

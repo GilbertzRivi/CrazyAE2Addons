@@ -53,4 +53,12 @@ public class TagViewCellScreen<C extends TagViewCellMenu> extends AEBaseScreen<C
                 font, 0, 0, 50, 80,
                 Component.translatable("gui.crazyae2addons.tag_view_cell_input"));
     }
+
+
+    @Override
+    public boolean keyPressed(int key, int sc, int mod) {
+        input.keyPressed(key, sc, mod);
+        if (key == 256) { this.onClose(); return true; }
+        return true;
+    }
 }

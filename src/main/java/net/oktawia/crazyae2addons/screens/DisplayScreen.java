@@ -98,5 +98,4 @@ public class DisplayScreen<C extends DisplayMenu> extends AEBaseScreen<C> {
         if (key == 256) { this.onClose(); return true; }
         return true;
     }
-
 }

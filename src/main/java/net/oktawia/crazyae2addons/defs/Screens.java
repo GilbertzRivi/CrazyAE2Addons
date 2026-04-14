@@ -266,6 +266,12 @@ public final class Screens {
         );
 
         InitScreens.register(
+                CrazyMenuRegistrar.TAG_LEVEL_EMITTER_MENU.get(),
+                TagLevelEmitterScreen<TagLevelEmitterMenu>::new,
+                "/screens/tag_level_emitter.json"
+        );
+
+        InitScreens.register(
                 CrazyMenuRegistrar.EMITTER_TERMINAL_MENU.get(),
                 EmitterTerminalScreen<EmitterTerminalMenu>::new,
                 "/screens/storage_emitter_terminal.json"

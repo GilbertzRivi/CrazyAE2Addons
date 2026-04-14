@@ -126,6 +126,10 @@ public class CrazyItemRegistrar {
             ITEMS.register("multi_level_emitter",
                     () -> new PartItem<>(new Item.Properties(), MultiStorageLevelEmitterPart.class, MultiStorageLevelEmitterPart::new));
 
+    public static final RegistryObject<PartItem<TagLevelEmitterPart>> TAG_LEVEL_EMITTER_ITEM =
+            ITEMS.register("tag_level_emitter",
+                    () -> new PartItem<>(new Item.Properties(), TagLevelEmitterPart.class, TagLevelEmitterPart::new));
+
     public static final RegistryObject<EntityTickerPartItem> ENTITY_TICKER_PART_ITEM =
             ITEMS.register("entity_ticker",
                     () -> new EntityTickerPartItem(new Item.Properties()));

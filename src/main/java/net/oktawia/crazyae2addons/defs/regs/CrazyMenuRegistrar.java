@@ -177,6 +177,9 @@ public class CrazyMenuRegistrar {
     public static final RegistryObject<MenuType<MultiLevelEmitterMenu>> MULTI_LEVEL_EMITTER_MENU =
             reg(id("multi_level_emitter_menu"), MultiLevelEmitterMenu::new, MultiStorageLevelEmitterPart.class);
 
+    public static final RegistryObject<MenuType<TagLevelEmitterMenu>> TAG_LEVEL_EMITTER_MENU =
+            reg(id("tag_level_emitter_menu"), TagLevelEmitterMenu::new, TagLevelEmitterPart.class);
+
     public static final RegistryObject<MenuType<EmitterTerminalMenu>> EMITTER_TERMINAL_MENU =
             reg(id("emitter_terminal_menu"), EmitterTerminalMenu::new, EmitterTerminalPart.class);
 

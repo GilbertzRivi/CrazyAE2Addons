@@ -315,7 +315,10 @@ public enum LangDefs implements LocalizationEnum {
     MULTI_EMITTER_CMP_BELOW("gui.crazyae2addons.multi_emitter.cmp_below", "Emit when amount is bellow limit"),
     MODIFIER_IGNORE_NBT_TOOLTIP("gui.crazyae2addons.modifier_ignore_nbt_tooltip", "Toggle ignore NBT option"),
     CRAFTING_SCHEDULER_TOOLTIP("gui.crazyae2addons.c_scheduler_amount_tt", "How much to request (mB for fluids)"),
-    PENROSE_BH_MASS_HEAT("gui.crazyae2addons.penrose_bh_mass_heat", "Mass: %s MU | Heat: %s");
+    PENROSE_BH_MASS_HEAT("gui.crazyae2addons.penrose_bh_mass_heat", "Mass: %s MU | Heat: %s"),
+    TAG_LEVEL_EMITTER_EXPR_HINT("gui.crazyae2addons.tag_level_emitter.expr_hint", "forge:ingots/iron..."),
+    TAG_LEVEL_EMITTER_CONFIRM("gui.crazyae2addons.tag_level_emitter.confirm", "Apply expression and threshold"),
+    TAG_LEVEL_EMITTER_THRESHOLD_TOOLTIP("gui.crazyae2addons.tag_level_emitter.threshold_tooltip", "Emit when matching count is above/below this value");
 
 
     private final String key;

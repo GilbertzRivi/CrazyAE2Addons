@@ -6,8 +6,7 @@ import appeng.client.gui.widgets.AETextField;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
-import net.oktawia.crazyae2addons.defs.LangDefs;
-import net.oktawia.crazyae2addons.menus.ChunkyFluidP2PTunnelMenu;
+import net.oktawia.crazyae2addons.menus.part.ChunkyFluidP2PTunnelMenu;
 
 public class ChunkyFluidP2PTunnelScreen<C extends ChunkyFluidP2PTunnelMenu> extends AEBaseScreen<C> {
 

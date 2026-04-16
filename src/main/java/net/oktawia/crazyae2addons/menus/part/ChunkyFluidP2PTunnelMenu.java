@@ -1,10 +1,10 @@
-package net.oktawia.crazyae2addons.menus;
+package net.oktawia.crazyae2addons.menus.part;
 
 import appeng.menu.AEBaseMenu;
 import appeng.menu.guisync.GuiSync;
 import net.minecraft.world.entity.player.Inventory;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
-import net.oktawia.crazyae2addons.parts.ChunkyFluidP2PTunnelPart;
+import net.oktawia.crazyae2addons.parts.p2p.ChunkyFluidP2PTunnelPart;
 
 public class ChunkyFluidP2PTunnelMenu extends AEBaseMenu {
 

@@ -8,7 +8,7 @@ import appeng.client.gui.widgets.ToggleButton;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.oktawia.crazyae2addons.defs.LangDefs;
-import net.oktawia.crazyae2addons.menus.AmpereMeterMenu;
+import net.oktawia.crazyae2addons.menus.block.AmpereMeterMenu;
 
 import java.util.List;
 

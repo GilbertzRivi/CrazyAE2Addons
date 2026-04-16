@@ -1,6 +1,5 @@
-package net.oktawia.crazyae2addons.parts;
+package net.oktawia.crazyae2addons.parts.p2p;
 
-import appeng.api.config.Actionable;
 import appeng.api.ids.AEComponents;
 import appeng.api.implementations.items.IMemoryCard;
 import appeng.api.implementations.items.MemoryCardColors;
@@ -19,10 +18,13 @@ import appeng.parts.p2p.CapabilityP2PTunnelPart;
 import appeng.util.InteractionUtil;
 import appeng.util.Platform;
 import appeng.util.SettingsFrom;
+import com.lowdragmc.lowdraglib2.syncdata.IPersistedSerializable;
+import com.lowdragmc.lowdraglib2.syncdata.annotation.Persisted;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.core.component.DataComponentMap.Builder;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
@@ -37,7 +39,6 @@ import net.oktawia.crazyae2addons.defs.regs.CrazyDataComponents;
 import net.oktawia.crazyae2addons.mixins.P2PTunnelPartAccessor;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
 import java.util.List;
 
 public class RRItemP2PTunnelPart extends CapabilityP2PTunnelPart<RRItemP2PTunnelPart, IItemHandler> {
@@ -47,11 +48,14 @@ public class RRItemP2PTunnelPart extends CapabilityP2PTunnelPart<RRItemP2PTunnel
     private static final ResourceLocation MODEL_STATUS_HAS_CHANNEL = AppEng.makeId("part/p2p/p2p_tunnel_status_has_channel");
     private static final ResourceLocation MODEL_FREQUENCY = AppEng.makeId("part/p2p/p2p_tunnel_frequency");
     private static final ResourceLocation FRONT_MODEL = AppEng.makeId("part/p2p/round_robin_item_p2p_tunnel");
+
     private static final IPartModel MODELS_OFF = new PartModel(MODEL_STATUS_OFF, MODEL_FREQUENCY, FRONT_MODEL);
     private static final IPartModel MODELS_ON = new PartModel(MODEL_STATUS_ON, MODEL_FREQUENCY, FRONT_MODEL);
     private static final IPartModel MODELS_HAS_CHANNEL = new PartModel(MODEL_STATUS_HAS_CHANNEL, MODEL_FREQUENCY, FRONT_MODEL);
+
     private static final IItemHandler NULL_ITEM_HANDLER = new NullItemHandler();
-    private int containerIndex;
+
+    private final PartState persisted = new PartState();
 
     @PartModels
     public static List<IPartModel> getModels() {
@@ -63,7 +67,6 @@ public class RRItemP2PTunnelPart extends CapabilityP2PTunnelPart<RRItemP2PTunnel
         inputHandler = new InputItemHandler();
         outputHandler = new OutputItemHandler();
         emptyHandler = NULL_ITEM_HANDLER;
-        containerIndex = 0;
     }
 
     @Override
@@ -85,10 +88,11 @@ public class RRItemP2PTunnelPart extends CapabilityP2PTunnelPart<RRItemP2PTunnel
 
         if (heldItem.getItem() instanceof IMemoryCard mc) {
             if (InteractionUtil.isInAlternateUseMode(player)) {
-                heldItem.get(AEComponents.EXPORTED_P2P_FREQUENCY);
                 short newFreq = getFrequency();
                 boolean wasOutput = isOutput();
+
                 ((P2PTunnelPartAccessor) this).setOutputField(false);
+
                 boolean needsNewFrequency = wasOutput || newFreq == 0;
                 IGrid grid = getMainNode().getGrid();
                 if (grid != null) {
@@ -98,10 +102,13 @@ public class RRItemP2PTunnelPart extends CapabilityP2PTunnelPart<RRItemP2PTunnel
                     }
                     p2p.updateFreq(this, newFreq);
                 }
+
                 onTunnelConfigChange();
+
                 MemoryCardItem.clearCard(heldItem);
                 heldItem.set(AEComponents.EXPORTED_SETTINGS_SOURCE, getPartItem().asItem().getDescription());
                 heldItem.applyComponents(exportSettings(SettingsFrom.MEMORY_CARD));
+
                 if (needsNewFrequency) {
                     mc.notifyUser(player, MemoryCardMessages.SETTINGS_RESET);
                 } else {
@@ -148,9 +155,15 @@ public class RRItemP2PTunnelPart extends CapabilityP2PTunnelPart<RRItemP2PTunnel
             if (getFrequency() != 0) {
                 output.set(AEComponents.EXPORTED_P2P_FREQUENCY, getFrequency());
                 var colors = Platform.p2p().toColors(getFrequency());
-                output.set(AEComponents.MEMORY_CARD_COLORS,
-                        new MemoryCardColors(colors[0], colors[0], colors[1], colors[1],
-                                colors[2], colors[2], colors[3], colors[3]));
+                output.set(
+                        AEComponents.MEMORY_CARD_COLORS,
+                        new MemoryCardColors(
+                                colors[0], colors[0],
+                                colors[1], colors[1],
+                                colors[2], colors[2],
+                                colors[3], colors[3]
+                        )
+                );
             }
         }
     }
@@ -158,27 +171,32 @@ public class RRItemP2PTunnelPart extends CapabilityP2PTunnelPart<RRItemP2PTunnel
     @Override
     public void readFromNBT(CompoundTag data, HolderLookup.Provider registries) {
         super.readFromNBT(data, registries);
-        data.putInt("containerIndex", containerIndex);
+
+        if (data.contains("crazy_state", Tag.TAG_COMPOUND)) {
+            persisted.deserializeNBT(registries, data.getCompound("crazy_state"));
+        }
     }
 
     @Override
     public void writeToNBT(CompoundTag data, HolderLookup.Provider registries) {
         super.writeToNBT(data, registries);
-        data.putInt("containerIndex", containerIndex);
+        data.put("crazy_state", persisted.serializeNBT(registries));
     }
 
     @Override
     public boolean readFromStream(RegistryFriendlyByteBuf data) {
         boolean changed = super.readFromStream(data);
-        int oldIndex = containerIndex;
-        containerIndex = data.readInt();
-        return changed || oldIndex != containerIndex;
+
+        int oldIndex = persisted.containerIndex;
+        persisted.readFromBuff(data);
+
+        return changed || oldIndex != persisted.containerIndex;
     }
 
     @Override
     public void writeToStream(RegistryFriendlyByteBuf data) {
         super.writeToStream(data);
-        data.writeInt(containerIndex);
+        persisted.writeToBuff(data);
     }
 
     @Override
@@ -186,7 +204,7 @@ public class RRItemP2PTunnelPart extends CapabilityP2PTunnelPart<RRItemP2PTunnel
         return 1.0f;
     }
 
-    private class InputItemHandler implements IItemHandler {
+    private final class InputItemHandler implements IItemHandler {
 
         @Override
         public int getSlots() {
@@ -212,7 +230,8 @@ public class RRItemP2PTunnelPart extends CapabilityP2PTunnelPart<RRItemP2PTunnel
             final int amountPerOutput = amount / outputTunnels;
             int overflow = amountPerOutput == 0 ? amount : amount % amountPerOutput;
 
-            List<RRItemP2PTunnelPart> outputs = Utils.rotate(RRItemP2PTunnelPart.this.getOutputs(), containerIndex);
+            List<RRItemP2PTunnelPart> outputs =
+                    Utils.rotate(RRItemP2PTunnelPart.this.getOutputs(), persisted.containerIndex);
 
             for (RRItemP2PTunnelPart target : outputs) {
                 try (CapabilityGuard capabilityGuard = target.getAdjacentCapability()) {
@@ -234,9 +253,9 @@ public class RRItemP2PTunnelPart extends CapabilityP2PTunnelPart<RRItemP2PTunnel
 
             if (!simulate) {
                 deductTransportCost(amount - remainder, AEKeyType.items());
-                containerIndex += 1;
-                if (containerIndex >= outputTunnels) {
-                    containerIndex = 0;
+                persisted.containerIndex += 1;
+                if (persisted.containerIndex >= outputTunnels) {
+                    persisted.containerIndex = 0;
                 }
             }
 
@@ -267,7 +286,7 @@ public class RRItemP2PTunnelPart extends CapabilityP2PTunnelPart<RRItemP2PTunnel
         }
     }
 
-    private class OutputItemHandler implements IItemHandler {
+    private final class OutputItemHandler implements IItemHandler {
         @Override
         public int getSlots() {
             try (CapabilityGuard input = getInputCapability()) {
@@ -315,7 +334,7 @@ public class RRItemP2PTunnelPart extends CapabilityP2PTunnelPart<RRItemP2PTunnel
         }
     }
 
-    private static class NullItemHandler implements IItemHandler {
+    private static final class NullItemHandler implements IItemHandler {
 
         @Override
         public int getSlots() {
@@ -346,5 +365,10 @@ public class RRItemP2PTunnelPart extends CapabilityP2PTunnelPart<RRItemP2PTunnel
         public boolean isItemValid(int slot, ItemStack stack) {
             return false;
         }
+    }
+
+    private static final class PartState implements IPersistedSerializable {
+        @Persisted
+        private int containerIndex = 0;
     }
 }

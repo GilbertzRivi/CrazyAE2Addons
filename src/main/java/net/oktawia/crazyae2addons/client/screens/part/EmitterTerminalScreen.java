@@ -19,7 +19,7 @@ import net.minecraft.world.inventory.Slot;
 import net.oktawia.crazyae2addons.defs.LangDefs;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
 import net.oktawia.crazyae2addons.interfaces.IMovableSlot;
-import net.oktawia.crazyae2addons.menus.EmitterTerminalMenu;
+import net.oktawia.crazyae2addons.menus.part.EmitterTerminalMenu;
 import net.oktawia.crazyae2addons.items.wireless.WirelessEmitterTerminalMenu;
 import org.jetbrains.annotations.NotNull;
 
@@ -28,7 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
 
-import static net.oktawia.crazyae2addons.menus.EmitterTerminalMenu.GSON;
+import static net.oktawia.crazyae2addons.menus.part.EmitterTerminalMenu.GSON;
 
 public class EmitterTerminalScreen<C extends EmitterTerminalMenu> extends AEBaseScreen<C> {
 

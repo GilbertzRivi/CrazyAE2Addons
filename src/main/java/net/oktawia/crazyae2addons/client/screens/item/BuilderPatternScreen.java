@@ -10,7 +10,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.oktawia.crazyae2addons.client.misc.CrazyLanguages;
 import net.oktawia.crazyae2addons.defs.LangDefs;
-import net.oktawia.crazyae2addons.menus.BuilderPatternMenu;
+import net.oktawia.crazyae2addons.menus.item.BuilderPatternMenu;
 import net.oktawia.crazyae2addons.client.misc.IconButton;
 import net.oktawia.crazyae2addons.client.misc.LDLibCodeEditorAdapter;
 import net.oktawia.crazyae2addons.misc.ProgramExpander;
@@ -37,7 +37,7 @@ public class BuilderPatternScreen<C extends BuilderPatternMenu> extends AEBaseSc
         renameField.setBordered(false);
         widgets.add("rename", renameField);
 
-        confirmBtn = new IconButton(Icon.ENTER, btn -> save());
+        confirmBtn = new IconButton(Icon.COPY_MODE_ON, btn -> save());
         confirmBtn.setTooltip(Tooltip.create(Component.translatable(LangDefs.CONFIRM.getTranslationKey())));
         widgets.add("confirm", confirmBtn);
 
@@ -62,11 +62,11 @@ public class BuilderPatternScreen<C extends BuilderPatternMenu> extends AEBaseSc
         rotateBtn.setTooltip(Tooltip.create(Component.translatable(LangDefs.ROTATE_CW.getTranslationKey())));
         widgets.add("rotate", rotateBtn);
 
-        var visualAssistBtn = new IconButton(Icon.HELP, btn -> getMenu().openSubMenu());
-        visualAssistBtn.setTooltip(Tooltip.create(Component.literal("Visual Assistance - fill region helper")));
+        var visualAssistBtn = new IconButton(Icon.CRAFT_HAMMER, btn -> getMenu().openSubMenu());
+        visualAssistBtn.setTooltip(Tooltip.create(Component.translatable(LangDefs.VISUAL_ASSISTANCE.getTranslationKey())));
         widgets.add("visualAssist", visualAssistBtn);
 
-        SendLongStringToClientPacket.clientHandler = data -> textEditor.setValue(data);
+        SendLongStringToClientPacket.clientHandler = textEditor::setValue;
     }
 
     @Override

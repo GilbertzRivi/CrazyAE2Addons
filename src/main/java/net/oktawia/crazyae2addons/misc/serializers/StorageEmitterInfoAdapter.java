@@ -2,7 +2,7 @@ package net.oktawia.crazyae2addons.misc.serializers;
 
 import com.google.gson.*;
 import net.minecraft.network.chat.Component;
-import net.oktawia.crazyae2addons.menus.EmitterTerminalMenu;
+import net.oktawia.crazyae2addons.menus.part.EmitterTerminalMenu;
 
 import java.lang.reflect.Type;
 

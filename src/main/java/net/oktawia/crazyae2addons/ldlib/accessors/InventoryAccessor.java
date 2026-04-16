@@ -4,13 +4,24 @@ import appeng.util.inv.AppEngInternalInventory;
 import com.lowdragmc.lowdraglib2.core.mixins.accessor.DelegatingOpsAccessor;
 import com.lowdragmc.lowdraglib2.syncdata.accessor.readonly.IReadOnlyAccessor;
 import com.mojang.serialization.DynamicOps;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
+
+import java.util.stream.Stream;
+
 public final class InventoryAccessor implements IReadOnlyAccessor<AppEngInternalInventory> {
+
+    private static HolderLookup.Provider registries() {
+        var server = ServerLifecycleHooks.getCurrentServer();
+        return server != null ? server.registryAccess() : HolderLookup.Provider.create(Stream.of());
+    }
 
     @Override
     public boolean test(Class<?> type) {
@@ -20,7 +31,7 @@ public final class InventoryAccessor implements IReadOnlyAccessor<AppEngInternal
     @Override
     public <T> T readReadOnlyValue(DynamicOps<T> op, @NotNull AppEngInternalInventory value) {
         CompoundTag root = new CompoundTag();
-        value.writeToNBT(root, "inv", net.minecraft.core.HolderLookup.Provider.create(java.util.stream.Stream.of()));
+        value.writeToNBT(root, "inv", registries());
         Tag payload = root.contains("inv") ? root.get("inv") : new net.minecraft.nbt.ListTag();
 
         if (op == NbtOps.INSTANCE
@@ -45,7 +56,7 @@ public final class InventoryAccessor implements IReadOnlyAccessor<AppEngInternal
         for (int i = 0; i < value.size(); i++) {
             value.setItemDirect(i, net.minecraft.world.item.ItemStack.EMPTY);
         }
-        value.readFromNBT(root, "inv", net.minecraft.core.HolderLookup.Provider.create(java.util.stream.Stream.of()));
+        value.readFromNBT(root, "inv", registries());
     }
 
     @Override
@@ -61,7 +72,7 @@ public final class InventoryAccessor implements IReadOnlyAccessor<AppEngInternal
         if (root == null) return;
 
         for (int i = 0; i < value.size(); i++) {
-            value.setItemDirect(i, net.minecraft.world.item.ItemStack.EMPTY);
+            value.setItemDirect(i, ItemStack.EMPTY);
         }
         value.readFromNBT(root, "inv", buffer.registryAccess());
     }

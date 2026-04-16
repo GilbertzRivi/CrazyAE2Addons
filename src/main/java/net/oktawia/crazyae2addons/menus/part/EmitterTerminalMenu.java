@@ -1,8 +1,7 @@
-package net.oktawia.crazyae2addons.menus;
+package net.oktawia.crazyae2addons.menus.part;
 
 import appeng.api.inventories.InternalInventory;
 import appeng.api.stacks.GenericStack;
-import appeng.api.upgrades.IUpgradeInventory;
 import appeng.menu.AEBaseMenu;
 import appeng.menu.SlotSemantics;
 import appeng.menu.guisync.GuiSync;

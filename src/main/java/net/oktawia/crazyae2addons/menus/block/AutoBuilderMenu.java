@@ -1,4 +1,4 @@
-package net.oktawia.crazyae2addons.menus;
+package net.oktawia.crazyae2addons.menus.block;
 
 import appeng.api.util.IConfigManager;
 import appeng.menu.SlotSemantics;

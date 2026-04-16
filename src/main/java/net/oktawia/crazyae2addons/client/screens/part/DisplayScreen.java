@@ -21,7 +21,7 @@ import net.oktawia.crazyae2addons.client.renderer.display.DisplayGuiRenderer;
 import net.oktawia.crazyae2addons.client.renderer.display.DisplayRendererCommon;
 import net.oktawia.crazyae2addons.defs.LangDefs;
 import net.oktawia.crazyae2addons.logic.display.DisplayImageEntry;
-import net.oktawia.crazyae2addons.menus.DisplayMenu;
+import net.oktawia.crazyae2addons.menus.part.DisplayMenu;
 import org.lwjgl.glfw.GLFW;
 
 import java.lang.reflect.Type;

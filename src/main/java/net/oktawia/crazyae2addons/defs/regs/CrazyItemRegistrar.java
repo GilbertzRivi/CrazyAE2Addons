@@ -12,10 +12,11 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.items.BuilderPatternItem;
 import net.oktawia.crazyae2addons.items.CrazyPatternProviderPartItem;
-import net.oktawia.crazyae2addons.parts.ChunkyFluidP2PTunnelPart;
+import net.oktawia.crazyae2addons.items.XpShardItem;
+import net.oktawia.crazyae2addons.parts.p2p.ChunkyFluidP2PTunnelPart;
 import net.oktawia.crazyae2addons.parts.EmitterTerminalPart;
 import net.oktawia.crazyae2addons.parts.DisplayPart;
-import net.oktawia.crazyae2addons.parts.RRItemP2PTunnelPart;
+import net.oktawia.crazyae2addons.parts.p2p.RRItemP2PTunnelPart;
 import net.oktawia.crazyae2addons.items.wireless.WirelessEmitterTerminalItem;
 
 import java.util.List;
@@ -111,6 +112,12 @@ public class CrazyItemRegistrar {
 
     public static final DeferredItem<WirelessEmitterTerminalItem> WIRELESS_EMITTER_TERMINAL =
             ITEMS.register("wireless_emitter_terminal", WirelessEmitterTerminalItem::new);
+
+    public static final DeferredItem<XpShardItem> XP_SHARD_ITEM =
+            ITEMS.register("xp_shard", () -> new XpShardItem(new Item.Properties()));
+
+    public static final DeferredItem<Item> SUPER_SINGULARITY =
+            ITEMS.register("super_singularity", () -> new Item(new Item.Properties()));
 
     private CrazyItemRegistrar() {}
 }

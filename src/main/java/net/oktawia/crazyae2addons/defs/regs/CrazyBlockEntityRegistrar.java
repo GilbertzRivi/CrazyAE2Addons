@@ -8,18 +8,14 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.oktawia.crazyae2addons.CrazyAddons;
-import net.oktawia.crazyae2addons.entities.AmpereMeterBE;
-import net.oktawia.crazyae2addons.entities.AutoBuilderBE;
-import net.oktawia.crazyae2addons.entities.AutoBuilderCreativeSupplyBE;
-import net.oktawia.crazyae2addons.entities.BrokenPatternProviderBE;
-import net.oktawia.crazyae2addons.entities.CraftingSchedulerBE;
-import net.oktawia.crazyae2addons.entities.CrazyPatternProviderBE;
-import net.oktawia.crazyae2addons.entities.EjectorBE;
-import net.oktawia.crazyae2addons.entities.EnergyStorageBE;
+import net.oktawia.crazyae2addons.IsModLoaded;
+import net.oktawia.crazyae2addons.compat.Apotheosis.ApothAutoEnchanterBE;
+import net.oktawia.crazyae2addons.entities.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 public class CrazyBlockEntityRegistrar {
@@ -44,6 +40,30 @@ public class CrazyBlockEntityRegistrar {
             ));
 
             return type;
+        });
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T extends AEBaseBlockEntity, S extends T> DeferredHolder<BlockEntityType<?>, BlockEntityType<T>> regConditional(
+            String id,
+            Supplier<? extends AEBaseEntityBlock<?>> block,
+            BooleanSupplier condition,
+            Supplier<BlockEntityType.BlockEntitySupplier<S>> trueFactory,
+            Supplier<Class<S>> trueClass,
+            BlockEntityType.BlockEntitySupplier<T> falseFactory,
+            Class<T> falseClass
+    ) {
+        return BLOCK_ENTITIES.register(id, () -> {
+            var blk = block.get();
+            if (condition.getAsBoolean()) {
+                var type = BlockEntityType.Builder.of(trueFactory.get(), blk).build(null);
+                BLOCK_ENTITY_SETUP.add(() -> blk.setBlockEntity((Class) trueClass.get(), (BlockEntityType) type, null, null));
+                return (BlockEntityType<T>) type;
+            } else {
+                var type = BlockEntityType.Builder.of(falseFactory, blk).build(null);
+                BLOCK_ENTITY_SETUP.add(() -> blk.setBlockEntity((Class) falseClass, (BlockEntityType) type, null, null));
+                return type;
+            }
         });
     }
 
@@ -106,6 +126,34 @@ public class CrazyBlockEntityRegistrar {
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<AmpereMeterBE>> AMPERE_METER_BE =
             reg("ampere_meter_be", CrazyBlockRegistrar.AMPERE_METER_BLOCK, AmpereMeterBE::new, AmpereMeterBE.class);
 
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<AutoEnchanterBE>> AUTO_ENCHANTER_BE =
+            regConditional(
+                    "auto_enchanter_be",
+                    CrazyBlockRegistrar.AUTO_ENCHANTER_BLOCK,
+                    IsModLoaded::isApothEnchLoaded,
+                    () -> ApothAutoEnchanterBE::new,
+                    () -> ApothAutoEnchanterBE.class,
+                    AutoEnchanterBE::new,
+                    AutoEnchanterBE.class
+            );
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<PenroseControllerBE>> PENROSE_CONTROLLER_BE =
+            reg("penrose_controller_be",
+                    CrazyBlockRegistrar.PENROSE_CONTROLLER,
+                    PenroseControllerBE::new,
+                    PenroseControllerBE.class);
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<TestMultiblockControllerBE>> TEST_MULTIBLOCK_CONTROLLER_BE =
+            reg("test_multiblock_controller_be",
+                    CrazyBlockRegistrar.TEST_MULTIBLOCK_CONTROLLER,
+                    TestMultiblockControllerBE::new,
+                    TestMultiblockControllerBE.class);
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<TestMultiblockFrameBE>> TEST_MULTIBLOCK_FRAME_BE =
+            reg("test_multiblock_frame_be",
+                    CrazyBlockRegistrar.TEST_MULTIBLOCK_FRAME,
+                    TestMultiblockFrameBE::new,
+                    TestMultiblockFrameBE.class);
 
     public static void setupBlockEntityTypes() {
         for (var runnable : BLOCK_ENTITY_SETUP) {

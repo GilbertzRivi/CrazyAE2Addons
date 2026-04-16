@@ -1,4 +1,4 @@
-package net.oktawia.crazyae2addons.menus;
+package net.oktawia.crazyae2addons.menus.block;
 
 import appeng.api.crafting.IPatternDetails;
 import appeng.api.crafting.PatternDetailsHelper;

@@ -18,12 +18,15 @@ import net.neoforged.neoforge.capabilities.BlockCapability;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.registries.RegisterEvent;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.defs.UpgradeCards;
 import net.oktawia.crazyae2addons.defs.regs.*;
 import net.oktawia.crazyae2addons.entities.AmpereMeterBE;
+import net.oktawia.crazyae2addons.entities.AutoEnchanterBE;
+import net.oktawia.crazyae2addons.entities.PenroseControllerBE;
 import net.oktawia.crazyae2addons.network.NetworkHandler;
-import net.oktawia.crazyae2addons.parts.ChunkyFluidP2PTunnelPart;
-import net.oktawia.crazyae2addons.parts.RRItemP2PTunnelPart;
+import net.oktawia.crazyae2addons.parts.p2p.ChunkyFluidP2PTunnelPart;
+import net.oktawia.crazyae2addons.parts.p2p.RRItemP2PTunnelPart;
 import net.oktawia.crazyae2addons.items.wireless.EmitterTerminalMenuHost;
 import net.oktawia.crazyae2addons.items.wireless.WirelessEmitterTerminalItem;
 import net.oktawia.crazyae2addons.items.wireless.WirelessEmitterTerminalMenu;
@@ -94,11 +97,19 @@ public class CrazyAddons {
                     (be, ctx) -> be instanceof IInWorldGridNodeHost host ? host : null);
         }
 
-        BlockCapability<net.neoforged.neoforge.energy.IEnergyStorage, net.minecraft.core.Direction> ENERGY_STORAGE = Capabilities.EnergyStorage.BLOCK;
-
-        event.registerBlockEntity(ENERGY_STORAGE,
+        event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK,
                 CrazyBlockEntityRegistrar.AMPERE_METER_BE.get(),
                 (be, dir) -> be instanceof AmpereMeterBE ampereMeter ? ampereMeter.getEnergyStorage(dir) : null);
+
+        event.registerBlockEntity(Capabilities.ItemHandler.BLOCK,
+                CrazyBlockEntityRegistrar.AUTO_ENCHANTER_BE.get(),
+                (be, dir) -> be instanceof AutoEnchanterBE enchanter ? enchanter.getItemHandler(dir) : null);
+
+        event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK,
+                CrazyBlockEntityRegistrar.PENROSE_CONTROLLER_BE.get(),
+                (be, dir) -> be instanceof PenroseControllerBE ctrl
+                        && CrazyConfig.COMMON.PenroseFEOutputEnabled.get()
+                        ? ctrl.getEnergyStorage(dir) : null);
     }
 
     private void registerPartCapabilities(RegisterPartCapabilitiesEvent event) {

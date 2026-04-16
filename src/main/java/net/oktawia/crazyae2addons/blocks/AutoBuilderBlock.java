@@ -78,7 +78,6 @@ public class AutoBuilderBlock extends AEBaseEntityBlock<AutoBuilderBE> {
 
         BlockEntity be = level.getBlockEntity(pos);
 
-        // Anti-loop: don't react to our own completion pulse
         if (be instanceof AutoBuilderBE myBE && myBE.isPulsing()) return;
 
         boolean wasPowered = state.getValue(POWERED);

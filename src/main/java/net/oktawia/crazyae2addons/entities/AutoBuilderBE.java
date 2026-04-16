@@ -32,8 +32,6 @@ import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.MenuProvider;
@@ -56,7 +54,7 @@ import net.oktawia.crazyae2addons.logic.buffer.ManagedBuffer;
 import net.oktawia.crazyae2addons.logic.builder.AutoBuilderPreviewOps;
 import net.oktawia.crazyae2addons.logic.builder.AutoBuilderWorldOps;
 import net.oktawia.crazyae2addons.logic.builder.BuilderPatternHost;
-import net.oktawia.crazyae2addons.menus.AutoBuilderMenu;
+import net.oktawia.crazyae2addons.menus.block.AutoBuilderMenu;
 import net.oktawia.crazyae2addons.misc.ProgramExpander;
 import org.jetbrains.annotations.Nullable;
 

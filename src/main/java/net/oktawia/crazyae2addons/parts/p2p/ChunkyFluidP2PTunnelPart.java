@@ -1,6 +1,5 @@
-package net.oktawia.crazyae2addons.parts;
+package net.oktawia.crazyae2addons.parts.p2p;
 
-import appeng.api.config.Actionable;
 import appeng.api.ids.AEComponents;
 import appeng.api.implementations.items.IMemoryCard;
 import appeng.api.implementations.items.MemoryCardColors;
@@ -14,6 +13,8 @@ import appeng.core.AppEng;
 import appeng.items.parts.PartModels;
 import appeng.items.tools.MemoryCardItem;
 import appeng.me.service.P2PService;
+import appeng.menu.MenuOpener;
+import appeng.menu.locator.MenuLocators;
 import appeng.parts.PartModel;
 import appeng.parts.p2p.CapabilityP2PTunnelPart;
 import appeng.util.InteractionUtil;
@@ -27,6 +28,7 @@ import net.minecraft.core.component.DataComponentMap.Builder;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.MenuProvider;
@@ -41,7 +43,7 @@ import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 import net.oktawia.crazyae2addons.Utils;
 import net.oktawia.crazyae2addons.defs.regs.CrazyDataComponents;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
-import net.oktawia.crazyae2addons.menus.ChunkyFluidP2PTunnelMenu;
+import net.oktawia.crazyae2addons.menus.part.ChunkyFluidP2PTunnelMenu;
 import net.oktawia.crazyae2addons.mixins.P2PTunnelPartAccessor;
 import org.jetbrains.annotations.Nullable;
 
@@ -100,17 +102,17 @@ public class ChunkyFluidP2PTunnelPart extends CapabilityP2PTunnelPart<ChunkyFlui
     }
 
     @Override
-    public net.minecraft.network.chat.Component getDisplayName() {
+    public Component getDisplayName() {
         return super.getDisplayName();
     }
 
     @Override
     public boolean onUseWithoutItem(Player player, Vec3 pos) {
         if (!isClientSide()) {
-            appeng.menu.MenuOpener.open(
+            MenuOpener.open(
                     CrazyMenuRegistrar.CHUNKY_FLUID_P2P_TUNNEL_MENU.get(),
                     player,
-                    appeng.menu.locator.MenuLocators.forPart(this)
+                    MenuLocators.forPart(this)
             );
             return true;
         }
@@ -157,7 +159,7 @@ public class ChunkyFluidP2PTunnelPart extends CapabilityP2PTunnelPart<ChunkyFlui
             if (heldItem.get(AEComponents.EXPORTED_P2P_TYPE) != null
                     || !heldItem.has(CrazyDataComponents.CHUNKY_FLUID_P2P_TYPE)) {
                 mc.notifyUser(player, MemoryCardMessages.INVALID_MACHINE);
-                return false;
+                return true;
             }
 
             importSettings(SettingsFrom.MEMORY_CARD, heldItem.getComponents(), player);

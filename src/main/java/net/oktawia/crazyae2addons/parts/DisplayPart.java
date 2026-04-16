@@ -40,7 +40,7 @@ import net.oktawia.crazyae2addons.logic.display.DisplayGrid;
 import net.oktawia.crazyae2addons.logic.display.DisplayImageEntry;
 import net.oktawia.crazyae2addons.logic.display.DisplayTokenResolver;
 import net.oktawia.crazyae2addons.logic.display.SampleRing;
-import net.oktawia.crazyae2addons.menus.DisplayMenu;
+import net.oktawia.crazyae2addons.menus.part.DisplayMenu;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

@@ -15,7 +15,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.oktawia.crazyae2addons.defs.LangDefs;
 import net.oktawia.crazyae2addons.logic.display.keytypes.DisplayKeyCompatRegistry;
-import net.oktawia.crazyae2addons.menus.DisplayTokenSubMenu;
+import net.oktawia.crazyae2addons.menus.part.DisplayTokenSubMenu;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -103,6 +103,7 @@ public class DisplayTokenSubScreen extends AEBaseScreen<DisplayTokenSubMenu> {
         ));
 
         itemIdField = new EditBox(font, 0, 0, 0, 0, Component.empty());
+        itemIdField.setBordered(false);
         itemIdField.setMaxLength(256);
         widgets.add("itemId", itemIdField);
 

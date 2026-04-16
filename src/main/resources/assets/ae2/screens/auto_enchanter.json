@@ -1,0 +1,112 @@
+{
+  "$schema": "schema.json",
+  "includes": ["common/common.json", "common/player_inventory.json"],
+  "background": {
+    "texture": "guis/auto_enchanter.png",
+    "srcRect": [0, 0, 176, 205]
+  },
+  "text": {
+    "dialog_title": {
+      "text": {
+        "translate": "block.crazyae2addons.auto_enchanter"
+      },
+      "position": {
+        "left": 8,
+        "top": 6
+      }
+    },
+    "input": {
+      "text": {
+        "translate": "gui.crazyae2addons.input"
+      },
+      "position": {
+        "left": 8,
+        "top": 23
+      }
+    },
+    "output": {
+      "text": {
+        "translate": "gui.crazyae2addons.output"
+      },
+      "position": {
+        "left": 8,
+        "top": 63
+      }
+    },
+    "xp": {
+      "text": {
+        "translate": "gui.crazyae2addons.available_xp"
+      },
+      "position": {
+        "left": 120,
+        "top": 28
+      },
+      "align": "CENTER"
+    },
+    "xpval": {
+      "position": {
+        "left": 120,
+        "top": 38
+      },
+      "align": "CENTER"
+    },
+    "estval": {
+      "position": {
+        "left": 120,
+        "top": 48
+      },
+      "align": "CENTER"
+    },
+    "option": {
+      "position": {
+        "left": 120,
+        "top": 58
+      },
+      "align": "CENTER"
+    }
+  },
+  "slots": {
+    "MACHINE_INPUT": {
+      "left": 8,
+      "top": 38,
+      "grid": "BREAK_AFTER_3COLS"
+    },
+    "MACHINE_OUTPUT": {
+      "left": 8,
+      "top": 78,
+      "grid": "BREAK_AFTER_3COLS"
+    }
+  },
+  "widgets": {
+    "opt1": {
+      "left": 90,
+      "top": 76,
+      "width": 16,
+      "height": 16
+    },
+    "opt2": {
+      "left": 112,
+      "top": 76,
+      "width": 16,
+      "height": 16
+    },
+    "opt3": {
+      "left": 134,
+      "top": 76,
+      "width": 16,
+      "height": 16
+    },
+    "aslapis": {
+      "left": 30,
+      "top": 76,
+      "width": 16,
+      "height": 16
+    },
+    "asbooks": {
+      "left": 50,
+      "top": 76,
+      "width": 16,
+      "height": 16
+    }
+  }
+}

@@ -9,14 +9,8 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.oktawia.crazyae2addons.CrazyAddons;
-import net.oktawia.crazyae2addons.blocks.AmpereMeterBlock;
-import net.oktawia.crazyae2addons.blocks.AutoBuilderBlock;
-import net.oktawia.crazyae2addons.blocks.AutoBuilderCreativeSupplyBlock;
-import net.oktawia.crazyae2addons.blocks.BrokenPatternProviderBlock;
-import net.oktawia.crazyae2addons.blocks.CraftingSchedulerBlock;
-import net.oktawia.crazyae2addons.blocks.CrazyPatternProviderBlock;
-import net.oktawia.crazyae2addons.blocks.EjectorBlock;
-import net.oktawia.crazyae2addons.blocks.EnergyStorageBlock;
+import net.oktawia.crazyae2addons.blocks.*;
+import net.oktawia.crazyae2addons.blocks.PenroseControllerBlock;
 import net.oktawia.crazyae2addons.items.CrazyPatternProviderBlockItem;
 
 import java.util.ArrayList;
@@ -156,6 +150,34 @@ public class CrazyBlockRegistrar {
     public static final DeferredItem<BlockItem> EJECTOR_BLOCK_ITEM =
             BLOCK_ITEMS.register("ejector",
                     () -> new appeng.block.AEBaseBlockItem(EJECTOR_BLOCK.get(), new Item.Properties()));
+
+    public static final DeferredBlock<AutoEnchanterBlock> AUTO_ENCHANTER_BLOCK =
+            BLOCKS.register("auto_enchanter", AutoEnchanterBlock::new);
+
+    public static final DeferredItem<BlockItem> AUTO_ENCHANTER_BLOCK_ITEM =
+            BLOCK_ITEMS.register("auto_enchanter",
+                    () -> new BlockItem(AUTO_ENCHANTER_BLOCK.get(), new Item.Properties()));
+
+    public static final DeferredBlock<PenroseControllerBlock> PENROSE_CONTROLLER =
+            BLOCKS.register("penrose_controller", PenroseControllerBlock::new);
+
+    public static final DeferredItem<BlockItem> PENROSE_CONTROLLER_ITEM =
+            BLOCK_ITEMS.register("penrose_controller",
+                    () -> new BlockItem(PENROSE_CONTROLLER.get(), new Item.Properties()));
+
+    public static final DeferredBlock<TestMultiblockControllerBlock> TEST_MULTIBLOCK_CONTROLLER =
+            BLOCKS.register("test_multiblock_controller", TestMultiblockControllerBlock::new);
+
+    public static final DeferredItem<BlockItem> TEST_MULTIBLOCK_CONTROLLER_ITEM =
+            BLOCK_ITEMS.register("test_multiblock_controller",
+                    () -> new BlockItem(TEST_MULTIBLOCK_CONTROLLER.get(), new Item.Properties()));
+
+    public static final DeferredBlock<TestMultiblockFrameBlock> TEST_MULTIBLOCK_FRAME =
+            BLOCKS.register("test_multiblock_frame", TestMultiblockFrameBlock::new);
+
+    public static final DeferredItem<BlockItem> TEST_MULTIBLOCK_FRAME_ITEM =
+            BLOCK_ITEMS.register("test_multiblock_frame",
+                    () -> new BlockItem(TEST_MULTIBLOCK_FRAME.get(), new Item.Properties()));
 
     private CrazyBlockRegistrar() {}
 }

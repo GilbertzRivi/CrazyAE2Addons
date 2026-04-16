@@ -1,4 +1,4 @@
-package net.oktawia.crazyae2addons.menus;
+package net.oktawia.crazyae2addons.menus.part;
 
 import appeng.menu.AEBaseMenu;
 import appeng.menu.ISubMenu;

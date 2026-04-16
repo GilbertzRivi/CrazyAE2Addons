@@ -23,7 +23,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.oktawia.crazyae2addons.client.misc.DisplayImageUploadClient;
 import net.oktawia.crazyae2addons.defs.LangDefs;
 import net.oktawia.crazyae2addons.logic.display.DisplayImageEntry;
-import net.oktawia.crazyae2addons.menus.DisplayImagesSubMenu;
+import net.oktawia.crazyae2addons.menus.part.DisplayImagesSubMenu;
 
 import java.io.ByteArrayInputStream;
 import java.nio.file.Path;

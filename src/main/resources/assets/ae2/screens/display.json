@@ -38,19 +38,19 @@
     }
   },
   "widgets": {
-    "insertToken": {
+    "confirm": {
       "left": 94,
       "top": 4,
       "width": 16,
       "height": 16
     },
-    "images": {
+    "insertToken": {
       "left": 114,
       "top": 4,
       "width": 16,
       "height": 16
     },
-    "confirm": {
+    "images": {
       "left": 134,
       "top": 4,
       "width": 16,

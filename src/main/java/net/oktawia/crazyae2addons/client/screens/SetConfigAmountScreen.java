@@ -10,7 +10,7 @@ import appeng.client.gui.widgets.TabButton;
 import appeng.core.localization.GuiText;
 import appeng.menu.SlotSemantics;
 import net.oktawia.crazyae2addons.client.screens.block.EjectorScreen;
-import net.oktawia.crazyae2addons.menus.EjectorMenu;
+import net.oktawia.crazyae2addons.menus.block.EjectorMenu;
 
 import java.util.function.Consumer;
 

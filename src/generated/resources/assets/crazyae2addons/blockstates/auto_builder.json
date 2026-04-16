@@ -1,7 +1,7 @@
 {
-  "variants": {
-    "": {
-      "model": "crazyae2addons:block/auto_builder"
+    "variants": {
+        "": {
+            "model": "crazyae2addons:block/auto_builder"
+        }
     }
-  }
 }

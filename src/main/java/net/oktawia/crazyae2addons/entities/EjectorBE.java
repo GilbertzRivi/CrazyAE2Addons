@@ -38,7 +38,7 @@ import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.logic.buffer.ManagedBuffer;
-import net.oktawia.crazyae2addons.menus.EjectorMenu;
+import net.oktawia.crazyae2addons.menus.block.EjectorMenu;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;

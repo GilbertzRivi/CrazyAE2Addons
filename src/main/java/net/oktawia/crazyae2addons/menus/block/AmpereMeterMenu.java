@@ -1,8 +1,6 @@
-package net.oktawia.crazyae2addons.menus;
+package net.oktawia.crazyae2addons.menus.block;
 
 import appeng.menu.AEBaseMenu;
-import appeng.menu.guisync.GuiSync;
-import appeng.util.BlockUpdate;
 import net.minecraft.world.entity.player.Inventory;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.entities.AmpereMeterBE;

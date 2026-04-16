@@ -10,7 +10,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.oktawia.crazyae2addons.defs.LangDefs;
-import net.oktawia.crazyae2addons.menus.BuilderPatternSubMenu;
+import net.oktawia.crazyae2addons.menus.item.BuilderPatternSubMenu;
 
 public class BuilderPatternSubScreen<C extends BuilderPatternSubMenu> extends AEBaseScreen<C> {
 

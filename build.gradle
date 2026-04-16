@@ -15,23 +15,48 @@ group = mod_group_id
 repositories {
     mavenLocal()
     mavenCentral()
+
     maven {
-        url 'https://www.cursemaven.com'
+        name = "Curios"
+        url = uri("https://maven.theillusivec4.top")
+        content {
+            includeGroupByRegex "top\\.theillusivec4.*"
+        }
+    }
+
+    maven {
+        name = "BlameJared"
+        url = uri("https://maven.blamejared.com")
+        content {
+            includeGroup "vazkii.patchouli"
+            includeGroupByRegex "net\\.darkhax.*"
+            includeGroupByRegex "com\\.blamejared.*"
+            includeGroup "org.openzen.zencode"
+            includeGroup "mezz.jei"
+        }
+    }
+
+    maven {
+        name = "CurseMaven"
+        url = uri("https://www.cursemaven.com")
         content {
             includeGroup "curse.maven"
         }
     }
+
     maven {
         name = "Modrinth"
-        url = "https://api.modrinth.com/maven"
+        url = uri("https://api.modrinth.com/maven")
     }
+
     maven {
         name = "firstdarkdev"
-        url = "https://maven.firstdarkdev.xyz/snapshots"
+        url = uri("https://maven.firstdarkdev.xyz/snapshots")
         content {
             includeGroup 'com.lowdragmc.ldlib2'
         }
     }
+
     maven {
         url = uri("https://modmaven.dev/")
         content {
@@ -39,6 +64,10 @@ repositories {
         }
     }
 
+    maven {
+        name = "Shadows"
+        url = uri("https://maven.shadowsoffire.dev/releases")
+    }
 }
 
 base {
@@ -119,6 +148,16 @@ dependencies {
     // LDLib2
     implementation "com.lowdragmc.ldlib2:ldlib2-neoforge-1.21.1:2.2.5"
 
+    // Apotheosis
+    compileOnly "dev.shadowsoffire:Placebo:1.21.1-9.9.1"
+    compileOnly "dev.shadowsoffire:ApothicAttributes:1.21.1-2.9.1"
+    compileOnly "dev.shadowsoffire:ApothicSpawners:1.21.1-1.3.4"
+    compileOnly "dev.shadowsoffire:ApothicEnchanting:1.21.1-1.5.2"
+    compileOnly "dev.shadowsoffire:Apotheosis:1.21.1-8.5.2"
+    compileOnly "top.theillusivec4.curios:curios-neoforge:9.5.1+1.21.1"
+    compileOnly "vazkii.patchouli:Patchouli:1.21-87-NEOFORGE"
+    localRuntime "dev.shadowsoffire:GatewaysToEternity:1.21.1-5.1.0"
+
     // AEKeyTypes Deps
     compileOnly "maven.modrinth:appflux:1.21-2.1.4-neoforge"
     compileOnly "maven.modrinth:ars-energistique:2.1.1-beta"
@@ -133,7 +172,6 @@ dependencies {
     implementation "maven.modrinth:appflux:1.21-2.1.4-neoforge"
     implementation "maven.modrinth:ars-energistique:2.1.1-beta"
     implementation "maven.modrinth:ars-nouveau:5.11.3"
-    implementation "maven.modrinth:curios:9.5.1+1.21.1"
     implementation "maven.modrinth:applied-mekanistics:1.6.3"
     implementation "maven.modrinth:jade:15.10.4+neoforge"
     implementation "maven.modrinth:jei:YAcQ6elZ"
@@ -148,6 +186,15 @@ dependencies {
     implementation "curse.maven:ftb-chunks-forge-314906:7157142"
     implementation "curse.maven:ftb-library-forge-404465:7420412"
     implementation "curse.maven:ftb-teams-forge-404468:7369021"
+    //Apoth
+//    implementation "dev.shadowsoffire:Placebo:1.21.1-9.9.1"
+//    implementation "dev.shadowsoffire:ApothicAttributes:1.21.1-2.9.1"
+//    implementation "dev.shadowsoffire:ApothicSpawners:1.21.1-1.3.4"
+//    implementation "dev.shadowsoffire:ApothicEnchanting:1.21.1-1.5.2"
+//    implementation "dev.shadowsoffire:Apotheosis:1.21.1-8.5.2"
+//    implementation "top.theillusivec4.curios:curios-neoforge:9.5.1+1.21.1"
+//    implementation "vazkii.patchouli:Patchouli:1.21-87-NEOFORGE"
+//    implementation "dev.shadowsoffire:GatewaysToEternity:1.21.1-5.1.0"
 }
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
@@ -169,12 +216,6 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
 
 sourceSets.main.resources.srcDir generateModMetadata
 neoForge.ideSyncTask generateModMetadata
-
-afterEvaluate {
-    tasks.named('runData').configure {
-        classpath = classpath.filter { file -> !file.absolutePath.contains('gtceu') && !file.absolutePath.contains('ldlib') && !file.absolutePath.contains('registrate') }
-    }
-}
 
 publishing {
     publications {

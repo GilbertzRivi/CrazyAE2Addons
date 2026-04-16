@@ -12,7 +12,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.oktawia.crazyae2addons.defs.LangDefs;
-import net.oktawia.crazyae2addons.menus.AutoBuilderMenu;
+import net.oktawia.crazyae2addons.menus.block.AutoBuilderMenu;
 import net.oktawia.crazyae2addons.client.misc.IconButton;
 
 import java.util.regex.Pattern;

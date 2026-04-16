@@ -8,7 +8,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.MenuType;
 import net.oktawia.crazyae2addons.CrazyAddons;
-import net.oktawia.crazyae2addons.menus.EmitterTerminalMenu;
+import net.oktawia.crazyae2addons.menus.part.EmitterTerminalMenu;
 
 import java.util.List;
 

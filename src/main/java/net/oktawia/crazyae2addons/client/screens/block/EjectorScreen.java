@@ -17,7 +17,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.oktawia.crazyae2addons.client.screens.SetConfigAmountScreen;
 import net.oktawia.crazyae2addons.defs.LangDefs;
-import net.oktawia.crazyae2addons.menus.EjectorMenu;
+import net.oktawia.crazyae2addons.menus.block.EjectorMenu;
 import net.oktawia.crazyae2addons.client.misc.IconButton;
 import net.oktawia.crazyae2addons.network.packets.SetConfigAmountPacket;
 

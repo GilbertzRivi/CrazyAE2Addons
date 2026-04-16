@@ -3,17 +3,17 @@
   "includes": ["common/common.json", "common/player_inventory.json"],
   "background": {
     "texture": "guis/broken_pattern_provider.png",
-    "srcRect": [0, 0, 176, 243]
+    "srcRect": [0, 0, 176, 215]
   },
   "slots": {
     "ENCODED_PATTERN": {
       "left": 80,
-      "top": 60,
+      "top": 45,
       "grid": "BREAK_AFTER_9COLS"
     },
     "STORAGE": {
       "left": 8,
-      "top": 127,
+      "top": 97,
       "grid": "HORIZONTAL"
     }
   },
@@ -29,11 +29,11 @@
     },
     "interface_config": {
       "text": {
-        "translate": "Pattern"
+        "translate": "gui.crazyae2addons.pattern"
       },
       "position": {
         "left": 88,
-        "top": 46
+        "top": 30
       },
       "align": "CENTER"
     },
@@ -43,14 +43,14 @@
       },
       "position": {
         "left": 8,
-        "top": 116
+        "top": 85
       }
     }
   },
   "widgets": {
     "openPriority": {
-      "left": 154,
-      "top": 0
+      "left": 150,
+      "top": -5
     },
     "lockReason": {
       "left": 5,

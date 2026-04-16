@@ -6,7 +6,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.oktawia.crazyae2addons.CrazyAddons;
-import net.oktawia.crazyae2addons.menus.DisplayImagesSubMenu;
+import net.oktawia.crazyae2addons.menus.part.DisplayImagesSubMenu;
 
 public record UploadDisplayImagePacket(
         String sourceName,

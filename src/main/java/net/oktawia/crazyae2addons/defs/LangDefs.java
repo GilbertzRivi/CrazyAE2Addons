@@ -27,7 +27,7 @@ public enum LangDefs implements LocalizationEnum {
     PATTERNS("gui.crazyae2addons.patterns", "Patterns"),
     OFFSET("gui.crazyae2addons.offset", "Offset"),
     MISSING("gui.crazyae2addons.missing", "Missing:"),
-    CONFIRM("gui.crazyae2addons.confirm", "Save"),
+    CONFIRM("gui.crazyae2addons.confirm", "Confirm"),
     FLIP_HORIZONTAL("gui.crazyae2addons.flip_horizontal", "Flip Horizontal"),
     FLIP_VERTICAL("gui.crazyae2addons.flip_vertical", "Flip Vertical"),
     ROTATE_CW("gui.crazyae2addons.rotate_cw", "Rotate CW"),
@@ -138,7 +138,20 @@ public enum LangDefs implements LocalizationEnum {
     WIDTH_PERCENT_TOOLTIP("gui.crazyae2addons.width_percent_tooltip", "Image width in percent of the whole display"),
     HEIGHT_PERCENT_TOOLTIP("gui.crazyae2addons.height_percent_tooltip", "Image height in percent of the whole display"),
     SCALE_PERCENT("gui.crazyae2addons.scale_percent", "Scale %"),
-    SCALE_PERCENT_TOOLTIP("gui.crazyae2addons.scale_percent_tooltip", "Image scale in percent");
+    SCALE_PERCENT_TOOLTIP("gui.crazyae2addons.scale_percent_tooltip", "Image scale in percent"),
+    VISUAL_ASSISTANCE("gui.crazyae2addons.visual_assistance", "Visual Assistance - fill region helper"),
+    CHEAP("gui.crazyae2addons.cheap", "Cheap"),
+    MEDIUM("gui.crazyae2addons.medium", "Medium"),
+    EXPENSIVE("gui.crazyae2addons.expensive", "Expensive"),
+    NONE("gui.crazyae2addons.none", "None"),
+    SELECTED_OPTION("gui.crazyae2addons.selected_option", "> %s <"),
+    REQUIRED("gui.crazyae2addons.required", "~Required: %s"),
+    AUTO_SUPPLY_LAPIS_ON("gui.crazyae2addons.auto_supply_lapis_on", "Auto supply lapis: On"),
+    AUTO_SUPPLY_LAPIS_OFF("gui.crazyae2addons.auto_supply_lapis_off", "Auto supply lapis: Off"),
+    AUTO_SUPPLY_BOOKS_ON("gui.crazyae2addons.auto_supply_books_on", "Auto supply books: On"),
+    AUTO_SUPPLY_BOOKS_OFF("gui.crazyae2addons.auto_supply_books_off", "Auto supply books: Off"),
+    INPUT("gui.crazyae2addons.input", "Input"),
+    AVAILABLE_XP("gui.crazyae2addons.available_xp", "Available XP");
 
 
     private final String key;

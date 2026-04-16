@@ -2,7 +2,7 @@ package net.oktawia.crazyae2addons.interfaces;
 
 import appeng.api.networking.IGridNode;
 import appeng.api.stacks.GenericStack;
-import net.oktawia.crazyae2addons.menus.EmitterTerminalMenu;
+import net.oktawia.crazyae2addons.menus.part.EmitterTerminalMenu;
 
 import java.util.List;
 

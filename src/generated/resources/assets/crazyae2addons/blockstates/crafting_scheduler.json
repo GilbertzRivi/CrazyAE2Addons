@@ -1,7 +1,7 @@
 {
-  "variants": {
-    "": {
-      "model": "crazyae2addons:block/crafting_scheduler"
+    "variants": {
+        "": {
+            "model": "crazyae2addons:block/crafting_scheduler"
+        }
     }
-  }
 }

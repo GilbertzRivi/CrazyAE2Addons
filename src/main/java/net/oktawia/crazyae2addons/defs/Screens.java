@@ -3,6 +3,7 @@ package net.oktawia.crazyae2addons.defs;
 import appeng.init.client.InitScreens;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.oktawia.crazyae2addons.client.screens.block.*;
+import net.oktawia.crazyae2addons.client.screens.block.AutoEnchanterScreen;
 import net.oktawia.crazyae2addons.client.screens.item.BuilderPatternScreen;
 import net.oktawia.crazyae2addons.client.screens.item.BuilderPatternSubScreen;
 import net.oktawia.crazyae2addons.client.screens.part.DisplayImagesSubScreen;
@@ -10,10 +11,17 @@ import net.oktawia.crazyae2addons.client.screens.part.DisplayScreen;
 import net.oktawia.crazyae2addons.client.screens.part.DisplayTokenSubScreen;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.menus.*;
+import net.oktawia.crazyae2addons.menus.block.AutoEnchanterMenu;
 import net.oktawia.crazyae2addons.client.screens.part.ChunkyFluidP2PTunnelScreen;
 import net.oktawia.crazyae2addons.client.screens.block.EjectorScreen;
 import net.oktawia.crazyae2addons.client.screens.part.EmitterTerminalScreen;
 import net.oktawia.crazyae2addons.items.wireless.WirelessEmitterTerminalMenu;
+import net.oktawia.crazyae2addons.menus.block.*;
+import net.oktawia.crazyae2addons.menus.item.BuilderPatternMenu;
+import net.oktawia.crazyae2addons.menus.item.BuilderPatternSubMenu;
+import net.oktawia.crazyae2addons.menus.part.ChunkyFluidP2PTunnelMenu;
+import net.oktawia.crazyae2addons.menus.part.DisplayMenu;
+import net.oktawia.crazyae2addons.menus.part.EmitterTerminalMenu;
 
 public final class Screens {
 
@@ -73,6 +81,14 @@ public final class Screens {
         InitScreens.register(event, CrazyMenuRegistrar.BROKEN_PATTERN_PROVIDER_MENU.get(),
                 BrokenPatternProviderScreen<BrokenPatternProviderMenu>::new,
                 "/screens/broken_pattern_provider.json");
+
+        InitScreens.register(event, CrazyMenuRegistrar.AUTO_ENCHANTER_MENU.get(),
+                AutoEnchanterScreen<AutoEnchanterMenu>::new,
+                "/screens/auto_enchanter.json");
+
+        InitScreens.register(event, CrazyMenuRegistrar.PENROSE_CONTROLLER_MENU.get(),
+                PenroseControllerScreen<PenroseControllerMenu>::new,
+                "/screens/penrose_controller.json");
     }
 
     private Screens() {}

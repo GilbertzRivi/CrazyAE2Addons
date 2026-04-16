@@ -18,6 +18,7 @@ public class UpgradeCards {
             if (IsModLoaded.isAppFluxLoaded()){
                 Upgrades.add(AFSingletons.INDUCTION_CARD, CrazyBlockRegistrar.CRAZY_PATTERN_PROVIDER_BLOCK.get(), 1);
                 Upgrades.add(AFSingletons.INDUCTION_CARD, CrazyItemRegistrar.CRAZY_PATTERN_PROVIDER_PART.get(), 1);
+                Upgrades.add(AFSingletons.INDUCTION_CARD, CrazyBlockRegistrar.BROKEN_PATTERN_PROVIDER_BLOCK.get(), 1);
             }
         });
     }

@@ -35,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
-import net.oktawia.crazyae2addons.menus.CraftingSchedulerMenu;
+import net.oktawia.crazyae2addons.menus.block.CraftingSchedulerMenu;
 
 import java.util.concurrent.Future;
 

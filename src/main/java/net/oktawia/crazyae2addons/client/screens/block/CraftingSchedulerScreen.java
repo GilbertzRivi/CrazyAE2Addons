@@ -8,7 +8,7 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.oktawia.crazyae2addons.defs.LangDefs;
-import net.oktawia.crazyae2addons.menus.CraftingSchedulerMenu;
+import net.oktawia.crazyae2addons.menus.block.CraftingSchedulerMenu;
 
 public class CraftingSchedulerScreen<C extends CraftingSchedulerMenu> extends AEBaseScreen<C> {
     public AETextField amount;

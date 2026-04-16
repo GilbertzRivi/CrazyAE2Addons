@@ -1236,6 +1236,8 @@ public class PenroseControllerBE extends AENetworkInvBlockEntity
         if (cap == ForgeCapabilities.ENERGY) {
             if (!CrazyConfig.COMMON.PenroseFEOutputEnabled.get()) {
                 return LazyOptional.empty();
+            } else {
+                return energyCap.cast();
             }
         }
         return super.getCapability(cap, side);
@@ -1246,6 +1248,8 @@ public class PenroseControllerBE extends AENetworkInvBlockEntity
         if (cap == ForgeCapabilities.ENERGY) {
             if (!CrazyConfig.COMMON.PenroseFEOutputEnabled.get()) {
                 return LazyOptional.empty();
+            } else {
+                return energyCap.cast();
             }
         }
         return super.getCapability(cap);

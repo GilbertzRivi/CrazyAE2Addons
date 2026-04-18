@@ -38,6 +38,9 @@ public class CrazyConfig {
         public final ModConfigSpec.DoubleValue  PenroseHeatPeakMK;
         public final ModConfigSpec.DoubleValue  PenroseMaxHeatMK;
         public final ModConfigSpec.IntValue     PenroseMaxFeedPerTick;
+        public final ModConfigSpec.IntValue    PenroseDiskWindowSeconds;
+        public final ModConfigSpec.DoubleValue PenroseDiskSigmaTicks;
+        public final ModConfigSpec.LongValue   PenroseDiskRenderFullAtMu;
 
         public Common(ModConfigSpec.Builder builder) {
             builder.comment("Crazy AE2 Addons - Config").push("general");
@@ -135,6 +138,18 @@ public class CrazyConfig {
             PenroseMaxFeedPerTick = builder
                     .comment("Hard cap on singularities injected per tick. Default: 4096.")
                     .defineInRange("penroseMaxFeedPerTick", 4_096, 0, Integer.MAX_VALUE);
+
+            PenroseDiskWindowSeconds = builder
+                    .comment("Accretion disk history window in seconds. Default: 120.")
+                    .defineInRange("penroseDiskWindowSeconds", 120, 1, 3600);
+
+            PenroseDiskSigmaTicks = builder
+                    .comment("Gaussian sigma for disk mass transfer distribution, in ticks. Default: 400.")
+                    .defineInRange("penroseDiskSigmaTicks", 400.0, 1.0, 100000.0);
+
+            PenroseDiskRenderFullAtMu = builder
+                    .comment("Disk preview reaches full visual thickness at this disk mass (MU). Widget only.")
+                    .defineInRange("penroseDiskRenderFullAtMu", 30_000L, 1L, Long.MAX_VALUE);
 
             builder.pop(); // PenroseSphere
         }

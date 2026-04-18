@@ -7,7 +7,7 @@ import appeng.menu.locator.ItemMenuHostLocator;
 import de.mari_023.ae2wtlib.api.terminal.ItemWT;
 import de.mari_023.ae2wtlib.api.terminal.WTMenuHost;
 import net.minecraft.world.entity.player.Player;
-import net.oktawia.crazyae2addons.interfaces.IEmitterTerminalMenuHost;
+import net.oktawia.crazyae2addons.logic.interfaces.IEmitterTerminalMenuHost;
 import net.oktawia.crazyae2addons.menus.part.EmitterTerminalMenu;
 import net.oktawia.crazyae2addons.parts.EmitterTerminalPart;
 

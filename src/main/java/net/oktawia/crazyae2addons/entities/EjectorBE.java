@@ -38,6 +38,7 @@ import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.logic.buffer.ManagedBuffer;
+import net.oktawia.crazyae2addons.logic.interfaces.IMenuOpeningBlockEntity;
 import net.oktawia.crazyae2addons.menus.block.EjectorMenu;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,7 +46,10 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 
-public class EjectorBE extends AENetworkedBlockEntity implements MenuProvider, IGridTickable, PatternProviderLogicHost, ICraftingRequester, ISyncPersistRPCBlockEntity {
+public class EjectorBE extends AENetworkedBlockEntity implements
+        MenuProvider, IGridTickable, PatternProviderLogicHost,
+        ICraftingRequester, ISyncPersistRPCBlockEntity, IMenuOpeningBlockEntity
+{
 
     @Getter
     private final FieldManagedStorage syncStorage = new FieldManagedStorage(this);

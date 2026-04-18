@@ -6,39 +6,45 @@ import appeng.api.networking.ticking.IGridTickable;
 import appeng.api.networking.ticking.TickRateModulation;
 import appeng.api.networking.ticking.TickingRequest;
 import appeng.blockentity.grid.AENetworkedBlockEntity;
+import com.lowdragmc.lowdraglib2.syncdata.holder.blockentity.ISyncPersistRPCBlockEntity;
+import com.lowdragmc.lowdraglib2.syncdata.storage.FieldManagedStorage;
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 
-public abstract class AbstractMultiblockControllerBE extends AENetworkedBlockEntity implements IGridTickable {
+public abstract class AbstractMultiblockControllerBE
+        extends AENetworkedBlockEntity
+        implements IGridTickable, ISyncPersistRPCBlockEntity {
+
+    @Getter
+    private final FieldManagedStorage syncStorage = new FieldManagedStorage(this);
 
     @Getter
     protected final MultiblockState multiblockState;
 
     protected AbstractMultiblockControllerBE(
-        BlockEntityType<?> type,
-        BlockPos pos,
-        BlockState blockState,
-        ItemStack visualRepresentation,
-        float idlePowerUsage
+            BlockEntityType<?> type,
+            BlockPos pos,
+            BlockState blockState,
+            ItemStack visualRepresentation,
+            float idlePowerUsage
     ) {
         super(type, pos, blockState);
 
         this.getMainNode()
-            .setIdlePowerUsage(idlePowerUsage)
-            .setFlags(GridFlags.REQUIRE_CHANNEL)
-            .addService(IGridTickable.class, this)
-            .setVisualRepresentation(visualRepresentation);
+                .setIdlePowerUsage(idlePowerUsage)
+                .setFlags(GridFlags.REQUIRE_CHANNEL)
+                .addService(IGridTickable.class, this)
+                .setVisualRepresentation(visualRepresentation);
 
         this.multiblockState = new MultiblockState(
-            getMultiblockDefinition(),
-            this,
-            this::onFormedInternal,
-            this::onDisformedInternal
+                getMultiblockDefinition(),
+                this,
+                this::onFormedInternal,
+                this::onDisformedInternal
         );
     }
 
@@ -54,6 +60,23 @@ public abstract class AbstractMultiblockControllerBE extends AENetworkedBlockEnt
     }
 
     protected void afterDisformed() {
+    }
+
+    protected void invalidateMemberCapabilities() {
+        for (BlockPos pos : this.multiblockState.getBlocksBySymbol(frameSymbol())) {
+            invalidateCapabilitiesAt(pos);
+        }
+    }
+
+    protected final void invalidateOwnCapabilities() {
+        invalidateCapabilitiesAt(getBlockPos());
+    }
+
+    protected final void invalidateCapabilitiesAt(BlockPos pos) {
+        Level level = getLevel();
+        if (level != null && !level.isClientSide()) {
+            level.invalidateCapabilities(pos);
+        }
     }
 
     @Override
@@ -74,7 +97,6 @@ public abstract class AbstractMultiblockControllerBE extends AENetworkedBlockEnt
 
     @Override
     public void setRemoved() {
-        disconnectFrameConnections();
         this.multiblockState.destroy();
         super.setRemoved();
     }
@@ -87,8 +109,9 @@ public abstract class AbstractMultiblockControllerBE extends AENetworkedBlockEnt
 
         setOwnFormedState(true);
         setAllMemberFormedStates(true);
-        connectFrameConnections();
         afterFormed();
+        invalidateMemberCapabilities();
+        invalidateOwnCapabilities();
         setChanged();
     }
 
@@ -98,39 +121,12 @@ public abstract class AbstractMultiblockControllerBE extends AENetworkedBlockEnt
             return;
         }
 
-        disconnectFrameConnections();
         setOwnFormedState(false);
         setAllMemberFormedStates(false);
         afterDisformed();
+        invalidateMemberCapabilities();
+        invalidateOwnCapabilities();
         setChanged();
-    }
-
-    private void connectFrameConnections() {
-        Level level = getLevel();
-        if (level == null) {
-            return;
-        }
-
-        for (BlockPos pos : this.multiblockState.getBlocksBySymbol(frameSymbol())) {
-            BlockEntity be = level.getBlockEntity(pos);
-            if (be instanceof AbstractMultiblockFrameBE<?> frameBE) {
-                frameBE.connectToControllerGrid();
-            }
-        }
-    }
-
-    private void disconnectFrameConnections() {
-        Level level = getLevel();
-        if (level == null) {
-            return;
-        }
-
-        for (BlockPos pos : this.multiblockState.getBlocksBySymbol(frameSymbol())) {
-            BlockEntity be = level.getBlockEntity(pos);
-            if (be instanceof AbstractMultiblockFrameBE<?> frameBE) {
-                frameBE.disconnectFromControllerGrid();
-            }
-        }
     }
 
     private void setAllMemberFormedStates(boolean formed) {

@@ -2,6 +2,7 @@ package net.oktawia.crazyae2addons.menus.part;
 
 import appeng.menu.AEBaseMenu;
 import appeng.menu.guisync.GuiSync;
+import lombok.Getter;
 import net.minecraft.world.entity.player.Inventory;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.parts.p2p.ChunkyFluidP2PTunnelPart;
@@ -12,7 +13,9 @@ public class ChunkyFluidP2PTunnelMenu extends AEBaseMenu {
     public Integer value;
 
     public String ACTION_SYNC_VALUE = "syncValue";
-    public ChunkyFluidP2PTunnelPart host;
+
+    @Getter
+    private final ChunkyFluidP2PTunnelPart host;
 
     public ChunkyFluidP2PTunnelMenu(int id, Inventory ip, ChunkyFluidP2PTunnelPart host) {
         super(CrazyMenuRegistrar.CHUNKY_FLUID_P2P_TUNNEL_MENU.get(), id, ip, host);

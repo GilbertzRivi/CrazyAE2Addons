@@ -21,7 +21,7 @@ public class BuilderPatternScreen<C extends BuilderPatternMenu> extends AEBaseSc
 
     private final LDLibCodeEditorAdapter textEditor;
     private final AETextField renameField;
-    private IconButton confirmBtn;
+    private final IconButton confirmBtn;
     private boolean initialized = false;
 
     public BuilderPatternScreen(C menu, Inventory playerInventory, Component title, ScreenStyle style) {

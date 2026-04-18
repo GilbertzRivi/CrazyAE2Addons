@@ -25,6 +25,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
+import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.entities.AutoBuilderBE;
 import net.oktawia.crazyae2addons.entities.AutoBuilderCreativeSupplyBE;
@@ -289,7 +290,8 @@ public final class AutoBuilderWorldOps {
                 be.getLevel().setBlock(target, state, 3);
                 be.clearMissingItem();
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            CrazyAddons.LOGGER.debug("error during builder block placement", e);
         }
 
         return false;

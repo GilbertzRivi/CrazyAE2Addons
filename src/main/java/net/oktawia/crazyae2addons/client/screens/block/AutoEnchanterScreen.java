@@ -55,19 +55,19 @@ public class AutoEnchanterScreen<C extends AutoEnchanterMenu> extends AEBaseScre
 
     private void toggleSupplyLapis(boolean value) {
         this.getMenu().changeAutoSupplyLapis(value);
-        this.autoSupplyLapis.setState(getMenu().host.isAutoSupplyLapis());
+        this.autoSupplyLapis.setState(getMenu().getHost().isAutoSupplyLapis());
     }
 
     private void toggleSupplyBooks(boolean value) {
         this.getMenu().changeAutoSupplyBooks(value);
-        this.autoSupplyBooks.setState(getMenu().host.isAutoSupplyBooks());
+        this.autoSupplyBooks.setState(getMenu().getHost().isAutoSupplyBooks());
     }
 
     @Override
     protected void updateBeforeRender() {
         super.updateBeforeRender();
 
-        this.setTextContent("xpval", Component.literal(Utils.shortenNumber(getMenu().host.getXp())));
+        this.setTextContent("xpval", Component.literal(Utils.shortenNumber(getMenu().getHost().getXp())));
 
         this.setTextContent(
                 "option",
@@ -77,7 +77,7 @@ public class AutoEnchanterScreen<C extends AutoEnchanterMenu> extends AEBaseScre
                 )
         );
 
-        var estVal = getMenu().host.getLevelCost();
+        var estVal = getMenu().getHost().getLevelCost();
         if (estVal.isBlank()){
             estVal = "0.0";
         }
@@ -87,12 +87,12 @@ public class AutoEnchanterScreen<C extends AutoEnchanterMenu> extends AEBaseScre
                 Component.translatable(LangDefs.REQUIRED.getTranslationKey(), estVal)
         );
 
-        this.autoSupplyLapis.setState(getMenu().host.isAutoSupplyLapis());
-        this.autoSupplyBooks.setState(getMenu().host.isAutoSupplyBooks());
+        this.autoSupplyLapis.setState(getMenu().getHost().isAutoSupplyLapis());
+        this.autoSupplyBooks.setState(getMenu().getHost().isAutoSupplyBooks());
     }
 
     private Component getSelectedOptionLabel() {
-        return switch (getMenu().host.getOption()) {
+        return switch (getMenu().getHost().getOption()) {
             case 1 -> Component.translatable(LangDefs.CHEAP.getTranslationKey());
             case 2 -> Component.translatable(LangDefs.MEDIUM.getTranslationKey());
             case 3 -> Component.translatable(LangDefs.EXPENSIVE.getTranslationKey());

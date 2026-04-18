@@ -5,6 +5,7 @@ import appeng.menu.SlotSemantics;
 import appeng.menu.guisync.GuiSync;
 import appeng.menu.implementations.PatternProviderMenu;
 import appeng.menu.slot.RestrictedInputSlot;
+import lombok.Getter;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -25,7 +26,8 @@ public class CrazyPatternProviderMenu extends PatternProviderMenu {
     private static final int COLS = 9;
     private static final int VISIBLE_ROWS = 4;
 
-    public final PatternProviderLogicHost host;
+    @Getter
+    private final PatternProviderLogicHost host;
     private final Player player;
 
     @GuiSync(38)
@@ -46,7 +48,7 @@ public class CrazyPatternProviderMenu extends PatternProviderMenu {
 
         registerClientAction(SYNC, Integer.class, this::handleRequestUpdate);
 
-        if (!IsModLoaded.isAppFluxLoaded()) {
+        if (!IsModLoaded.APP_FLUX) {
             appeng.api.upgrades.IUpgradeInventory upgradeInv = null;
             if (host.getBlockEntity() instanceof CrazyPatternProviderBE crazyBE) {
                 upgradeInv = crazyBE.getUpgrades();

@@ -5,7 +5,6 @@ import appeng.api.networking.IGridNode;
 import appeng.api.parts.IPartItem;
 import appeng.api.parts.IPartModel;
 import appeng.api.stacks.GenericStack;
-import appeng.core.AppEng;
 import appeng.items.parts.PartModels;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuLocators;
@@ -16,9 +15,10 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
+import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
-import net.oktawia.crazyae2addons.interfaces.IEmitterTerminalMenuHost;
-import net.oktawia.crazyae2addons.interfaces.StorageLevelEmitterUuid;
+import net.oktawia.crazyae2addons.logic.interfaces.IEmitterTerminalMenuHost;
+import net.oktawia.crazyae2addons.logic.interfaces.IStorageLevelEmitterUuid;
 import net.oktawia.crazyae2addons.menus.part.EmitterTerminalMenu;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,14 +27,32 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public class EmitterTerminalPart extends AbstractDisplayPart implements IEmitterTerminalMenuHost {
-    @PartModels
-    public static final ResourceLocation MODEL_OFF = AppEng.makeId("part/emitter_terminal_off");
-    @PartModels
-    public static final ResourceLocation MODEL_ON = AppEng.makeId("part/emitter_terminal_on");
 
-    public static final IPartModel MODELS_OFF = new PartModel(MODEL_BASE, MODEL_OFF, MODEL_STATUS_OFF);
-    public static final IPartModel MODELS_ON = new PartModel(MODEL_BASE, MODEL_ON, MODEL_STATUS_ON);
-    public static final IPartModel MODELS_HAS_CHANNEL = new PartModel(MODEL_BASE, MODEL_ON, MODEL_STATUS_HAS_CHANNEL);
+    public static final ResourceLocation MODEL_OFF =
+            CrazyAddons.makeId("part/emitter_terminal_off");
+    public static final ResourceLocation MODEL_ON =
+            CrazyAddons.makeId("part/emitter_terminal_on");
+
+    @PartModels
+    public static final PartModel MODELS_OFF = new PartModel(
+            MODEL_BASE,
+            MODEL_OFF,
+            MODEL_STATUS_OFF
+    );
+
+    @PartModels
+    public static final PartModel MODELS_ON = new PartModel(
+            MODEL_BASE,
+            MODEL_ON,
+            MODEL_STATUS_ON
+    );
+
+    @PartModels
+    public static final PartModel MODELS_HAS_CHANNEL = new PartModel(
+            MODEL_BASE,
+            MODEL_ON,
+            MODEL_STATUS_HAS_CHANNEL
+    );
 
     private static final Comparator<StorageLevelEmitterPart> EMITTER_COMPARATOR =
             Comparator
@@ -44,7 +62,7 @@ public class EmitterTerminalPart extends AbstractDisplayPart implements IEmitter
                     })
                     .thenComparing(EmitterTerminalPart::safeName, String.CASE_INSENSITIVE_ORDER)
                     .thenComparing(
-                            part -> ((StorageLevelEmitterUuid) part).getPersistentUuid().toString(),
+                            part -> ((IStorageLevelEmitterUuid) part).getPersistentUuid().toString(),
                             String.CASE_INSENSITIVE_ORDER
                     );
 
@@ -153,14 +171,14 @@ public class EmitterTerminalPart extends AbstractDisplayPart implements IEmitter
         }
 
         return emitterStream(node, "")
-                .filter(e -> uuid.equals(((StorageLevelEmitterUuid) e).getPersistentUuid().toString()))
+                .filter(e -> uuid.equals(((IStorageLevelEmitterUuid) e).getPersistentUuid().toString()))
                 .findFirst()
                 .orElse(null);
     }
 
     private static EmitterTerminalMenu.StorageEmitterInfo toInfo(StorageLevelEmitterPart part) {
         return new EmitterTerminalMenu.StorageEmitterInfo(
-                ((StorageLevelEmitterUuid) part).getPersistentUuid().toString(),
+                ((IStorageLevelEmitterUuid) part).getPersistentUuid().toString(),
                 part.getName(),
                 GenericStack.writeTag(part.getLevel().registryAccess(), part.getConfig().getStack(0)).getAsString(),
                 part.getReportingValue()

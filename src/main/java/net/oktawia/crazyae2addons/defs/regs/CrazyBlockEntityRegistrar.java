@@ -11,6 +11,7 @@ import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.IsModLoaded;
 import net.oktawia.crazyae2addons.compat.Apotheosis.ApothAutoEnchanterBE;
 import net.oktawia.crazyae2addons.entities.*;
+import net.oktawia.crazyae2addons.entities.penrose.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -130,7 +131,7 @@ public class CrazyBlockEntityRegistrar {
             regConditional(
                     "auto_enchanter_be",
                     CrazyBlockRegistrar.AUTO_ENCHANTER_BLOCK,
-                    IsModLoaded::isApothEnchLoaded,
+                    () -> IsModLoaded.APOTH_ENCHANTING,
                     () -> ApothAutoEnchanterBE::new,
                     () -> ApothAutoEnchanterBE.class,
                     AutoEnchanterBE::new,
@@ -143,17 +144,53 @@ public class CrazyBlockEntityRegistrar {
                     PenroseControllerBE::new,
                     PenroseControllerBE.class);
 
-    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<TestMultiblockControllerBE>> TEST_MULTIBLOCK_CONTROLLER_BE =
-            reg("test_multiblock_controller_be",
-                    CrazyBlockRegistrar.TEST_MULTIBLOCK_CONTROLLER,
-                    TestMultiblockControllerBE::new,
-                    TestMultiblockControllerBE.class);
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<PenroseCoilBE>> PENROSE_COIL_BE =
+            reg("penrose_coil_be",
+                    CrazyBlockRegistrar.PENROSE_COIL,
+                    PenroseCoilBE::new,
+                    PenroseCoilBE.class);
 
-    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<TestMultiblockFrameBE>> TEST_MULTIBLOCK_FRAME_BE =
-            reg("test_multiblock_frame_be",
-                    CrazyBlockRegistrar.TEST_MULTIBLOCK_FRAME,
-                    TestMultiblockFrameBE::new,
-                    TestMultiblockFrameBE.class);
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<PenroseFrameBE>> PENROSE_FRAME_BE =
+            reg("penrose_frame_be",
+                    CrazyBlockRegistrar.PENROSE_FRAME,
+                    PenroseFrameBE::new,
+                    PenroseFrameBE.class);
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<PenrosePortBE>> PENROSE_PORT_BE =
+            reg("penrose_port_be",
+                    CrazyBlockRegistrar.PENROSE_PORT,
+                    PenrosePortBE::new,
+                    PenrosePortBE.class);
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<PenroseHeatVentBE>> PENROSE_HEAT_VENT_BE =
+            reg("penrose_heat_vent_be",
+                    CrazyBlockRegistrar.PENROSE_HEAT_VENT,
+                    PenroseHeatVentBE::new,
+                    PenroseHeatVentBE.class);
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<PenroseHawkingVentBE>> PENROSE_HAWKING_VENT_BE =
+            reg("penrose_hawking_vent_be",
+                    CrazyBlockRegistrar.PENROSE_HAWKING_VENT,
+                    PenroseHawkingVentBE::new,
+                    PenroseHawkingVentBE.class);
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<PenroseInjectionPortBE>> PENROSE_INJECTION_PORT_BE =
+            reg("penrose_injection_port_be",
+                    CrazyBlockRegistrar.PENROSE_INJECTION_PORT,
+                    PenroseInjectionPortBE::new,
+                    PenroseInjectionPortBE.class);
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<PenroseHeatEmitterBE>> PENROSE_HEAT_EMITTER_BE =
+            reg("penrose_heat_emitter_be",
+                    CrazyBlockRegistrar.PENROSE_HEAT_EMITTER,
+                    PenroseHeatEmitterBE::new,
+                    PenroseHeatEmitterBE.class);
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<PenroseMassEmitterBE>> PENROSE_MASS_EMITTER_BE =
+            reg("penrose_mass_emitter_be",
+                    CrazyBlockRegistrar.PENROSE_MASS_EMITTER,
+                    PenroseMassEmitterBE::new,
+                    PenroseMassEmitterBE.class);
 
     public static void setupBlockEntityTypes() {
         for (var runnable : BLOCK_ENTITY_SETUP) {

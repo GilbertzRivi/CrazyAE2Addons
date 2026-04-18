@@ -1,6 +1,6 @@
 package net.oktawia.crazyae2addons.mixins;
 
-import net.oktawia.crazyae2addons.interfaces.IMovableSlot;
+import net.oktawia.crazyae2addons.logic.interfaces.IMovableSlot;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Mutable;

@@ -7,6 +7,7 @@ import appeng.client.gui.widgets.AETextField;
 import appeng.client.gui.widgets.ToggleButton;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
+import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.defs.LangDefs;
 import net.oktawia.crazyae2addons.menus.block.AmpereMeterMenu;
 
@@ -52,11 +53,11 @@ public class AmpereMeterScreen<C extends AmpereMeterMenu> extends AEBaseScreen<C
         super.init();
 
         if (minFe != null) {
-            minFe.setValue(String.valueOf(getMenu().host.minFePerTick));
+            minFe.setValue(String.valueOf(getMenu().getHost().getMinFePerTick()));
         }
 
         if (maxFe != null) {
-            maxFe.setValue(String.valueOf(getMenu().host.maxFePerTick));
+            maxFe.setValue(String.valueOf(getMenu().getHost().getMaxFePerTick()));
         }
     }
 
@@ -67,12 +68,13 @@ public class AmpereMeterScreen<C extends AmpereMeterMenu> extends AEBaseScreen<C
         if (!value.isEmpty()) {
             try {
                 parsed = Integer.parseInt(value);
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                CrazyAddons.LOGGER.debug("invalid numeric input in ampere meter min field", e);
                 return;
             }
         }
 
-        if (parsed != getMenu().host.minFePerTick) {
+        if (parsed != getMenu().getHost().getMinFePerTick()) {
             getMenu().changeMin(parsed);
         }
     }
@@ -84,12 +86,13 @@ public class AmpereMeterScreen<C extends AmpereMeterMenu> extends AEBaseScreen<C
         if (!value.isEmpty()) {
             try {
                 parsed = Integer.parseInt(value);
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                CrazyAddons.LOGGER.debug("invalid numeric input in ampere meter max field", e);
                 return;
             }
         }
 
-        if (parsed != getMenu().host.maxFePerTick) {
+        if (parsed != getMenu().getHost().getMaxFePerTick()) {
             getMenu().changeMax(parsed);
         }
     }
@@ -103,18 +106,18 @@ public class AmpereMeterScreen<C extends AmpereMeterMenu> extends AEBaseScreen<C
     protected void updateBeforeRender(){
         super.updateBeforeRender();
 
-        direction.setState(getMenu().host.direction);
-        setTextContent("energy", Component.literal(String.format("Transferring: %s %s", getMenu().host.transfer, getMenu().host.unit)));
+        direction.setState(getMenu().getHost().isDirection());
+        setTextContent("energy", Component.literal(String.format("Transferring: %s %s", getMenu().getHost().getTransfer(), getMenu().getHost().getUnit())));
 
         if (minFe != null && !minFe.isFocused()) {
-            String v = String.valueOf(getMenu().host.minFePerTick);
+            String v = String.valueOf(getMenu().getHost().getMinFePerTick());
             if (!v.equals(minFe.getValue())) {
                 minFe.setValue(v);
             }
         }
 
         if (maxFe != null && !maxFe.isFocused()) {
-            String v = String.valueOf(getMenu().host.maxFePerTick);
+            String v = String.valueOf(getMenu().getHost().getMaxFePerTick());
             if (!v.equals(maxFe.getValue())) {
                 maxFe.setValue(v);
             }

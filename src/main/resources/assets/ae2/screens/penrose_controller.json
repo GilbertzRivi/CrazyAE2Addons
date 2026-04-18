@@ -1,43 +1,39 @@
 {
   "$schema": "schema.json",
-  "includes": ["common/common.json", "common/player_inventory.json"],
+  "includes": ["common/common.json"],
   "background": {
-    "texture": "guis/blank_background.png",
-    "srcRect": [0, 0, 176, 222]
+    "texture": "guis/penrose_controller.png",
+    "srcRect": [0, 0, 256, 256]
+  },
+  "slots": {
+    "STORAGE_CELL": { "left": 28, "top": 146 },
+    "PLAYER_INVENTORY": {
+      "left": 47,
+      "bottom": 84,
+      "grid": "BREAK_AFTER_9COLS"
+    },
+    "PLAYER_HOTBAR": {
+      "left": 47,
+      "bottom": 26,
+      "grid": "HORIZONTAL"
+    }
   },
   "text": {
     "dialog_title": {
-      "text": {
-        "translate": "block.crazyae2addons.penrose_controller"
-      },
-      "position": {
-        "left": 8,
-        "top": 6
-      }
+      "text": { "translate": "block.crazyae2addons.penrose_controller" },
+      "position": { "left": 8, "top": 6 }
     },
-    "generation": {
-      "position": {
-        "left": 8,
-        "top": 16
-      }
-    }
-  },
-  "slots": {
-    "STORAGE_CELL": {
-      "left": 152,
-      "top": 147
+    "player_inventory_title": {
+      "text": { "translate": "container.inventory" },
+      "position": { "left": 47, "bottom": 95 }
     }
   },
   "widgets": {
-    "bh": {
-      "left": 7,
-      "top": 24,
-      "width": 162,
-      "height": 116
-    },
-    "start": {
-      "left": 126,
-      "top": 147,
+    "bh": { "left": 8, "top": 16, "width": 232, "height": 124 },
+    "start": { "left": 8, "top": 144, "width": 16, "height": 16 },
+    "preview": {
+      "right": 24,
+      "top": 144,
       "width": 16,
       "height": 16
     }

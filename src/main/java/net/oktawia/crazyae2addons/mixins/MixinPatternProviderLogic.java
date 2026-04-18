@@ -4,7 +4,7 @@ import appeng.helpers.patternprovider.PatternProviderLogic;
 import appeng.util.inv.AppEngInternalInventory;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
-import net.oktawia.crazyae2addons.interfaces.IProviderLogicResizable;
+import net.oktawia.crazyae2addons.logic.interfaces.IProviderLogicResizable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Mutable;

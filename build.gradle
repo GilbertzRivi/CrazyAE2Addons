@@ -186,7 +186,11 @@ dependencies {
     implementation "curse.maven:ftb-chunks-forge-314906:7157142"
     implementation "curse.maven:ftb-library-forge-404465:7420412"
     implementation "curse.maven:ftb-teams-forge-404468:7369021"
-    //Apoth
+
+    // Distant horizons
+    implementation "curse.maven:distant-horizons-508933:7375285"
+
+    // Apotheosis
 //    implementation "dev.shadowsoffire:Placebo:1.21.1-9.9.1"
 //    implementation "dev.shadowsoffire:ApothicAttributes:1.21.1-2.9.1"
 //    implementation "dev.shadowsoffire:ApothicSpawners:1.21.1-1.3.4"

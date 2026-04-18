@@ -14,16 +14,16 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.neoforged.neoforge.capabilities.BlockCapability;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.registries.RegisterEvent;
-import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.defs.UpgradeCards;
 import net.oktawia.crazyae2addons.defs.regs.*;
 import net.oktawia.crazyae2addons.entities.AmpereMeterBE;
 import net.oktawia.crazyae2addons.entities.AutoEnchanterBE;
-import net.oktawia.crazyae2addons.entities.PenroseControllerBE;
+import net.oktawia.crazyae2addons.entities.penrose.PenroseControllerBE;
+import net.oktawia.crazyae2addons.entities.penrose.PenroseFrameBE;
+import net.oktawia.crazyae2addons.entities.penrose.PenrosePortBE;
 import net.oktawia.crazyae2addons.network.NetworkHandler;
 import net.oktawia.crazyae2addons.parts.p2p.ChunkyFluidP2PTunnelPart;
 import net.oktawia.crazyae2addons.parts.p2p.RRItemP2PTunnelPart;
@@ -105,11 +105,35 @@ public class CrazyAddons {
                 CrazyBlockEntityRegistrar.AUTO_ENCHANTER_BE.get(),
                 (be, dir) -> be instanceof AutoEnchanterBE enchanter ? enchanter.getItemHandler(dir) : null);
 
-        event.registerBlockEntity(Capabilities.EnergyStorage.BLOCK,
+        event.registerBlockEntity(
+                Capabilities.EnergyStorage.BLOCK,
                 CrazyBlockEntityRegistrar.PENROSE_CONTROLLER_BE.get(),
-                (be, dir) -> be instanceof PenroseControllerBE ctrl
-                        && CrazyConfig.COMMON.PenroseFEOutputEnabled.get()
-                        ? ctrl.getEnergyStorage(dir) : null);
+                (be, dir) -> CrazyConfig.COMMON.PenroseFEOutputEnabled.get() ? be.getEnergyStorage(dir) : null
+        );
+
+        event.registerBlockEntity(
+                Capabilities.EnergyStorage.BLOCK,
+                CrazyBlockEntityRegistrar.PENROSE_FRAME_BE.get(),
+                (be, dir) -> CrazyConfig.COMMON.PenroseFEOutputEnabled.get() ? be.getEnergyStorage(dir) : null
+        );
+
+        event.registerBlockEntity(
+                Capabilities.EnergyStorage.BLOCK,
+                CrazyBlockEntityRegistrar.PENROSE_PORT_BE.get(),
+                (be, dir) -> CrazyConfig.COMMON.PenroseFEOutputEnabled.get() ? be.getExposedEnergy(dir) : null
+        );
+
+        event.registerBlockEntity(
+                Capabilities.EnergyStorage.BLOCK,
+                CrazyBlockEntityRegistrar.PENROSE_HEAT_VENT_BE.get(),
+                (be, dir) -> be.getEnergyStorage()
+        );
+
+        event.registerBlockEntity(
+                Capabilities.EnergyStorage.BLOCK,
+                CrazyBlockEntityRegistrar.PENROSE_HAWKING_VENT_BE.get(),
+                (be, dir) -> be.getEnergyStorage()
+        );
     }
 
     private void registerPartCapabilities(RegisterPartCapabilitiesEvent event) {

@@ -9,11 +9,13 @@ import appeng.api.parts.IPartItem;
 import appeng.api.parts.IPartModel;
 import appeng.api.storage.ISubMenuHost;
 import appeng.api.util.AECableType;
+import appeng.core.AppEng;
 import appeng.items.parts.PartModels;
 import appeng.menu.ISubMenu;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuLocators;
 import appeng.parts.AEBasePart;
+import appeng.parts.PartModel;
 import appeng.parts.automation.PlaneModels;
 import com.lowdragmc.lowdraglib2.syncdata.IPersistedSerializable;
 import com.lowdragmc.lowdraglib2.syncdata.annotation.Persisted;
@@ -27,6 +29,7 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
@@ -34,6 +37,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
+import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.logic.display.DisplayGrid;
@@ -53,9 +57,34 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class DisplayPart extends AEBasePart implements MenuProvider, ISubMenuHost, IGridTickable {
 
-    private static final PlaneModels MODELS = new PlaneModels(
-            "part/display_mon_off",
-            "part/display_mon_on"
+    private static final ResourceLocation MODEL_CHASSIS_OFF =
+            AppEng.makeId("part/transition_plane_off");
+    private static final ResourceLocation MODEL_CHASSIS_ON =
+            AppEng.makeId("part/transition_plane_on");
+    private static final ResourceLocation MODEL_CHASSIS_HAS_CHANNEL =
+            AppEng.makeId("part/transition_plane_has_channel");
+
+    private static final ResourceLocation FRONT_MODEL_OFF =
+            CrazyAddons.makeId("part/display_mon_off");
+    private static final ResourceLocation FRONT_MODEL_ON =
+            CrazyAddons.makeId("part/display_mon_on");
+
+    @PartModels
+    public static final PartModel MODELS_OFF = new PartModel(
+            MODEL_CHASSIS_OFF,
+            FRONT_MODEL_OFF
+    );
+
+    @PartModels
+    public static final PartModel MODELS_ON = new PartModel(
+            MODEL_CHASSIS_ON,
+            FRONT_MODEL_OFF
+    );
+
+    @PartModels
+    public static final PartModel MODELS_HAS_CHANNEL = new PartModel(
+            MODEL_CHASSIS_HAS_CHANNEL,
+            FRONT_MODEL_ON
     );
 
     public static final List<DisplayPart> CLIENT_INSTANCES = new CopyOnWriteArrayList<>();
@@ -70,11 +99,6 @@ public class DisplayPart extends AEBasePart implements MenuProvider, ISubMenuHos
     public volatile String pendingInsert = null;
     public volatile int pendingInsertCursor = -1;
 
-    @PartModels
-    public static List<IPartModel> getModels() {
-        return MODELS.getModels();
-    }
-
     public DisplayPart(IPartItem<?> partItem) {
         super(partItem);
         getMainNode()
@@ -82,12 +106,19 @@ public class DisplayPart extends AEBasePart implements MenuProvider, ISubMenuHos
                 .addService(IGridTickable.class, this);
     }
 
-    public byte getSpin() {
-        return state.spin;
+    @Override
+    public IPartModel getStaticModels() {
+        if (isPowered() && isActive()) {
+            return MODELS_HAS_CHANNEL;
+        }
+        if (isPowered()) {
+            return MODELS_ON;
+        }
+        return MODELS_OFF;
     }
 
-    public void setSpin(byte spin) {
-        state.spin = spin;
+    public byte getSpin() {
+        return state.spin;
     }
 
     public String getTextValue() {
@@ -213,11 +244,6 @@ public class DisplayPart extends AEBasePart implements MenuProvider, ISubMenuHos
     @Override
     public float getCableConnectionLength(AECableType cable) {
         return 1;
-    }
-
-    @Override
-    public IPartModel getStaticModels() {
-        return MODELS.getModel(isPowered(), isActive());
     }
 
     @Override

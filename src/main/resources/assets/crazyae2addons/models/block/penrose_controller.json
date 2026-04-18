@@ -1,0 +1,12 @@
+{
+  "parent": "block/cube",
+  "textures": {
+    "particle": "crazyae2addons:block/penrose_controller",
+    "down": "crazyae2addons:block/penrose_controller",
+    "up": "crazyae2addons:block/penrose_controller",
+    "north": "crazyae2addons:block/penrose_controller_front",
+    "south": "crazyae2addons:block/penrose_controller",
+    "east": "crazyae2addons:block/penrose_controller",
+    "west": "crazyae2addons:block/penrose_controller"
+  }
+}

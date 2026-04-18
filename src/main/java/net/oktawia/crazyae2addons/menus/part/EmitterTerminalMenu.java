@@ -15,7 +15,8 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
-import net.oktawia.crazyae2addons.interfaces.IEmitterTerminalMenuHost;
+import net.oktawia.crazyae2addons.CrazyAddons;
+import net.oktawia.crazyae2addons.logic.interfaces.IEmitterTerminalMenuHost;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.misc.serializers.StorageEmitterInfoAdapter;
 import net.oktawia.crazyae2addons.parts.EmitterTerminalPart;
@@ -44,7 +45,6 @@ public class EmitterTerminalMenu extends AEBaseMenu {
 
     private final IEmitterTerminalMenuHost host;
     protected String currentSearch = "";
-    private int outOfRangeCheckTimer = 0;
 
     public EmitterTerminalMenu(int id, Inventory ip, EmitterTerminalPart part) {
         this(CrazyMenuRegistrar.EMITTER_TERMINAL_MENU.get(), id, ip, part);
@@ -111,7 +111,8 @@ public class EmitterTerminalMenu extends AEBaseMenu {
         if (!parts[1].isBlank()) {
             try {
                 value = Long.parseLong(parts[1].trim());
-            } catch (NumberFormatException ignored) {
+            } catch (NumberFormatException e) {
+                CrazyAddons.LOGGER.debug("invalid numeric value in emitter terminal", e);
                 return;
             }
         }

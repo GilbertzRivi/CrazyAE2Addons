@@ -29,7 +29,7 @@ public class CraftingSchedulerScreen<C extends CraftingSchedulerMenu> extends AE
     protected void updateBeforeRender(){
         super.updateBeforeRender();
         if (!initialized){
-            this.amount.setValue(String.valueOf(getMenu().host.amount));
+            this.amount.setValue(String.valueOf(getMenu().getHost().amount));
             initialized = true;
         }
     }

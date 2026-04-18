@@ -16,9 +16,10 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
+import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.defs.LangDefs;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
-import net.oktawia.crazyae2addons.interfaces.IMovableSlot;
+import net.oktawia.crazyae2addons.logic.interfaces.IMovableSlot;
 import net.oktawia.crazyae2addons.menus.part.EmitterTerminalMenu;
 import net.oktawia.crazyae2addons.items.wireless.WirelessEmitterTerminalMenu;
 import org.jetbrains.annotations.NotNull;
@@ -245,9 +246,6 @@ public class EmitterTerminalScreen<C extends EmitterTerminalMenu> extends AEBase
         }
 
         String text = valueFields[row].getValue();
-        if (text == null) {
-            return;
-        }
 
         if (text.isBlank()) {
             getMenu().setValue(uuid + "|");
@@ -261,7 +259,8 @@ public class EmitterTerminalScreen<C extends EmitterTerminalMenu> extends AEBase
             }
 
             getMenu().setValue(uuid + "|" + value);
-        } catch (NumberFormatException ignored) {
+        } catch (NumberFormatException e) {
+            CrazyAddons.LOGGER.debug("invalid numeric value in emitter terminal screen", e);
         }
     }
 

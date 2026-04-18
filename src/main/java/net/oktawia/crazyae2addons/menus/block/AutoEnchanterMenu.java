@@ -2,6 +2,7 @@ package net.oktawia.crazyae2addons.menus.block;
 
 import appeng.menu.AEBaseMenu;
 import appeng.menu.SlotSemantics;
+import lombok.Getter;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Items;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
@@ -15,7 +16,8 @@ public class AutoEnchanterMenu extends AEBaseMenu {
     private static final String ACTION_CHANGE_AUTO_SUPPLY_LAPIS = "change_auto_supply_lapis";
     private static final String ACTION_CHANGE_AUTO_SUPPLY_BOOKS = "change_auto_supply_books";
 
-    public final AutoEnchanterBE host;
+    @Getter
+    private final AutoEnchanterBE host;
 
     public AutoEnchanterMenu(int id, Inventory playerInventory, AutoEnchanterBE host) {
         super(CrazyMenuRegistrar.AUTO_ENCHANTER_MENU.get(), id, playerInventory, host);

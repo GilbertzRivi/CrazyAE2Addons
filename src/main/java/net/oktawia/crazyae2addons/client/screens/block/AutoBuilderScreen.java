@@ -24,7 +24,7 @@ public class AutoBuilderScreen<C extends AutoBuilderMenu> extends UpgradeableScr
     private final AETextField zlabel;
     private final AECheckbox skipMissing;
     private boolean initialized = false;
-    private IconButton previewBtn;
+    private final IconButton previewBtn;
 
     private ItemStack missingIcon = ItemStack.EMPTY;
 

@@ -13,6 +13,7 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
+import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.client.misc.CrazyLanguages;
 import net.oktawia.crazyae2addons.client.misc.IconButton;
 import net.oktawia.crazyae2addons.client.misc.LDLibCodeEditorAdapter;
@@ -318,7 +319,7 @@ public class DisplayScreen<C extends DisplayMenu> extends AEBaseScreen<C> {
             return;
         }
 
-        int previewH = Math.min(PREVIEW_PREFERRED_H, Math.max(72, imageHeight - 20));
+        int previewH = Math.clamp(imageHeight - 20, 72, PREVIEW_PREFERRED_H);
         int previewX = DisplayGuiRenderer.clampPreviewX(leftPos, previewW, PREVIEW_GAP, PREVIEW_MIN_X);
         int previewY = DisplayGuiRenderer.clampPreviewY(topPos, imageHeight, previewH);
 
@@ -364,7 +365,8 @@ public class DisplayScreen<C extends DisplayMenu> extends AEBaseScreen<C> {
         try {
             Map<String, String> decoded = GSON.fromJson(json, TOKENS_TYPE);
             return decoded != null ? decoded : Collections.emptyMap();
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            CrazyAddons.LOGGER.debug("failed to parse display tokens JSON", e);
             return Collections.emptyMap();
         }
     }
@@ -390,7 +392,8 @@ public class DisplayScreen<C extends DisplayMenu> extends AEBaseScreen<C> {
         if (m.find()) {
             try {
                 return 0xFF000000 | Integer.parseInt(m.group(1), 16);
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                CrazyAddons.LOGGER.debug("invalid hex color in display screen", e);
             }
         }
         return fallback;

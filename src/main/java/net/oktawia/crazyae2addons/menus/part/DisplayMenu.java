@@ -4,9 +4,11 @@ import appeng.menu.AEBaseMenu;
 import appeng.menu.guisync.GuiSync;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import lombok.Getter;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.neoforged.neoforge.network.PacketDistributor;
+import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.logic.display.DisplayGrid;
 import net.oktawia.crazyae2addons.logic.display.DisplayImageEntry;
@@ -61,7 +63,8 @@ public class DisplayMenu extends AEBaseMenu {
     @GuiSync(38)
     public String previewImagesJson = "[]";
 
-    public final DisplayPart host;
+    @Getter
+    private final DisplayPart host;
 
     private transient String lastParsedPreviewImagesJson = null;
     private transient List<DisplayImageEntry> parsedPreviewImagesCache = List.of();
@@ -103,7 +106,8 @@ public class DisplayMenu extends AEBaseMenu {
 
         try {
             this.previewTokensJson = GSON.toJson(host.resolvedTokens != null ? host.resolvedTokens : Map.of());
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            CrazyAddons.LOGGER.debug("failed to serialize display tokens to JSON", e);
             this.previewTokensJson = "{}";
         }
 
@@ -111,7 +115,8 @@ public class DisplayMenu extends AEBaseMenu {
             this.previewImagesJson = GSON.toJson(
                     host.getDisplayImages() != null ? host.getDisplayImages() : Collections.emptyList()
             );
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            CrazyAddons.LOGGER.debug("failed to serialize display preview images to JSON", e);
             this.previewImagesJson = "[]";
         }
 
@@ -123,7 +128,8 @@ public class DisplayMenu extends AEBaseMenu {
             try {
                 List<DisplayImageEntry> parsed = GSON.fromJson(previewImagesJson, IMAGE_LIST_TYPE);
                 parsedPreviewImagesCache = parsed != null ? parsed : List.of();
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                CrazyAddons.LOGGER.debug("failed to parse display preview images JSON", e);
                 parsedPreviewImagesCache = List.of();
             }
 

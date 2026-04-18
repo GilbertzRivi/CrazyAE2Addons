@@ -1,13 +1,15 @@
 package net.oktawia.crazyae2addons.menus.block;
 
 import appeng.menu.AEBaseMenu;
+import lombok.Getter;
 import net.minecraft.world.entity.player.Inventory;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.entities.AmpereMeterBE;
 
 public class AmpereMeterMenu extends AEBaseMenu {
 
-    public AmpereMeterBE host;
+    @Getter
+    private final AmpereMeterBE host;
 
     public String CHANGE_DIRECTION = "actionChangeDirection";
     public String CHANGE_MIN = "actionChangeMin";

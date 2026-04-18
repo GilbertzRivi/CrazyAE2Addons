@@ -43,7 +43,7 @@ import net.oktawia.crazyae2addons.defs.components.CrazyProviderDisplayData;
 import net.oktawia.crazyae2addons.defs.regs.CrazyDataComponents;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
-import net.oktawia.crazyae2addons.interfaces.IProviderLogicResizable;
+import net.oktawia.crazyae2addons.logic.interfaces.IProviderLogicResizable;
 import net.oktawia.crazyae2addons.network.packets.SyncBlockClientPacket;
 import org.jetbrains.annotations.Nullable;
 
@@ -316,7 +316,7 @@ public class CrazyPatternProviderPart extends PatternProviderPart implements IUp
         @Persisted
         private final IUpgradeInventory upgrades = UpgradeInventories.forMachine(
                 CrazyItemRegistrar.CRAZY_PATTERN_PROVIDER_PART.get(),
-                IsModLoaded.isAppFluxLoaded() ? 2 : 1,
+                IsModLoaded.APP_FLUX ? 2 : 1,
                 CrazyPatternProviderPart.this::saveChanges
         );
     }

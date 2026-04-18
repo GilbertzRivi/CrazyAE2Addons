@@ -45,7 +45,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.oktawia.crazyae2addons.CrazyConfig;
-import net.oktawia.crazyae2addons.client.renderer.preview.PreviewInfo;
+import net.oktawia.crazyae2addons.client.renderer.preview.builder.PreviewInfo;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
@@ -54,6 +54,7 @@ import net.oktawia.crazyae2addons.logic.buffer.ManagedBuffer;
 import net.oktawia.crazyae2addons.logic.builder.AutoBuilderPreviewOps;
 import net.oktawia.crazyae2addons.logic.builder.AutoBuilderWorldOps;
 import net.oktawia.crazyae2addons.logic.builder.BuilderPatternHost;
+import net.oktawia.crazyae2addons.logic.interfaces.IMenuOpeningBlockEntity;
 import net.oktawia.crazyae2addons.menus.block.AutoBuilderMenu;
 import net.oktawia.crazyae2addons.misc.ProgramExpander;
 import org.jetbrains.annotations.Nullable;
@@ -64,7 +65,9 @@ import java.util.List;
 
 public class AutoBuilderBE extends AENetworkedBlockEntity implements
         IGridTickable, MenuProvider, InternalInventoryHost, IUpgradeableObject,
-        ICraftingRequester, PatternProviderLogicHost, ISyncPersistRPCBlockEntity {
+        ICraftingRequester, PatternProviderLogicHost, ISyncPersistRPCBlockEntity,
+        IMenuOpeningBlockEntity
+{
 
     @Getter
     private final FieldManagedStorage syncStorage;

@@ -12,6 +12,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.level.ChunkPos;
 import net.neoforged.neoforge.network.PacketDistributor;
+import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.logic.display.keytypes.DisplayKeyCompatRegistry;
 import net.oktawia.crazyae2addons.network.packets.DisplaySyncPacket;
 import net.oktawia.crazyae2addons.parts.DisplayPart;
@@ -108,7 +109,9 @@ public final class DisplayTokenResolver {
                 try {
                     int pow = Integer.parseInt(token.substring(pct + 1));
                     if (pow > 0) divisor = (long) Math.pow(10, pow);
-                } catch (NumberFormatException ignored) {}
+                } catch (NumberFormatException e) {
+                    CrazyAddons.LOGGER.debug("invalid divisor format in display token", e);
+                }
             }
             if (!core.startsWith("s^")) continue;
             String itemId = core.substring(2);
@@ -175,9 +178,13 @@ public final class DisplayTokenResolver {
                 try {
                     var key = resolveKey(id);
                     if (key != null) out.put(id, byKey.getOrDefault(key, 0L));
-                } catch (Throwable ignored) {}
+                } catch (Throwable e) {
+                    CrazyAddons.LOGGER.debug("failed to resolve display key: {}", id, e);
+                }
             }
-        } catch (Throwable ignored) {}
+        } catch (Throwable e) {
+            CrazyAddons.LOGGER.debug("failed to resolve display storage amounts", e);
+        }
         return out;
     }
 
@@ -219,7 +226,9 @@ public final class DisplayTokenResolver {
             try {
                 perN = Long.parseLong(m.group(2));
                 perU = m.group(3).charAt(0);
-            } catch (Throwable ignored) {}
+            } catch (Throwable e) {
+                CrazyAddons.LOGGER.debug("invalid rate format in display token", e);
+            }
         }
 
         long winN = 5L;
@@ -227,7 +236,9 @@ public final class DisplayTokenResolver {
         try {
             winN = Long.parseLong(m.group(4));
             winU = m.group(5).charAt(0);
-        } catch (Throwable ignored) {}
+        } catch (Throwable e) {
+            CrazyAddons.LOGGER.debug("invalid window format in display token", e);
+        }
 
         long perTicks = unitToTicks(perN, perU);
         long windowTicks = unitToTicks(winN, winU);

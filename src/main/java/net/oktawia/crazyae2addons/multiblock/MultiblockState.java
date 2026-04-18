@@ -1,15 +1,5 @@
 package net.oktawia.crazyae2addons.multiblock;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
-import javax.annotation.Nullable;
-
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -19,26 +9,44 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 
+import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
 public final class MultiblockState {
-    private static final int POLL_INTERVAL_TICKS = 10;
-    private static final int CALLBACK_INVALIDATE_INTERVAL_TICKS = 100;
+    private static final int FAST_POLL_INTERVAL_TICKS = 10;
+    private static final int ATTACHED_CALLBACK_VALIDATE_INTERVAL_TICKS = 200; // 10 sekund
+
     private final MultiblockDefinition definition;
     private final BlockEntity controller;
     private final Runnable onFormed;
     private final Runnable onDisformed;
+
     @Getter
     private boolean formed;
+
     private final Map<BlockPos, MultiblockCallback> registeredCallbacks = new LinkedHashMap<>();
+    private final Map<BlockPos, MultiblockCallback> attachedPolledCallbacks = new LinkedHashMap<>();
+
     private final Map<Character, List<BlockPos>> symbolPositions = new LinkedHashMap<>();
     private final Map<BlockPos, MultiblockDefinition.PatternEntry> entryByWorldPos = new LinkedHashMap<>();
 
-    private int pollTimer;
-    private int callbackInvalidateTimer;
+    private int fastPollTimer;
+    private int attachedValidateTimer;
 
     private @Nullable Direction cachedFacing;
     private @Nullable BlockPos cachedControllerPos;
 
-    public MultiblockState(MultiblockDefinition definition, BlockEntity controller, Runnable onFormed, Runnable onDisformed) {
+    public MultiblockState(
+            MultiblockDefinition definition,
+            BlockEntity controller,
+            Runnable onFormed,
+            Runnable onDisformed
+    ) {
         this.definition = definition;
         this.controller = controller;
         this.onFormed = onFormed;
@@ -50,23 +58,38 @@ public final class MultiblockState {
 
         boolean rebuilt = rebuildWorldCachesIfNeeded(controllerPos, structureFacing);
         if (rebuilt) {
-            invalidateCallbackCache(level);
-            this.callbackInvalidateTimer = 0;
+            invalidateRequiredCallbackCache(level);
+            invalidatePolledCallbackCache(level);
         }
 
-        this.callbackInvalidateTimer++;
-        if (this.callbackInvalidateTimer >= CALLBACK_INVALIDATE_INTERVAL_TICKS) {
-            invalidateCallbackCache(level);
-            this.callbackInvalidateTimer = 0;
+        boolean runAttachedValidation = rebuilt;
+        this.attachedValidateTimer++;
+        if (this.attachedValidateTimer >= ATTACHED_CALLBACK_VALIDATE_INTERVAL_TICKS) {
+            this.attachedValidateTimer = 0;
+            runAttachedValidation = true;
         }
 
-        this.pollTimer++;
-        if (this.pollTimer < POLL_INTERVAL_TICKS) {
+        if (runAttachedValidation) {
+            invalidateRequiredCallbackCache(level);
+            invalidatePolledCallbackCache(level);
+        }
+
+        boolean runFastPoll = rebuilt;
+        this.fastPollTimer++;
+        if (this.fastPollTimer >= FAST_POLL_INTERVAL_TICKS) {
+            this.fastPollTimer = 0;
+            runFastPoll = true;
+        }
+
+        if (!runFastPoll) {
             return;
         }
-        this.pollTimer = 0;
 
+        // POLLED entries sprawdzamy co 10 ticków
+        syncPolledCallbacks(level);
         boolean polledOk = pollPolledEntries(level);
+
+        // CALLBACK entries, których jeszcze nie mamy, próbujemy dopiąć co 10 ticków
         registerMissingCallbacks(level);
         boolean callbacksOk = areAllCallbackEntriesRegistered();
 
@@ -80,12 +103,10 @@ public final class MultiblockState {
     }
 
     public void unregisterCallback(BlockPos pos) {
-        MultiblockCallback callback = this.registeredCallbacks.remove(pos);
-        if (callback != null) {
-            detachCallback(callback);
-        }
+        boolean removedRequired = detachAndRemove(this.registeredCallbacks, pos);
+        detachAndRemove(this.attachedPolledCallbacks, pos);
 
-        if (this.formed) {
+        if (removedRequired && this.formed) {
             doDisform();
         }
     }
@@ -94,14 +115,18 @@ public final class MultiblockState {
         for (MultiblockCallback callback : this.registeredCallbacks.values()) {
             detachCallback(callback);
         }
+        for (MultiblockCallback callback : this.attachedPolledCallbacks.values()) {
+            detachCallback(callback);
+        }
 
         this.registeredCallbacks.clear();
+        this.attachedPolledCallbacks.clear();
         this.symbolPositions.clear();
         this.entryByWorldPos.clear();
 
         this.formed = false;
-        this.pollTimer = 0;
-        this.callbackInvalidateTimer = 0;
+        this.fastPollTimer = 0;
+        this.attachedValidateTimer = 0;
         this.cachedFacing = null;
         this.cachedControllerPos = null;
     }
@@ -125,24 +150,22 @@ public final class MultiblockState {
 
         for (MultiblockDefinition.PatternEntry rotatedEntry : this.definition.getEntries(structureFacing)) {
             BlockPos worldPos = controllerPos.offset(
-                rotatedEntry.relX(),
-                rotatedEntry.relY(),
-                rotatedEntry.relZ()
+                    rotatedEntry.relX(),
+                    rotatedEntry.relY(),
+                    rotatedEntry.relZ()
             );
 
             MultiblockDefinition.PatternEntry previous = this.entryByWorldPos.put(worldPos, rotatedEntry);
             if (previous != null) {
                 throw new IllegalStateException(
-                    "Duplicate world position in multiblock cache for controller at "
-                        + controllerPos
-                        + ": "
-                        + worldPos
+                        "Duplicate world position in multiblock cache for controller at "
+                                + controllerPos + ": " + worldPos
                 );
             }
 
             this.symbolPositions
-                .computeIfAbsent(rotatedEntry.symbol(), ignored -> new ArrayList<>())
-                .add(worldPos);
+                    .computeIfAbsent(rotatedEntry.symbol(), ignored -> new ArrayList<>())
+                    .add(worldPos);
         }
 
         this.cachedControllerPos = controllerPos.immutable();
@@ -182,9 +205,53 @@ public final class MultiblockState {
         return true;
     }
 
+    private void syncPolledCallbacks(Level level) {
+        for (Map.Entry<BlockPos, MultiblockDefinition.PatternEntry> entry : this.entryByWorldPos.entrySet()) {
+            BlockPos worldPos = entry.getKey();
+            MultiblockDefinition.PatternEntry patternEntry = entry.getValue();
+            MultiblockDefinition.SymbolDef symbolDef = requireSymbol(patternEntry.symbol());
+
+            if (symbolDef.tracking() != MultiblockDefinition.TrackingMode.POLLED) {
+                continue;
+            }
+
+            BlockState blockState = level.getBlockState(worldPos);
+            if (!matchesAllowedBlock(blockState.getBlock(), symbolDef)) {
+                detachAndRemove(this.attachedPolledCallbacks, worldPos);
+                continue;
+            }
+
+            BlockEntity be = level.getBlockEntity(worldPos);
+            if (!(be instanceof MultiblockCallback callback) || be.isRemoved()) {
+                detachAndRemove(this.attachedPolledCallbacks, worldPos);
+                continue;
+            }
+
+            MultiblockCallback current = this.attachedPolledCallbacks.get(worldPos);
+            if (current == callback) {
+                callback.setState(this);
+                if (this.formed) {
+                    callback.setController(this.controller);
+                }
+                continue;
+            }
+
+            if (current != null) {
+                detachCallback(current);
+            }
+
+            callback.setState(this);
+            if (this.formed) {
+                callback.setController(this.controller);
+            }
+            this.attachedPolledCallbacks.put(worldPos.immutable(), callback);
+        }
+    }
+
     private void registerMissingCallbacks(Level level) {
         for (Map.Entry<BlockPos, MultiblockDefinition.PatternEntry> entry : this.entryByWorldPos.entrySet()) {
             BlockPos worldPos = entry.getKey();
+
             if (this.registeredCallbacks.containsKey(worldPos)) {
                 continue;
             }
@@ -202,12 +269,14 @@ public final class MultiblockState {
             }
 
             BlockEntity be = level.getBlockEntity(worldPos);
-            if (!(be instanceof MultiblockCallback callback)) {
+            if (!(be instanceof MultiblockCallback callback) || be.isRemoved()) {
                 continue;
             }
 
-            callback.setController(this.controller);
             callback.setState(this);
+            if (this.formed) {
+                callback.setController(this.controller);
+            }
             this.registeredCallbacks.put(worldPos.immutable(), callback);
         }
     }
@@ -229,7 +298,7 @@ public final class MultiblockState {
         return true;
     }
 
-    private void invalidateCallbackCache(Level level) {
+    private void invalidateRequiredCallbackCache(Level level) {
         Iterator<Map.Entry<BlockPos, MultiblockCallback>> iterator = this.registeredCallbacks.entrySet().iterator();
 
         while (iterator.hasNext()) {
@@ -237,7 +306,7 @@ public final class MultiblockState {
             BlockPos pos = entry.getKey();
             MultiblockCallback callback = entry.getValue();
 
-            if (isCallbackStillValid(level, pos, callback)) {
+            if (isAttachedCallbackStillValid(level, pos, callback, MultiblockDefinition.TrackingMode.CALLBACK)) {
                 continue;
             }
 
@@ -246,14 +315,36 @@ public final class MultiblockState {
         }
     }
 
-    private boolean isCallbackStillValid(Level level, BlockPos pos, MultiblockCallback callback) {
+    private void invalidatePolledCallbackCache(Level level) {
+        Iterator<Map.Entry<BlockPos, MultiblockCallback>> iterator = this.attachedPolledCallbacks.entrySet().iterator();
+
+        while (iterator.hasNext()) {
+            Map.Entry<BlockPos, MultiblockCallback> entry = iterator.next();
+            BlockPos pos = entry.getKey();
+            MultiblockCallback callback = entry.getValue();
+
+            if (isAttachedCallbackStillValid(level, pos, callback, MultiblockDefinition.TrackingMode.POLLED)) {
+                continue;
+            }
+
+            detachCallback(callback);
+            iterator.remove();
+        }
+    }
+
+    private boolean isAttachedCallbackStillValid(
+            Level level,
+            BlockPos pos,
+            MultiblockCallback callback,
+            MultiblockDefinition.TrackingMode expectedTracking
+    ) {
         MultiblockDefinition.PatternEntry patternEntry = this.entryByWorldPos.get(pos);
         if (patternEntry == null) {
             return false;
         }
 
         MultiblockDefinition.SymbolDef symbolDef = requireSymbol(patternEntry.symbol());
-        if (symbolDef.tracking() != MultiblockDefinition.TrackingMode.CALLBACK) {
+        if (symbolDef.tracking() != expectedTracking) {
             return false;
         }
 
@@ -290,7 +381,7 @@ public final class MultiblockState {
     private static Direction getStructureFacing(BlockState controllerState) {
         if (!controllerState.hasProperty(BlockStateProperties.HORIZONTAL_FACING)) {
             throw new IllegalStateException(
-                "Controller state must have HORIZONTAL_FACING: " + controllerState
+                    "Controller state must have HORIZONTAL_FACING: " + controllerState
             );
         }
 
@@ -299,16 +390,48 @@ public final class MultiblockState {
 
     private void doForm() {
         this.formed = true;
+        attachControllerToAllCallbacks();
         this.onFormed.run();
     }
 
     private void doDisform() {
         this.formed = false;
+        detachControllerFromAllCallbacks();
         this.onDisformed.run();
     }
 
-    private void detachCallback(MultiblockCallback callback) {
+    private void attachControllerToAllCallbacks() {
+        for (MultiblockCallback callback : this.registeredCallbacks.values()) {
+            callback.setController(this.controller);
+        }
+
+        for (MultiblockCallback callback : this.attachedPolledCallbacks.values()) {
+            callback.setController(this.controller);
+        }
+    }
+
+    private void detachControllerFromAllCallbacks() {
+        for (MultiblockCallback callback : this.registeredCallbacks.values()) {
+            callback.setController(null);
+        }
+
+        for (MultiblockCallback callback : this.attachedPolledCallbacks.values()) {
+            callback.setController(null);
+        }
+    }
+
+    private static void detachCallback(MultiblockCallback callback) {
         callback.setController(null);
         callback.setState(null);
+    }
+
+    private static boolean detachAndRemove(Map<BlockPos, MultiblockCallback> map, BlockPos pos) {
+        MultiblockCallback callback = map.remove(pos);
+        if (callback == null) {
+            return false;
+        }
+
+        detachCallback(callback);
+        return true;
     }
 }

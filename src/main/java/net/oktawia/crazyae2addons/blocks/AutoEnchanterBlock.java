@@ -14,9 +14,10 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.oktawia.crazyae2addons.IsModLoaded;
 import net.oktawia.crazyae2addons.compat.Apotheosis.ApothAutoEnchanterBE;
 import net.oktawia.crazyae2addons.entities.AutoEnchanterBE;
+import net.oktawia.crazyae2addons.logic.AbstractMenuOpeningBlock;
 import org.jetbrains.annotations.Nullable;
 
-public class AutoEnchanterBlock extends AEBaseEntityBlock<AutoEnchanterBE> {
+public class AutoEnchanterBlock extends AbstractMenuOpeningBlock<AutoEnchanterBE> {
 
     public AutoEnchanterBlock() {
         super(AEBaseBlock.metalProps());
@@ -25,24 +26,6 @@ public class AutoEnchanterBlock extends AEBaseEntityBlock<AutoEnchanterBE> {
     @Nullable
     @Override
     public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
-        return IsModLoaded.isApothEnchLoaded() ? new ApothAutoEnchanterBE(pos, state) : new AutoEnchanterBE(pos, state);
-    }
-
-    @Override
-    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos,
-                                               Player player, BlockHitResult hit) {
-        if (InteractionUtil.isInAlternateUseMode(player)) {
-            return InteractionResult.PASS;
-        }
-
-        var be = getBlockEntity(level, pos);
-        if (be != null) {
-            if (!level.isClientSide()) {
-                be.openMenu(player, MenuLocators.forBlockEntity(be));
-            }
-            return InteractionResult.sidedSuccess(level.isClientSide());
-        }
-
-        return InteractionResult.PASS;
+        return IsModLoaded.APOTH_ENCHANTING ? new ApothAutoEnchanterBE(pos, state) : new AutoEnchanterBE(pos, state);
     }
 }

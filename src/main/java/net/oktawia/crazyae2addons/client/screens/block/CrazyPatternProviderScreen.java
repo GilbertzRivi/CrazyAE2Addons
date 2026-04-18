@@ -11,7 +11,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.oktawia.crazyae2addons.defs.LangDefs;
-import net.oktawia.crazyae2addons.interfaces.IMovableSlot;
+import net.oktawia.crazyae2addons.logic.interfaces.IMovableSlot;
 import net.oktawia.crazyae2addons.menus.CrazyPatternProviderMenu;
 import net.oktawia.crazyae2addons.mixins.WidgetContainerAccessor;
 

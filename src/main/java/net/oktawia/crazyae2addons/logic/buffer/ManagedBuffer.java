@@ -28,6 +28,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.Level;
+import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.defs.components.AEItemBufferData;
 import org.jetbrains.annotations.Nullable;
 
@@ -267,11 +268,13 @@ public class ManagedBuffer {
                                 var e = mc.iterator().next();
                                 firstMissing = new GenericStack(e.getKey(), e.getLongValue());
                             }
-                        } catch (Throwable ignored) {
+                        } catch (Throwable e) {
+                            CrazyAddons.LOGGER.debug("failed to read missing items from crafting plan", e);
                         }
                     }
                 }
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                CrazyAddons.LOGGER.debug("crafting plan future failed", e);
             }
         }
 
@@ -416,7 +419,8 @@ public class ManagedBuffer {
         for (var link : toCancel) {
             try {
                 link.cancel();
-            } catch (Throwable ignored) {
+            } catch (Throwable e) {
+                CrazyAddons.LOGGER.debug("error cancelling crafting link", e);
             }
         }
     }

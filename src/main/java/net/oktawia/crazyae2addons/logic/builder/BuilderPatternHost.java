@@ -11,6 +11,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.storage.LevelResource;
+import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.defs.components.BuilderPatternData;
 import net.oktawia.crazyae2addons.defs.regs.CrazyDataComponents;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
@@ -75,7 +76,8 @@ public class BuilderPatternHost extends ItemMenuHost<BuilderPatternItem> impleme
                     .resolve("autobuilder").resolve(id);
             if (!Files.exists(file)) return "";
             return Files.readString(file, StandardCharsets.UTF_8);
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            CrazyAddons.LOGGER.debug("failed to read builder pattern file", e);
             return "";
         }
     }

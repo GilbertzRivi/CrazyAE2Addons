@@ -1,5 +1,6 @@
 package net.oktawia.crazyae2addons.blocks;
 
+import appeng.block.AEBaseBlock;
 import appeng.block.AEBaseEntityBlock;
 import appeng.menu.locator.MenuLocators;
 import net.minecraft.core.BlockPos;
@@ -20,12 +21,13 @@ import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.phys.BlockHitResult;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.entities.AmpereMeterBE;
+import net.oktawia.crazyae2addons.logic.AbstractMenuOpeningBlock;
 import org.jetbrains.annotations.Nullable;
 
-public class AmpereMeterBlock extends AEBaseEntityBlock<AmpereMeterBE> {
+public class AmpereMeterBlock extends AbstractMenuOpeningBlock<AmpereMeterBE> {
 
     public AmpereMeterBlock() {
-        super(Properties.of().strength(2f).mapColor(MapColor.METAL).sound(SoundType.METAL));
+        super(AEBaseBlock.metalProps());
         registerDefaultState(stateDefinition.any().setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH));
     }
 
@@ -43,20 +45,6 @@ public class AmpereMeterBlock extends AEBaseEntityBlock<AmpereMeterBE> {
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
         return defaultBlockState().setValue(BlockStateProperties.HORIZONTAL_FACING, context.getHorizontalDirection().getOpposite());
-    }
-
-    @Override
-    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos,
-                                               Player player, BlockHitResult hitResult) {
-        AmpereMeterBE be = this.getBlockEntity(level, pos);
-        if (be == null) {
-            return InteractionResult.PASS;
-        }
-
-        if (!level.isClientSide()) {
-            be.openMenu(player, MenuLocators.forBlockEntity(be));
-        }
-        return InteractionResult.sidedSuccess(level.isClientSide());
     }
 
     public boolean hasAnalogOutputSignal(BlockState state) {

@@ -1,30 +1,43 @@
 package net.oktawia.crazyae2addons.multiblock;
 
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.oktawia.crazyae2addons.CrazyConfig;
+import net.oktawia.crazyae2addons.IsModLoaded;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
 public final class CrazyMultiblocks {
+
+    private static void addIfBlockExists(List<String> ids, String id) {
+        ResourceLocation rl = ResourceLocation.tryParse(id);
+        if (rl != null && BuiltInRegistries.BLOCK.containsKey(rl)) {
+            ids.add(id);
+        }
+    }
+
     private static String[] penrosePBlocks() {
         List<String> ids = new ArrayList<>();
-        ids.add("crazyae2addons:penrose_port");
-        ids.add("crazyae2addons:penrose_coil");
+
+        addIfBlockExists(ids, "crazyae2addons:penrose_port");
+        addIfBlockExists(ids, "crazyae2addons:penrose_coil");
 
         for (String tier : CrazyConfig.COMMON.PenroseGtTiers.get()) {
             String t = tier.toLowerCase(Locale.ROOT);
-            ids.add("gtceu:" + t + "_energy_output_hatch");
-            ids.add("gtceu:" + t + "_energy_output_hatch_4a");
-            ids.add("gtceu:" + t + "_energy_output_hatch_16a");
-            ids.add("gtceu:" + t + "_substation_output_hatch_64a");
+
+            addIfBlockExists(ids, "gtceu:" + t + "_energy_output_hatch");
+            addIfBlockExists(ids, "gtceu:" + t + "_energy_output_hatch_4a");
+            addIfBlockExists(ids, "gtceu:" + t + "_energy_output_hatch_16a");
+            addIfBlockExists(ids, "gtceu:" + t + "_substation_output_hatch_64a");
         }
 
         return ids.toArray(String[]::new);
     }
 
     public static final MultiblockDefinition PENROSE_SPHERE = MultiblockDefinition.builder()
-            .symbol('B', MultiblockDefinition.TrackingMode.POLLED, "crazyae2addons:penrose_coil")
+            .symbol('B', MultiblockDefinition.TrackingMode.CALLBACK, "crazyae2addons:penrose_coil")
             .symbol(
                     'A',
                     MultiblockDefinition.TrackingMode.CALLBACK,
@@ -188,6 +201,29 @@ public final class CrazyMultiblocks {
                     "B A . . . . . . . . . . . . . . . . . A B",
                     "A A . . . . . . . . . . . . . . . . . A A",
                     ". . . . . . . . . . . . . . . . . . . . .",
+                    ". . . . . . . . . . . . . . . . . . . . .",
+                    ". . . . . . . . . . . . . . . . . . . . .",
+                    ". . . . . . . . . . . . . . . . . . . . .",
+                    ". . . . . . . . . . . . . . . . . . . . .",
+                    ". . . . . . . . . . . . . . . . . . . . .",
+                    ". . . . . . . . . . . . . . . . . . . . .",
+                    ". . . . . . . . . A A A . . . . . . . . .",
+                    ". . . . . . . . . A B A . . . . . . . . ."
+            )
+            .layer(
+                    ". . . . . . . . . A B A . . . . . . . . .",
+                    ". . . . . . . . . A A A . . . . . . . . .",
+                    ". . . . . . . . . . . . . . . . . . . . .",
+                    ". . . . . . . . . . . . . . . . . . . . .",
+                    ". . . . . . . . . . . . . . . . . . . . .",
+                    ". . . . . . . . . . . . . . . . . . . . .",
+                    ". . . . . . . . . . . . . . . . . . . . .",
+                    ". . . . . . . . . . . . . . . . . . . . .",
+                    ". . . . . . . . . A B A . . . . . . . . .",
+                    "A A . . . . . . A A B A A . . . . . . A A",
+                    "B A . . . . . . B B B B B . . . . . . A B",
+                    "A A . . . . . . A A B A A . . . . . . A A",
+                    ". . . . . . . . . A B A . . . . . . . . .",
                     ". . . . . . . . . . . . . . . . . . . . .",
                     ". . . . . . . . . . . . . . . . . . . . .",
                     ". . . . . . . . . . . . . . . . . . . . .",
@@ -370,6 +406,29 @@ public final class CrazyMultiblocks {
                     ". . . . . . . . . . . . . . . . . . . . .",
                     "A A . . . . . . . A A A . . . . . . . A A",
                     "B A . . . . . . . A A A . . . . . . . A B",
+                    "A A . . . . . . . A A A . . . . . . . A A",
+                    ". . . . . . . . . . . . . . . . . . . . .",
+                    ". . . . . . . . . . . . . . . . . . . . .",
+                    ". . . . . . . . . . . . . . . . . . . . .",
+                    ". . . . . . . . . . . . . . . . . . . . .",
+                    ". . . . . . . . . . . . . . . . . . . . .",
+                    ". . . . . . . . . . . . . . . . . . . . .",
+                    ". . . . . . . . . . . . . . . . . . . . .",
+                    ". . . . . . . . . A A A . . . . . . . . .",
+                    ". . . . . . . . . A B A . . . . . . . . ."
+            )
+            .layer(
+                    ". . . . . . . . . A B A . . . . . . . . .",
+                    ". . . . . . . . . A A A . . . . . . . . .",
+                    ". . . . . . . . . . . . . . . . . . . . .",
+                    ". . . . . . . . . . . . . . . . . . . . .",
+                    ". . . . . . . . . . . . . . . . . . . . .",
+                    ". . . . . . . . . . . . . . . . . . . . .",
+                    ". . . . . . . . . . . . . . . . . . . . .",
+                    ". . . . . . . . . . . . . . . . . . . . .",
+                    ". . . . . . . . . . . . . . . . . . . . .",
+                    "A A . . . . . . . A A A . . . . . . . A A",
+                    "B A . . . . . . . A B A . . . . . . . A B",
                     "A A . . . . . . . A A A . . . . . . . A A",
                     ". . . . . . . . . . . . . . . . . . . . .",
                     ". . . . . . . . . . . . . . . . . . . . .",

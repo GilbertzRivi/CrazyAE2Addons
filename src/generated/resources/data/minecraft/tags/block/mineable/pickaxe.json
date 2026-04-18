@@ -17,6 +17,15 @@
         "crazyae2addons:auto_builder",
         "crazyae2addons:ampere_meter",
         "crazyae2addons:ejector",
-        "crazyae2addons:auto_enchanter"
+        "crazyae2addons:auto_enchanter",
+        "crazyae2addons:penrose_controller",
+        "crazyae2addons:penrose_coil",
+        "crazyae2addons:penrose_frame",
+        "crazyae2addons:penrose_port",
+        "crazyae2addons:penrose_heat_vent",
+        "crazyae2addons:penrose_hawking_vent",
+        "crazyae2addons:penrose_injection_port",
+        "crazyae2addons:penrose_heat_emitter",
+        "crazyae2addons:penrose_mass_emitter"
     ]
 }

@@ -40,6 +40,7 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
+import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.Utils;
 import net.oktawia.crazyae2addons.defs.regs.CrazyDataComponents;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
@@ -51,24 +52,41 @@ import java.util.List;
 
 public class ChunkyFluidP2PTunnelPart extends CapabilityP2PTunnelPart<ChunkyFluidP2PTunnelPart, IFluidHandler> implements MenuProvider {
 
-    private static final ResourceLocation MODEL_STATUS_OFF = AppEng.makeId("part/p2p/p2p_tunnel_status_off");
-    private static final ResourceLocation MODEL_STATUS_ON = AppEng.makeId("part/p2p/p2p_tunnel_status_on");
-    private static final ResourceLocation MODEL_STATUS_HAS_CHANNEL = AppEng.makeId("part/p2p/p2p_tunnel_status_has_channel");
-    private static final ResourceLocation MODEL_FREQUENCY = AppEng.makeId("part/p2p/p2p_tunnel_frequency");
-    private static final ResourceLocation FRONT_MODEL = AppEng.makeId("part/p2p/chunky_fluid_p2p_tunnel");
+    private static final ResourceLocation MODEL_STATUS_OFF =
+            CrazyAddons.makeId("part/p2p/p2p_tunnel_status_off");
+    private static final ResourceLocation MODEL_STATUS_ON =
+            CrazyAddons.makeId("part/p2p/p2p_tunnel_status_on");
+    private static final ResourceLocation MODEL_STATUS_HAS_CHANNEL =
+            CrazyAddons.makeId("part/p2p/p2p_tunnel_status_has_channel");
+    private static final ResourceLocation MODEL_FREQUENCY =
+            CrazyAddons.makeId("part/p2p/p2p_tunnel_frequency");
+    private static final ResourceLocation FRONT_MODEL =
+            CrazyAddons.makeId("part/p2p/chunky_fluid_p2p_tunnel");
 
-    private static final IPartModel MODELS_OFF = new PartModel(MODEL_STATUS_OFF, MODEL_FREQUENCY, FRONT_MODEL);
-    private static final IPartModel MODELS_ON = new PartModel(MODEL_STATUS_ON, MODEL_FREQUENCY, FRONT_MODEL);
-    private static final IPartModel MODELS_HAS_CHANNEL = new PartModel(MODEL_STATUS_HAS_CHANNEL, MODEL_FREQUENCY, FRONT_MODEL);
+    @PartModels
+    public static final PartModel MODELS_OFF = new PartModel(
+            FRONT_MODEL,
+            MODEL_STATUS_OFF,
+            MODEL_FREQUENCY
+    );
+
+    @PartModels
+    public static final PartModel MODELS_ON = new PartModel(
+            FRONT_MODEL,
+            MODEL_STATUS_ON,
+            MODEL_FREQUENCY
+    );
+
+    @PartModels
+    public static final PartModel MODELS_HAS_CHANNEL = new PartModel(
+            FRONT_MODEL,
+            MODEL_STATUS_HAS_CHANNEL,
+            MODEL_FREQUENCY
+    );
 
     private static final IFluidHandler NULL_FLUID_HANDLER = new NullFluidHandler();
 
     private final PartState persisted = new PartState();
-
-    @PartModels
-    public static List<IPartModel> getModels() {
-        return List.of(MODELS_OFF, MODELS_ON, MODELS_HAS_CHANNEL);
-    }
 
     public ChunkyFluidP2PTunnelPart(IPartItem<?> partItem) {
         super(partItem, Capabilities.FluidHandler.BLOCK);

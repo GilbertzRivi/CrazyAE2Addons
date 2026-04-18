@@ -20,10 +20,12 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
+import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.client.misc.DisplayImageUploadClient;
 import net.oktawia.crazyae2addons.defs.LangDefs;
 import net.oktawia.crazyae2addons.logic.display.DisplayImageEntry;
 import net.oktawia.crazyae2addons.menus.part.DisplayImagesSubMenu;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayInputStream;
 import java.nio.file.Path;
@@ -35,15 +37,15 @@ public class DisplayImagesSubScreen extends AEBaseScreen<DisplayImagesSubMenu> {
     private static final int MAX_PERCENT = 100;
     private static final int MIN_SCALE_PERCENT = 1;
 
-    private AETextField xField;
-    private AETextField yField;
-    private AETextField scaleField;
+    private final AETextField xField;
+    private final AETextField yField;
+    private final AETextField scaleField;
 
-    private Scrollbar xSlider;
-    private Scrollbar ySlider;
-    private Scrollbar scaleSlider;
+    private final Scrollbar xSlider;
+    private final Scrollbar ySlider;
+    private final Scrollbar scaleSlider;
 
-    private ImageListWidget imageListWidget;
+    private final ImageListWidget imageListWidget;
 
     private String lastSelectedId = null;
 
@@ -212,7 +214,7 @@ public class DisplayImagesSubScreen extends AEBaseScreen<DisplayImagesSubMenu> {
     }
 
     @Override
-    public void onFilesDrop(List<Path> paths) {
+    public void onFilesDrop(@NotNull List<Path> paths) {
         var result = DisplayImageUploadClient.uploadDroppedFiles(paths);
         setStatus(result.message(), result.color());
     }
@@ -239,9 +241,6 @@ public class DisplayImagesSubScreen extends AEBaseScreen<DisplayImagesSubMenu> {
 
         try {
             NativeImage image = NativeImage.read(new ByteArrayInputStream(pngBytes));
-            if (image == null) {
-                return;
-            }
 
             previewTextureWidth = image.getWidth();
             previewTextureHeight = image.getHeight();
@@ -253,14 +252,15 @@ public class DisplayImagesSubScreen extends AEBaseScreen<DisplayImagesSubMenu> {
                     "crazyae2addons_display_preview_" + System.nanoTime(),
                     previewTexture
             );
-        } catch (Throwable ignored) {
+        } catch (Throwable e) {
+            CrazyAddons.LOGGER.debug("failed to load display image preview texture", e);
             clearPreviewTexture();
         }
     }
 
     private void syncPair(AETextField field, Scrollbar slider, int min, int max) {
         int sliderValue = Mth.clamp(slider.getCurrentScroll(), min, max);
-        String fieldValue = field.getValue() == null ? "" : field.getValue();
+        String fieldValue = field.getValue();
 
         if (field.isFocused()) {
             try {
@@ -269,7 +269,8 @@ public class DisplayImagesSubScreen extends AEBaseScreen<DisplayImagesSubMenu> {
                 if (clamped != sliderValue) {
                     slider.setCurrentScroll(clamped);
                 }
-            } catch (Throwable ignored) {
+            } catch (Throwable e) {
+                CrazyAddons.LOGGER.debug("invalid numeric input in display image field", e);
             }
         } else {
             String normalized = String.valueOf(sliderValue);
@@ -382,7 +383,8 @@ public class DisplayImagesSubScreen extends AEBaseScreen<DisplayImagesSubMenu> {
     private int getLivePercentX() {
         try {
             return Mth.clamp(Integer.parseInt(xField.getValue().trim()), MIN_PERCENT, MAX_PERCENT);
-        } catch (Throwable ignored) {
+        } catch (Throwable e) {
+            CrazyAddons.LOGGER.debug("invalid x position in display image field", e);
             return Mth.clamp(xSlider.getCurrentScroll(), MIN_PERCENT, MAX_PERCENT);
         }
     }
@@ -390,7 +392,8 @@ public class DisplayImagesSubScreen extends AEBaseScreen<DisplayImagesSubMenu> {
     private int getLivePercentY() {
         try {
             return Mth.clamp(Integer.parseInt(yField.getValue().trim()), MIN_PERCENT, MAX_PERCENT);
-        } catch (Throwable ignored) {
+        } catch (Throwable e) {
+            CrazyAddons.LOGGER.debug("invalid y position in display image field", e);
             return Mth.clamp(ySlider.getCurrentScroll(), MIN_PERCENT, MAX_PERCENT);
         }
     }
@@ -398,7 +401,8 @@ public class DisplayImagesSubScreen extends AEBaseScreen<DisplayImagesSubMenu> {
     private int getLivePercentScale() {
         try {
             return Mth.clamp(Integer.parseInt(scaleField.getValue().trim()), MIN_SCALE_PERCENT, MAX_PERCENT);
-        } catch (Throwable ignored) {
+        } catch (Throwable e) {
+            CrazyAddons.LOGGER.debug("invalid scale in display image field", e);
             return Mth.clamp(scaleSlider.getCurrentScroll(), MIN_SCALE_PERCENT, MAX_PERCENT);
         }
     }
@@ -574,7 +578,7 @@ public class DisplayImagesSubScreen extends AEBaseScreen<DisplayImagesSubMenu> {
         }
 
         @Override
-        protected void updateWidgetNarration(NarrationElementOutput out) {
+        protected void updateWidgetNarration(@NotNull NarrationElementOutput out) {
         }
     }
 
@@ -585,7 +589,7 @@ public class DisplayImagesSubScreen extends AEBaseScreen<DisplayImagesSubMenu> {
         }
 
         @Override
-        public void renderWidget(GuiGraphics g, int mx, int my, float partial) {
+        public void renderWidget(@NotNull GuiGraphics g, int mx, int my, float partial) {
             DisplayImageEntry selected = getMenu().getSelectedImage();
 
             int previewAreaW = 96;
@@ -609,11 +613,11 @@ public class DisplayImagesSubScreen extends AEBaseScreen<DisplayImagesSubMenu> {
             previewW = Math.clamp(previewW, 24, previewAreaW);
             previewH = Math.clamp(previewH, 18, previewAreaH);
 
-            int previewX1 = previewAreaX + (previewAreaW - previewW) / 2;
-            int previewY1 = previewAreaY + (previewAreaH - previewH) / 2;
-            int previewY2 = previewY1 + previewH;
+            int clipX0 = previewAreaX + (previewAreaW - previewW) / 2;
+            int clipY0 = previewAreaY + (previewAreaH - previewH) / 2;
+            int previewY2 = clipY0 + previewH;
 
-            drawPreviewBackground(g, previewX1, previewY1, previewW, previewH, gridW, gridH);
+            drawPreviewBackground(g, clipX0, clipY0, previewW, previewH, gridW, gridH);
 
             if (selected != null
                     && previewTextureLocation != null
@@ -636,13 +640,11 @@ public class DisplayImagesSubScreen extends AEBaseScreen<DisplayImagesSubMenu> {
                 int targetW = Math.max(1, Math.round(fitW * (percentScale / 100.0f)));
                 int targetH = Math.max(1, Math.round(fitH * (percentScale / 100.0f)));
 
-                int targetX = previewX1 + Math.round((previewW - targetW) * (percentX / 100.0f));
-                int targetY = previewY1 + Math.round((previewH - targetH) * (percentY / 100.0f));
+                int targetX = clipX0 + Math.round((previewW - targetW) * (percentX / 100.0f));
+                int targetY = clipY0 + Math.round((previewH - targetH) * (percentY / 100.0f));
 
-                int clipX0 = previewX1;
-                int clipY0 = previewY1;
-                int clipX1 = previewX1 + previewW;
-                int clipY1 = previewY1 + previewH;
+                int clipX1 = clipX0 + previewW;
+                int clipY1 = clipY0 + previewH;
 
                 int drawX0 = Math.max(targetX, clipX0);
                 int drawY0 = Math.max(targetY, clipY0);
@@ -716,7 +718,7 @@ public class DisplayImagesSubScreen extends AEBaseScreen<DisplayImagesSubMenu> {
         }
 
         @Override
-        protected void updateWidgetNarration(NarrationElementOutput out) {
+        protected void updateWidgetNarration(@NotNull NarrationElementOutput out) {
         }
     }
 }

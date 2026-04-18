@@ -12,6 +12,7 @@ import net.minecraft.world.level.material.Fluids;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.fluids.FluidStack;
+import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.logic.display.keytypes.DisplayKeyCompatRegistry;
 import net.oktawia.crazyae2addons.misc.MathParser;
 import org.jetbrains.annotations.Nullable;
@@ -87,7 +88,9 @@ public final class DisplayRenderData {
                                 if (pow > 0) divisor = (long) Math.pow(10, pow);
                             }
                             repl = String.valueOf(Math.round((double) amount / divisor));
-                        } catch (NumberFormatException ignored) {}
+                        } catch (NumberFormatException e) {
+                            CrazyAddons.LOGGER.debug("invalid divisor in display token", e);
+                        }
                     }
                 }
             }
@@ -462,7 +465,9 @@ public final class DisplayRenderData {
             if (fluid != null && fluid != Fluids.EMPTY) {
                 return new FluidIconSeg(new FluidStack(fluid, 1000));
             }
-        } catch (Throwable ignored) {}
+        } catch (Throwable e) {
+            CrazyAddons.LOGGER.debug("failed to create icon segment", e);
+        }
 
         return null;
     }

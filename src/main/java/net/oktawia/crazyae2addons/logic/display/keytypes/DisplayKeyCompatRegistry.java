@@ -4,6 +4,7 @@ import appeng.api.stacks.AEKey;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.IsModLoaded;
 import org.jetbrains.annotations.Nullable;
 
@@ -18,9 +19,9 @@ public class DisplayKeyCompatRegistry {
     private static void ensureInit() {
         if (initialized) return;
         initialized = true;
-        if (IsModLoaded.isAppFluxLoaded()) safeRegister(AppFluxResolver::new);
-        if (IsModLoaded.isArsEnergistiqueLoaded()) safeRegister(ArsEnergistiqueResolver::new);
-        if (IsModLoaded.isMekanismLoaded()) safeRegister(MekanismChemicalResolver::new);
+        if (IsModLoaded.APP_FLUX) safeRegister(AppFluxResolver::new);
+        if (IsModLoaded.ARS_ENERGISTIQUE) safeRegister(ArsEnergistiqueResolver::new);
+        if (IsModLoaded.MEKANISM) safeRegister(MekanismChemicalResolver::new);
     }
 
     private interface ResolverFactory { IDisplayKeyResolver create(); }
@@ -29,7 +30,9 @@ public class DisplayKeyCompatRegistry {
         try {
             IDisplayKeyResolver r = factory.create();
             RESOLVERS.put(r.getTypePrefix(), r);
-        } catch (Throwable ignored) {}
+        } catch (Throwable e) {
+            CrazyAddons.LOGGER.debug("failed to initialize display key resolver", e);
+        }
     }
 
     public static boolean hasPrefix(String prefix) { ensureInit(); return RESOLVERS.containsKey(prefix); }

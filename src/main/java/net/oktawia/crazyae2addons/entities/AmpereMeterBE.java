@@ -21,29 +21,30 @@ import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.oktawia.crazyae2addons.Utils;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
+import net.oktawia.crazyae2addons.logic.interfaces.IMenuOpeningBlockEntity;
 import net.oktawia.crazyae2addons.menus.block.AmpereMeterMenu;
 import lombok.Getter;
 
 import java.util.HashMap;
 
-public class AmpereMeterBE extends AEBaseBlockEntity implements MenuProvider, ISyncPersistRPCBlockEntity {
+public class AmpereMeterBE extends AEBaseBlockEntity implements MenuProvider, ISyncPersistRPCBlockEntity, IMenuOpeningBlockEntity {
 
     @Getter
     private final FieldManagedStorage syncStorage = new FieldManagedStorage(this);
 
-    @Persisted @DescSynced
-    public boolean direction = false;
-    @DescSynced
-    public String transfer = "-";
-    @DescSynced
-    public String unit = "-";
+    @Persisted @DescSynced @Getter
+    private boolean direction = false;
+    @DescSynced @Getter
+    private String transfer = "-";
+    @DescSynced @Getter
+    private String unit = "-";
     private Integer numTransfer = 0;
     private HashMap<Integer, Integer> maxTrans = new HashMap<>();
 
-    @Persisted @DescSynced
-    public int minFePerTick = 0;
-    @Persisted @DescSynced
-    public int maxFePerTick = 1000;
+    @Persisted @DescSynced @Getter
+    private int minFePerTick = 0;
+    @Persisted @DescSynced @Getter
+    private int maxFePerTick = 1000;
 
     private long lastActiveTick = -1;
     private static final long INACTIVITY_RESET_TICKS = 10;

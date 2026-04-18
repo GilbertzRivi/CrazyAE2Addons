@@ -3,12 +3,15 @@ package net.oktawia.crazyae2addons.menus.block;
 import appeng.menu.AEBaseMenu;
 import appeng.menu.SlotSemantics;
 import appeng.menu.slot.FakeSlot;
+import lombok.Getter;
 import net.minecraft.world.entity.player.Inventory;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.entities.CraftingSchedulerBE;
 
 public class CraftingSchedulerMenu extends AEBaseMenu {
-    public CraftingSchedulerBE host;
+
+    @Getter
+    private final CraftingSchedulerBE host;
     public String SAVE = "actionSave";
 
     public CraftingSchedulerMenu(int id, Inventory ip, CraftingSchedulerBE host) {
@@ -20,7 +23,7 @@ public class CraftingSchedulerMenu extends AEBaseMenu {
     }
 
     public void save(Integer amount) {
-        this.host.amount = amount;
+        this.host.setAmount(amount);
         this.host.setChanged();
         if (isClientSide()){
             sendClientAction(SAVE, amount);

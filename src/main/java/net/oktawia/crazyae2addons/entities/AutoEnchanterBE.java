@@ -49,6 +49,7 @@ import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.items.XpShardItem;
+import net.oktawia.crazyae2addons.logic.interfaces.IMenuOpeningBlockEntity;
 import net.oktawia.crazyae2addons.menus.block.AutoEnchanterMenu;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -62,7 +63,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class AutoEnchanterBE extends AENetworkedBlockEntity
-        implements MenuProvider, IGridTickable, ISyncPersistRPCBlockEntity, InternalInventoryHost {
+        implements MenuProvider, IGridTickable, ISyncPersistRPCBlockEntity, InternalInventoryHost, IMenuOpeningBlockEntity {
 
     private static final int[][] BOOKSHELF_OFFSETS = {
             {-1, 0, -2}, {0, 0, -2}, {1, 0, -2},

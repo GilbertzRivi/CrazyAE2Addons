@@ -16,6 +16,7 @@ import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions;
 import net.neoforged.neoforge.fluids.FluidStack;
+import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.logic.display.DisplayGrid;
 import net.oktawia.crazyae2addons.logic.display.DisplayImageEntry;
 import net.oktawia.crazyae2addons.logic.display.DisplayRenderData;
@@ -606,7 +607,8 @@ public final class DisplayRendererCommon {
             CachedImage created = new CachedImage(texture, location, width, height);
             IMAGE_CACHE.put(cacheKey, created);
             return created;
-        } catch (Throwable ignored) {
+        } catch (Throwable e) {
+            CrazyAddons.LOGGER.debug("failed to create display image texture", e);
             return null;
         }
     }

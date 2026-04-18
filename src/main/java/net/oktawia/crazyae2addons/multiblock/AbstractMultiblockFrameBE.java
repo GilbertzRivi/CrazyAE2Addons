@@ -4,8 +4,13 @@ import appeng.api.networking.GridHelper;
 import appeng.api.networking.IGridConnection;
 import appeng.api.networking.IGridNode;
 import appeng.blockentity.grid.AENetworkedBlockEntity;
+import com.lowdragmc.lowdraglib2.syncdata.annotation.DescSynced;
+import com.lowdragmc.lowdraglib2.syncdata.holder.blockentity.ISyncPersistRPCBlockEntity;
+import com.lowdragmc.lowdraglib2.syncdata.storage.FieldManagedStorage;
+import lombok.Getter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
@@ -13,23 +18,30 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 
-public abstract class AbstractMultiblockFrameBE<C extends BlockEntity> extends AENetworkedBlockEntity implements MultiblockCallback {
+public abstract class AbstractMultiblockFrameBE<C extends BlockEntity> extends AENetworkedBlockEntity
+        implements MultiblockCallback, ISyncPersistRPCBlockEntity {
+
+    @Getter
+    private final FieldManagedStorage syncStorage = new FieldManagedStorage(this);
 
     protected @Nullable MultiblockState activeState;
     protected @Nullable C activeController;
 
+    @DescSynced
+    protected @Nullable BlockPos syncedControllerPos;
+
     protected AbstractMultiblockFrameBE(
-        BlockEntityType<?> type,
-        BlockPos pos,
-        BlockState blockState,
-        ItemStack visualRepresentation,
-        float idlePowerUsage
+            BlockEntityType<?> type,
+            BlockPos pos,
+            BlockState blockState,
+            ItemStack visualRepresentation,
+            float idlePowerUsage
     ) {
         super(type, pos, blockState);
 
         this.getMainNode()
-            .setIdlePowerUsage(idlePowerUsage)
-            .setVisualRepresentation(visualRepresentation);
+                .setIdlePowerUsage(idlePowerUsage)
+                .setVisualRepresentation(visualRepresentation);
     }
 
     protected abstract Class<C> controllerClass();
@@ -43,19 +55,43 @@ public abstract class AbstractMultiblockFrameBE<C extends BlockEntity> extends A
     @Override
     public void setController(@Nullable BlockEntity controller) {
         C newController = controllerClass().isInstance(controller)
-            ? controllerClass().cast(controller)
-            : null;
+                ? controllerClass().cast(controller)
+                : null;
 
         if (this.activeController == newController) {
             return;
         }
 
         this.activeController = newController;
+        this.syncedControllerPos = newController != null ? newController.getBlockPos().immutable() : null;
+
         onControllerChanged(newController);
         setChanged();
     }
 
     protected void onControllerChanged(@Nullable C newController) {
+    }
+
+    protected @Nullable C getResolvedController() {
+        if (this.activeController != null && !this.activeController.isRemoved()) {
+            return this.activeController;
+        }
+
+        if (this.syncedControllerPos == null) {
+            return null;
+        }
+
+        Level level = getLevel();
+        if (level == null) {
+            return null;
+        }
+
+        BlockEntity be = level.getBlockEntity(this.syncedControllerPos);
+        if (controllerClass().isInstance(be)) {
+            return controllerClass().cast(be);
+        }
+
+        return null;
     }
 
     @Override
@@ -72,11 +108,12 @@ public abstract class AbstractMultiblockFrameBE<C extends BlockEntity> extends A
 
         disconnectFromControllerGrid();
         this.activeController = null;
+        this.syncedControllerPos = null;
         super.setRemoved();
     }
 
     public @Nullable C getActiveController() {
-        return this.activeController;
+        return getResolvedController();
     }
 
     public @Nullable MultiblockState getActiveState() {
@@ -99,7 +136,7 @@ public abstract class AbstractMultiblockFrameBE<C extends BlockEntity> extends A
         }
 
         boolean alreadyLinked = selfNode.getConnections().stream()
-            .anyMatch(connection -> connection.getOtherSide(selfNode) == controllerNode);
+                .anyMatch(connection -> connection.getOtherSide(selfNode) == controllerNode);
 
         if (!alreadyLinked) {
             GridHelper.createConnection(selfNode, controllerNode);

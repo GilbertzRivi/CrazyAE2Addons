@@ -4,6 +4,7 @@ import appeng.init.client.InitScreens;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import net.oktawia.crazyae2addons.client.screens.block.*;
 import net.oktawia.crazyae2addons.client.screens.block.AutoEnchanterScreen;
+import net.oktawia.crazyae2addons.client.screens.block.penrose.*;
 import net.oktawia.crazyae2addons.client.screens.item.BuilderPatternScreen;
 import net.oktawia.crazyae2addons.client.screens.item.BuilderPatternSubScreen;
 import net.oktawia.crazyae2addons.client.screens.part.DisplayImagesSubScreen;
@@ -17,6 +18,7 @@ import net.oktawia.crazyae2addons.client.screens.block.EjectorScreen;
 import net.oktawia.crazyae2addons.client.screens.part.EmitterTerminalScreen;
 import net.oktawia.crazyae2addons.items.wireless.WirelessEmitterTerminalMenu;
 import net.oktawia.crazyae2addons.menus.block.*;
+import net.oktawia.crazyae2addons.menus.block.penrose.*;
 import net.oktawia.crazyae2addons.menus.item.BuilderPatternMenu;
 import net.oktawia.crazyae2addons.menus.item.BuilderPatternSubMenu;
 import net.oktawia.crazyae2addons.menus.part.ChunkyFluidP2PTunnelMenu;
@@ -89,6 +91,26 @@ public final class Screens {
         InitScreens.register(event, CrazyMenuRegistrar.PENROSE_CONTROLLER_MENU.get(),
                 PenroseControllerScreen<PenroseControllerMenu>::new,
                 "/screens/penrose_controller.json");
+
+        InitScreens.register(event, CrazyMenuRegistrar.PENROSE_INJECTION_PORT_MENU.get(),
+                PenroseInjectionPortScreen<PenroseInjectionPortMenu>::new,
+                "/screens/penrose_injection_port.json");
+
+        InitScreens.register(event, CrazyMenuRegistrar.PENROSE_HAWKING_VENT_MENU.get(),
+                PenroseHawkingVentScreen<PenroseHawkingVentMenu>::new,
+                "/screens/penrose_hawking_vent.json");
+
+        InitScreens.register(event, CrazyMenuRegistrar.PENROSE_HEAT_VENT_MENU.get(),
+                PenroseHeatVentScreen<PenroseHeatVentMenu>::new,
+                "/screens/penrose_heat_vent.json");
+
+        InitScreens.register(event, CrazyMenuRegistrar.PENROSE_HEAT_EMITTER_MENU.get(),
+                PenroseHeatEmitterScreen<PenroseHeatEmitterMenu>::new,
+                "/screens/penrose_heat_emitter.json");
+
+        InitScreens.register(event, CrazyMenuRegistrar.PENROSE_MASS_EMITTER_MENU.get(),
+                PenroseMassEmitterScreen<PenroseMassEmitterMenu>::new,
+                "/screens/penrose_mass_emitter.json");
     }
 
     private Screens() {}

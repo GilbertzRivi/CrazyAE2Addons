@@ -12,6 +12,7 @@ import appeng.menu.guisync.GuiSync;
 import appeng.menu.slot.FakeSlot;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
+import lombok.Getter;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.Slot;
@@ -29,7 +30,9 @@ public class EjectorMenu extends AEBaseMenu {
 
     public Player player;
     public String APPLY_PATTERN = "ActionPattern";
-    public EjectorBE host;
+
+    @Getter
+    private final EjectorBE host;
 
     private final Int2IntMap configIndexBySlot = new Int2IntOpenHashMap();
 

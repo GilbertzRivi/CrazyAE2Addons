@@ -9,6 +9,7 @@ import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.level.block.state.properties.Property;
+import net.oktawia.crazyae2addons.CrazyAddons;
 
 import java.util.Optional;
 
@@ -121,7 +122,9 @@ public final class BuilderCoordMath {
             }
             Optional<T> value = property.getValue(valueStr);
             if (value.isPresent()) return state.setValue(property, value.get());
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            CrazyAddons.LOGGER.debug("failed to apply block state property", e);
+        }
         return state;
     }
 

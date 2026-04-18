@@ -4,6 +4,7 @@ import net.minecraft.network.chat.Component;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
 import net.neoforged.neoforge.network.PacketDistributor;
+import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.defs.LangDefs;
 import net.oktawia.crazyae2addons.network.packets.UploadDisplayImagePacket;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
@@ -50,7 +51,8 @@ public final class DisplayImageUploadClient {
 
         try {
             return uploadPath(Path.of(stripQuotes(selected.trim())));
-        } catch (Throwable ignored) {
+        } catch (Throwable e) {
+            CrazyAddons.LOGGER.debug("invalid display image path from file dialog", e);
             return new Result(
                     Component.translatable(LangDefs.IMAGE_UPLOAD_INVALID_PATH.getTranslationKey()),
                     0xFFFF5555,
@@ -94,7 +96,8 @@ public final class DisplayImageUploadClient {
                 if (data instanceof String s && !s.isBlank()) {
                     try {
                         return uploadPath(Path.of(stripQuotes(s.trim())));
-                    } catch (Throwable ignored) {
+                    } catch (Throwable e) {
+                        CrazyAddons.LOGGER.debug("invalid display image path from clipboard string", e);
                         return new Result(
                                 Component.translatable(LangDefs.IMAGE_UPLOAD_INVALID_PATH.getTranslationKey()),
                                 0xFFFF5555,
@@ -103,7 +106,8 @@ public final class DisplayImageUploadClient {
                     }
                 }
             }
-        } catch (Throwable ignored) {
+        } catch (Throwable e) {
+            CrazyAddons.LOGGER.debug("failed to read display image from clipboard", e);
             return new Result(
                     Component.translatable(LangDefs.IMAGE_UPLOAD_FAILED.getTranslationKey()),
                     0xFFFF5555,
@@ -160,7 +164,8 @@ public final class DisplayImageUploadClient {
             }
 
             return uploadBufferedImage(image, path.getFileName().toString());
-        } catch (Throwable ignored) {
+        } catch (Throwable e) {
+            CrazyAddons.LOGGER.debug("failed to upload display image from path", e);
             return new Result(
                     Component.translatable(LangDefs.IMAGE_UPLOAD_FAILED.getTranslationKey()),
                     0xFFFF5555,
@@ -224,7 +229,8 @@ public final class DisplayImageUploadClient {
                     0xFF55FF55,
                     true
             );
-        } catch (Throwable ignored) {
+        } catch (Throwable e) {
+            CrazyAddons.LOGGER.debug("failed to upload buffered display image", e);
             return new Result(
                     Component.translatable(LangDefs.IMAGE_UPLOAD_FAILED.getTranslationKey()),
                     0xFFFF5555,

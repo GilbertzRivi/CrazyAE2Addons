@@ -10,10 +10,9 @@ import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.blocks.*;
-import net.oktawia.crazyae2addons.blocks.PenroseControllerBlock;
+import net.oktawia.crazyae2addons.blocks.penrose.*;
 import net.oktawia.crazyae2addons.items.CrazyPatternProviderBlockItem;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class CrazyBlockRegistrar {
@@ -165,19 +164,61 @@ public class CrazyBlockRegistrar {
             BLOCK_ITEMS.register("penrose_controller",
                     () -> new BlockItem(PENROSE_CONTROLLER.get(), new Item.Properties()));
 
-    public static final DeferredBlock<TestMultiblockControllerBlock> TEST_MULTIBLOCK_CONTROLLER =
-            BLOCKS.register("test_multiblock_controller", TestMultiblockControllerBlock::new);
+    public static final DeferredBlock<PenroseCoilBlock> PENROSE_COIL =
+            BLOCKS.register("penrose_coil", PenroseCoilBlock::new);
 
-    public static final DeferredItem<BlockItem> TEST_MULTIBLOCK_CONTROLLER_ITEM =
-            BLOCK_ITEMS.register("test_multiblock_controller",
-                    () -> new BlockItem(TEST_MULTIBLOCK_CONTROLLER.get(), new Item.Properties()));
+    public static final DeferredItem<BlockItem> PENROSE_COIL_ITEM =
+            BLOCK_ITEMS.register("penrose_coil",
+                    () -> new BlockItem(PENROSE_COIL.get(), new Item.Properties()));
 
-    public static final DeferredBlock<TestMultiblockFrameBlock> TEST_MULTIBLOCK_FRAME =
-            BLOCKS.register("test_multiblock_frame", TestMultiblockFrameBlock::new);
+    public static final DeferredBlock<PenroseFrameBlock> PENROSE_FRAME =
+            BLOCKS.register("penrose_frame", PenroseFrameBlock::new);
 
-    public static final DeferredItem<BlockItem> TEST_MULTIBLOCK_FRAME_ITEM =
-            BLOCK_ITEMS.register("test_multiblock_frame",
-                    () -> new BlockItem(TEST_MULTIBLOCK_FRAME.get(), new Item.Properties()));
+    public static final DeferredItem<BlockItem> PENROSE_FRAME_ITEM =
+            BLOCK_ITEMS.register("penrose_frame",
+                    () -> new BlockItem(PENROSE_FRAME.get(), new Item.Properties()));
+
+    public static final DeferredBlock<PenrosePortBlock> PENROSE_PORT =
+            BLOCKS.register("penrose_port", PenrosePortBlock::new);
+
+    public static final DeferredItem<BlockItem> PENROSE_PORT_ITEM =
+            BLOCK_ITEMS.register("penrose_port",
+                    () -> new BlockItem(PENROSE_PORT.get(), new Item.Properties()));
+
+    public static final DeferredBlock<PenroseHeatVentBlock> PENROSE_HEAT_VENT =
+            BLOCKS.register("penrose_heat_vent", PenroseHeatVentBlock::new);
+
+    public static final DeferredItem<BlockItem> PENROSE_HEAT_VENT_ITEM =
+            BLOCK_ITEMS.register("penrose_heat_vent",
+                    () -> new BlockItem(PENROSE_HEAT_VENT.get(), new Item.Properties()));
+
+    public static final DeferredBlock<PenroseHawkingVentBlock> PENROSE_HAWKING_VENT =
+            BLOCKS.register("penrose_hawking_vent", PenroseHawkingVentBlock::new);
+
+    public static final DeferredItem<BlockItem> PENROSE_HAWKING_VENT_ITEM =
+            BLOCK_ITEMS.register("penrose_hawking_vent",
+                    () -> new BlockItem(PENROSE_HAWKING_VENT.get(), new Item.Properties()));
+
+    public static final DeferredBlock<PenroseInjectionPortBlock> PENROSE_INJECTION_PORT =
+            BLOCKS.register("penrose_injection_port", PenroseInjectionPortBlock::new);
+
+    public static final DeferredItem<BlockItem> PENROSE_INJECTION_PORT_ITEM =
+            BLOCK_ITEMS.register("penrose_injection_port",
+                    () -> new BlockItem(PENROSE_INJECTION_PORT.get(), new Item.Properties()));
+
+    public static final DeferredBlock<PenroseHeatEmitterBlock> PENROSE_HEAT_EMITTER =
+            BLOCKS.register("penrose_heat_emitter", PenroseHeatEmitterBlock::new);
+
+    public static final DeferredItem<BlockItem> PENROSE_HEAT_EMITTER_ITEM =
+            BLOCK_ITEMS.register("penrose_heat_emitter",
+                    () -> new BlockItem(PENROSE_HEAT_EMITTER.get(), new Item.Properties()));
+
+    public static final DeferredBlock<PenroseMassEmitterBlock> PENROSE_MASS_EMITTER =
+            BLOCKS.register("penrose_mass_emitter", PenroseMassEmitterBlock::new);
+
+    public static final DeferredItem<BlockItem> PENROSE_MASS_EMITTER_ITEM =
+            BLOCK_ITEMS.register("penrose_mass_emitter",
+                    () -> new BlockItem(PENROSE_MASS_EMITTER.get(), new Item.Properties()));
 
     private CrazyBlockRegistrar() {}
 }

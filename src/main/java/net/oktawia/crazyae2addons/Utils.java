@@ -9,6 +9,8 @@ import java.util.concurrent.*;
 
 public class Utils {
 
+    private static final ScheduledExecutorService SCHEDULER = Executors.newSingleThreadScheduledExecutor();
+
     public static double erf(double x) {
         int sign = (x < 0) ? -1 : 1;
         x = Math.abs(x);
@@ -26,7 +28,7 @@ public class Utils {
         return sign * y;
     }
 
-    public static NavigableMap<Long, String> voltagesMap = new TreeMap<>(Map.ofEntries(
+    public static final NavigableMap<Long, String> voltagesMap = Collections.unmodifiableNavigableMap(new TreeMap<>(Map.ofEntries(
             Map.entry((long) Math.pow(2, 3), "ULV"),
             Map.entry((long) Math.pow(2, 5), "LV"),
             Map.entry((long) Math.pow(2, 7), "MV"),
@@ -42,7 +44,7 @@ public class Utils {
             Map.entry((long) Math.pow(2, 27), "UXV"),
             Map.entry((long) Math.pow(2, 29), "OpV"),
             Map.entry((long) Math.pow(2, 31), "MAX")
-    ));
+    )));
 
     public static <T> List<T> rotate(List<T> inputList, int offset) {
         if (inputList.isEmpty()) {
@@ -62,26 +64,23 @@ public class Utils {
     }
 
     public static void asyncDelay(Runnable function, float delay) {
-        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
         long delayInMillis = (long) (delay * 1000);
-        scheduler.schedule(() -> {
-            try {
-                function.run();
-            } finally {
-                scheduler.shutdown();
-            }
-        }, delayInMillis, TimeUnit.MILLISECONDS);
+        SCHEDULER.schedule(function, delayInMillis, TimeUnit.MILLISECONDS);
+    }
+
+    private static final Map<Double, String> SHORTEN_THRESHOLDS;
+    static {
+        SHORTEN_THRESHOLDS = new LinkedHashMap<>();
+        SHORTEN_THRESHOLDS.put(1e18, "E");
+        SHORTEN_THRESHOLDS.put(1e15, "P");
+        SHORTEN_THRESHOLDS.put(1e12, "T");
+        SHORTEN_THRESHOLDS.put(1e9,  "G");
+        SHORTEN_THRESHOLDS.put(1e6,  "M");
+        SHORTEN_THRESHOLDS.put(1e3,  "K");
     }
 
     public static String shortenNumber(double number) {
-        Map<Double, String> thresholds = new LinkedHashMap<>();
-        thresholds.put(1e18, "E");
-        thresholds.put(1e15, "P");
-        thresholds.put(1e12, "T");
-        thresholds.put(1e9, "G");
-        thresholds.put(1e6, "M");
-        thresholds.put(1e3, "K");
-        for (Map.Entry<Double, String> entry : thresholds.entrySet()) {
+        for (Map.Entry<Double, String> entry : SHORTEN_THRESHOLDS.entrySet()) {
             double threshold = entry.getKey();
             String name = entry.getValue();
             if (number >= threshold) {

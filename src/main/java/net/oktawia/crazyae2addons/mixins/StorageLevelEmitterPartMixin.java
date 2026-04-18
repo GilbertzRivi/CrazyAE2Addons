@@ -6,7 +6,7 @@ import appeng.api.parts.IPartItem;
 import appeng.parts.automation.StorageLevelEmitterPart;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
-import net.oktawia.crazyae2addons.interfaces.StorageLevelEmitterUuid;
+import net.oktawia.crazyae2addons.logic.interfaces.IStorageLevelEmitterUuid;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(value = StorageLevelEmitterPart.class, remap = false)
-public abstract class StorageLevelEmitterPartMixin implements StorageLevelEmitterUuid {
+public abstract class StorageLevelEmitterPartMixin implements IStorageLevelEmitterUuid {
 
     @Unique
     private static final String UUID_TAG = "crazy_addons_emitter_uuid";

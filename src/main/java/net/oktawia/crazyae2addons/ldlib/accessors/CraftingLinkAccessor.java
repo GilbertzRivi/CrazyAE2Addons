@@ -18,6 +18,7 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.RegistryOps;
 import net.neoforged.neoforge.common.CommonHooks;
+import net.oktawia.crazyae2addons.CrazyAddons;
 
 import javax.annotation.Nonnull;
 import java.util.Objects;
@@ -98,7 +99,8 @@ public final class CraftingLinkAccessor implements IAccessor<ICraftingLink> {
                 return null;
             }
             return link;
-        } catch (Throwable ignored) {
+        } catch (Throwable e) {
+            CrazyAddons.LOGGER.debug("failed to read crafting link from NBT", e);
             return null;
         }
     }
@@ -136,7 +138,8 @@ public final class CraftingLinkAccessor implements IAccessor<ICraftingLink> {
                 return Objects.equals(a.getCraftingID(), b.getCraftingID())
                         && a.isDone() == b.isDone()
                         && a.isCanceled() == b.isCanceled();
-            } catch (Throwable ignored) {
+            } catch (Throwable e) {
+                CrazyAddons.LOGGER.debug("failed to compare crafting links", e);
                 return false;
             }
         }

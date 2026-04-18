@@ -3,6 +3,8 @@ package net.oktawia.crazyae2addons.menus.item;
 import appeng.menu.AEBaseMenu;
 import appeng.menu.MenuOpener;
 import appeng.menu.guisync.GuiSync;
+import lombok.Getter;
+import lombok.Setter;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -25,8 +27,10 @@ public class BuilderPatternMenu extends AEBaseMenu {
     private static final String ROTATE              = "rotateCW";
     private static final String ACTION_OPEN_SUBMENU = "OpenSubMenu" ;
 
-    public String program;
-    public BuilderPatternHost host;
+    @Getter @Setter
+    private String program;
+    @Getter
+    private final BuilderPatternHost host;
 
     @GuiSync(93)
     public Integer delay;

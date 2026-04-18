@@ -16,7 +16,7 @@ public class AutoBuilderMenu extends UpgradeableMenu<AutoBuilderBE> {
     public int yax;
     public int zax;
     @GuiSync(941)
-    public boolean skipEmptyLocked = false;
+    public boolean skipEmptyLocked;
 
     private static final String MISSING = "actionUpdateMissing";
     private static final String OFFSET = "actionUpdateOffset";

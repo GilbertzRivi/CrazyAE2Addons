@@ -9,6 +9,7 @@ import appeng.client.gui.widgets.TabButton;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
+import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.defs.LangDefs;
 import net.oktawia.crazyae2addons.menus.item.BuilderPatternSubMenu;
 
@@ -30,20 +31,17 @@ public class BuilderPatternSubScreen<C extends BuilderPatternSubMenu> extends AE
             LangDefs.BREAK.getTranslationKey()
     };
 
-    private AETextField widthField;
-    private AETextField heightField;
-    private AETextField depthField;
-    private AETextField placeField;
-    private AETextField checkField;
+    private final AETextField placeField;
+    private final AETextField checkField;
 
     public BuilderPatternSubScreen(C menu, Inventory playerInventory, Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
 
         var font = Minecraft.getInstance().font;
 
-        widthField = new AETextField(style, font, 0, 0, NUM_W, FIELD_H);
-        heightField = new AETextField(style, font, 0, 0, NUM_W, FIELD_H);
-        depthField = new AETextField(style, font, 0, 0, NUM_W, FIELD_H);
+        AETextField widthField = new AETextField(style, font, 0, 0, NUM_W, FIELD_H);
+        AETextField heightField = new AETextField(style, font, 0, 0, NUM_W, FIELD_H);
+        AETextField depthField = new AETextField(style, font, 0, 0, NUM_W, FIELD_H);
         placeField = new AETextField(style, font, 0, 0, BLOCK_W, FIELD_H);
         checkField = new AETextField(style, font, 0, 0, BLOCK_W, FIELD_H);
 
@@ -192,7 +190,8 @@ public class BuilderPatternSubScreen<C extends BuilderPatternSubMenu> extends AE
 
         try {
             return Math.max(1, Integer.parseInt(value.trim()));
-        } catch (NumberFormatException ignored) {
+        } catch (NumberFormatException e) {
+            CrazyAddons.LOGGER.debug("invalid numeric input in builder pattern screen", e);
             return fallback;
         }
     }

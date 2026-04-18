@@ -9,10 +9,12 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.entities.*;
+import net.oktawia.crazyae2addons.entities.penrose.*;
 import net.oktawia.crazyae2addons.logic.builder.BuilderPatternHost;
 import net.oktawia.crazyae2addons.menus.*;
 import net.oktawia.crazyae2addons.menus.block.*;
 import net.oktawia.crazyae2addons.menus.block.AutoEnchanterMenu;
+import net.oktawia.crazyae2addons.menus.block.penrose.*;
 import net.oktawia.crazyae2addons.menus.part.*;
 import net.oktawia.crazyae2addons.menus.item.BuilderPatternMenu;
 import net.oktawia.crazyae2addons.menus.item.BuilderPatternSubMenu;
@@ -74,6 +76,21 @@ public class CrazyMenuRegistrar {
 
     public static final DeferredHolder<MenuType<?>, MenuType<PenroseControllerMenu>> PENROSE_CONTROLLER_MENU =
             reg("penrose_controller", PenroseControllerMenu::new, PenroseControllerBE.class);
+
+    public static final DeferredHolder<MenuType<?>, MenuType<PenroseHeatEmitterMenu>> PENROSE_HEAT_EMITTER_MENU =
+            reg("penrose_heat_emitter", PenroseHeatEmitterMenu::new, PenroseHeatEmitterBE.class);
+
+    public static final DeferredHolder<MenuType<?>, MenuType<PenroseHeatVentMenu>> PENROSE_HEAT_VENT_MENU =
+            reg("penrose_heat_vent", PenroseHeatVentMenu::new, PenroseHeatVentBE.class);
+
+    public static final DeferredHolder<MenuType<?>, MenuType<PenroseHawkingVentMenu>> PENROSE_HAWKING_VENT_MENU =
+            reg("penrose_hawking_vent", PenroseHawkingVentMenu::new, PenroseHawkingVentBE.class);
+
+    public static final DeferredHolder<MenuType<?>, MenuType<PenroseMassEmitterMenu>> PENROSE_MASS_EMITTER_MENU =
+            reg("penrose_mass_emitter", PenroseMassEmitterMenu::new, PenroseMassEmitterBE.class);
+
+    public static final DeferredHolder<MenuType<?>, MenuType<PenroseInjectionPortMenu>> PENROSE_INJECTION_PORT_MENU =
+            reg("penrose_injection_port", PenroseInjectionPortMenu::new, PenroseInjectionPortBE.class);
 
     private CrazyMenuRegistrar() {}
 }

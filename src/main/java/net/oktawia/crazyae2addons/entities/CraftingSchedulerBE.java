@@ -24,6 +24,7 @@ import com.lowdragmc.lowdraglib2.syncdata.holder.blockentity.ISyncPersistRPCBloc
 import com.lowdragmc.lowdraglib2.syncdata.storage.FieldManagedStorage;
 import com.mojang.logging.LogUtils;
 import lombok.Getter;
+import lombok.Setter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
@@ -31,6 +32,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
+import net.oktawia.crazyae2addons.logic.interfaces.IMenuOpeningBlockEntity;
 import org.jetbrains.annotations.Nullable;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
@@ -40,7 +42,7 @@ import net.oktawia.crazyae2addons.menus.block.CraftingSchedulerMenu;
 import java.util.concurrent.Future;
 
 public class CraftingSchedulerBE extends AENetworkedBlockEntity
-        implements MenuProvider, ICraftingRequester, IGridTickable, ISyncPersistRPCBlockEntity {
+        implements MenuProvider, ICraftingRequester, IGridTickable, ISyncPersistRPCBlockEntity, IMenuOpeningBlockEntity {
 
     @Getter
     private final FieldManagedStorage syncStorage;
@@ -50,7 +52,9 @@ public class CraftingSchedulerBE extends AENetworkedBlockEntity
 
     @Persisted
     @DescSynced
-    public int amount = 0;
+    @Getter
+    @Setter
+    private int amount = 0;
 
     @Persisted
     @Nullable

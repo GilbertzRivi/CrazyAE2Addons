@@ -8,6 +8,7 @@ import com.google.gson.reflect.TypeToken;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.neoforged.neoforge.network.PacketDistributor;
+import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.logic.display.DisplayGrid;
 import net.oktawia.crazyae2addons.logic.display.DisplayImageEntry;
@@ -76,7 +77,8 @@ public class DisplayImagesSubMenu extends AEBaseMenu implements ISubMenu {
             try {
                 List<DisplayImageEntry> parsed = GSON.fromJson(imagesJson, IMAGE_LIST_TYPE);
                 parsedImagesCache = parsed != null ? parsed : List.of();
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                CrazyAddons.LOGGER.debug("failed to parse display images JSON", e);
                 parsedImagesCache = List.of();
             }
             lastParsedImagesJson = imagesJson;
@@ -222,7 +224,8 @@ public class DisplayImagesSubMenu extends AEBaseMenu implements ISubMenu {
             syncFromHost();
             broadcastChanges();
             sendSelectedPreviewToClient();
-        } catch (Throwable ignored) {
+        } catch (Throwable e) {
+            CrazyAddons.LOGGER.debug("failed to update display image and send preview", e);
         }
     }
 
@@ -237,7 +240,8 @@ public class DisplayImagesSubMenu extends AEBaseMenu implements ISubMenu {
         try {
             List<DisplayImageEntry> images = host.getDisplayImages();
             this.imagesJson = GSON.toJson(images != null ? images : Collections.emptyList());
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            CrazyAddons.LOGGER.debug("failed to serialize display images to JSON", e);
             this.imagesJson = "[]";
         }
 
@@ -256,7 +260,8 @@ public class DisplayImagesSubMenu extends AEBaseMenu implements ISubMenu {
 
         try {
             this.imagesJson = GSON.toJson(this.parsedImagesCache);
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            CrazyAddons.LOGGER.debug("failed to serialize display images cache to JSON", e);
             this.imagesJson = "[]";
             this.parsedImagesCache = List.of();
         }

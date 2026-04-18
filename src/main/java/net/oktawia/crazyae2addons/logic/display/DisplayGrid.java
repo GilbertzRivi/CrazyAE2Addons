@@ -338,7 +338,7 @@ public final class DisplayGrid {
             return Pair.of(1, 1);
         }
 
-        Set<DisplayPart> component = getPreviewConnectedComponent(origin, side);
+        Set<DisplayPart> component = getActiveConnectedComponent(origin, side);
         if (component.isEmpty()) {
             return Pair.of(1, 1);
         }
@@ -350,34 +350,6 @@ public final class DisplayGrid {
 
         var dims = getGridSize(new ArrayList<>(group.parts()), group.renderOrigin().getSide());
         return Pair.of(Math.max(1, dims.getFirst()), Math.max(1, dims.getSecond()));
-    }
-
-    private static Set<DisplayPart> getPreviewConnectedComponent(DisplayPart origin, Direction side) {
-        Set<DisplayPart> all = new LinkedHashSet<>();
-        Deque<DisplayPart> queue = new ArrayDeque<>();
-
-        all.add(origin);
-        queue.add(origin);
-
-        Direction[] dirs = {
-                Direction.UP,
-                Direction.DOWN,
-                side.getClockWise(),
-                side.getCounterClockWise()
-        };
-
-        while (!queue.isEmpty()) {
-            DisplayPart cur = queue.poll();
-
-            for (Direction dir : dirs) {
-                DisplayPart nb = getNeighbor(cur, dir);
-                if (nb != null && nb.getSide() == side && nb.isPowered() && nb.isMergeMode() && all.add(nb)) {
-                    queue.add(nb);
-                }
-            }
-        }
-
-        return all;
     }
 
     public static DisplayPart resolveMenuOrigin(DisplayPart clicked) {

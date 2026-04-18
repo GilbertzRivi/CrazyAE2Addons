@@ -16,6 +16,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.oktawia.crazyae2addons.defs.LangDefs;
 import net.oktawia.crazyae2addons.logic.display.keytypes.DisplayKeyCompatRegistry;
 import net.oktawia.crazyae2addons.menus.part.DisplayTokenSubMenu;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,18 +32,18 @@ public class DisplayTokenSubScreen extends AEBaseScreen<DisplayTokenSubMenu> {
 
     private TokenType type = TokenType.STOCK;
 
-    private EditBox itemIdField;
+    private final EditBox itemIdField;
     private int divisorPow = 0;
-    private AE2Button divisorBtn;
-    private EditBox perNField;
-    private EditBox winNField;
+    private final AE2Button divisorBtn;
+    private final EditBox perNField;
+    private final EditBox winNField;
     private int perUnitIdx = 1;
     private int winUnitIdx = 1;
-    private AE2Button perUnitBtn;
-    private AE2Button winUnitBtn;
-    private AE2Button typeBtn;
-    private AE2Button typesDropBtn;
-    private AE2Button insertBtn;
+    private final AE2Button perUnitBtn;
+    private final AE2Button winUnitBtn;
+    private final AE2Button typeBtn;
+    private final AE2Button typesDropBtn;
+    private final AE2Button insertBtn;
 
     private List<String> availableTypes = Collections.emptyList();
     private int typeIdx = -1;
@@ -528,18 +529,16 @@ public class DisplayTokenSubScreen extends AEBaseScreen<DisplayTokenSubMenu> {
                 );
             }
 
-            if (itemIdField != null) {
-                String preview = buildToken(itemIdField.getValue().trim().toLowerCase(), currentPrefix());
-                if (preview != null && !preview.isBlank()) {
-                    g.drawString(
-                            font,
-                            preview,
-                            leftPos + 5,
-                            insertBtn.getY() - 17,
-                            0xFF55FF55,
-                            false
-                    );
-                }
+            String preview = buildToken(itemIdField.getValue().trim().toLowerCase(), currentPrefix());
+            if (preview != null && !preview.isBlank()) {
+                g.drawString(
+                        font,
+                        preview,
+                        leftPos + 5,
+                        insertBtn.getY() - 17,
+                        0xFF55FF55,
+                        false
+                );
             }
 
             if (dropdownOpen && !availableTypes.isEmpty()) {
@@ -591,7 +590,7 @@ public class DisplayTokenSubScreen extends AEBaseScreen<DisplayTokenSubMenu> {
         }
 
         @Override
-        protected void updateWidgetNarration(NarrationElementOutput out) {
+        protected void updateWidgetNarration(@NotNull NarrationElementOutput out) {
         }
     }
 }

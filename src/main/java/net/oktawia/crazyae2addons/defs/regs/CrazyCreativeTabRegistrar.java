@@ -6,34 +6,31 @@ import appeng.items.AEBaseItem;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.oktawia.crazyae2addons.CrazyAddons;
+import net.oktawia.crazyae2addons.defs.LangDefs;
 
 public final class CrazyCreativeTabRegistrar {
 
     public static final ResourceLocation ID = CrazyAddons.makeId("tab");
 
     public static final CreativeModeTab TAB = CreativeModeTab.builder()
-            .title(Component.literal("Crazy AE2 Addons"))
+            .title(Component.translatable(LangDefs.MOD_NAME.getTranslationKey()))
             .icon(() -> new ItemStack(CrazyBlockRegistrar.CRAZY_PATTERN_PROVIDER_BLOCK.get()))
             .displayItems(CrazyCreativeTabRegistrar::populate)
             .build();
 
-    private static void populate(CreativeModeTab.ItemDisplayParameters ignored, CreativeModeTab.Output out) {
-        CrazyItemRegistrar.ITEMS.getEntries().forEach(ro -> {
-            if (!ro.get().equals(CrazyItemRegistrar.MOB_KEY_ITEM.get())){
-                push(out, ro.get());
-            }
-        });
-        CrazyBlockRegistrar.BLOCK_ITEMS.getEntries().forEach(ro -> push(out, ro.get()));
-        push(out, CrazyFluidRegistrar.RESEARCH_FLUID_BUCKET.get());
+    private static void populate(CreativeModeTab.ItemDisplayParameters params, CreativeModeTab.Output out) {
+        CrazyItemRegistrar.ITEMS.getEntries().forEach(h -> push(params, out, h.get()));
+        CrazyBlockRegistrar.BLOCK_ITEMS.getEntries().forEach(h -> push(params, out, h.get()));
     }
 
-    private static void push(CreativeModeTab.Output out, net.minecraft.world.item.Item item) {
+    private static void push(CreativeModeTab.ItemDisplayParameters params, CreativeModeTab.Output out, Item item) {
         if (item instanceof AEBaseBlockItem bItem && bItem.getBlock() instanceof AEBaseBlock blk) {
-            blk.addToMainCreativeTab(out);
+            blk.addToMainCreativeTab(params, out);
         } else if (item instanceof AEBaseItem baseItem) {
-            baseItem.addToMainCreativeTab(out);
+            baseItem.addToMainCreativeTab(params, out);
         } else {
             out.accept(item);
         }

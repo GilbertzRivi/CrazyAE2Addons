@@ -2,15 +2,12 @@ package net.oktawia.crazyae2addons.blocks;
 
 import appeng.api.upgrades.IUpgradeableObject;
 import appeng.block.AEBaseBlock;
-import appeng.block.AEBaseEntityBlock;
-import appeng.block.crafting.PushDirection;
-import appeng.menu.locator.MenuLocators;
 import appeng.util.InteractionUtil;
 import appeng.util.Platform;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
+import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
@@ -25,9 +22,11 @@ import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.oktawia.crazyae2addons.entities.EjectorBE;
+import net.oktawia.crazyae2addons.logic.AbstractMenuOpeningBlock;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class EjectorBlock extends AEBaseEntityBlock<EjectorBE> implements IUpgradeableObject {
+public class EjectorBlock extends AbstractMenuOpeningBlock<EjectorBE> implements IUpgradeableObject {
 
     public static final DirectionProperty FACING = BlockStateProperties.FACING;
     public static final BooleanProperty POWERED = BlockStateProperties.POWERED;
@@ -64,33 +63,14 @@ public class EjectorBlock extends AEBaseEntityBlock<EjectorBE> implements IUpgra
     }
 
     @Override
-    public InteractionResult onActivated(
-            Level level,
-            BlockPos pos,
-            Player player,
-            InteractionHand hand,
-            @Nullable ItemStack heldItem,
-            BlockHitResult hit) {
-        if (InteractionUtil.isInAlternateUseMode(player)) {
-            return InteractionResult.PASS;
-        }
-
-        if (heldItem != null && InteractionUtil.canWrenchRotate(heldItem)) {
+    protected @NotNull ItemInteractionResult useItemOn(ItemStack heldItem, BlockState state, Level level,
+                                                       BlockPos pos, Player player, InteractionHand hand,
+                                                       BlockHitResult hit) {
+        if (InteractionUtil.canWrenchRotate(heldItem)) {
             setSide(level, pos, hit.getDirection());
-            return InteractionResult.sidedSuccess(level.isClientSide());
+            return ItemInteractionResult.sidedSuccess(level.isClientSide());
         }
-
-        var be = getBlockEntity(level, pos);
-
-        if (be != null) {
-            if (!level.isClientSide()) {
-                be.openMenu(player, MenuLocators.forBlockEntity(be));
-            }
-
-            return InteractionResult.sidedSuccess(level.isClientSide());
-        }
-
-        return InteractionResult.PASS;
+        return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
     }
 
     @Override
@@ -110,9 +90,9 @@ public class EjectorBlock extends AEBaseEntityBlock<EjectorBE> implements IUpgra
             if (be instanceof EjectorBE myBE) {
                 myBE.doWork();
             }
-            level.setBlock(pos, state.setValue(POWERED, true), 3);
+            level.setBlock(pos, level.getBlockState(pos).setValue(POWERED, true), 3);
         } else if (wasPowered && !isPoweredNow) {
-            level.setBlock(pos, state.setValue(POWERED, false), 3);
+            level.setBlock(pos, level.getBlockState(pos).setValue(POWERED, false), 3);
         }
     }
 

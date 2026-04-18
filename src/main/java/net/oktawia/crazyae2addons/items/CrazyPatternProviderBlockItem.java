@@ -2,14 +2,14 @@ package net.oktawia.crazyae2addons.items;
 
 import appeng.block.AEBaseBlockItem;
 import net.minecraft.ChatFormatting;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.oktawia.crazyae2addons.defs.LangDefs;
+import net.oktawia.crazyae2addons.defs.regs.CrazyDataComponents;
+import net.oktawia.crazyae2addons.defs.components.CrazyProviderDisplayData;
 
 import java.util.List;
 
@@ -20,23 +20,14 @@ public class CrazyPatternProviderBlockItem extends AEBaseBlockItem {
     }
 
     @Override
-    public void addCheckedInformation(ItemStack stack, Level level, List<Component> tooltip, TooltipFlag flag) {
-        CompoundTag tag = stack.getOrCreateTag();
-        int addedRows = tag.contains("added") ? tag.getInt("added") : 0;
-        if (addedRows < 0) addedRows = 0;
-        int totalRows = 8 + addedRows;
-        int totalSlots = totalRows * 9;
+    public void addCheckedInformation(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag advancedTooltips) {
+        var data = stack.getOrDefault(CrazyDataComponents.CRAZY_PROVIDER_DISPLAY.get(), CrazyProviderDisplayData.DEFAULT);
+        int addedRows = Math.max(0, data.added());
+        int totalSlots = (8 + addedRows) * 9;
+        int filled = Math.min(data.filled(), totalSlots);
+        int percent = totalSlots > 0 ? (int) Math.round(100.0 * filled / (double) totalSlots) : 0;
 
-        int filled = 0;
-        if (tag.contains("patterns")) {
-            ListTag invTag = tag.getList("patterns", Tag.TAG_COMPOUND);
-            filled = invTag.size();
-        }
-
-        if (filled > totalSlots) filled = totalSlots;
-        int percent = totalSlots > 0 ? (int)Math.round(100.0 * filled / (double) totalSlots) : 0;
-
-        tooltip.add(Component.translatable("gui.crazyae2addons.crazy_provider_capacity_tooltip").append(String.valueOf(totalSlots))
+        tooltip.add(Component.translatable(LangDefs.CRAZY_PROVIDER_CAPACITY_TOOLTIP.getTranslationKey()).append(String.valueOf(totalSlots))
                 .withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.literal("(" + percent + "%)")
                 .withStyle(ChatFormatting.AQUA));

@@ -4,8 +4,8 @@ import appeng.parts.p2p.P2PTunnelPart;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
-@Mixin(P2PTunnelPart.class)
+@Mixin(value = P2PTunnelPart.class, remap = false)
 public interface P2PTunnelPartAccessor {
     @Accessor("output")
-    void setOutput(boolean output);
+    void setOutputField(boolean output);
 }

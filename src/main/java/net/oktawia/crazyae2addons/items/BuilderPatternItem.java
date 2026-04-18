@@ -1,15 +1,14 @@
 package net.oktawia.crazyae2addons.items;
 
-import appeng.api.config.FuzzyMode;
 import appeng.api.implementations.menuobjects.IMenuItem;
 import appeng.api.implementations.menuobjects.ItemMenuHost;
-import appeng.api.stacks.AEItemKey;
+import appeng.menu.locator.ItemMenuHostLocator;
 import appeng.items.AEBaseItem;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuLocators;
-import com.mojang.logging.LogUtils;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -18,38 +17,34 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.context.UseOnContext;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
-import net.minecraft.world.level.storage.LevelResource;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.oktawia.crazyae2addons.defs.components.BuilderPatternData;
+import net.oktawia.crazyae2addons.defs.LangDefs;
+import net.oktawia.crazyae2addons.defs.regs.CrazyDataComponents;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
-import net.oktawia.crazyae2addons.logic.BuilderPatternHost;
+import net.oktawia.crazyae2addons.logic.builder.BuilderPatternHost;
 import net.oktawia.crazyae2addons.misc.ProgramExpander;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 public class BuilderPatternItem extends AEBaseItem implements IMenuItem {
 
     private BlockPos cornerA = null;
     private BlockPos cornerB = null;
-
     private BlockPos origin = null;
     private Direction originFacing = Direction.NORTH;
     private static final String SEP = "|";
-
 
     public BuilderPatternItem(Properties props) {
         super(props.stacksTo(1));
@@ -79,10 +74,8 @@ public class BuilderPatternItem extends AEBaseItem implements IMenuItem {
             );
 
             Basis basis = Basis.forFacing(originFacing);
-
             Map<String, Integer> blockMap = new LinkedHashMap<>();
             int blockIdCounter = 1;
-
             StringBuilder pattern = new StringBuilder();
             pattern.append("H");
             BlockPos cursorLocal = BlockPos.ZERO;
@@ -93,15 +86,12 @@ public class BuilderPatternItem extends AEBaseItem implements IMenuItem {
                         BlockPos currentWorld = new BlockPos(x, y, z);
                         BlockState state = level.getBlockState(currentWorld);
                         if (state.isAir()) continue;
+                        if (state.getBlock().asItem() == Items.AIR) continue;
 
-                        ResourceLocation blockId = ForgeRegistries.BLOCKS.getKey(state.getBlock());
+                        ResourceLocation blockId = BuiltInRegistries.BLOCK.getKey(state.getBlock());
                         if (blockId == null) continue;
 
-                        var itemKey = AEItemKey.of(state.getBlock().asItem());
-                        if (itemKey.fuzzyEquals(AEItemKey.of(Blocks.AIR.asItem()), FuzzyMode.IGNORE_ALL)) continue;
-
                         StringBuilder fullId = new StringBuilder(blockId.toString());
-
                         if (!state.getValues().isEmpty()) {
                             fullId.append("[");
                             boolean first = true;
@@ -132,20 +122,19 @@ public class BuilderPatternItem extends AEBaseItem implements IMenuItem {
             if (!header.isEmpty()) header.setLength(header.length() - 2);
 
             String finalCode = header + "\n||\n" + pattern;
-
             ProgramExpander.Result result = ProgramExpander.expand(finalCode);
             if (result.success) {
                 String programId = UUID.randomUUID().toString();
-                stack.getOrCreateTag().putBoolean("code", true);
-                stack.getOrCreateTag().putString("program_id", programId);
-                stack.getOrCreateTag().putInt("delay", 0);
+                stack.set(CrazyDataComponents.BUILDER_PATTERN_DATA.get(),
+                        new BuilderPatternData(programId, 0, Optional.of(originFacing)));
 
-                stack.getOrCreateTag().putString("srcFacing", originFacing.getName());
-
-                saveProgramToFile(programId, finalCode, p.getServer());
-                p.displayClientMessage(Component.translatable("gui.crazyae2addons.builder_pattern_saved").append(String.valueOf(finalCode.length())), true);
+                BuilderPatternHost.saveProgramToFile(programId, finalCode, p.getServer());
+                p.displayClientMessage(
+                        Component.translatable(LangDefs.PROGRAM_SAVED.getTranslationKey())
+                                .append(String.valueOf(finalCode.length())),
+                        true);
             } else {
-                p.displayClientMessage(Component.translatable("gui.crazyae2addons.builder_pattern_error"), true);
+                p.displayClientMessage(Component.translatable(LangDefs.PROGRAM_INVALID.getTranslationKey()), true);
             }
 
             cornerA = null;
@@ -159,44 +148,25 @@ public class BuilderPatternItem extends AEBaseItem implements IMenuItem {
                 InteractionResult.sidedSuccess(level.isClientSide()), p.getItemInHand(hand));
     }
 
-
-    public static void saveProgramToFile(String id, String code, MinecraftServer server) {
-        Path file = server.getWorldPath(new LevelResource("serverdata"))
-                .resolve("autobuilder")
-                .resolve(id);
-
-        try {
-            Files.createDirectories(file.getParent());
-            Files.writeString(file, code, UTF_8);
-        } catch (IOException e) {
-            LogUtils.getLogger().info(e.toString());
-        }
-    }
-
     private static String moveCursorRelative(BlockPos fromLocal, BlockPos toLocal) {
         StringBuilder moves = new StringBuilder();
         int dx = toLocal.getX() - fromLocal.getX();
         int dy = toLocal.getY() - fromLocal.getY();
         int dz = toLocal.getZ() - fromLocal.getZ();
-
         while (dx > 0) { moves.append("R"); dx--; }
         while (dx < 0) { moves.append("L"); dx++; }
         while (dy > 0) { moves.append("U"); dy--; }
         while (dy < 0) { moves.append("D"); dy++; }
         while (dz > 0) { moves.append("F"); dz--; }
         while (dz < 0) { moves.append("B"); dz++; }
-
         return moves.toString();
     }
 
     private static class Basis {
-        final int fx, fz;
-        final int rx, rz;
-
+        final int fx, fz, rx, rz;
         private Basis(int fx, int fz, int rx, int rz) {
             this.fx = fx; this.fz = fz; this.rx = rx; this.rz = rz;
         }
-
         static Basis forFacing(Direction f) {
             return switch (f) {
                 case NORTH -> new Basis( 0, -1,  1,  0);
@@ -212,11 +182,9 @@ public class BuilderPatternItem extends AEBaseItem implements IMenuItem {
         int dx = worldPos.getX() - origin.getX();
         int dy = worldPos.getY() - origin.getY();
         int dz = worldPos.getZ() - origin.getZ();
-
         int right   = dx * b.rx + dz * b.rz;
         int up      = dy;
         int forward = dx * b.fx + dz * b.fz;
-
         return new BlockPos(right, up, forward);
     }
 
@@ -224,45 +192,44 @@ public class BuilderPatternItem extends AEBaseItem implements IMenuItem {
     public InteractionResult useOn(UseOnContext context) {
         BlockPos clicked = context.getClickedPos();
         Player player = context.getPlayer();
-
-        if (player != null && !player.isLocalPlayer()) {
+        if (player != null && !context.getLevel().isClientSide()) {
             if (cornerA == null) {
                 cornerA = clicked.immutable();
-                player.displayClientMessage(Component.translatable("gui.crazyae2addons.builder_corner_1"), true);
+                player.displayClientMessage(Component.translatable(LangDefs.CORNER_SET_A.getTranslationKey()), true);
             } else if (cornerB == null) {
                 cornerB = clicked.immutable();
                 origin = clicked.immutable();
                 originFacing = player.getDirection();
-                player.displayClientMessage(Component.translatable("gui.crazyae2addons.builder_corner_2"), true);
+                player.displayClientMessage(Component.translatable(LangDefs.CORNER_SET_B.getTranslationKey()), true);
             } else {
                 cornerA = clicked.immutable();
                 cornerB = null;
                 origin = null;
-                player.displayClientMessage(Component.translatable("gui.crazyae2addons.builder_corner_3"), true);
+                player.displayClientMessage(Component.translatable(LangDefs.CORNER_RESET.getTranslationKey()), true);
             }
         }
         return InteractionResult.SUCCESS;
     }
 
     @Override
-    public @Nullable ItemMenuHost getMenuHost(Player player, int inventorySlot, ItemStack stack, @Nullable BlockPos pos) {
-        return new BuilderPatternHost(player, inventorySlot, stack);
+    public @Nullable ItemMenuHost<?> getMenuHost(Player player, ItemMenuHostLocator locator, @Nullable BlockHitResult hitResult) {
+        return new BuilderPatternHost(this, player, locator);
     }
 
     public static void applyFlipHorizontalToItem(ItemStack stack, MinecraftServer server, @Nullable Player player) {
-        applyFlipInPlace(stack, server, Axis.X, player, "Flipped horizontally");
+        applyFlipInPlace(stack, server, Axis.X, player);
     }
 
     public static void applyFlipVerticalToItem(ItemStack stack, MinecraftServer server, @Nullable Player player) {
-        applyFlipInPlace(stack, server, Axis.Y, player, "Flipped vertically");
+        applyFlipInPlace(stack, server, Axis.Y, player);
     }
 
     private enum Axis { X, Y }
 
-    private static void applyFlipInPlace(ItemStack stack, MinecraftServer server, Axis axis, @Nullable Player player, String okMsg) {
+    private static void applyFlipInPlace(ItemStack stack, MinecraftServer server, Axis axis, @Nullable Player player) {
         String full = BuilderPatternHost.loadProgramFromFile(stack, server);
         if (full.isEmpty()) {
-            if (player != null) player.displayClientMessage(Component.translatable("gui.crazyae2addons.builder_pattern_no_program"), true);
+            if (player != null) player.displayClientMessage(Component.translatable(LangDefs.PROGRAM_NO_CODE.getTranslationKey()), true);
             return;
         }
         int sepIdx = full.lastIndexOf(SEP);
@@ -274,24 +241,13 @@ public class BuilderPatternItem extends AEBaseItem implements IMenuItem {
             header = "";
             body   = full;
         }
-
         String bodyOut = flipBodyInPlace(body, axis);
         String updated = (header.isEmpty() ? "" : header + SEP) + bodyOut;
-
-        try {
-            var tag = stack.getOrCreateTag();
-            if (!tag.contains("program_id")) tag.putString("program_id", UUID.randomUUID().toString());
-            String id = tag.getString("program_id");
-            Path file = server.getWorldPath(new LevelResource("serverdata"))
-                    .resolve("autobuilder").resolve(id);
-            Files.createDirectories(file.getParent());
-            Files.writeString(file, updated, UTF_8);
-            tag.putBoolean("code", true);
-            if (player != null) player.displayClientMessage(Component.literal(okMsg), true);
-        } catch (Exception e) {
-            LogUtils.getLogger().info(e.toString());
-            if (player != null) player.displayClientMessage(Component.translatable("gui.crazyae2addons.builder_pattern_failed_changes"), true);
-        }
+        var existing = stack.getOrDefault(CrazyDataComponents.BUILDER_PATTERN_DATA.get(), BuilderPatternData.DEFAULT);
+        String id = existing.hasCode() ? existing.programId() : UUID.randomUUID().toString();
+        BuilderPatternHost.saveProgramToFile(id, updated, server);
+        stack.set(CrazyDataComponents.BUILDER_PATTERN_DATA.get(),
+                new BuilderPatternData(id, existing.delay(), existing.srcFacing()));
     }
 
     private static BlockPos stepCursor(BlockPos cursor, char ch) {
@@ -308,15 +264,13 @@ public class BuilderPatternItem extends AEBaseItem implements IMenuItem {
 
     private static String flipBodyInPlace(String s, Axis axis) {
         class Ev {
-            String kind;
-            String payload;
+            String kind, payload;
             BlockPos pos;
             Ev(String k, String p, BlockPos bp) { kind = k; payload = p; pos = bp; }
         }
         ArrayList<Ev> events = new ArrayList<>();
         BlockPos cursor = BlockPos.ZERO;
         int i = 0, n = s.length();
-
         while (i < n) {
             char c = s.charAt(i);
             if (c == 'H') { events.add(new Ev("H", "H", null)); cursor = BlockPos.ZERO; i++; continue; }
@@ -332,7 +286,7 @@ public class BuilderPatternItem extends AEBaseItem implements IMenuItem {
                 int j = i + 2;
                 while (j < n) {
                     char cj = s.charAt(j);
-                    if (cj == 'H' || cj == 'Z' || cj == 'P' || cj == 'F' || cj == 'B' || cj == 'L' || cj == 'R' || cj == 'U' || cj == 'D' || cj == 'X') break;
+                    if ("HZPFBLRUDX".indexOf(cj) >= 0) break;
                     j++;
                 }
                 events.add(new Ev("ACT", s.substring(i, j), cursor)); i = j; continue;
@@ -341,9 +295,7 @@ public class BuilderPatternItem extends AEBaseItem implements IMenuItem {
             if ("FBLRUD".indexOf(c) >= 0) { cursor = stepCursor(cursor, c); i++; continue; }
             i++;
         }
-
-        boolean hasAct = false;
-        for (Ev ev : events) if ("ACT".equals(ev.kind)) { hasAct = true; break; }
+        boolean hasAct = events.stream().anyMatch(e -> "ACT".equals(e.kind));
         if (!hasAct) return applyMapSkippingTokens(s, axis == Axis.X ? BuilderPatternItem::mapFlipHorizontal : BuilderPatternItem::mapFlipVertical);
 
         int minX = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE;
@@ -357,7 +309,6 @@ public class BuilderPatternItem extends AEBaseItem implements IMenuItem {
 
         StringBuilder out = new StringBuilder(s.length() + 64);
         BlockPos outCursor = BlockPos.ZERO;
-
         for (Ev ev : events) {
             switch (ev.kind) {
                 case "H" -> { out.append("H"); outCursor = BlockPos.ZERO; }
@@ -390,9 +341,10 @@ public class BuilderPatternItem extends AEBaseItem implements IMenuItem {
                 out.append(s, i, j); i = j; continue;
             }
             if (c == 'P' && i + 1 < s.length() && s.charAt(i + 1) == '|') {
-                int j = i + 2; while (j < s.length()) {
+                int j = i + 2;
+                while (j < s.length()) {
                     char cj = s.charAt(j);
-                    if (cj == 'H' || cj == 'Z' || cj == 'P' || cj == 'F' || cj == 'B' || cj == 'L' || cj == 'R' || cj == 'U' || cj == 'D' || cj == 'X') break;
+                    if ("HZPFBLRUDX".indexOf(cj) >= 0) break;
                     j++;
                 }
                 out.append(s, i, j); i = j; continue;
@@ -407,150 +359,73 @@ public class BuilderPatternItem extends AEBaseItem implements IMenuItem {
     public static void applyRotateCWToItem(ItemStack stack, MinecraftServer server, int times, Player player) {
         String full = BuilderPatternHost.loadProgramFromFile(stack, server);
         if (full.isEmpty()) return;
-        int i = full.indexOf(SEP);
-        String header = i >= 0 ? full.substring(0, i) : "";
-        String body   = i >= 0 ? full.substring(i + SEP.length()) : full;
+        int idx = full.indexOf(SEP);
+        String header = idx >= 0 ? full.substring(0, idx) : "";
+        String body   = idx >= 0 ? full.substring(idx + SEP.length()) : full;
         String outBody = rotateBodyInPlace(body, times);
         String updated = (header.isEmpty() ? "" : header + SEP) + outBody;
 
-        var tag = stack.getOrCreateTag();
-        if (!tag.contains("program_id")) tag.putString("program_id", UUID.randomUUID().toString());
-        String id = tag.getString("program_id");
-        Path file = server.getWorldPath(new LevelResource("serverdata")).resolve("autobuilder").resolve(id);
-        try {
-            Files.createDirectories(file.getParent());
-            Files.writeString(file, updated, UTF_8);
-            tag.putBoolean("code", true);
-        } catch (IOException ignored) {}
+        var existing = stack.getOrDefault(CrazyDataComponents.BUILDER_PATTERN_DATA.get(), BuilderPatternData.DEFAULT);
+        String id = existing.hasCode() ? existing.programId() : UUID.randomUUID().toString();
+        BuilderPatternHost.saveProgramToFile(id, updated, server);
+        stack.set(CrazyDataComponents.BUILDER_PATTERN_DATA.get(),
+                new BuilderPatternData(id, existing.delay(), existing.srcFacing()));
     }
 
     private static String rotateBodyInPlace(String s, int times) {
         class Ev {
-            String kind;
-            String payload;
+            String kind, payload;
             BlockPos pos;
             Ev(String k, String p, BlockPos bp) { kind = k; payload = p; pos = bp; }
         }
-
         ArrayList<Ev> events = new ArrayList<>();
         BlockPos cursor = BlockPos.ZERO;
         int i = 0, n = s.length();
-
-        // --- parsing programu na eventy (bez zmian) ---
         while (i < n) {
             char c = s.charAt(i);
-
-            if (c == 'H') {
-                events.add(new Ev("H", "H", null));
-                cursor = BlockPos.ZERO;
-                i++;
-                continue;
-            }
-
+            if (c == 'H') { events.add(new Ev("H", "H", null)); cursor = BlockPos.ZERO; i++; continue; }
             if (c == 'Z' && i + 1 < n && s.charAt(i + 1) == '|') {
-                int j = i + 2;
-                while (j < n && Character.isDigit(s.charAt(j))) j++;
-                events.add(new Ev("Z", s.substring(i, j), null));
-                i = j;
-                continue;
+                int j = i + 2; while (j < n && Character.isDigit(s.charAt(j))) j++;
+                events.add(new Ev("Z", s.substring(i, j), null)); i = j; continue;
             }
-
             if (c == 'P' && i + 1 < n && s.charAt(i + 1) == '(') {
-                int j = i + 2;
-                while (j < n && s.charAt(j) != ')') j++;
-                if (j < n) j++;
-                events.add(new Ev("ACT", s.substring(i, j), cursor));
-                i = j;
-                continue;
+                int j = i + 2; while (j < n && s.charAt(j) != ')') j++; if (j < n) j++;
+                events.add(new Ev("ACT", s.substring(i, j), cursor)); i = j; continue;
             }
-
             if (c == 'P' && i + 1 < n && s.charAt(i + 1) == '|') {
                 int j = i + 2;
                 while (j < n) {
                     char cj = s.charAt(j);
-                    if (cj == 'H' || cj == 'Z' || cj == 'P' || cj == 'F' || cj == 'B'
-                            || cj == 'L' || cj == 'R' || cj == 'U' || cj == 'D'
-                            || cj == 'X') break;
+                    if ("HZPFBLRUDX".indexOf(cj) >= 0) break;
                     j++;
                 }
-                events.add(new Ev("ACT", s.substring(i, j), cursor));
-                i = j;
-                continue;
+                events.add(new Ev("ACT", s.substring(i, j), cursor)); i = j; continue;
             }
-
-            if (c == 'X') {
-                events.add(new Ev("ACT", "X", cursor));
-                i++;
-                continue;
-            }
-
-            if ("FBLRUD".indexOf(c) >= 0) {
-                cursor = stepCursor(cursor, c);
-                i++;
-                continue;
-            }
-
+            if (c == 'X') { events.add(new Ev("ACT", "X", cursor)); i++; continue; }
+            if ("FBLRUD".indexOf(c) >= 0) { cursor = stepCursor(cursor, c); i++; continue; }
             i++;
         }
-
-        boolean hasAct = false;
-        for (Ev ev : events) {
-            if ("ACT".equals(ev.kind)) {
-                hasAct = true;
-                break;
-            }
-        }
+        boolean hasAct = events.stream().anyMatch(e -> "ACT".equals(e.kind));
         if (!hasAct) return s;
 
-        // normalizacja liczby obrotów
         times = ((times % 4) + 4) % 4;
         if (times == 0) return s;
 
-        // --- NOWA CZĘŚĆ: rotacja tylko wokół (0,0,0) w XZ ---
         StringBuilder out = new StringBuilder(s.length() + 64);
         BlockPos outCursor = BlockPos.ZERO;
-
         for (Ev ev : events) {
             switch (ev.kind) {
-                case "H" -> {
-                    out.append("H");
-                    outCursor = BlockPos.ZERO;
-                }
+                case "H" -> { out.append("H"); outCursor = BlockPos.ZERO; }
                 case "Z" -> out.append(ev.payload);
                 case "ACT" -> {
                     BlockPos p = ev.pos;
-                    int x = p.getX();
-                    int y = p.getY();
-                    int z = p.getZ();
-
-                    int rx = x;
-                    int rz = z;
-
-                    // UWAGA: zachowujemy dokładnie tę samą "stronę" obrotu co wcześniej,
-                    // tylko pivot to (0,0) zamiast środka AABB.
+                    int x = p.getX(), y = p.getY(), z = p.getZ();
+                    int rx = x, rz = z;
                     switch (times) {
-                        case 1 -> {           // 90° (tak jak w starej implementacji)
-                            int nx = -z;
-                            int nz = x;
-                            rx = nx;
-                            rz = nz;
-                        }
-                        case 2 -> {           // 180°
-                            rx = -x;
-                            rz = -z;
-                        }
-                        case 3 -> {           // 270°
-                            int nx = z;
-                            int nz = -x;
-                            rx = nx;
-                            rz = nz;
-                        }
-                        default -> {
-                            rx = x;
-                            rz = z;
-                        }
+                        case 1 -> { rx = -z; rz = x; }
+                        case 2 -> { rx = -x; rz = -z; }
+                        case 3 -> { rx = z;  rz = -x; }
                     }
-
                     BlockPos target = new BlockPos(rx, y, rz);
                     out.append(moveCursorRelative(outCursor, target));
                     outCursor = target;
@@ -558,15 +433,32 @@ public class BuilderPatternItem extends AEBaseItem implements IMenuItem {
                 }
             }
         }
-
         return out.toString();
     }
-
 
     private static int mapFlipHorizontal(int ch) {
         return switch (ch) { case 'L' -> 'R'; case 'R' -> 'L'; default -> ch; };
     }
+
     private static int mapFlipVertical(int ch) {
         return switch (ch) { case 'U' -> 'D'; case 'D' -> 'U'; default -> ch; };
+    }
+
+    @Nullable
+    public static String getProgramId(ItemStack stack) {
+        var data = stack.get(CrazyDataComponents.BUILDER_PATTERN_DATA.get());
+        if (data == null || !data.hasCode()) return null;
+        return data.programId();
+    }
+
+    public static int getDelay(ItemStack stack) {
+        var data = stack.get(CrazyDataComponents.BUILDER_PATTERN_DATA.get());
+        return data != null ? data.delay() : 20;
+    }
+
+    @Nullable
+    public static Direction getSourceFacing(ItemStack stack) {
+        var data = stack.get(CrazyDataComponents.BUILDER_PATTERN_DATA.get());
+        return data != null ? data.srcFacing().orElse(null) : null;
     }
 }

@@ -1,6 +1,0 @@
-{
-  "parent": "minecraft:item/generated",
-  "textures": {
-    "layer0": "crazyae2addons:item/mob_storage_cell_16k"
-  }
-}

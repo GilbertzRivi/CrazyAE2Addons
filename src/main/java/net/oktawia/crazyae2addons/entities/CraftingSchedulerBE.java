@@ -13,64 +13,81 @@ import appeng.api.networking.ticking.TickRateModulation;
 import appeng.api.networking.ticking.TickingRequest;
 import appeng.api.stacks.AEKey;
 import appeng.api.storage.StorageHelper;
-import appeng.blockentity.grid.AENetworkBlockEntity;
-import appeng.me.helpers.MachineSource;
+import appeng.blockentity.grid.AENetworkedBlockEntity;
 import appeng.menu.MenuOpener;
-import appeng.menu.locator.MenuLocator;
+import appeng.menu.locator.MenuHostLocator;
 import appeng.util.ConfigInventory;
 import com.google.common.collect.ImmutableSet;
+import com.lowdragmc.lowdraglib2.syncdata.annotation.DescSynced;
+import com.lowdragmc.lowdraglib2.syncdata.annotation.Persisted;
+import com.lowdragmc.lowdraglib2.syncdata.holder.blockentity.ISyncPersistRPCBlockEntity;
+import com.lowdragmc.lowdraglib2.syncdata.storage.FieldManagedStorage;
+import com.mojang.logging.LogUtils;
+import lombok.Getter;
+import lombok.Setter;
 import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
+import net.oktawia.crazyae2addons.logic.interfaces.IMenuOpeningBlockEntity;
+import org.jetbrains.annotations.Nullable;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
-import net.oktawia.crazyae2addons.menus.CraftingSchedulerMenu;
-import org.jetbrains.annotations.Nullable;
+import net.oktawia.crazyae2addons.menus.block.CraftingSchedulerMenu;
 
 import java.util.concurrent.Future;
 
-public class CraftingSchedulerBE extends AENetworkBlockEntity implements MenuProvider, ICraftingRequester, IGridTickable {
+public class CraftingSchedulerBE extends AENetworkedBlockEntity
+        implements MenuProvider, ICraftingRequester, IGridTickable, ISyncPersistRPCBlockEntity, IMenuOpeningBlockEntity {
 
-    public ConfigInventory inv = ConfigInventory.configTypes(what -> true, 1, () -> {});
-    public int amount = 0;
+    @Getter
+    private final FieldManagedStorage syncStorage;
 
+    @Persisted
+    public final ConfigInventory inv;
+
+    @Persisted
+    @DescSynced
+    @Getter
+    @Setter
+    private int amount = 0;
+
+    @Persisted
     @Nullable
     private ICraftingLink activeJob;
 
     @Nullable
-    private Future<ICraftingPlan> pendingPlan;
+    private transient Future<ICraftingPlan> pendingPlan;
 
     public CraftingSchedulerBE(BlockPos pos, BlockState blockState) {
-        super(CrazyBlockEntityRegistrar.CRAFTING_SHEDULER_BE.get(), pos, blockState);
+        super(CrazyBlockEntityRegistrar.CRAFTING_SCHEDULER_BE.get(), pos, blockState);
+
+        this.syncStorage = new FieldManagedStorage(this);
+        this.inv = ConfigInventory.configTypes(1)
+                .changeListener(this::setChanged)
+                .build();
+
         this.getMainNode()
                 .setIdlePowerUsage(1.0F)
                 .setFlags(GridFlags.REQUIRE_CHANNEL)
                 .addService(IGridTickable.class, this)
+                .addService(ICraftingRequester.class, this)
                 .setVisualRepresentation(new ItemStack(CrazyBlockRegistrar.CRAFTING_SCHEDULER_BLOCK.get().asItem()));
     }
 
     @Override
-    public @Nullable AbstractContainerMenu createMenu(int i, Inventory inventory, Player player) {
-        return new CraftingSchedulerMenu(i, inventory, this);
+    public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
+        return new CraftingSchedulerMenu(id, inventory, this);
     }
 
     @Override
-    public Component getDisplayName() {
-        return Component.translatable("block.crazyae2addons.crafting_scheduler");
+    public net.minecraft.network.chat.Component getDisplayName() {
+        return this.getBlockState().getBlock().getName();
     }
-
-    public void openMenu(Player player, MenuLocator locator) {
-        MenuOpener.open(CrazyMenuRegistrar.CRAFTING_SCHEDULER_MENU.get(), player, locator);
-    }
-
-    // ===== ICraftingRequester =====
 
     @Override
     public ImmutableSet<ICraftingLink> getRequestedJobs() {
@@ -95,50 +112,6 @@ public class CraftingSchedulerBE extends AENetworkBlockEntity implements MenuPro
         }
     }
 
-    // ===== NBT =====
-
-    @Override
-    public void loadTag(CompoundTag data) {
-        super.loadTag(data);
-
-        if (data.contains("config")) {
-            this.inv.readFromChildTag(data, "config");
-        }
-        if (data.contains("amount")) {
-            this.amount = data.getInt("amount");
-        }
-
-        if (data.contains("activeJob")) {
-            try {
-                var tag = data.getCompound("activeJob");
-                var loaded = StorageHelper.loadCraftingLink(tag, this);
-                if (loaded != null && !loaded.isDone() && !loaded.isCanceled()) {
-                    this.activeJob = loaded;
-                } else {
-                    this.activeJob = null;
-                }
-            } catch (Throwable ignored) {
-                this.activeJob = null;
-            }
-        }
-    }
-
-    @Override
-    public void saveAdditional(CompoundTag data) {
-        super.saveAdditional(data);
-
-        this.inv.writeToChildTag(data, "config");
-        data.putInt("amount", this.amount);
-
-        if (this.activeJob != null && !this.activeJob.isDone() && !this.activeJob.isCanceled()) {
-            CompoundTag jobTag = new CompoundTag();
-            this.activeJob.writeToNBT(jobTag);
-            data.put("activeJob", jobTag);
-        } else {
-            data.remove("activeJob");
-        }
-    }
-
     public void doWork() {
         if (this.pendingPlan != null || this.activeJob != null) return;
 
@@ -159,7 +132,7 @@ public class CraftingSchedulerBE extends AENetworkBlockEntity implements MenuPro
 
         this.pendingPlan = crafting.beginCraftingCalculation(
                 getLevel(),
-                () -> new MachineSource(this),
+                () -> IActionSource.ofMachine(this),
                 key,
                 this.amount,
                 CalculationStrategy.REPORT_MISSING_ITEMS
@@ -168,11 +141,9 @@ public class CraftingSchedulerBE extends AENetworkBlockEntity implements MenuPro
         this.setChanged();
     }
 
-    // ===== IGridTickable =====
-
     @Override
     public TickingRequest getTickingRequest(IGridNode node) {
-        return new TickingRequest(20, 20, false, false);
+        return new TickingRequest(20, 20, false);
     }
 
     @Override
@@ -202,10 +173,15 @@ public class CraftingSchedulerBE extends AENetworkBlockEntity implements MenuPro
                 this.activeJob = result.link();
                 this.setChanged();
             }
-        } catch (Throwable ignored) {
+        } catch (Throwable a) {
+            LogUtils.getLogger().info(a.getLocalizedMessage());
             this.pendingPlan = null;
         }
 
         return TickRateModulation.IDLE;
+    }
+
+    public void openMenu(Player player, MenuHostLocator locator) {
+        MenuOpener.open(CrazyMenuRegistrar.CRAFTING_SCHEDULER_MENU.get(), player, locator);
     }
 }

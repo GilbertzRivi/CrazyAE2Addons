@@ -163,13 +163,12 @@ public class ProgramExpander {
                 int id = Integer.parseInt(idStr);
                 if (!blockMap.containsKey(id)) throw new Exception("Block ID [" + id + "] not defined in map at position " + i);
                 String placeBlock = blockMap.get(id);
-                i = j + 1;
-                if (input.startsWith("==(", i) || input.startsWith("!=(", i)) {
-                    String op = input.startsWith("==(", i) ? "EQ" : "NE";
-                    int k = i + 3;
+                if (input.startsWith("==(", j + 1) || input.startsWith("!=(", j + 1)) {
+                    String op = input.startsWith("==(", j + 1) ? "EQ" : "NE";
+                    int k = j + 4;
                     while (k < input.length() && input.charAt(k) != ')') k++;
                     if (k >= input.length()) throw new Exception("Unclosed condition in P(n)op(m) at position " + i);
-                    String condIdStr = input.substring(i + 3, k);
+                    String condIdStr = input.substring(j + 4, k);
                     if (!condIdStr.matches("\\d+")) throw new Exception("Invalid block ID in condition at position " + i);
                     int condId = Integer.parseInt(condIdStr);
                     if (!blockMap.containsKey(condId)) throw new Exception("Block ID [" + condId + "] not defined in map at position " + i);
@@ -177,6 +176,7 @@ public class ProgramExpander {
                     i = k + 1;
                 } else {
                     tokens.add("P|" + placeBlock);
+                    i = j + 1;
                 }
             } else if (c == 'X') {
                 if (input.startsWith("==(", i + 1) || input.startsWith("!=(", i + 1)) {

@@ -1,21 +1,20 @@
 package net.oktawia.crazyae2addons.menus;
 
-import appeng.blockentity.networking.CableBusBlockEntity;
 import appeng.helpers.patternprovider.PatternProviderLogicHost;
 import appeng.menu.SlotSemantics;
 import appeng.menu.guisync.GuiSync;
 import appeng.menu.implementations.PatternProviderMenu;
 import appeng.menu.slot.RestrictedInputSlot;
+import lombok.Getter;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.oktawia.crazyae2addons.IsModLoaded;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.entities.CrazyPatternProviderBE;
-import net.oktawia.crazyae2addons.network.NetworkHandler;
-import net.oktawia.crazyae2addons.network.UpdatePatternsPacket;
+import net.oktawia.crazyae2addons.network.packets.UpdatePatternsPacket;
 import net.oktawia.crazyae2addons.parts.CrazyPatternProviderPart;
 
 import java.util.ArrayList;
@@ -27,7 +26,8 @@ public class CrazyPatternProviderMenu extends PatternProviderMenu {
     private static final int COLS = 9;
     private static final int VISIBLE_ROWS = 4;
 
-    public final PatternProviderLogicHost host;
+    @Getter
+    private final PatternProviderLogicHost host;
     private final Player player;
 
     @GuiSync(38)
@@ -48,16 +48,16 @@ public class CrazyPatternProviderMenu extends PatternProviderMenu {
 
         registerClientAction(SYNC, Integer.class, this::handleRequestUpdate);
 
-        if (!IsModLoaded.isAppFluxLoaded()){
-            if (host.getBlockEntity() instanceof CrazyPatternProviderBE cpp){
-                for (int i = 0; i < cpp.getUpgrades().size(); i++) {
-                    var slot = new RestrictedInputSlot(RestrictedInputSlot.PlacableItemType.UPGRADES, cpp.getUpgrades(), i);
-                    slot.setNotDraggable();
-                    this.addSlot(slot, SlotSemantics.UPGRADE);
-                }
-            } else if (host instanceof CrazyPatternProviderPart crazyPart){
-                for (int i = 0; i < crazyPart.getUpgrades().size(); i++) {
-                    var slot = new RestrictedInputSlot(RestrictedInputSlot.PlacableItemType.UPGRADES, crazyPart.getUpgrades(), i);
+        if (!IsModLoaded.APP_FLUX) {
+            appeng.api.upgrades.IUpgradeInventory upgradeInv = null;
+            if (host.getBlockEntity() instanceof CrazyPatternProviderBE crazyBE) {
+                upgradeInv = crazyBE.getUpgrades();
+            } else if (host instanceof CrazyPatternProviderPart crazyPart) {
+                upgradeInv = crazyPart.getUpgrades();
+            }
+            if (upgradeInv != null) {
+                for (int i = 0; i < upgradeInv.size(); i++) {
+                    var slot = new RestrictedInputSlot(RestrictedInputSlot.PlacableItemType.UPGRADES, upgradeInv, i);
                     slot.setNotDraggable();
                     this.addSlot(slot, SlotSemantics.UPGRADE);
                 }
@@ -78,8 +78,7 @@ public class CrazyPatternProviderMenu extends PatternProviderMenu {
             visibleStacks.add(inventory.getStackInSlot(startIndex + i));
         }
 
-        NetworkHandler.INSTANCE.send(
-                PacketDistributor.PLAYER.with(() -> (ServerPlayer) player),
+        PacketDistributor.sendToPlayer((ServerPlayer) player,
                 new UpdatePatternsPacket(startIndex, visibleStacks)
         );
     }

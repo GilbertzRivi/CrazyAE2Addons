@@ -5,7 +5,7 @@ import appeng.blockentity.crafting.PatternProviderBlockEntity;
 import appeng.helpers.patternprovider.PatternProviderLogic;
 import appeng.menu.ISubMenu;
 import appeng.menu.MenuOpener;
-import appeng.menu.locator.MenuLocator;
+import appeng.menu.locator.MenuHostLocator;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -15,6 +15,7 @@ import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 
 public class BrokenPatternProviderBE extends PatternProviderBlockEntity {
+
     public BrokenPatternProviderBE(BlockPos pos, BlockState blockState) {
         super(CrazyBlockEntityRegistrar.BROKEN_PATTERN_PROVIDER_BE.get(), pos, blockState);
         this.getMainNode().setVisualRepresentation(CrazyBlockRegistrar.BROKEN_PATTERN_PROVIDER_BLOCK.get().asItem());
@@ -26,7 +27,7 @@ public class BrokenPatternProviderBE extends PatternProviderBlockEntity {
     }
 
     @Override
-    public void openMenu(Player player, MenuLocator locator) {
+    public void openMenu(Player player, MenuHostLocator locator) {
         MenuOpener.open(CrazyMenuRegistrar.BROKEN_PATTERN_PROVIDER_MENU.get(), player, locator);
     }
 

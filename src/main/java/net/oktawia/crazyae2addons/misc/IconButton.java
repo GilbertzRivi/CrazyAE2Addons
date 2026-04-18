@@ -16,5 +16,7 @@ public class IconButton extends appeng.client.gui.widgets.IconButton {
         return this.icon;
     }
 
-    public void setIcon(Icon icon) { this.icon = icon; }
+    public void setIcon(Icon icon) {
+        this.icon = icon;
+    }
 }

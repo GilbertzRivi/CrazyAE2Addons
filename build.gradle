@@ -54,7 +54,6 @@ repositories {
         url = uri("https://maven.firstdarkdev.xyz/snapshots")
         content {
             includeGroup 'com.lowdragmc.ldlib2'
-            includeGroup 'com.lowdragmc.ldlib'
         }
     }
 
@@ -188,7 +187,9 @@ dependencies {
     compileOnly "maven.modrinth:applied-mekanistics:1.6.3"
 
     // GregTech
-    implementation "com.gregtechceu.gtceu:gtceu-1.21.1:8.0.0-SNAPSHOT"
+//    implementation "com.gregtechceu.gtceu:gtceu-1.21.1:8.0.0-SNAPSHOT"
+//    implementation "maven.modrinth:kubejs:8nuqyxbw"
+//    implementation "maven.modrinth:rhino:ZdLtebKH"
 
     // END OF REQUIRED
 
@@ -213,7 +214,7 @@ dependencies {
     implementation "curse.maven:ftb-teams-forge-404468:7369021"
 
     // Distant horizons
-    implementation "curse.maven:distant-horizons-508933:7375285"
+//    implementation "curse.maven:distant-horizons-508933:7375285"
 
     // Apotheosis
 //    implementation "dev.shadowsoffire:Placebo:1.21.1-9.9.1"

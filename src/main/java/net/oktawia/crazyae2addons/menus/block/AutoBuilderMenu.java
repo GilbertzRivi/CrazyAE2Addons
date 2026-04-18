@@ -12,15 +12,16 @@ import net.oktawia.crazyae2addons.entities.AutoBuilderBE;
 
 public class AutoBuilderMenu extends UpgradeableMenu<AutoBuilderBE> {
 
-    public int xax;
-    public int yax;
-    public int zax;
-    @GuiSync(941)
-    public boolean skipEmptyLocked;
-
     private static final String MISSING = "actionUpdateMissing";
     private static final String OFFSET = "actionUpdateOffset";
     private static final String TOGGLE_PREVIEW = "actionTogglePreview";
+
+    public int xax;
+    public int yax;
+    public int zax;
+
+    @GuiSync(941)
+    public boolean skipEmptyLocked;
 
     public AutoBuilderMenu(int id, Inventory playerInventory, AutoBuilderBE host) {
         super(CrazyMenuRegistrar.AUTO_BUILDER_MENU.get(), id, playerInventory, host);
@@ -44,6 +45,11 @@ public class AutoBuilderMenu extends UpgradeableMenu<AutoBuilderBE> {
 
     public void updateMissing(boolean selected) {
         getHost().skipEmpty = selected;
+        getHost().setChanged();
+        if (!isClientSide()) {
+            getHost().syncManaged();
+        }
+
         if (isClientSide()) {
             sendClientAction(MISSING, selected);
         }
@@ -54,14 +60,20 @@ public class AutoBuilderMenu extends UpgradeableMenu<AutoBuilderBE> {
     }
 
     public void syncOffset(String offset) {
-        xax = Integer.parseInt(offset.split("\\|")[0]);
-        yax = Integer.parseInt(offset.split("\\|")[1]);
-        zax = Integer.parseInt(offset.split("\\|")[2]);
+        String[] split = offset.split("\\|");
+        xax = Integer.parseInt(split[0]);
+        yax = Integer.parseInt(split[1]);
+        zax = Integer.parseInt(split[2]);
 
         BlockPos oldOffset = getHost().offset;
         getHost().offset = new BlockPos(xax, yax, zax);
         getHost().onOffsetChanged(oldOffset);
         getHost().recalculateRequiredEnergy();
+
+        if (!isClientSide()) {
+            getHost().syncManaged();
+        }
+
         if (isClientSide()) {
             sendClientAction(OFFSET, offset);
         }
@@ -69,6 +81,11 @@ public class AutoBuilderMenu extends UpgradeableMenu<AutoBuilderBE> {
 
     public void togglePreview() {
         getHost().togglePreview();
+
+        if (!isClientSide()) {
+            getHost().syncManaged();
+        }
+
         if (isClientSide()) {
             sendClientAction(TOGGLE_PREVIEW);
         }

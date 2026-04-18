@@ -1,6 +1,5 @@
 package net.oktawia.crazyae2addons.parts;
 
-import appeng.api.ids.AEComponents;
 import appeng.api.inventories.ISegmentedInventory;
 import appeng.api.inventories.InternalInventory;
 import appeng.api.parts.IPartItem;
@@ -13,38 +12,39 @@ import appeng.helpers.patternprovider.PatternProviderLogic;
 import appeng.items.parts.PartModels;
 import appeng.menu.ISubMenu;
 import appeng.menu.MenuOpener;
+import appeng.menu.locator.MenuLocator;
 import appeng.menu.locator.MenuLocators;
 import appeng.parts.PartModel;
 import appeng.parts.crafting.PatternProviderPart;
 import appeng.util.SettingsFrom;
 import appeng.util.inv.AppEngInternalInventory;
-import com.lowdragmc.lowdraglib2.syncdata.IPersistedSerializable;
-import com.lowdragmc.lowdraglib2.syncdata.annotation.Persisted;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.core.component.DataComponentMap;
+import com.lowdragmc.lowdraglib.syncdata.AccessorOp;
+import com.lowdragmc.lowdraglib.syncdata.IManaged;
+import com.lowdragmc.lowdraglib.syncdata.IManagedStorage;
+import com.lowdragmc.lowdraglib.syncdata.accessor.IManagedAccessor;
+import com.lowdragmc.lowdraglib.syncdata.annotation.DescSynced;
+import com.lowdragmc.lowdraglib.syncdata.annotation.LazyManaged;
+import com.lowdragmc.lowdraglib.syncdata.annotation.Persisted;
+import com.lowdragmc.lowdraglib.syncdata.field.FieldManagedStorage;
+import com.lowdragmc.lowdraglib.syncdata.field.ManagedFieldHolder;
+import com.lowdragmc.lowdraglib.syncdata.payload.NbtTagPayload;
+import lombok.Getter;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.ItemContainerContents;
-import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.network.PacketDistributor;
 import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.IsModLoaded;
 import net.oktawia.crazyae2addons.defs.LangDefs;
-import net.oktawia.crazyae2addons.defs.components.CrazyProviderDisplayData;
-import net.oktawia.crazyae2addons.defs.regs.CrazyDataComponents;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.logic.interfaces.IProviderLogicResizable;
-import net.oktawia.crazyae2addons.network.packets.SyncBlockClientPacket;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -54,37 +54,40 @@ public class CrazyPatternProviderPart extends PatternProviderPart implements IUp
     private static final int BASE_SIZE = 8 * 9;
     private static final int ROW_SIZE = 9;
 
+    private static final String NBT_STATE = "crazy_state";
+    private static final String NBT_PATTERNS = "crazy_patterns";
+
     @PartModels
     public static final PartModel MODELS_OFF = new PartModel(
             CrazyAddons.makeId("part/crazy_pattern_provider_part"),
-            ResourceLocation.fromNamespaceAndPath("ae2", "part/interface_off")
+            new ResourceLocation("ae2", "part/interface_off")
     );
 
     @PartModels
     public static final PartModel MODELS_ON = new PartModel(
             CrazyAddons.makeId("part/crazy_pattern_provider_part"),
-            ResourceLocation.fromNamespaceAndPath("ae2", "part/interface_on")
+            new ResourceLocation("ae2", "part/interface_on")
     );
 
     @PartModels
     public static final PartModel MODELS_HAS_CHANNEL = new PartModel(
             CrazyAddons.makeId("part/crazy_pattern_provider_part"),
-            ResourceLocation.fromNamespaceAndPath("ae2", "part/interface_has_channel")
+            new ResourceLocation("ae2", "part/interface_has_channel")
     );
 
-    private final PartState persisted = new PartState();
+    private final PartState state = new PartState(this);
 
     public CrazyPatternProviderPart(IPartItem<?> partItem) {
         super(partItem);
     }
 
     public int getAdded() {
-        return persisted.added;
+        return state.getAdded();
     }
 
     @Override
     public IUpgradeInventory getUpgrades() {
-        return persisted.upgrades;
+        return state.getUpgrades();
     }
 
     @Override
@@ -93,49 +96,39 @@ public class CrazyPatternProviderPart extends PatternProviderPart implements IUp
     }
 
     public void setAdded(int newAdded) {
-        if (newAdded == persisted.added) {
+        if (newAdded == state.getAdded()) {
             return;
         }
 
-        persisted.added = newAdded;
-
-        var level = getLevel();
-        if (level != null) {
-            applySize(level.registryAccess());
-        }
-    }
-
-    private void applySize(HolderLookup.Provider registries) {
-        ((IProviderLogicResizable) getLogic()).setSize(BASE_SIZE + ROW_SIZE * persisted.added, registries);
+        state.setAdded(newAdded);
+        applySize();
+        getLogic().updatePatterns();
+        markForSync();
     }
 
     public void upgradeOnce() {
-        persisted.added++;
+        setAdded(state.getAdded() + 1);
+    }
 
-        var level = getLevel();
-        var be = getHost().getBlockEntity();
+    private void applySize() {
+        ((IProviderLogicResizable) getLogic()).crazyAE2Addons$setSize(BASE_SIZE + ROW_SIZE * state.getAdded());
+    }
 
-        if (level != null) {
-            applySize(level.registryAccess());
-            getLogic().updatePatterns();
-            saveChanges();
-
-            if (!level.isClientSide) {
-                PacketDistributor.sendToPlayersTrackingChunk(
-                        (ServerLevel) level,
-                        new ChunkPos(be.getBlockPos()),
-                        new SyncBlockClientPacket(be.getBlockPos(), persisted.added, getSide())
-                );
-            }
+    private void markForSync() {
+        saveChanges();
+        if (getHost() != null) {
+            getHost().markForUpdate();
         }
     }
 
     @Override
-    public boolean onUseItemOn(ItemStack heldItem, Player player, InteractionHand hand, Vec3 pos) {
+    public boolean onPartActivate(Player player, InteractionHand hand, Vec3 pos) {
+        ItemStack heldItem = player.getItemInHand(hand);
+
         if (heldItem.getItem() == CrazyItemRegistrar.CRAZY_UPGRADE.get().asItem()) {
-            if (!isClientSide()) {
+            if (!player.level().isClientSide) {
                 int maxAdd = CrazyConfig.COMMON.CrazyProviderMaxAddRows.get();
-                if (maxAdd != -1 && persisted.added >= maxAdd) {
+                if (maxAdd != -1 && state.getAdded() >= maxAdd) {
                     player.displayClientMessage(
                             Component.translatable(LangDefs.PROVIDER_MAX.getTranslationKey()),
                             true
@@ -149,137 +142,106 @@ public class CrazyPatternProviderPart extends PatternProviderPart implements IUp
             return true;
         }
 
-        return false;
-    }
-
-    @Override
-    public boolean onUseWithoutItem(Player player, Vec3 pos) {
-        if (!isClientSide()) {
-            var be = getHost().getBlockEntity();
-            var level = getLevel();
-
-            if (level != null) {
-                PacketDistributor.sendToPlayersTrackingChunk(
-                        (ServerLevel) level,
-                        new ChunkPos(be.getBlockPos()),
-                        new SyncBlockClientPacket(be.getBlockPos(), persisted.added, getSide())
-                );
-            }
-
+        if (!player.level().isClientSide) {
             MenuOpener.open(
                     CrazyMenuRegistrar.CRAZY_PATTERN_PROVIDER_MENU.get(),
                     player,
                     MenuLocators.forPart(this)
             );
         }
+
         return true;
     }
 
     @Override
-    public void writeToNBT(CompoundTag data, HolderLookup.Provider registries) {
-        super.writeToNBT(data, registries);
-        data.put("crazy_state", persisted.serializeNBT(registries));
+    public void writeToNBT(CompoundTag data) {
+        super.writeToNBT(data);
+        data.put(NBT_STATE, state.savePersisted());
     }
 
     @Override
-    public void readFromNBT(CompoundTag data, HolderLookup.Provider registries) {
-        if (data.contains("crazy_state", Tag.TAG_COMPOUND)) {
-            CompoundTag stateTag = data.getCompound("crazy_state");
-
-            if (stateTag.contains("added", Tag.TAG_INT)) {
-                persisted.added = stateTag.getInt("added");
-                applySize(registries);
-            }
+    public void readFromNBT(CompoundTag data) {
+        if (data.contains(NBT_STATE, Tag.TAG_COMPOUND)) {
+            state.loadPersisted(data.getCompound(NBT_STATE));
+            applySize();
         }
 
-        super.readFromNBT(data, registries);
-
-        if (data.contains("crazy_state", Tag.TAG_COMPOUND)) {
-            persisted.deserializeNBT(registries, data.getCompound("crazy_state"));
-        }
+        super.readFromNBT(data);
     }
 
     @Override
-    public boolean readFromStream(RegistryFriendlyByteBuf data) {
+    public void writeToStream(FriendlyByteBuf data) {
+        super.writeToStream(data);
+        data.writeNbt(state.saveSync(true));
+    }
+
+    @Override
+    public boolean readFromStream(FriendlyByteBuf data) {
         boolean changed = super.readFromStream(data);
 
-        int oldAdded = persisted.added;
-        persisted.readFromBuff(data);
+        int oldAdded = state.getAdded();
+        CompoundTag syncTag = data.readNbt();
 
-        if (oldAdded != persisted.added) {
-            var level = getLevel();
-            if (level != null) {
-                applySize(level.registryAccess());
-                getLogic().updatePatterns();
-            }
+        if (syncTag != null) {
+            state.loadSync(syncTag);
         }
 
-        return changed || oldAdded != persisted.added;
+        if (oldAdded != state.getAdded()) {
+            applySize();
+            getLogic().updatePatterns();
+        }
+
+        return changed || oldAdded != state.getAdded();
     }
 
     @Override
-    public void writeToStream(RegistryFriendlyByteBuf data) {
-        super.writeToStream(data);
-        persisted.writeToBuff(data);
-    }
-
-    @Override
-    public void exportSettings(SettingsFrom mode, DataComponentMap.Builder builder) {
-        super.exportSettings(mode, builder);
+    public void exportSettings(SettingsFrom mode, CompoundTag output) {
+        super.exportSettings(mode, output);
 
         if (mode == SettingsFrom.DISMANTLE_ITEM) {
-            var patternContents = ((AppEngInternalInventory) getLogic().getPatternInv()).toItemContainerContents();
-            builder.set(AEComponents.EXPORTED_PATTERNS, patternContents);
-
-            int filled = (int) patternContents.nonEmptyStream().count();
-            builder.set(
-                    CrazyDataComponents.CRAZY_PROVIDER_DISPLAY.get(),
-                    new CrazyProviderDisplayData(persisted.added, filled)
-            );
+            output.put(NBT_STATE, state.savePersisted());
+            ((AppEngInternalInventory) getLogic().getPatternInv()).writeToNBT(output, NBT_PATTERNS);
         }
     }
 
     @Override
-    public void importSettings(SettingsFrom mode, DataComponentMap input, @Nullable Player player) {
+    public void importSettings(SettingsFrom mode, CompoundTag input, @Nullable Player player) {
         super.importSettings(mode, input, player);
 
         if (mode == SettingsFrom.DISMANTLE_ITEM) {
-            var display = input.get(CrazyDataComponents.CRAZY_PROVIDER_DISPLAY.get());
-            if (display != null) {
-                persisted.added = display.added();
-
-                var level = getLevel();
-                if (level != null) {
-                    applySize(level.registryAccess());
-                }
+            if (input.contains(NBT_STATE, Tag.TAG_COMPOUND)) {
+                state.loadPersisted(input.getCompound(NBT_STATE));
+                applySize();
             }
 
-            var patterns = input.getOrDefault(AEComponents.EXPORTED_PATTERNS, ItemContainerContents.EMPTY);
-            ((AppEngInternalInventory) getLogic().getPatternInv()).fromItemContainerContents(patterns);
+            ((AppEngInternalInventory) getLogic().getPatternInv()).readFromNBT(input, NBT_PATTERNS);
+            getLogic().updatePatterns();
         }
     }
 
     @Override
-    public void addAdditionalDrops(List<ItemStack> drops, boolean wrenched) {
-        for (int i = 0; i < persisted.upgrades.size(); i++) {
-            var stack = persisted.upgrades.getStackInSlot(i);
-            if (!stack.isEmpty()) {
-                drops.add(stack);
-            }
+    public void addAdditionalDrops(List<ItemStack> drops, boolean wrenched) {}
+
+    @Override
+    public void clearContent() {
+        super.clearContent();
+
+        for (int i = 0; i < state.getUpgrades().size(); i++) {
+            state.getUpgrades().setItemDirect(i, ItemStack.EMPTY);
         }
     }
 
     @Override
     @Nullable
     public InternalInventory getSubInventory(ResourceLocation id) {
-        if (id.equals(ISegmentedInventory.UPGRADES)) {
-            return persisted.upgrades;
+        if (ISegmentedInventory.UPGRADES.equals(id)) {
+            return state.getUpgrades();
         }
         return super.getSubInventory(id);
     }
 
     @Override
-    public void openMenu(Player player, appeng.menu.locator.MenuHostLocator locator) {
+    public void openMenu(Player player, MenuLocator locator) {
         MenuOpener.open(CrazyMenuRegistrar.CRAZY_PATTERN_PROVIDER_MENU.get(), player, locator);
     }
 
@@ -309,15 +271,77 @@ public class CrazyPatternProviderPart extends PatternProviderPart implements IUp
         return MODELS_OFF;
     }
 
-    private final class PartState implements IPersistedSerializable {
+    private static final class PartState implements IManaged {
+        private static final ManagedFieldHolder MANAGED_FIELD_HOLDER = new ManagedFieldHolder(PartState.class);
+
+        private final CrazyPatternProviderPart owner;
+        private final FieldManagedStorage syncStorage = new FieldManagedStorage(this);
+
+        @Getter
         @Persisted
+        @DescSynced
         private int added = 0;
 
+        @Getter
         @Persisted
-        private final IUpgradeInventory upgrades = UpgradeInventories.forMachine(
-                CrazyItemRegistrar.CRAZY_PATTERN_PROVIDER_PART.get(),
-                IsModLoaded.APP_FLUX ? 2 : 1,
-                CrazyPatternProviderPart.this::saveChanges
-        );
+        @LazyManaged
+        private final IUpgradeInventory upgrades;
+
+        private PartState(CrazyPatternProviderPart owner) {
+            this.owner = owner;
+            this.upgrades = UpgradeInventories.forMachine(
+                    owner.getPartItem(),
+                    IsModLoaded.APP_FLUX ? 2 : 1,
+                    this::onUpgradesChanged
+            );
+        }
+
+        public void setAdded(int added) {
+            this.added = added;
+            markFieldDirty("added");
+        }
+
+        public CompoundTag savePersisted() {
+            return IManagedAccessor.readManagedFields(this, new CompoundTag());
+        }
+
+        public void loadPersisted(CompoundTag tag) {
+            IManagedAccessor.writePersistedFields(tag, getSyncStorage().getPersistedFields());
+        }
+
+        public CompoundTag saveSync(boolean force) {
+            return IManagedAccessor.readSyncedFields(this, new CompoundTag(), force);
+        }
+
+        public void loadSync(CompoundTag tag) {
+            new IManagedAccessor().writeToReadonlyField(
+                    AccessorOp.SYNCED,
+                    this,
+                    NbtTagPayload.of(tag)
+            );
+        }
+
+        private void onUpgradesChanged() {
+            owner.saveChanges();
+        }
+
+        private void markFieldDirty(String name) {
+            getSyncStorage().getFieldByKey(getFieldHolder().getSyncedFieldIndex(name)).markAsDirty();
+        }
+
+        @Override
+        public ManagedFieldHolder getFieldHolder() {
+            return MANAGED_FIELD_HOLDER;
+        }
+
+        @Override
+        public IManagedStorage getSyncStorage() {
+            return syncStorage;
+        }
+
+        @Override
+        public void onChanged() {
+            owner.saveChanges();
+        }
     }
 }

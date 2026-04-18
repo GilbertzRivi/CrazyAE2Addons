@@ -10,15 +10,19 @@ import net.minecraft.world.entity.player.Inventory;
 import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.defs.LangDefs;
 import net.oktawia.crazyae2addons.menus.block.AmpereMeterMenu;
+import net.oktawia.crazyae2addons.util.MathParser;
+import net.oktawia.crazyae2addons.util.Utils;
 
 import java.util.List;
 
 public class AmpereMeterScreen<C extends AmpereMeterMenu> extends AEBaseScreen<C> {
 
     public ToggleButton direction;
-
     public AETextField minFe;
     public AETextField maxFe;
+
+    private boolean lastMinFocused = false;
+    private boolean lastMaxFocused = false;
 
     public AmpereMeterScreen(C menu, Inventory playerInventory, Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
@@ -30,22 +34,21 @@ public class AmpereMeterScreen<C extends AmpereMeterMenu> extends AEBaseScreen<C
 
         minFe = new AETextField(style, this.font, 0, 0, 64, 12);
         minFe.setBordered(false);
-        minFe.setFilter(s -> s.isEmpty() || s.chars().allMatch(Character::isDigit));
+        minFe.setFilter(s -> s.isEmpty() || s.matches("[0-9kKmMgGtTeE+\\-*/%().\\s]*"));
         minFe.setPlaceholder(Component.translatable(LangDefs.MIN.getTranslationKey()));
-        var unitTooltipKey = LangDefs.FE_PER_TICK;
-        minFe.setTooltipMessage(List.of(Component.translatable(unitTooltipKey.getTranslationKey())));
-        minFe.setMaxLength(10);
+        minFe.setMaxLength(24);
         minFe.setResponder(this::onMinChanged);
         this.widgets.add("min_fe", minFe);
 
         maxFe = new AETextField(style, this.font, 0, 0, 64, 12);
         maxFe.setBordered(false);
-        maxFe.setFilter(s -> s.isEmpty() || s.chars().allMatch(Character::isDigit));
+        maxFe.setFilter(s -> s.isEmpty() || s.matches("[0-9kKmMgGtTeE+\\-*/%().\\s]*"));
         maxFe.setPlaceholder(Component.translatable(LangDefs.MAX.getTranslationKey()));
-        maxFe.setTooltipMessage(List.of(Component.translatable(unitTooltipKey.getTranslationKey())));
-        maxFe.setMaxLength(10);
+        maxFe.setMaxLength(24);
         maxFe.setResponder(this::onMaxChanged);
         this.widgets.add("max_fe", maxFe);
+
+        refreshThresholdTooltips();
     }
 
     @Override
@@ -53,25 +56,81 @@ public class AmpereMeterScreen<C extends AmpereMeterMenu> extends AEBaseScreen<C
         super.init();
 
         if (minFe != null) {
-            minFe.setValue(String.valueOf(getMenu().getHost().getMinFePerTick()));
+            minFe.setValue(formatThreshold(getMenu().getHost().getMinFePerTick()));
         }
 
         if (maxFe != null) {
-            maxFe.setValue(String.valueOf(getMenu().getHost().getMaxFePerTick()));
+            maxFe.setValue(formatThreshold(getMenu().getHost().getMaxFePerTick()));
+        }
+
+        lastMinFocused = false;
+        lastMaxFocused = false;
+
+        refreshThresholdTooltips();
+    }
+
+    private void refreshThresholdTooltips() {
+        boolean useAmps = getMenu().getHost().isAmperesMode();
+
+        Component tooltip = Component.translatable(
+                useAmps
+                        ? LangDefs.AMPERES.getTranslationKey()
+                        : LangDefs.FE_PER_TICK.getTranslationKey()
+        );
+
+        if (minFe != null) {
+            minFe.setTooltipMessage(List.of(tooltip));
+        }
+
+        if (maxFe != null) {
+            maxFe.setTooltipMessage(List.of(tooltip));
         }
     }
 
-    private void onMinChanged(String value) {
-        if (minFe == null || !minFe.isFocused()) return;
+    private int parseThreshold(String value) {
+        if (value == null || value.isBlank()) {
+            return 0;
+        }
 
-        int parsed = 0;
-        if (!value.isEmpty()) {
-            try {
-                parsed = Integer.parseInt(value);
-            } catch (Exception e) {
-                CrazyAddons.LOGGER.debug("invalid numeric input in ampere meter min field", e);
-                return;
-            }
+        String trimmed = value.trim();
+
+        if (trimmed.equals("-") || trimmed.equals("+") || trimmed.equals("(") || trimmed.equals(")")) {
+            throw new IllegalArgumentException("Incomplete expression");
+        }
+
+        double parsed = MathParser.parse(trimmed);
+
+        if (Double.isNaN(parsed) || Double.isInfinite(parsed)) {
+            throw new IllegalArgumentException("Invalid numeric value: " + value);
+        }
+
+        long rounded = Math.round(parsed);
+
+        if (rounded < 0L) {
+            return 0;
+        }
+        if (rounded > Integer.MAX_VALUE) {
+            return Integer.MAX_VALUE;
+        }
+
+        return (int) rounded;
+    }
+
+    private String formatThreshold(int value) {
+        return value <= 0 ? "0" : Utils.shortenNumber(value);
+    }
+
+    private void onMinChanged(String value) {
+        if (minFe == null || !minFe.isFocused()) {
+            return;
+        }
+
+        int parsed;
+        try {
+            parsed = parseThreshold(value);
+        } catch (Exception e) {
+            CrazyAddons.LOGGER.debug("invalid numeric input in ampere meter min field", e);
+            return;
         }
 
         if (parsed != getMenu().getHost().getMinFePerTick()) {
@@ -80,16 +139,16 @@ public class AmpereMeterScreen<C extends AmpereMeterMenu> extends AEBaseScreen<C
     }
 
     private void onMaxChanged(String value) {
-        if (maxFe == null || !maxFe.isFocused()) return;
+        if (maxFe == null || !maxFe.isFocused()) {
+            return;
+        }
 
-        int parsed = 0;
-        if (!value.isEmpty()) {
-            try {
-                parsed = Integer.parseInt(value);
-            } catch (Exception e) {
-                CrazyAddons.LOGGER.debug("invalid numeric input in ampere meter max field", e);
-                return;
-            }
+        int parsed;
+        try {
+            parsed = parseThreshold(value);
+        } catch (Exception e) {
+            CrazyAddons.LOGGER.debug("invalid numeric input in ampere meter max field", e);
+            return;
         }
 
         if (parsed != getMenu().getHost().getMaxFePerTick()) {
@@ -98,29 +157,50 @@ public class AmpereMeterScreen<C extends AmpereMeterMenu> extends AEBaseScreen<C
     }
 
     private void toggleDirection(boolean dir) {
-        this.direction.setState(!dir);
+        this.direction.setState(dir);
         this.getMenu().changeDirection(dir);
     }
 
     @Override
-    protected void updateBeforeRender(){
+    protected void updateBeforeRender() {
         super.updateBeforeRender();
 
         direction.setState(getMenu().getHost().isDirection());
-        setTextContent("energy", Component.literal(String.format("Transferring: %s %s", getMenu().getHost().getTransfer(), getMenu().getHost().getUnit())));
+        refreshThresholdTooltips();
 
-        if (minFe != null && !minFe.isFocused()) {
-            String v = String.valueOf(getMenu().getHost().getMinFePerTick());
-            if (!v.equals(minFe.getValue())) {
-                minFe.setValue(v);
+        setTextContent(
+                "energy",
+                Component.literal("Transferring: " + getMenu().getHost().getTransfer() + " " + getMenu().getHost().getUnit())
+        );
+
+        if (minFe != null) {
+            boolean focused = minFe.isFocused();
+
+            if (focused && !lastMinFocused) {
+                minFe.setValue(String.valueOf(getMenu().getHost().getMinFePerTick()));
+            } else if (!focused) {
+                String v = formatThreshold(getMenu().getHost().getMinFePerTick());
+                if (!v.equals(minFe.getValue())) {
+                    minFe.setValue(v);
+                }
             }
+
+            lastMinFocused = focused;
         }
 
-        if (maxFe != null && !maxFe.isFocused()) {
-            String v = String.valueOf(getMenu().getHost().getMaxFePerTick());
-            if (!v.equals(maxFe.getValue())) {
-                maxFe.setValue(v);
+        if (maxFe != null) {
+            boolean focused = maxFe.isFocused();
+
+            if (focused && !lastMaxFocused) {
+                maxFe.setValue(String.valueOf(getMenu().getHost().getMaxFePerTick()));
+            } else if (!focused) {
+                String v = formatThreshold(getMenu().getHost().getMaxFePerTick());
+                if (!v.equals(maxFe.getValue())) {
+                    maxFe.setValue(v);
+                }
             }
+
+            lastMaxFocused = focused;
         }
     }
 }

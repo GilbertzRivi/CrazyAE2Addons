@@ -5,19 +5,27 @@ import appeng.api.networking.IGridNode;
 import appeng.api.networking.ticking.IGridTickable;
 import appeng.api.networking.ticking.TickRateModulation;
 import appeng.api.networking.ticking.TickingRequest;
-import appeng.blockentity.grid.AENetworkedBlockEntity;
-import com.lowdragmc.lowdraglib2.syncdata.holder.blockentity.ISyncPersistRPCBlockEntity;
-import com.lowdragmc.lowdraglib2.syncdata.storage.FieldManagedStorage;
+import appeng.blockentity.grid.AENetworkBlockEntity;
+import com.lowdragmc.lowdraglib.syncdata.IManaged;
+import com.lowdragmc.lowdraglib.syncdata.IManagedStorage;
+import com.lowdragmc.lowdraglib.syncdata.blockentity.IAsyncAutoSyncBlockEntity;
+import com.lowdragmc.lowdraglib.syncdata.blockentity.IRPCBlockEntity;
+import com.lowdragmc.lowdraglib.syncdata.field.FieldManagedStorage;
+import com.lowdragmc.lowdraglib.syncdata.field.ManagedFieldHolder;
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 
 public abstract class AbstractMultiblockControllerBE
-        extends AENetworkedBlockEntity
-        implements IGridTickable, ISyncPersistRPCBlockEntity {
+        extends AENetworkBlockEntity
+        implements IGridTickable, IAsyncAutoSyncBlockEntity, IRPCBlockEntity, IManaged {
+
+    protected static final ManagedFieldHolder MANAGED_FIELD_HOLDER =
+            new ManagedFieldHolder(AbstractMultiblockControllerBE.class);
 
     @Getter
     private final FieldManagedStorage syncStorage = new FieldManagedStorage(this);
@@ -48,6 +56,21 @@ public abstract class AbstractMultiblockControllerBE
         );
     }
 
+    @Override
+    public IManagedStorage getRootStorage() {
+        return getSyncStorage();
+    }
+
+    @Override
+    public ManagedFieldHolder getFieldHolder() {
+        return MANAGED_FIELD_HOLDER;
+    }
+
+    @Override
+    public void onChanged() {
+        setChanged();
+    }
+
     protected abstract MultiblockDefinition getMultiblockDefinition();
 
     protected abstract char frameSymbol();
@@ -75,13 +98,16 @@ public abstract class AbstractMultiblockControllerBE
     protected final void invalidateCapabilitiesAt(BlockPos pos) {
         Level level = getLevel();
         if (level != null && !level.isClientSide()) {
-            level.invalidateCapabilities(pos);
+            BlockEntity be = level.getBlockEntity(pos);
+            if (be != null) {
+                be.invalidateCaps();
+            }
         }
     }
 
     @Override
     public TickingRequest getTickingRequest(IGridNode node) {
-        return new TickingRequest(1, 1, false);
+        return new TickingRequest(1, 1, false, false);
     }
 
     @Override

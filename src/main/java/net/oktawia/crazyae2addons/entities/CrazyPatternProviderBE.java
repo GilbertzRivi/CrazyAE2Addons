@@ -1,6 +1,5 @@
 package net.oktawia.crazyae2addons.entities;
 
-import appeng.api.ids.AEComponents;
 import appeng.api.inventories.ISegmentedInventory;
 import appeng.api.inventories.InternalInventory;
 import appeng.api.stacks.AEItemKey;
@@ -11,52 +10,54 @@ import appeng.blockentity.crafting.PatternProviderBlockEntity;
 import appeng.helpers.patternprovider.PatternProviderLogic;
 import appeng.menu.ISubMenu;
 import appeng.menu.MenuOpener;
-import appeng.menu.locator.MenuHostLocator;
+import appeng.menu.locator.MenuLocator;
 import appeng.util.SettingsFrom;
 import appeng.util.inv.AppEngInternalInventory;
-import com.lowdragmc.lowdraglib2.syncdata.annotation.DescSynced;
-import com.lowdragmc.lowdraglib2.syncdata.annotation.Persisted;
-import com.lowdragmc.lowdraglib2.syncdata.annotation.UpdateListener;
-import com.lowdragmc.lowdraglib2.syncdata.holder.blockentity.ISyncPersistRPCBlockEntity;
-import com.lowdragmc.lowdraglib2.syncdata.storage.FieldManagedStorage;
+import com.lowdragmc.lowdraglib.syncdata.annotation.DescSynced;
+import com.lowdragmc.lowdraglib.syncdata.annotation.LazyManaged;
+import com.lowdragmc.lowdraglib.syncdata.annotation.Persisted;
+import com.lowdragmc.lowdraglib.syncdata.annotation.UpdateListener;
+import com.lowdragmc.lowdraglib.syncdata.field.FieldManagedStorage;
+import com.lowdragmc.lowdraglib.syncdata.field.ManagedFieldHolder;
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.oktawia.crazyae2addons.IsModLoaded;
-import net.oktawia.crazyae2addons.defs.components.CrazyProviderDisplayData;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
-import net.oktawia.crazyae2addons.defs.regs.CrazyDataComponents;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.logic.interfaces.IProviderLogicResizable;
+import net.oktawia.crazyae2addons.util.IManagedBEHelper;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
+@Getter
 public class CrazyPatternProviderBE extends PatternProviderBlockEntity
-        implements IUpgradeableObject, ISyncPersistRPCBlockEntity {
+        implements IUpgradeableObject, IManagedBEHelper {
 
     private static final int BASE_SIZE = 8 * 9;
     private static final int ROW_SIZE = 9;
+    private static final String NBT_PATTERNS = "crazy_patterns";
 
-    @Getter
-    private final FieldManagedStorage syncStorage;
+    protected static final ManagedFieldHolder MANAGED_FIELD_HOLDER =
+            new ManagedFieldHolder(CrazyPatternProviderBE.class);
 
-    @Getter
+    private final FieldManagedStorage syncStorage = new FieldManagedStorage(this);
+
     @Persisted
-    public final IUpgradeInventory upgrades = UpgradeInventories.forMachine(
+    @LazyManaged
+    private final IUpgradeInventory upgrades = UpgradeInventories.forMachine(
             CrazyBlockRegistrar.CRAZY_PATTERN_PROVIDER_BLOCK.get(),
             IsModLoaded.APP_FLUX ? 2 : 1,
-            this::saveChanges
+            this::onUpgradesChanged
     );
 
-    @Getter
     @Persisted
     @DescSynced
     @UpdateListener(methodName = "onAddedSynced")
@@ -64,62 +65,120 @@ public class CrazyPatternProviderBE extends PatternProviderBlockEntity
 
     public CrazyPatternProviderBE(BlockPos pos, BlockState blockState) {
         super(CrazyBlockEntityRegistrar.CRAZY_PATTERN_PROVIDER_BE.get(), pos, blockState);
-        this.syncStorage = new FieldManagedStorage(this);
         this.getMainNode().setVisualRepresentation(CrazyBlockRegistrar.CRAZY_PATTERN_PROVIDER_BLOCK.get().asItem());
     }
 
-    private void applySize(HolderLookup.Provider registries) {
-        ((IProviderLogicResizable) getLogic()).setSize(BASE_SIZE + ROW_SIZE * added, registries);
+    @Override
+    public ManagedFieldHolder getFieldHolder() {
+        return MANAGED_FIELD_HOLDER;
     }
 
-    private void onAddedSynced(int oldValue, int newValue) {
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        onValid();
+
         if (level != null) {
-            applySize(level.registryAccess());
+            applySize();
+        }
+    }
+
+    @Override
+    public void setRemoved() {
+        onInValid();
+        super.setRemoved();
+    }
+
+    @Override
+    public void saveAdditional(CompoundTag tag) {
+        super.saveAdditional(tag);
+        saveManagedData(tag);
+    }
+
+    @Override
+    public void loadTag(CompoundTag tag) {
+        loadManagedData(tag);
+        applySize();
+        super.loadTag(tag);
+    }
+
+    @Override
+    public void exportSettings(SettingsFrom mode, CompoundTag output, @Nullable Player player) {
+        super.exportSettings(mode, output, player);
+
+        if (mode == SettingsFrom.DISMANTLE_ITEM) {
+            saveManagedData(output);
+            ((AppEngInternalInventory) getLogic().getPatternInv()).writeToNBT(output, NBT_PATTERNS);
+        }
+    }
+
+    @Override
+    public void importSettings(SettingsFrom mode, CompoundTag input, @Nullable Player player) {
+        super.importSettings(mode, input, player);
+
+        if (mode == SettingsFrom.DISMANTLE_ITEM) {
+            loadManagedData(input);
+            applySize();
+
+            ((AppEngInternalInventory) getLogic().getPatternInv()).readFromNBT(input, NBT_PATTERNS);
             getLogic().updatePatterns();
         }
     }
 
     public void setAdded(int newAdded) {
-        if (newAdded == this.added) return;
+        if (this.added == newAdded) {
+            return;
+        }
+
         this.added = newAdded;
+        applySize();
+        getLogic().updatePatterns();
+        syncManaged();
+    }
+
+    private void onAddedSynced(int newValue, int oldValue) {
         if (level != null) {
-            applySize(level.registryAccess());
-            if (!level.isClientSide) {
-                getLogic().updatePatterns();
-                setChanged();
-                markDirty("added");
-                sync(false);
-                level.sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
-            }
+            applySize();
+            getLogic().updatePatterns();
         }
     }
 
+    private void onUpgradesChanged() {
+        setChanged();
+    }
+
+    private void applySize() {
+        ((IProviderLogicResizable) getLogic()).crazyAE2Addons$setSize(BASE_SIZE + ROW_SIZE * added);
+    }
+
     @Override
-    public void loadTag(CompoundTag data, HolderLookup.Provider registries) {
-        var managed = data.getCompound("managed");
-        if (managed.contains("added")) {
-            this.added = managed.getInt("added");
-            applySize(registries);
+    public void addAdditionalDrops(Level level, BlockPos pos, List<ItemStack> drops) {}
+
+    @Override
+    public void clearContent() {
+        super.clearContent();
+
+        for (int i = 0; i < upgrades.size(); i++) {
+            upgrades.setItemDirect(i, ItemStack.EMPTY);
         }
-        super.loadTag(data, registries);
     }
 
     @Nullable
     @Override
     public InternalInventory getSubInventory(ResourceLocation id) {
-        if (id.equals(ISegmentedInventory.UPGRADES)) {
+        if (ISegmentedInventory.UPGRADES.equals(id)) {
             return upgrades;
         }
         return super.getSubInventory(id);
     }
 
     @Override
-    public PatternProviderLogic createLogic() {
+    protected PatternProviderLogic createLogic() {
         return new PatternProviderLogic(this.getMainNode(), this, BASE_SIZE);
     }
 
     @Override
-    public void openMenu(Player player, MenuHostLocator locator) {
+    public void openMenu(Player player, MenuLocator locator) {
         MenuOpener.open(CrazyMenuRegistrar.CRAZY_PATTERN_PROVIDER_MENU.get(), player, locator);
     }
 
@@ -130,50 +189,11 @@ public class CrazyPatternProviderBE extends PatternProviderBlockEntity
 
     @Override
     public AEItemKey getTerminalIcon() {
-        return AEItemKey.of(CrazyBlockRegistrar.CRAZY_PATTERN_PROVIDER_BLOCK.get());
+        return AEItemKey.of(getBlockState().getBlock().asItem().getDefaultInstance());
     }
 
     @Override
     public ItemStack getMainMenuIcon() {
-        return CrazyBlockRegistrar.CRAZY_PATTERN_PROVIDER_BLOCK.get().asItem().getDefaultInstance();
-    }
-
-    @Override
-    public void exportSettings(SettingsFrom mode, DataComponentMap.Builder builder, @Nullable Player player) {
-        super.exportSettings(mode, builder, player);
-
-        if (mode == SettingsFrom.DISMANTLE_ITEM) {
-            var patternContents = ((AppEngInternalInventory) getLogic().getPatternInv()).toItemContainerContents();
-            builder.set(AEComponents.EXPORTED_PATTERNS, patternContents);
-
-            int filled = (int) patternContents.nonEmptyStream().count();
-            builder.set(
-                    CrazyDataComponents.CRAZY_PROVIDER_DISPLAY.get(),
-                    new CrazyProviderDisplayData(added, filled)
-            );
-        }
-    }
-
-    @Override
-    public void importSettings(SettingsFrom mode, DataComponentMap input, @Nullable Player player) {
-        super.importSettings(mode, input, player);
-
-        if (mode == SettingsFrom.DISMANTLE_ITEM) {
-            var display = input.get(CrazyDataComponents.CRAZY_PROVIDER_DISPLAY.get());
-            if (display != null) {
-                this.added = display.added();
-
-                if (level != null) {
-                    applySize(level.registryAccess());
-                }
-            }
-
-            var patterns = input.getOrDefault(AEComponents.EXPORTED_PATTERNS, net.minecraft.world.item.component.ItemContainerContents.EMPTY);
-            ((AppEngInternalInventory) getLogic().getPatternInv()).fromItemContainerContents(patterns);
-        }
-    }
-
-    @Override
-    public void addAdditionalDrops(net.minecraft.world.level.Level level, BlockPos pos, List<ItemStack> drops) {
+        return getBlockState().getBlock().asItem().getDefaultInstance();
     }
 }

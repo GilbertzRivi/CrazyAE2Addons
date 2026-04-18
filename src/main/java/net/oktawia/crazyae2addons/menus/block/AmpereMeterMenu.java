@@ -8,12 +8,12 @@ import net.oktawia.crazyae2addons.entities.AmpereMeterBE;
 
 public class AmpereMeterMenu extends AEBaseMenu {
 
+    private static final String CHANGE_DIRECTION = "actionChangeDirection";
+    private static final String CHANGE_MIN = "actionChangeMin";
+    private static final String CHANGE_MAX = "actionChangeMax";
+
     @Getter
     private final AmpereMeterBE host;
-
-    public String CHANGE_DIRECTION = "actionChangeDirection";
-    public String CHANGE_MIN = "actionChangeMin";
-    public String CHANGE_MAX = "actionChangeMax";
 
     public AmpereMeterMenu(int id, Inventory ip, AmpereMeterBE host) {
         super(CrazyMenuRegistrar.AMPERE_METER_MENU.get(), id, ip, host);
@@ -28,23 +28,21 @@ public class AmpereMeterMenu extends AEBaseMenu {
 
     public void changeDirection(boolean dir) {
         host.setDirection(dir);
-        if (isClientSide()){
+        if (isClientSide()) {
             sendClientAction(CHANGE_DIRECTION, dir);
         }
     }
 
     public void changeMin(int min) {
-        this.host.setMinFePerTick(min);
-
-        if (isClientSide()){
+        host.setMinFePerTick(min);
+        if (isClientSide()) {
             sendClientAction(CHANGE_MIN, min);
         }
     }
 
     public void changeMax(int max) {
-        this.host.setMaxFePerTick(max);
-
-        if (isClientSide()){
+        host.setMaxFePerTick(max);
+        if (isClientSide()) {
             sendClientAction(CHANGE_MAX, max);
         }
     }

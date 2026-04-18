@@ -3,10 +3,15 @@ package net.oktawia.crazyae2addons.multiblock;
 import appeng.api.networking.GridHelper;
 import appeng.api.networking.IGridConnection;
 import appeng.api.networking.IGridNode;
-import appeng.blockentity.grid.AENetworkedBlockEntity;
-import com.lowdragmc.lowdraglib2.syncdata.annotation.DescSynced;
-import com.lowdragmc.lowdraglib2.syncdata.holder.blockentity.ISyncPersistRPCBlockEntity;
-import com.lowdragmc.lowdraglib2.syncdata.storage.FieldManagedStorage;
+import appeng.blockentity.grid.AENetworkBlockEntity;
+import com.lowdragmc.lowdraglib.syncdata.IManaged;
+import com.lowdragmc.lowdraglib.syncdata.IManagedStorage;
+import com.lowdragmc.lowdraglib.syncdata.annotation.DescSynced;
+import com.lowdragmc.lowdraglib.syncdata.annotation.Persisted;
+import com.lowdragmc.lowdraglib.syncdata.blockentity.IAsyncAutoSyncBlockEntity;
+import com.lowdragmc.lowdraglib.syncdata.blockentity.IRPCBlockEntity;
+import com.lowdragmc.lowdraglib.syncdata.field.FieldManagedStorage;
+import com.lowdragmc.lowdraglib.syncdata.field.ManagedFieldHolder;
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.item.ItemStack;
@@ -18,8 +23,11 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 
-public abstract class AbstractMultiblockFrameBE<C extends BlockEntity> extends AENetworkedBlockEntity
-        implements MultiblockCallback, ISyncPersistRPCBlockEntity {
+public abstract class AbstractMultiblockFrameBE<C extends BlockEntity> extends AENetworkBlockEntity
+        implements MultiblockCallback, IAsyncAutoSyncBlockEntity, IRPCBlockEntity, IManaged {
+
+    protected static final ManagedFieldHolder MANAGED_FIELD_HOLDER =
+            new ManagedFieldHolder(AbstractMultiblockFrameBE.class);
 
     @Getter
     private final FieldManagedStorage syncStorage = new FieldManagedStorage(this);
@@ -28,6 +36,7 @@ public abstract class AbstractMultiblockFrameBE<C extends BlockEntity> extends A
     protected @Nullable C activeController;
 
     @DescSynced
+    @Persisted
     protected @Nullable BlockPos syncedControllerPos;
 
     protected AbstractMultiblockFrameBE(
@@ -42,6 +51,21 @@ public abstract class AbstractMultiblockFrameBE<C extends BlockEntity> extends A
         this.getMainNode()
                 .setIdlePowerUsage(idlePowerUsage)
                 .setVisualRepresentation(visualRepresentation);
+    }
+
+    @Override
+    public IManagedStorage getRootStorage() {
+        return getSyncStorage();
+    }
+
+    @Override
+    public ManagedFieldHolder getFieldHolder() {
+        return MANAGED_FIELD_HOLDER;
+    }
+
+    @Override
+    public void onChanged() {
+        setChanged();
     }
 
     protected abstract Class<C> controllerClass();
@@ -126,7 +150,7 @@ public abstract class AbstractMultiblockFrameBE<C extends BlockEntity> extends A
             return;
         }
 
-        if (!(this.activeController instanceof AENetworkedBlockEntity controllerAe)) {
+        if (!(this.activeController instanceof AENetworkBlockEntity controllerAe)) {
             return;
         }
 

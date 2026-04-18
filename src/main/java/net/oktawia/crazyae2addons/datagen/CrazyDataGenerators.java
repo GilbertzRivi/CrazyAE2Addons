@@ -3,17 +3,16 @@ package net.oktawia.crazyae2addons.datagen;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.data.PackOutput;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.common.data.ExistingFileHelper;
-import net.neoforged.neoforge.data.event.GatherDataEvent;
+import net.minecraftforge.common.data.ExistingFileHelper;
+import net.minecraftforge.data.event.GatherDataEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
 import net.oktawia.crazyae2addons.CrazyAddons;
 
 import java.util.concurrent.CompletableFuture;
 
-@EventBusSubscriber(modid = CrazyAddons.MODID)
+@Mod.EventBusSubscriber(modid = CrazyAddons.MODID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class CrazyDataGenerators {
-
     @SubscribeEvent
     public static void gatherData(GatherDataEvent event) {
         DataGenerator generator = event.getGenerator();
@@ -21,21 +20,16 @@ public class CrazyDataGenerators {
         ExistingFileHelper existingFileHelper = event.getExistingFileHelper();
         CompletableFuture<HolderLookup.Provider> lookupProvider = event.getLookupProvider();
 
-        generator.addProvider(event.includeServer(), new CrazyRecipeProvider(packOutput, lookupProvider));
-        generator.addProvider(event.includeServer(), CrazyLootTableProvider.create(packOutput, lookupProvider));
+        generator.addProvider(event.includeServer(), new CrazyRecipeProvider(packOutput));
+        generator.addProvider(event.includeServer(), CrazyLootTableProvider.create(packOutput));
 
         generator.addProvider(event.includeClient(), new CrazyBlockStateProvider(packOutput, existingFileHelper));
         generator.addProvider(event.includeClient(), new CrazyItemModelProvider(packOutput, existingFileHelper));
+
         generator.addProvider(event.includeClient(), new CrazyLangProvider(packOutput, "en_us"));
 
-        CrazyBlockTagGenerator blockTagGenerator = generator.addProvider(
-                event.includeServer(),
-                new CrazyBlockTagGenerator(packOutput, lookupProvider, existingFileHelper)
-        );
-
-        generator.addProvider(
-                event.includeServer(),
-                new CrazyItemTagGenerator(packOutput, lookupProvider, blockTagGenerator.contentsGetter(), existingFileHelper)
-        );
+        CrazyBlockTagGenerator blockTagGenerator = generator.addProvider(event.includeServer(),
+                new CrazyBlockTagGenerator(packOutput, lookupProvider, existingFileHelper));
+        generator.addProvider(event.includeServer(), new CrazyItemTagGeneratorr(packOutput, lookupProvider, blockTagGenerator.contentsGetter(), existingFileHelper));
     }
 }

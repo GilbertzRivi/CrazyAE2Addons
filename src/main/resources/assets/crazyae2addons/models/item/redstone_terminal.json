@@ -1,8 +1,0 @@
-{
-  "parent": "ae2:item/terminal",
-  "textures": {
-    "lightsBright": "crazyae2addons:part/redstone_terminal_bright",
-    "lightsMedium": "crazyae2addons:part/redstone_terminal",
-    "lightsDark": "crazyae2addons:part/redstone_terminal_dark"
-  }
-}

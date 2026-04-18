@@ -1,26 +1,28 @@
 package net.oktawia.crazyae2addons.ldlib.accessors;
 
 import appeng.util.inv.AppEngInternalInventory;
-import com.lowdragmc.lowdraglib2.core.mixins.accessor.DelegatingOpsAccessor;
-import com.lowdragmc.lowdraglib2.syncdata.accessor.readonly.IReadOnlyAccessor;
-import com.mojang.serialization.DynamicOps;
+import com.lowdragmc.lowdraglib.syncdata.AccessorOp;
+import com.lowdragmc.lowdraglib.syncdata.IAccessor;
+import com.lowdragmc.lowdraglib.syncdata.managed.IRef;
+import com.lowdragmc.lowdraglib.syncdata.payload.ITypedPayload;
+import com.lowdragmc.lowdraglib.syncdata.payload.NbtTagPayload;
+import com.lowdragmc.lowdraglib.syncdata.payload.PrimitiveTypedPayload;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
-import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.world.item.ItemStack;
-import org.jetbrains.annotations.NotNull;
-
-import net.neoforged.neoforge.server.ServerLifecycleHooks;
+import net.minecraftforge.server.ServerLifecycleHooks;
 
 import java.util.stream.Stream;
 
-public final class InventoryAccessor implements IReadOnlyAccessor<AppEngInternalInventory> {
+public final class InventoryAccessor implements IAccessor {
+    private static final String SUBTAG = "inv";
 
-    private static HolderLookup.Provider registries() {
-        var server = ServerLifecycleHooks.getCurrentServer();
-        return server != null ? server.registryAccess() : HolderLookup.Provider.create(Stream.of());
+    private byte defaultType = -1;
+
+    @Override
+    public boolean hasPredicate() {
+        return true;
     }
 
     @Override
@@ -29,51 +31,52 @@ public final class InventoryAccessor implements IReadOnlyAccessor<AppEngInternal
     }
 
     @Override
-    public <T> T readReadOnlyValue(DynamicOps<T> op, @NotNull AppEngInternalInventory value) {
-        CompoundTag root = new CompoundTag();
-        value.writeToNBT(root, "inv", registries());
-        Tag payload = root.contains("inv") ? root.get("inv") : new net.minecraft.nbt.ListTag();
-
-        if (op == NbtOps.INSTANCE
-            || op instanceof DelegatingOpsAccessor<?> a && a.getDelegate() == NbtOps.INSTANCE) {
-            T out = (T) payload;
-            return out;
-        }
-
-        return NbtOps.INSTANCE.convertTo(op, payload);
+    public boolean isManaged() {
+        return false;
     }
 
     @Override
-    public <T> void writeReadOnlyValue(DynamicOps<T> op, AppEngInternalInventory value, T payload) {
-        Tag nbt = (op == NbtOps.INSTANCE
-            || op instanceof DelegatingOpsAccessor<?> a && a.getDelegate() == NbtOps.INSTANCE)
-            ? (Tag) payload
-            : op.convertTo(NbtOps.INSTANCE, payload);
+    public void setDefaultType(byte payloadType) {
+        this.defaultType = payloadType;
+    }
+
+    @Override
+    public byte getDefaultType() {
+        return this.defaultType;
+    }
+
+    @Override
+    public ITypedPayload<?> readField(AccessorOp op, IRef field) {
+        AppEngInternalInventory value = field.readRaw();
+        if (value == null) {
+            return PrimitiveTypedPayload.ofNull();
+        }
 
         CompoundTag root = new CompoundTag();
-        root.put("inv", nbt);
+        value.writeToNBT(root, SUBTAG);
+        return NbtTagPayload.of(root);
+    }
+
+    @Override
+    public void writeField(AccessorOp op, IRef field, ITypedPayload<?> payload) {
+        AppEngInternalInventory value = field.readRaw();
+        if (value == null) {
+            return;
+        }
+
+        Tag tag = payload.serializeNBT();
+        CompoundTag root;
+
+        if (tag instanceof CompoundTag compound) {
+            root = compound;
+        } else {
+            root = new CompoundTag();
+            root.put(SUBTAG, tag);
+        }
 
         for (int i = 0; i < value.size(); i++) {
             value.setItemDirect(i, ItemStack.EMPTY);
         }
-        value.readFromNBT(root, "inv", registries());
-    }
-
-    @Override
-    public void readReadOnlyValueToStream(RegistryFriendlyByteBuf buffer, @NotNull AppEngInternalInventory value) {
-        CompoundTag root = new CompoundTag();
-        value.writeToNBT(root, "inv", buffer.registryAccess());
-        buffer.writeNbt(root);
-    }
-
-    @Override
-    public void writeReadOnlyValueFromStream(RegistryFriendlyByteBuf buffer, @NotNull AppEngInternalInventory value) {
-        CompoundTag root = buffer.readNbt();
-        if (root == null) return;
-
-        for (int i = 0; i < value.size(); i++) {
-            value.setItemDirect(i, ItemStack.EMPTY);
-        }
-        value.readFromNBT(root, "inv", buffer.registryAccess());
+        value.readFromNBT(root, SUBTAG);
     }
 }

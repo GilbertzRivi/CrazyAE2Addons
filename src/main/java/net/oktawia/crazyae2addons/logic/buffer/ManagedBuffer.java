@@ -17,19 +17,17 @@ import appeng.api.stacks.KeyCounter;
 import appeng.api.storage.StorageHelper;
 import appeng.helpers.patternprovider.PatternProviderLogic;
 import appeng.helpers.patternprovider.PatternProviderLogicHost;
-import appeng.me.helpers.MachineSource;
 import com.google.common.collect.ImmutableSet;
 import it.unimi.dsi.fastutil.objects.Object2LongMap;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import lombok.Getter;
 import lombok.Setter;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.Level;
 import net.oktawia.crazyae2addons.CrazyAddons;
-import net.oktawia.crazyae2addons.defs.components.AEItemBufferData;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -103,13 +101,14 @@ public class ManagedBuffer {
         return items.isEmpty();
     }
 
-    public void collectFromNetwork(List<GenericStack> required, Supplier<Boolean> hasCreative) {
+    public void collectFromNetwork(GenericStack[] required, Supplier<Boolean> hasCreative) {
         if (hasCreative.get()) return;
         var grid = grid();
         if (grid == null) return;
         var storage = grid.getStorageService().getInventory();
         var es = grid.getEnergyService();
         for (var stack : required) {
+            if (stack == null) continue;
             var key = stack.what();
             if (key == null) continue;
             long need = stack.amount() - get(key);
@@ -119,25 +118,38 @@ public class ManagedBuffer {
         }
     }
 
-    public List<GenericStack> computeMissing(List<GenericStack> required, Supplier<Boolean> hasCreative) {
-        if (hasCreative.get()) return new ArrayList<>();
-        List<GenericStack> missing = new ArrayList<>();
+    public GenericStack[] computeMissing(GenericStack[] required, Supplier<Boolean> hasCreative) {
+        if (hasCreative.get()) return new GenericStack[0];
+
+        GenericStack[] tmp = new GenericStack[required.length];
+        int count = 0;
+
         for (var stack : required) {
+            if (stack == null) continue;
             var key = stack.what();
             if (key == null) continue;
             long need = stack.amount() - get(key);
-            if (need > 0) missing.add(new GenericStack(key, need));
+            if (need > 0) {
+                tmp[count++] = new GenericStack(key, need);
+            }
         }
-        return missing;
+
+        if (count == tmp.length) {
+            return tmp;
+        }
+
+        GenericStack[] trimmed = new GenericStack[count];
+        System.arraycopy(tmp, 0, trimmed, 0, count);
+        return trimmed;
     }
 
-    public boolean request(List<GenericStack> required) {
+    public boolean request(GenericStack[] required) {
         if (flushPending) return false;
         if (!flushUnneeded(required)) return false;
 
         collectFromNetwork(required, () -> false);
         var missing = computeMissing(required, () -> false);
-        if (missing.isEmpty()) {
+        if (missing.length == 0) {
             fireReady();
             return true;
         }
@@ -146,7 +158,7 @@ public class ManagedBuffer {
         return hasActiveCrafting();
     }
 
-    private boolean flushUnneeded(List<GenericStack> required) {
+    private boolean flushUnneeded(GenericStack[] required) {
         if (items.isEmpty()) {
             flushPending = false;
             return true;
@@ -155,7 +167,7 @@ public class ManagedBuffer {
         var needed = new Object2LongOpenHashMap<AEKey>();
         needed.defaultReturnValue(0L);
         for (var s : required) {
-            if (s.what() != null && s.amount() > 0) {
+            if (s != null && s.what() != null && s.amount() > 0) {
                 needed.put(s.what(), needed.getLong(s.what()) + s.amount());
             }
         }
@@ -191,28 +203,25 @@ public class ManagedBuffer {
         return !stillHasExcess;
     }
 
-    public boolean requestCrafting(List<GenericStack> inputs) {
-        if (!canCraft || hasActiveCrafting()) return false;
+    public void requestCrafting(GenericStack[] inputs) {
+        if (!canCraft || hasActiveCrafting()) return;
         var grid = grid();
-        if (grid == null) return false;
+        if (grid == null) return;
 
-        var tag = new CompoundTag();
-        tag.putUUID("s", UUID.randomUUID());
         var dummy = logicHost.getBlockEntity().getBlockState().getBlock().asItem().getDefaultInstance();
-        dummy.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+        dummy.getOrCreateTag().putUUID("s", UUID.randomUUID());
         var dummyOutput = new GenericStack(AEItemKey.of(dummy), 1);
 
-        var patternStack = PatternDetailsHelper.encodeProcessingPattern(inputs, List.of(dummyOutput));
+        var patternStack = PatternDetailsHelper.encodeProcessingPattern(inputs, new GenericStack[]{dummyOutput});
         logic.getPatternInv().setItemDirect(0, patternStack);
         logic.updatePatterns();
 
         var plan = grid.getCraftingService().beginCraftingCalculation(
-                level(), () -> new MachineSource(actionHost),
+                level(), () -> IActionSource.ofMachine(actionHost),
                 dummyOutput.what(), dummyOutput.amount(), CalculationStrategy.REPORT_MISSING_ITEMS
         );
         pendingPlans.add(plan);
         onDirty.run();
-        return true;
     }
 
     public void onPushPatternComplete() {
@@ -356,44 +365,63 @@ public class ManagedBuffer {
         onDirty.run();
     }
 
-    public AEItemBufferData toData() {
-        List<GenericStack> entries = new ArrayList<>(items.size());
-        for (Object2LongMap.Entry<AEKey> e : items.object2LongEntrySet()) {
-            if (e.getLongValue() > 0) entries.add(new GenericStack(e.getKey(), e.getLongValue()));
-        }
-        List<CompoundTag> linkTags = new ArrayList<>();
+    public CompoundTag toTag() {
+        CompoundTag tag = new CompoundTag();
+
+        tag.put("entries", saveGenericStacks(toEntryArray()));
+
+        ListTag linkTags = new ListTag();
         for (var link : activeLinks) {
             if (link.isCanceled() || link.isDone()) continue;
-            var lt = new CompoundTag();
+            CompoundTag lt = new CompoundTag();
             link.writeToNBT(lt);
             linkTags.add(lt);
         }
-        var patternSlot = logic.getPatternInv().getStackInSlot(0);
-        return new AEItemBufferData(entries, flushPending, flushTickAcc, linkTags, patternSlot);
+        tag.put("links", linkTags);
+
+        tag.putBoolean("flushPending", flushPending);
+        tag.putInt("flushTickAcc", flushTickAcc);
+
+        ItemStack patternSlot = logic.getPatternInv().getStackInSlot(0);
+        if (!patternSlot.isEmpty()) {
+            tag.put("patternSlot", patternSlot.save(new CompoundTag()));
+        }
+
+        return tag;
     }
 
-    public void fromData(AEItemBufferData data) {
+    public void fromTag(CompoundTag tag) {
         items.clear();
-        for (var s : data.entries()) {
+
+        GenericStack[] entries = loadGenericStacks(tag.getList("entries", Tag.TAG_COMPOUND));
+        for (GenericStack s : entries) {
             if (s == null || s.amount() <= 0 || s.what() == null) continue;
             items.put(s.what(), s.amount());
         }
-        flushPending = data.flushPending() && !items.isEmpty();
-        flushTickAcc = data.flushTickAcc();
+
+        flushPending = tag.getBoolean("flushPending") && !items.isEmpty();
+        flushTickAcc = tag.getInt("flushTickAcc");
         readyAtTick = 0;
+
         pendingPlans.clear();
         activeLinks.clear();
+
         if (actionHost instanceof ICraftingRequester requester) {
-            for (var lt : data.links()) {
-                var link = StorageHelper.loadCraftingLink(lt, requester);
-                activeLinks.add(link);
+            ListTag linkTags = tag.getList("links", Tag.TAG_COMPOUND);
+            for (int i = 0; i < linkTags.size(); i++) {
+                CompoundTag lt = linkTags.getCompound(i);
+                ICraftingLink link = StorageHelper.loadCraftingLink(lt, requester);
+                if (link != null) {
+                    activeLinks.add(link);
+                }
             }
         }
-        var patternSlot = data.patternSlot();
-        if (!patternSlot.isEmpty()) {
-            logic.getPatternInv().setItemDirect(0, patternSlot);
-            // updatePatterns() nie jest tu wołane — level jest null przy deserializacji.
-            // Zostanie wywołane z onLoad() gdy level jest już dostępny.
+
+        if (tag.contains("patternSlot", Tag.TAG_COMPOUND)) {
+            ItemStack patternSlot = ItemStack.of(tag.getCompound("patternSlot"));
+            if (!patternSlot.isEmpty()) {
+                logic.getPatternInv().setItemDirect(0, patternSlot);
+            }
         }
     }
 
@@ -439,5 +467,62 @@ public class ManagedBuffer {
 
     private IGrid grid() {
         return mainNode.getGrid();
+    }
+
+    private GenericStack[] toEntryArray() {
+        GenericStack[] result = new GenericStack[items.size()];
+        int i = 0;
+
+        for (Object2LongMap.Entry<AEKey> e : items.object2LongEntrySet()) {
+            if (e.getLongValue() > 0 && e.getKey() != null) {
+                result[i++] = new GenericStack(e.getKey(), e.getLongValue());
+            }
+        }
+
+        if (i == result.length) {
+            return result;
+        }
+
+        GenericStack[] trimmed = new GenericStack[i];
+        System.arraycopy(result, 0, trimmed, 0, i);
+        return trimmed;
+    }
+
+    private static ListTag saveGenericStacks(GenericStack[] stacks) {
+        ListTag list = new ListTag();
+
+        for (GenericStack stack : stacks) {
+            if (stack == null || stack.what() == null || stack.amount() <= 0) continue;
+
+            ItemStack wrapped = GenericStack.wrapInItemStack(stack);
+            if (!wrapped.isEmpty()) {
+                list.add(wrapped.save(new CompoundTag()));
+            }
+        }
+
+        return list;
+    }
+
+    private static GenericStack[] loadGenericStacks(ListTag list) {
+        GenericStack[] tmp = new GenericStack[list.size()];
+        int count = 0;
+
+        for (int i = 0; i < list.size(); i++) {
+            ItemStack wrapped = ItemStack.of(list.getCompound(i));
+            if (wrapped.isEmpty()) continue;
+
+            GenericStack stack = GenericStack.fromItemStack(wrapped);
+            if (stack == null || stack.what() == null || stack.amount() <= 0) continue;
+
+            tmp[count++] = stack;
+        }
+
+        if (count == tmp.length) {
+            return tmp;
+        }
+
+        GenericStack[] trimmed = new GenericStack[count];
+        System.arraycopy(tmp, 0, trimmed, 0, count);
+        return trimmed;
     }
 }

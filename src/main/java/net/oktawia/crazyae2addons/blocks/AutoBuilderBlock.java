@@ -1,15 +1,8 @@
 package net.oktawia.crazyae2addons.blocks;
 
 import appeng.block.AEBaseBlock;
-import appeng.block.AEBaseEntityBlock;
-import appeng.menu.locator.MenuLocators;
-import appeng.util.InteractionUtil;
-import com.lowdragmc.lowdraglib2.gui.ui.elements.codeeditor.CodeEditor;
-import com.lowdragmc.lowdraglib2.gui.ui.elements.codeeditor.language.Languages;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -19,9 +12,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.phys.BlockHitResult;
 import net.oktawia.crazyae2addons.entities.AutoBuilderBE;
-import net.oktawia.crazyae2addons.logic.AbstractMenuOpeningBlock;
+import net.oktawia.crazyae2addons.util.AbstractMenuOpeningBlock;
 import org.jetbrains.annotations.Nullable;
 
 public class AutoBuilderBlock extends AbstractMenuOpeningBlock<AutoBuilderBE> {
@@ -37,6 +29,7 @@ public class AutoBuilderBlock extends AbstractMenuOpeningBlock<AutoBuilderBE> {
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+        super.createBlockStateDefinition(builder);
         builder.add(POWERED);
         builder.add(BlockStateProperties.HORIZONTAL_FACING);
     }
@@ -56,12 +49,16 @@ public class AutoBuilderBlock extends AbstractMenuOpeningBlock<AutoBuilderBE> {
 
     @Override
     public void neighborChanged(BlockState state, Level level, BlockPos pos,
-            Block block, BlockPos fromPos, boolean isMoving) {
-        if (level.isClientSide) return;
+                                Block block, BlockPos fromPos, boolean isMoving) {
+        if (level.isClientSide) {
+            return;
+        }
 
         BlockEntity be = level.getBlockEntity(pos);
 
-        if (be instanceof AutoBuilderBE myBE && myBE.isPulsing()) return;
+        if (be instanceof AutoBuilderBE myBE && myBE.isPulsing()) {
+            return;
+        }
 
         boolean wasPowered = state.getValue(POWERED);
         boolean isPoweredNow = level.hasNeighborSignal(pos);

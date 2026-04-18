@@ -1,22 +1,29 @@
 package net.oktawia.crazyae2addons.ldlib.accessors;
 
 import appeng.api.upgrades.IUpgradeInventory;
-import com.lowdragmc.lowdraglib2.Platform;
-import com.lowdragmc.lowdraglib2.core.mixins.accessor.DelegatingOpsAccessor;
-import com.lowdragmc.lowdraglib2.syncdata.accessor.readonly.IReadOnlyAccessor;
-import com.mojang.serialization.DynamicOps;
+import com.lowdragmc.lowdraglib.syncdata.AccessorOp;
+import com.lowdragmc.lowdraglib.syncdata.IAccessor;
+import com.lowdragmc.lowdraglib.syncdata.managed.IRef;
+import com.lowdragmc.lowdraglib.syncdata.payload.ITypedPayload;
+import com.lowdragmc.lowdraglib.syncdata.payload.NbtTagPayload;
+import com.lowdragmc.lowdraglib.syncdata.payload.PrimitiveTypedPayload;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtOps;
 import net.minecraft.nbt.Tag;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.resources.RegistryOps;
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.common.CommonHooks;
-import org.jetbrains.annotations.NotNull;
+import net.minecraftforge.server.ServerLifecycleHooks;
 
-public final class UpgradeInventoryAccessor implements IReadOnlyAccessor<IUpgradeInventory> {
+import java.util.stream.Stream;
+
+public final class UpgradeInventoryAccessor implements IAccessor {
     private static final String SUBTAG = "inv";
+
+    private byte defaultType = -1;
+
+    @Override
+    public boolean hasPredicate() {
+        return true;
+    }
 
     @Override
     public boolean test(Class<?> type) {
@@ -24,25 +31,42 @@ public final class UpgradeInventoryAccessor implements IReadOnlyAccessor<IUpgrad
     }
 
     @Override
-    public <T> T readReadOnlyValue(DynamicOps<T> op, @NotNull IUpgradeInventory value) {
-        var root = new CompoundTag();
-        value.writeToNBT(root, SUBTAG, extractProvider(op));
-
-        if (isNbtOps(op)) {
-            T out = (T) root;
-            return out;
-        }
-
-        return NbtOps.INSTANCE.convertTo(op, root);
+    public boolean isManaged() {
+        return false;
     }
 
     @Override
-    public <T> void writeReadOnlyValue(DynamicOps<T> op, IUpgradeInventory value, T payload) {
-        Tag tag = isNbtOps(op)
-                ? (Tag) payload
-                : op.convertTo(NbtOps.INSTANCE, payload);
+    public void setDefaultType(byte payloadType) {
+        this.defaultType = payloadType;
+    }
 
+    @Override
+    public byte getDefaultType() {
+        return this.defaultType;
+    }
+
+    @Override
+    public ITypedPayload<?> readField(AccessorOp op, IRef field) {
+        IUpgradeInventory value = field.readRaw();
+        if (value == null) {
+            return PrimitiveTypedPayload.ofNull();
+        }
+
+        CompoundTag root = new CompoundTag();
+        value.writeToNBT(root, SUBTAG);
+        return NbtTagPayload.of(root);
+    }
+
+    @Override
+    public void writeField(AccessorOp op, IRef field, ITypedPayload<?> payload) {
+        IUpgradeInventory value = field.readRaw();
+        if (value == null) {
+            return;
+        }
+
+        Tag tag = payload.serializeNBT();
         CompoundTag root;
+
         if (tag instanceof CompoundTag compound) {
             root = compound;
         } else {
@@ -50,43 +74,9 @@ public final class UpgradeInventoryAccessor implements IReadOnlyAccessor<IUpgrad
             root.put(SUBTAG, tag);
         }
 
-        clearInventory(value);
-        value.readFromNBT(root, SUBTAG, extractProvider(op));
-    }
-
-    @Override
-    public void readReadOnlyValueToStream(RegistryFriendlyByteBuf buffer, @NotNull IUpgradeInventory value) {
-        var root = new CompoundTag();
-        value.writeToNBT(root, SUBTAG, buffer.registryAccess());
-        buffer.writeNbt(root);
-    }
-
-    @Override
-    public void writeReadOnlyValueFromStream(RegistryFriendlyByteBuf buffer, @NotNull IUpgradeInventory value) {
-        CompoundTag root = buffer.readNbt();
-        clearInventory(value);
-
-        if (root != null) {
-            value.readFromNBT(root, SUBTAG, buffer.registryAccess());
+        for (int i = 0; i < value.size(); i++) {
+            value.setItemDirect(i, ItemStack.EMPTY);
         }
-    }
-
-    private static void clearInventory(IUpgradeInventory inv) {
-        for (int i = 0; i < inv.size(); i++) {
-            inv.setItemDirect(i, ItemStack.EMPTY);
-        }
-    }
-
-    private static HolderLookup.Provider extractProvider(DynamicOps<?> op) {
-        if (op instanceof RegistryOps<?> registryOps) {
-            return CommonHooks.extractLookupProvider(registryOps);
-        }
-        return Platform.getFrozenRegistry();
-    }
-
-    private static boolean isNbtOps(DynamicOps<?> op) {
-        return op == NbtOps.INSTANCE
-                || op instanceof DelegatingOpsAccessor<?> accessor
-                && accessor.getDelegate() == NbtOps.INSTANCE;
+        value.readFromNBT(root, SUBTAG);
     }
 }

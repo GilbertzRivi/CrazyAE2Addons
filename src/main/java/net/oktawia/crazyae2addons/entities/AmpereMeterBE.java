@@ -2,56 +2,239 @@ package net.oktawia.crazyae2addons.entities;
 
 import appeng.blockentity.AEBaseBlockEntity;
 import appeng.menu.MenuOpener;
-import appeng.menu.locator.MenuHostLocator;
-import com.lowdragmc.lowdraglib2.syncdata.annotation.DescSynced;
-import com.lowdragmc.lowdraglib2.syncdata.annotation.Persisted;
-import com.lowdragmc.lowdraglib2.syncdata.holder.blockentity.ISyncPersistRPCBlockEntity;
-import com.lowdragmc.lowdraglib2.syncdata.storage.FieldManagedStorage;
-import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
+import appeng.menu.locator.MenuLocator;
+import com.lowdragmc.lowdraglib.syncdata.annotation.DescSynced;
+import com.lowdragmc.lowdraglib.syncdata.annotation.Persisted;
+import com.lowdragmc.lowdraglib.syncdata.field.FieldManagedStorage;
+import com.lowdragmc.lowdraglib.syncdata.field.ManagedFieldHolder;
+import lombok.Getter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.Connection;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.energy.IEnergyStorage;
-import net.oktawia.crazyae2addons.Utils;
+import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.common.util.LazyOptional;
+import net.minecraftforge.energy.IEnergyStorage;
+import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
-import net.oktawia.crazyae2addons.logic.interfaces.IMenuOpeningBlockEntity;
 import net.oktawia.crazyae2addons.menus.block.AmpereMeterMenu;
-import lombok.Getter;
+import net.oktawia.crazyae2addons.util.IManagedBEHelper;
+import net.oktawia.crazyae2addons.util.IMenuOpeningBlockEntity;
+import net.oktawia.crazyae2addons.util.Utils;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.HashMap;
+import java.util.ArrayDeque;
 
-public class AmpereMeterBE extends AEBaseBlockEntity implements MenuProvider, ISyncPersistRPCBlockEntity, IMenuOpeningBlockEntity {
+public class AmpereMeterBE extends AEBaseBlockEntity
+        implements MenuProvider, IManagedBEHelper, IMenuOpeningBlockEntity {
+
+    protected static final ManagedFieldHolder MANAGED_FIELD_HOLDER =
+            new ManagedFieldHolder(AmpereMeterBE.class);
 
     @Getter
     private final FieldManagedStorage syncStorage = new FieldManagedStorage(this);
 
-    @Persisted @DescSynced @Getter
+    @Persisted
+    @DescSynced
+    @Getter
     private boolean direction = false;
-    @DescSynced @Getter
-    private String transfer = "-";
-    @DescSynced @Getter
-    private String unit = "-";
-    private Integer numTransfer = 0;
-    private HashMap<Integer, Integer> maxTrans = new HashMap<>();
 
-    @Persisted @DescSynced @Getter
+    @DescSynced
+    @Getter
+    private String transfer = "-";
+
+    @DescSynced
+    @Getter
+    private String unit = "FE/t";
+
+    private int numTransfer = 0;
+    protected final ArrayDeque<Integer> recentTransfers = new ArrayDeque<>(5);
+
+    @Persisted
+    @DescSynced
+    @Getter
     private int minFePerTick = 0;
-    @Persisted @DescSynced @Getter
+
+    @Persisted
+    @DescSynced
+    @Getter
     private int maxFePerTick = 1000;
 
-    private long lastActiveTick = -1;
+    @DescSynced
+    @Getter
+    protected boolean amperesMode = false;
+
+    protected long lastActiveTick = -1;
     private static final long INACTIVITY_RESET_TICKS = 10;
-    private boolean needsNetworkRebuild = false;
+
+    private LazyOptional<IEnergyStorage> inputCap = LazyOptional.empty();
+    private LazyOptional<IEnergyStorage> outputCap = LazyOptional.empty();
+
+    private static final IEnergyStorage DUMMY_OUTPUT = new IEnergyStorage() {
+        @Override
+        public int receiveEnergy(int maxReceive, boolean simulate) {
+            return 0;
+        }
+
+        @Override
+        public int extractEnergy(int maxExtract, boolean simulate) {
+            return 0;
+        }
+
+        @Override
+        public int getEnergyStored() {
+            return 0;
+        }
+
+        @Override
+        public int getMaxEnergyStored() {
+            return 0;
+        }
+
+        @Override
+        public boolean canExtract() {
+            return false;
+        }
+
+        @Override
+        public boolean canReceive() {
+            return false;
+        }
+    };
+
+    private final IEnergyStorage INPUT_STORAGE = new IEnergyStorage() {
+        private IEnergyStorage getOutputStorage() {
+            Level level = AmpereMeterBE.this.getLevel();
+            if (level == null) {
+                return null;
+            }
+
+            Direction outputSide = getOutputSide();
+            BlockPos outputPos = AmpereMeterBE.this.getBlockPos().relative(outputSide);
+            BlockEntity be = level.getBlockEntity(outputPos);
+            if (be == null) {
+                return null;
+            }
+
+            if (be instanceof AmpereMeterBE) {
+                return null;
+            }
+
+            return be.getCapability(ForgeCapabilities.ENERGY, outputSide.getOpposite()).orElse(null);
+        }
+
+        @Override
+        public int receiveEnergy(int maxReceive, boolean simulate) {
+            IEnergyStorage output = getOutputStorage();
+            if (output == null || !output.canReceive()) {
+                return 0;
+            }
+
+            int transferred = output.receiveEnergy(maxReceive, simulate);
+
+            if (!simulate && transferred > 0) {
+                AmpereMeterBE.this.markActive();
+
+                if (AmpereMeterBE.this.recentTransfers.size() >= 5) {
+                    AmpereMeterBE.this.recentTransfers.removeFirst();
+                }
+                AmpereMeterBE.this.recentTransfers.addLast(transferred);
+
+                int max = AmpereMeterBE.this.recentTransfers.stream()
+                        .mapToInt(Integer::intValue)
+                        .max()
+                        .orElse(0);
+
+                AmpereMeterBE.this.setDisplayedTransfer(max, "FE/t", false);
+            }
+
+            return transferred;
+        }
+
+        @Override
+        public int extractEnergy(int maxExtract, boolean simulate) {
+            return 0;
+        }
+
+        @Override
+        public int getEnergyStored() {
+            IEnergyStorage output = getOutputStorage();
+            return output != null ? output.getEnergyStored() : 0;
+        }
+
+        @Override
+        public int getMaxEnergyStored() {
+            IEnergyStorage output = getOutputStorage();
+            return output != null ? output.getMaxEnergyStored() : Integer.MAX_VALUE;
+        }
+
+        @Override
+        public boolean canExtract() {
+            return false;
+        }
+
+        @Override
+        public boolean canReceive() {
+            return true;
+        }
+    };
 
     public AmpereMeterBE(BlockPos pos, BlockState blockState) {
         super(CrazyBlockEntityRegistrar.AMPERE_METER_BE.get(), pos, blockState);
+    }
+
+    @Override
+    public ManagedFieldHolder getFieldHolder() {
+        return MANAGED_FIELD_HOLDER;
+    }
+
+    @Override
+    public void saveAdditional(CompoundTag tag) {
+        super.saveAdditional(tag);
+        saveManagedData(tag);
+    }
+
+    @Override
+    public void loadTag(CompoundTag tag) {
+        loadManagedData(tag);
+        super.loadTag(tag);
+    }
+
+    @Override
+    public CompoundTag getUpdateTag() {
+        CompoundTag tag = super.getUpdateTag();
+        saveManagedData(tag);
+        return tag;
+    }
+
+    @Override
+    public void handleUpdateTag(CompoundTag tag) {
+        loadManagedData(tag);
+        super.handleUpdateTag(tag);
+    }
+
+    @Override
+    public ClientboundBlockEntityDataPacket getUpdatePacket() {
+        return ClientboundBlockEntityDataPacket.create(this);
+    }
+
+    @Override
+    public void onDataPacket(Connection net, ClientboundBlockEntityDataPacket pkt) {
+        CompoundTag tag = pkt.getTag();
+        if (tag != null) {
+            handleUpdateTag(tag);
+        }
     }
 
     @Override
@@ -60,46 +243,106 @@ public class AmpereMeterBE extends AEBaseBlockEntity implements MenuProvider, IS
     }
 
     @Override
-    public AbstractContainerMenu createMenu(int i, Inventory inventory, Player player) {
-        return new AmpereMeterMenu(i, inventory, this);
+    public AbstractContainerMenu createMenu(int id, Inventory inventory, Player player) {
+        return new AmpereMeterMenu(id, inventory, this);
     }
 
-    public void openMenu(Player player, MenuHostLocator locator) {
+    @Override
+    public void openMenu(Player player, MenuLocator locator) {
+        if (getLevel() != null && !getLevel().isClientSide()) {
+            forceSyncManaged();
+        }
         MenuOpener.open(CrazyMenuRegistrar.AMPERE_METER_MENU.get(), player, locator);
     }
 
-    public static void serverTick(Level level, BlockPos pos, BlockState state, AmpereMeterBE be) {
-        if (level.isClientSide()) return;
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        rebuildCaps();
 
-        if (be.needsNetworkRebuild) {
-            be.needsNetworkRebuild = false;
-            level.invalidateCapabilities(pos);
-            level.updateNeighborsAt(pos, state.getBlock());
+        if (level != null && !level.isClientSide) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+            level.updateNeighborsAt(worldPosition, getBlockState().getBlock());
+        }
+    }
+
+    @Override
+    public void invalidateCaps() {
+        super.invalidateCaps();
+        inputCap.invalidate();
+        outputCap.invalidate();
+    }
+
+    @Override
+    public void reviveCaps() {
+        super.reviveCaps();
+        rebuildCaps();
+    }
+
+    private void rebuildCaps() {
+        inputCap.invalidate();
+        outputCap.invalidate();
+
+        inputCap = LazyOptional.of(() -> INPUT_STORAGE);
+        outputCap = LazyOptional.of(() -> DUMMY_OUTPUT);
+    }
+
+    @Override
+    public <T> @NotNull LazyOptional<T> getCapability(@NotNull Capability<T> cap, @Nullable Direction side) {
+        if (cap == ForgeCapabilities.ENERGY && side != null) {
+            if (side == getInputSide()) {
+                return inputCap.cast();
+            }
+            if (side == getOutputSide()) {
+                return outputCap.cast();
+            }
         }
 
-        if (be.lastActiveTick < 0) {
-            be.lastActiveTick = level.getGameTime();
+        return super.getCapability(cap, side);
+    }
+
+    public static void serverTick(Level level, BlockPos pos, BlockState state, AmpereMeterBE be) {
+        if (level.isClientSide()) {
+            return;
         }
 
         long gameTime = level.getGameTime();
-        if (gameTime - be.lastActiveTick > INACTIVITY_RESET_TICKS) {
-            be.resetTransfer();
+        if (be.lastActiveTick >= 0 && gameTime - be.lastActiveTick > INACTIVITY_RESET_TICKS) {
+            be.clearDisplayedTransfer();
         }
     }
 
-    public void resetTransfer() {
-        this.lastActiveTick = -1;
-        this.transfer = "-";
-        this.numTransfer = 0;
-        this.unit = "-";
-        this.maxTrans.clear();
-        setChanged();
+    protected Direction getInputSide() {
+        return this.direction
+                ? Utils.getRightDirection(getBlockState())
+                : Utils.getLeftDirection(getBlockState());
+    }
+
+    protected Direction getOutputSide() {
+        return !this.direction
+                ? Utils.getRightDirection(getBlockState())
+                : Utils.getLeftDirection(getBlockState());
+    }
+
+    public void markActive() {
+        if (getLevel() != null) {
+            this.lastActiveTick = getLevel().getGameTime();
+        }
     }
 
     public int getComparatorSignal() {
-        if (this.numTransfer <= this.minFePerTick) return 0;
-        if (this.numTransfer >= this.maxFePerTick) return 15;
+        if (this.numTransfer <= this.minFePerTick) {
+            return 0;
+        }
+        if (this.numTransfer >= this.maxFePerTick) {
+            return 15;
+        }
+
         int range = this.maxFePerTick - this.minFePerTick;
+        if (range <= 0) {
+            return 15;
+        }
+
         return Math.max(1, (int) (15.0 * (this.numTransfer - this.minFePerTick) / range));
     }
 
@@ -110,137 +353,104 @@ public class AmpereMeterBE extends AEBaseBlockEntity implements MenuProvider, IS
         }
     }
 
-    @Override
-    public void onLoad() {
-        super.onLoad();
-        needsNetworkRebuild = true;
-    }
-
-    public void markActive() {
-        if (getLevel() != null){
-            this.lastActiveTick = getLevel().getGameTime();
-        }
-    }
-
-    private void sendUpdate() {
+    private void syncVisuals() {
+        setChanged();
         if (getLevel() != null) {
-            setChanged();
             getLevel().sendBlockUpdated(getBlockPos(), getBlockState(), getBlockState(), 3);
-            getLevel().invalidateCapabilities(getBlockPos());
         }
+        syncManaged();
     }
 
     public void setDirection(boolean direction) {
-        if (this.direction == direction) return;
+        if (this.direction == direction) {
+            return;
+        }
+
         this.direction = direction;
-        setChanged();
-        needsNetworkRebuild = true;
-        resetTransfer();
-        sendUpdate();
+        clearDisplayedTransfer();
+        rebuildCaps();
+
+        if (getLevel() != null) {
+            getLevel().updateNeighborsAt(getBlockPos(), getBlockState().getBlock());
+        }
+
+        syncVisuals();
     }
 
     public void setMinFePerTick(int min) {
         min = Math.max(0, min);
-        if (min > this.maxFePerTick) min = this.maxFePerTick;
-        if (this.minFePerTick == min) return;
+        if (min > this.maxFePerTick) {
+            min = this.maxFePerTick;
+        }
+        if (this.minFePerTick == min) {
+            return;
+        }
+
+        int oldSignal = getComparatorSignal();
 
         this.minFePerTick = min;
         setChanged();
-        updateComparator();
-        sendUpdate();
+        syncManaged();
+
+        int newSignal = getComparatorSignal();
+        if (oldSignal != newSignal) {
+            updateComparator();
+        }
     }
 
     public void setMaxFePerTick(int max) {
         max = Math.max(0, max);
-        if (max < this.minFePerTick) max = this.minFePerTick;
-        if (this.maxFePerTick == max) return;
+        if (max < this.minFePerTick) {
+            max = this.minFePerTick;
+        }
+        if (this.maxFePerTick == max) {
+            return;
+        }
+
+        int oldSignal = getComparatorSignal();
 
         this.maxFePerTick = max;
         setChanged();
-        updateComparator();
-        sendUpdate();
+        syncManaged();
+
+        int newSignal = getComparatorSignal();
+        if (oldSignal != newSignal) {
+            updateComparator();
+        }
     }
 
-    private static final IEnergyStorage DUMMY_OUTPUT = new IEnergyStorage() {
-        @Override public int receiveEnergy(int maxReceive, boolean simulate) { return 0; }
-        @Override public int extractEnergy(int maxExtract, boolean simulate) { return 0; }
-        @Override public int getEnergyStored() { return 0; }
-        @Override public int getMaxEnergyStored() { return 0; }
-        @Override public boolean canExtract() { return false; }
-        @Override public boolean canReceive() { return false; }
-    };
+    protected void setDisplayedTransfer(int transferValue, String unitLabel, boolean ampsMode) {
+        int oldSignal = getComparatorSignal();
 
-    public IEnergyStorage getEnergyStorage(Direction dir) {
-        Direction inputSide = this.direction ? Utils.getRightDirection(getBlockState()) : Utils.getLeftDirection(getBlockState());
-        Direction outputSide = !this.direction ? Utils.getRightDirection(getBlockState()) : Utils.getLeftDirection(getBlockState());
+        this.amperesMode = ampsMode;
+        this.numTransfer = Math.max(0, transferValue);
+        this.transfer = transferValue > 0 ? Utils.shortenNumber(transferValue) : "-";
+        this.unit = unitLabel != null ? unitLabel : (ampsMode ? "A" : "FE/t");
 
-        if (dir == outputSide) return DUMMY_OUTPUT;
-        if (dir != inputSide) return null;
+        setChanged();
+        syncManaged();
 
-        return new IEnergyStorage() {
-            private IEnergyStorage getOutputStorage() {
-                Level level = AmpereMeterBE.this.getLevel();
-                if (level == null) return null;
-                BlockPos outputPos = AmpereMeterBE.this.getBlockPos().relative(outputSide);
-                return level.getCapability(Capabilities.EnergyStorage.BLOCK, outputPos, outputSide.getOpposite());
-            }
+        int newSignal = getComparatorSignal();
+        if (oldSignal != newSignal) {
+            updateComparator();
+        }
+    }
 
-            @Override
-            public int receiveEnergy(int maxReceive, boolean simulate) {
-                IEnergyStorage output = getOutputStorage();
-                if (output == null || !output.canReceive()) return 0;
+    protected void clearDisplayedTransfer() {
+        int oldSignal = getComparatorSignal();
 
-                int transferred = output.receiveEnergy(maxReceive, simulate);
+        this.lastActiveTick = -1;
+        this.numTransfer = 0;
+        this.transfer = "-";
+        this.unit = this.amperesMode ? "A" : "FE/t";
+        this.recentTransfers.clear();
 
-                if (!simulate && transferred > 0) {
-                    AmpereMeterBE.this.markActive();
-                    int oldSignal = AmpereMeterBE.this.getComparatorSignal();
+        setChanged();
+        syncManaged();
 
-                    AmpereMeterBE.this.maxTrans.put(AmpereMeterBE.this.maxTrans.size(), transferred);
-                    if (AmpereMeterBE.this.maxTrans.size() > 5) {
-                        AmpereMeterBE.this.maxTrans.remove(0);
-                        HashMap<Integer, Integer> newMap = new HashMap<>();
-                        int i = 0;
-                        for (int value : AmpereMeterBE.this.maxTrans.values()) {
-                            newMap.put(i++, value);
-                        }
-                        AmpereMeterBE.this.maxTrans = newMap;
-                    }
-                    int max = AmpereMeterBE.this.maxTrans.values().stream().max(Integer::compare).orElse(0);
-                    AmpereMeterBE.this.numTransfer = max;
-                    AmpereMeterBE.this.transfer = Utils.shortenNumber(max);
-                    AmpereMeterBE.this.unit = "FE/t";
-
-                    AmpereMeterBE.this.setChanged();
-                    int newSignal = AmpereMeterBE.this.getComparatorSignal();
-                    if (oldSignal != newSignal) {
-                        AmpereMeterBE.this.updateComparator();
-                    }
-                }
-
-                return transferred;
-            }
-
-            @Override
-            public int extractEnergy(int maxExtract, boolean simulate) { return 0; }
-
-            @Override
-            public int getEnergyStored() {
-                IEnergyStorage output = getOutputStorage();
-                return output != null ? output.getEnergyStored() : 0;
-            }
-
-            @Override
-            public int getMaxEnergyStored() {
-                IEnergyStorage output = getOutputStorage();
-                return output != null ? output.getMaxEnergyStored() : Integer.MAX_VALUE;
-            }
-
-            @Override
-            public boolean canExtract() { return false; }
-
-            @Override
-            public boolean canReceive() { return true; }
-        };
+        int newSignal = getComparatorSignal();
+        if (oldSignal != newSignal) {
+            updateComparator();
+        }
     }
 }

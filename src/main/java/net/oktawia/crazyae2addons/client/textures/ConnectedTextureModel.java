@@ -16,9 +16,9 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.client.model.BakedModelWrapper;
-import net.neoforged.neoforge.client.model.data.ModelData;
-import net.neoforged.neoforge.client.model.data.ModelProperty;
+import net.minecraftforge.client.model.BakedModelWrapper;
+import net.minecraftforge.client.model.data.ModelData;
+import net.minecraftforge.client.model.data.ModelProperty;
 import org.joml.Vector3f;
 
 import java.util.ArrayList;
@@ -85,15 +85,15 @@ public final class ConnectedTextureModel extends BakedModelWrapper<BakedModel> {
 
         List<BakedQuad> quads = new ArrayList<>(4);
 
-        quads.add(bakeQuarter(face, Quarter.TOP_LEFT, quarters.topLeft(), sprite));
-        quads.add(bakeQuarter(face, Quarter.TOP_RIGHT, quarters.topRight(), sprite));
-        quads.add(bakeQuarter(face, Quarter.BOTTOM_LEFT, quarters.bottomLeft(), sprite));
-        quads.add(bakeQuarter(face, Quarter.BOTTOM_RIGHT, quarters.bottomRight(), sprite));
+        quads.add(bakeQuarter(face, Quarter.TOP_LEFT, quarters.topLeft(), sprite, texture));
+        quads.add(bakeQuarter(face, Quarter.TOP_RIGHT, quarters.topRight(), sprite, texture));
+        quads.add(bakeQuarter(face, Quarter.BOTTOM_LEFT, quarters.bottomLeft(), sprite, texture));
+        quads.add(bakeQuarter(face, Quarter.BOTTOM_RIGHT, quarters.bottomRight(), sprite, texture));
 
         return List.copyOf(quads);
     }
 
-    private BakedQuad bakeQuarter(Direction face, Quarter quarter, QuarterType type, TextureAtlasSprite sprite) {
+    private BakedQuad bakeQuarter(Direction face, Quarter quarter, QuarterType type, TextureAtlasSprite sprite, ResourceLocation rl) {
         FaceBounds bounds = FaceBounds.forQuarter(face, quarter);
         float[] uv = quarterUv(type.tile, quarter);
 
@@ -112,7 +112,8 @@ public final class ConnectedTextureModel extends BakedModelWrapper<BakedModel> {
                 face,
                 BlockModelRotation.X0_Y0,
                 null,
-                true
+                true,
+                rl
         );
     }
 

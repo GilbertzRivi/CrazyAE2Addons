@@ -1,13 +1,8 @@
 package net.oktawia.crazyae2addons.client.renderer.preview.multiblock;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferUploader;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -25,8 +20,8 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
-import net.neoforged.neoforge.client.model.data.ModelData;
+import net.minecraftforge.client.event.RenderLevelStageEvent;
+import net.minecraftforge.client.model.data.ModelData;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,11 +34,11 @@ public final class PreviewRenderer {
     private PreviewRenderer() {
     }
 
-    public static void render(MultiblockPreviewInfo MultiblockPreviewInfo, RenderLevelStageEvent event) {
+    public static void render(MultiblockPreviewInfo previewInfo, RenderLevelStageEvent event) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.level == null || mc.player == null || MultiblockPreviewInfo == null) return;
+        if (mc.level == null || mc.player == null || previewInfo == null) return;
 
-        float tick = mc.level.getGameTime() + event.getPartialTick().getGameTimeDeltaPartialTick(false);
+        float tick = mc.level.getGameTime() + event.getPartialTick();
 
         Vec3 playerEyePos = mc.player.getEyePosition();
         Vec3 lookDirection = mc.player.getLookAngle();
@@ -60,7 +55,7 @@ public final class PreviewRenderer {
         List<MultiblockPreviewInfo.BlockInfo> visibleBlocks = new ArrayList<>();
         List<BlockPos> invalidBlocks = new ArrayList<>();
 
-        for (MultiblockPreviewInfo.BlockInfo info : MultiblockPreviewInfo.blockInfos) {
+        for (MultiblockPreviewInfo.BlockInfo info : previewInfo.blockInfos) {
             BlockPos pos = info.pos();
             AABB bounds = new AABB(pos);
 
@@ -110,7 +105,7 @@ public final class PreviewRenderer {
             }
         }
 
-        float reach = (float) mc.player.blockInteractionRange();
+        float reach = mc.gameMode != null ? mc.gameMode.getPickRange() : 5.0f;
         if (pointed != null && closestDistance <= reach) {
             PreviewTooltipLayer.set(
                     pointed.state().getBlock().getName().getString(),
@@ -121,20 +116,20 @@ public final class PreviewRenderer {
             PreviewTooltipLayer.set(null, null, 0L);
         }
 
-        float deltaTick = tick - MultiblockPreviewInfo.lastTick;
-        for (Map.Entry<Integer, Float> entry : MultiblockPreviewInfo.alpha.entrySet()) {
+        float deltaTick = tick - previewInfo.lastTick;
+        for (Map.Entry<Integer, Float> entry : previewInfo.alpha.entrySet()) {
             int y = entry.getKey();
             float current = entry.getValue();
             float target = previewAlpha;
 
             if (current < target) {
-                MultiblockPreviewInfo.alpha.put(y, Math.min(target, current + deltaTick * alphaStep));
+                previewInfo.alpha.put(y, Math.min(target, current + deltaTick * alphaStep));
             } else if (current > target) {
-                MultiblockPreviewInfo.alpha.put(y, Math.max(target, current - deltaTick * alphaStep));
+                previewInfo.alpha.put(y, Math.max(target, current - deltaTick * alphaStep));
             }
         }
 
-        MultiblockPreviewInfo.lastTick = tick;
+        previewInfo.lastTick = tick;
 
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
@@ -151,7 +146,7 @@ public final class PreviewRenderer {
             BakedModel model = blockRenderer.getBlockModel(state);
             VertexConsumer translucentBuffer = buffer.getBuffer(RenderType.translucent());
 
-            float alpha = MultiblockPreviewInfo.alpha.computeIfAbsent(pos.getY(), y -> previewAlpha);
+            float alpha = previewInfo.alpha.computeIfAbsent(pos.getY(), y -> previewAlpha);
 
             if (alpha > 0) {
                 for (Direction direction : Direction.values()) {
@@ -192,7 +187,7 @@ public final class PreviewRenderer {
             poseStack.translate(pos.getX() + 0.06f, pos.getY() + 0.06f, pos.getZ() + 0.06f);
             poseStack.scale(0.88f, 0.88f, 0.88f);
 
-            float alpha = MultiblockPreviewInfo.alpha.computeIfAbsent(pos.getY(), y -> previewAlpha);
+            float alpha = previewInfo.alpha.computeIfAbsent(pos.getY(), y -> previewAlpha);
 
             if (alpha > 0) {
                 LevelRenderer.renderLineBox(

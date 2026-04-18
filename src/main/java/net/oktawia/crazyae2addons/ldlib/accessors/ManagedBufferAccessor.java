@@ -1,16 +1,21 @@
 package net.oktawia.crazyae2addons.ldlib.accessors;
 
-import com.lowdragmc.lowdraglib2.syncdata.accessor.IMarkFunction;
-import com.lowdragmc.lowdraglib2.syncdata.accessor.readonly.IReadOnlyAccessor;
-import com.mojang.serialization.DynamicOps;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.oktawia.crazyae2addons.defs.components.AEItemBufferData;
+import com.lowdragmc.lowdraglib.syncdata.AccessorOp;
+import com.lowdragmc.lowdraglib.syncdata.IAccessor;
+import com.lowdragmc.lowdraglib.syncdata.managed.IRef;
+import com.lowdragmc.lowdraglib.syncdata.payload.ITypedPayload;
+import com.lowdragmc.lowdraglib.syncdata.payload.NbtTagPayload;
+import com.lowdragmc.lowdraglib.syncdata.payload.PrimitiveTypedPayload;
+import net.minecraft.nbt.CompoundTag;
 import net.oktawia.crazyae2addons.logic.buffer.ManagedBuffer;
-import org.jetbrains.annotations.NotNull;
 
-import java.util.Objects;
+public final class ManagedBufferAccessor implements IAccessor {
+    private byte defaultType = -1;
 
-public final class ManagedBufferAccessor implements IReadOnlyAccessor<ManagedBuffer>, IMarkFunction<ManagedBuffer, AEItemBufferData> {
+    @Override
+    public boolean hasPredicate() {
+        return true;
+    }
 
     @Override
     public boolean test(Class<?> type) {
@@ -18,34 +23,40 @@ public final class ManagedBufferAccessor implements IReadOnlyAccessor<ManagedBuf
     }
 
     @Override
-    public <T> T readReadOnlyValue(DynamicOps<T> op, @NotNull ManagedBuffer value) {
-        return AEItemBufferData.CODEC.encodeStart(op, value.toData()).getOrThrow();
+    public boolean isManaged() {
+        return false;
     }
 
     @Override
-    public <T> void writeReadOnlyValue(DynamicOps<T> op, ManagedBuffer value, T payload) {
-        var data = AEItemBufferData.CODEC.parse(op, payload).getOrThrow();
-        value.fromData(data);
+    public void setDefaultType(byte payloadType) {
+        this.defaultType = payloadType;
     }
 
     @Override
-    public void readReadOnlyValueToStream(RegistryFriendlyByteBuf buffer, @NotNull ManagedBuffer value) {
-        AEItemBufferData.STREAM_CODEC.encode(buffer, value.toData());
+    public byte getDefaultType() {
+        return this.defaultType;
     }
 
     @Override
-    public void writeReadOnlyValueFromStream(RegistryFriendlyByteBuf buffer, @NotNull ManagedBuffer value) {
-        var data = AEItemBufferData.STREAM_CODEC.decode(buffer);
-        value.fromData(data);
+    public ITypedPayload<?> readField(AccessorOp op, IRef field) {
+        ManagedBuffer value = field.readRaw();
+        if (value == null) {
+            return PrimitiveTypedPayload.ofNull();
+        }
+        return NbtTagPayload.of(value.toTag());
     }
 
     @Override
-    public @NotNull AEItemBufferData obtainManagedMark(@NotNull ManagedBuffer value) {
-        return value.toData();
-    }
+    public void writeField(AccessorOp op, IRef field, ITypedPayload<?> payload) {
+        ManagedBuffer value = field.readRaw();
+        if (value == null) {
+            return;
+        }
 
-    @Override
-    public boolean areDifferent(@NotNull AEItemBufferData managedMark, @NotNull ManagedBuffer value) {
-        return !Objects.equals(managedMark, value.toData());
+        if (payload.serializeNBT() instanceof CompoundTag tag) {
+            value.fromTag(tag);
+        } else {
+            value.fromTag(new CompoundTag());
+        }
     }
 }

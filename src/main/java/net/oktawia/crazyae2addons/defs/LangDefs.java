@@ -48,7 +48,7 @@ public enum LangDefs implements LocalizationEnum {
     MIN("gui.crazyae2addons.min", "Min"),
     MAX("gui.crazyae2addons.max", "Max"),
     FE_PER_TICK("gui.crazyae2addons.fe_per_tick", "FE/t"),
-    FE_PER_TICK_OR_AMPERES("gui.crazyae2addons.fe_per_tick_or_amperes", "FE/t or Amperes"),
+    AMPERES("gui.crazyae2addons.amperes", "Amps"),
     CONFIG("gui.crazyae2addons.config", "Config"),
     EJECTOR_LOAD_PATTERN("gui.crazyae2addons.ejector_load_pattern", "Load settings from pattern"),
     EJECTOR_MIDDLE_CLICK("gui.crazyae2addons.ejector_middle_click", "Middle mouse button to set amount"),

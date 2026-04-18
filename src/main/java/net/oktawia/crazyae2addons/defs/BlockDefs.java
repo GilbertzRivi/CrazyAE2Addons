@@ -22,24 +22,5 @@ public class BlockDefs {
     }
 
     public static void registerRecipes(){
-//        block(
-//                CrazyBlockRegistrar.AMPERE_METER_BLOCK.get(),
-//                "ICE",
-//                () -> Map.of(
-//                        "I", AEParts.IMPORT_BUS.asItem(),
-//                        "C", AEBlocks.INTERFACE.asItem(),
-//                        "E", AEParts.EXPORT_BUS.asItem()
-//                )
-//        );
-//
-//        block(
-//                CrazyBlockRegistrar.CRAFTING_SCHEDULER_BLOCK.get(),
-//                "PRE",
-//                () -> Map.of(
-//                        "P", AEBlocks.PATTERN_PROVIDER.asItem(),
-//                        "R", Items.REDSTONE,
-//                        "E", AEParts.LEVEL_EMITTER.asItem()
-//                )
-//        );
     }
 }

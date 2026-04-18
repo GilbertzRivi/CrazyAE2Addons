@@ -112,13 +112,10 @@ public final class MultiblockDefinition {
                     throw new IllegalArgumentException("Block id for symbol '" + symbol + "' cannot be null or blank");
                 }
 
-                ResourceLocation id;
-                try {
-                    id = ResourceLocation.parse(blockId);
-                } catch (Exception e) {
+                ResourceLocation id = ResourceLocation.tryParse(blockId);
+                if (id == null) {
                     throw new IllegalArgumentException(
-                            "Invalid block id '" + blockId + "' for symbol '" + symbol + "'",
-                            e
+                            "Invalid block id '" + blockId + "' for symbol '" + symbol + "'"
                     );
                 }
 

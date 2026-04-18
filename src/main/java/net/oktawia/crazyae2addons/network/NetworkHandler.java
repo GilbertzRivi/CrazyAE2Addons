@@ -1,66 +1,40 @@
 package net.oktawia.crazyae2addons.network;
 
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.neoforged.neoforge.network.PacketDistributor;
-import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
-import net.neoforged.neoforge.network.registration.PayloadRegistrar;
-import net.oktawia.crazyae2addons.network.packets.*;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraftforge.network.NetworkRegistry;
+import net.minecraftforge.network.PacketDistributor;
+import net.minecraftforge.network.simple.SimpleChannel;
+import net.oktawia.crazyae2addons.CrazyAddons;
 
 public final class NetworkHandler {
 
     private static final String PROTOCOL_VERSION = "1";
 
+    public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
+            CrazyAddons.makeId("main"),
+            () -> PROTOCOL_VERSION,
+            PROTOCOL_VERSION::equals,
+            PROTOCOL_VERSION::equals
+    );
+
+    private static int nextId = 0;
+
     private NetworkHandler() {}
 
-    public static void registerMessages(final RegisterPayloadHandlersEvent event) {
-        final PayloadRegistrar registrar = event.registrar(PROTOCOL_VERSION);
+    public static void registerMessages() {
 
-        registrar.playToClient(
-                DisplaySyncPacket.TYPE,
-                DisplaySyncPacket.STREAM_CODEC,
-                DisplaySyncPacket::handle
-        );
+    }
 
-        registrar.playToClient(
-                SyncBlockClientPacket.TYPE,
-                SyncBlockClientPacket.STREAM_CODEC,
-                SyncBlockClientPacket::handle
-        );
+    public static void sendToPlayer(ServerPlayer player, Object packet) {
+        CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
 
-        registrar.playToClient(
-                UpdatePatternsPacket.TYPE,
-                UpdatePatternsPacket.STREAM_CODEC,
-                UpdatePatternsPacket::handle
-        );
+    public static void sendToTrackingChunk(LevelChunk chunk, Object packet) {
+        CHANNEL.send(PacketDistributor.TRACKING_CHUNK.with(() -> chunk), packet);
+    }
 
-        registrar.playToClient(
-                SendLongStringToClientPacket.TYPE,
-                SendLongStringToClientPacket.STREAM_CODEC,
-                SendLongStringToClientPacket::handle
-        );
-
-        registrar.playToServer(
-                SendLongStringToServerPacket.TYPE,
-                SendLongStringToServerPacket.STREAM_CODEC,
-                SendLongStringToServerPacket::handle
-        );
-
-        registrar.playToServer(
-                SetConfigAmountPacket.TYPE,
-                SetConfigAmountPacket.STREAM_CODEC,
-                SetConfigAmountPacket::handle
-        );
-
-        registrar.playToServer(
-                UploadDisplayImagePacket.TYPE,
-                UploadDisplayImagePacket.STREAM_CODEC,
-                UploadDisplayImagePacket::handle
-        );
-
-        registrar.playToClient(
-                SyncDisplayImagePreviewPacket.TYPE,
-                SyncDisplayImagePreviewPacket.STREAM_CODEC,
-                SyncDisplayImagePreviewPacket::handle
-        );
+    public static void sendToServer(Object packet) {
+        CHANNEL.sendToServer(packet);
     }
 }

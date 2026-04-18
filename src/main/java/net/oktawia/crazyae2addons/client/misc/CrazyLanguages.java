@@ -1,9 +1,9 @@
 package net.oktawia.crazyae2addons.client.misc;
 
-import com.lowdragmc.lowdraglib2.gui.ui.elements.codeeditor.language.ILanguageDefinition;
-import com.lowdragmc.lowdraglib2.gui.ui.elements.codeeditor.language.LanguageDefinition;
-import com.lowdragmc.lowdraglib2.gui.ui.elements.codeeditor.language.StyleManager;
-import com.lowdragmc.lowdraglib2.gui.ui.elements.codeeditor.language.TokenType;
+import com.lowdragmc.lowdraglib.gui.widget.codeeditor.language.ILanguageDefinition;
+import com.lowdragmc.lowdraglib.gui.widget.codeeditor.language.LanguageDefinition;
+import com.lowdragmc.lowdraglib.gui.widget.codeeditor.language.StyleManager;
+import com.lowdragmc.lowdraglib.gui.widget.codeeditor.language.TokenType;
 import net.minecraft.network.chat.Style;
 
 import java.util.List;
@@ -102,27 +102,7 @@ public final class CrazyLanguages {
             Set.of()
     ).compileTokenPattern();
 
-    public static final StyleManager MARKDOWN_STYLE = new StyleManager() {
-        @Override
-        public Style getStyleForTokenType(TokenType type) {
-            if (type == MD_HEX_CMD || type == MD_TYPED_TOKEN || type == MD_STYLE_CMD) {
-                return Style.EMPTY.withColor(MD_COMMAND_COLOR);
-            }
-            if (type == MD_INDENT || type == MD_BLOCKQUOTE) {
-                return Style.EMPTY.withColor(MD_INDENT_COLOR);
-            }
-            if (type == MD_HEADING || type == MD_LIST_MARKER || type == MD_STRONG || type == MD_EM) {
-                return Style.EMPTY.withColor(MD_MARKER_COLOR);
-            }
-            if (type == MD_TABLE_PIPE || type == MD_TABLE_SEPARATOR) {
-                return Style.EMPTY.withColor(MD_TABLE_COLOR);
-            }
-            if (type == MD_CODE_FENCE || type == MD_INLINE_CODE) {
-                return Style.EMPTY.withColor(MD_CODE_COLOR);
-            }
-            return Style.EMPTY.withColor(DEFAULT_COLOR);
-        }
-    };
+    public static final StyleManager MARKDOWN_STYLE = createMarkdownStyle();
 
     public static final TokenType STRING = new TokenType("ProgString")
             .setPattern("\"(?:\\\\.|[^\"\\\\])*\"");
@@ -195,40 +175,57 @@ public final class CrazyLanguages {
             Set.of("(", "[", "{")
     ).compileTokenPattern();
 
-    public static final StyleManager PROGRAM_STYLE = new StyleManager() {
-        @Override
-        public Style getStyleForTokenType(TokenType type) {
-            if (type == STRING) {
-                return Style.EMPTY.withColor(COL_GOLD);
-            }
-            if (type == COUNT) {
-                return Style.EMPTY.withColor(COUNT_COLOR);
-            }
-            if (type == COMMAND || type == COMMAND_WORD) {
-                return Style.EMPTY.withColor(COL_RED);
-            }
-            if (type == RESOURCE) {
-                return Style.EMPTY.withColor(LABEL_COLOR);
-            }
-            if (type == PROP_KEY) {
-                return Style.EMPTY.withColor(0xFF55FFAA);
-            }
-            if (type == PROP_VALUE || type == NUMBER) {
-                return Style.EMPTY.withColor(COL_CYAN);
-            }
-            if (type == OPERATOR || type == PIPE) {
-                return Style.EMPTY.withColor(COL_GRAY);
-            }
-            if (type == PAREN) {
-                return Style.EMPTY.withColor(0xFF5599FF);
-            }
-            if (type == BRACKET) {
-                return Style.EMPTY.withColor(0xFF55FF55);
-            }
-            if (type == BRACE) {
-                return Style.EMPTY.withColor(0xFFFFD166);
-            }
-            return Style.EMPTY.withColor(DEFAULT_COLOR);
-        }
-    };
+    public static final StyleManager PROGRAM_STYLE = createProgramStyle();
+
+    private static StyleManager createMarkdownStyle() {
+        StyleManager manager = new StyleManager();
+        manager.getStyleMap().clear();
+        manager.setDefaultStyle(Style.EMPTY.withColor(DEFAULT_COLOR));
+
+        put(manager, MD_HEX_CMD, MD_COMMAND_COLOR);
+        put(manager, MD_TYPED_TOKEN, MD_COMMAND_COLOR);
+        put(manager, MD_STYLE_CMD, MD_COMMAND_COLOR);
+
+        put(manager, MD_INDENT, MD_INDENT_COLOR);
+        put(manager, MD_BLOCKQUOTE, MD_INDENT_COLOR);
+
+        put(manager, MD_HEADING, MD_MARKER_COLOR);
+        put(manager, MD_LIST_MARKER, MD_MARKER_COLOR);
+        put(manager, MD_STRONG, MD_MARKER_COLOR);
+        put(manager, MD_EM, MD_MARKER_COLOR);
+
+        put(manager, MD_TABLE_PIPE, MD_TABLE_COLOR);
+        put(manager, MD_TABLE_SEPARATOR, MD_TABLE_COLOR);
+
+        put(manager, MD_CODE_FENCE, MD_CODE_COLOR);
+        put(manager, MD_INLINE_CODE, MD_CODE_COLOR);
+
+        return manager;
+    }
+
+    private static StyleManager createProgramStyle() {
+        StyleManager manager = new StyleManager();
+        manager.getStyleMap().clear();
+        manager.setDefaultStyle(Style.EMPTY.withColor(DEFAULT_COLOR));
+
+        put(manager, STRING, COL_GOLD);
+        put(manager, COUNT, COUNT_COLOR);
+        put(manager, COMMAND, COL_RED);
+        put(manager, COMMAND_WORD, COL_RED);
+        put(manager, RESOURCE, LABEL_COLOR);
+        put(manager, PROP_KEY, 0xFF55FFAA);
+        put(manager, PROP_VALUE, COL_CYAN);
+        put(manager, NUMBER, COL_CYAN);
+        put(manager, OPERATOR, COL_GRAY);
+        put(manager, PIPE, COL_GRAY);
+        put(manager, PAREN, 0xFF5599FF);
+        put(manager, BRACKET, 0xFF55FF55);
+        put(manager, BRACE, 0xFFFFD166);
+
+        return manager;
+    }
+
+    private static void put(StyleManager manager, TokenType type, int color) {
+        manager.getStyleMap().put(type.name, Style.EMPTY.withColor(color));
+    }
 }

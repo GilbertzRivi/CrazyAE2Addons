@@ -1,50 +1,34 @@
 package net.oktawia.crazyae2addons.client.misc;
 
-import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
-import com.lowdragmc.lowdraglib2.gui.ui.UI;
-import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
-import com.lowdragmc.lowdraglib2.gui.ui.data.Cursor;
-import com.lowdragmc.lowdraglib2.gui.ui.data.ScrollerMode;
-import com.lowdragmc.lowdraglib2.gui.ui.elements.codeeditor.CodeEditor;
-import com.lowdragmc.lowdraglib2.gui.ui.elements.codeeditor.language.ILanguageDefinition;
-import com.lowdragmc.lowdraglib2.gui.ui.elements.codeeditor.language.StyleManager;
+import com.lowdragmc.lowdraglib.gui.widget.codeeditor.CodeEditor;
+import com.lowdragmc.lowdraglib.gui.widget.codeeditor.CodeEditorWidget;
+import com.lowdragmc.lowdraglib.gui.widget.codeeditor.Cursor;
+import com.lowdragmc.lowdraglib.gui.widget.codeeditor.language.ILanguageDefinition;
+import com.lowdragmc.lowdraglib.gui.widget.codeeditor.language.Languages;
+import com.lowdragmc.lowdraglib.gui.widget.codeeditor.language.StyleManager;
 import com.mojang.blaze3d.platform.Window;
-import dev.vfyjxf.taffy.style.TaffyPosition;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
-import net.minecraft.client.gui.components.Renderable;
-import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarratedElementType;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
-import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
+import net.minecraft.network.chat.Style;
+import net.minecraft.util.Mth;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.Arrays;
 import java.util.Locale;
+import java.util.function.BooleanSupplier;
 
 @OnlyIn(Dist.CLIENT)
 public class LDLibCodeEditorAdapter extends AbstractWidget {
 
-    private final UIElement root;
-    private final UIElement host;
-    private final ExposedCodeEditor editor;
-    private final ModularUI modularUI;
-    private final GuiEventListener guiDelegate;
-    private final Renderable renderDelegate;
-
-    @Nullable
-    private Screen lastScreen;
-    private int lastScreenWidth = Integer.MIN_VALUE;
-    private int lastScreenHeight = Integer.MIN_VALUE;
-
-    private int syncedX = Integer.MIN_VALUE;
-    private int syncedY = Integer.MIN_VALUE;
-    private int syncedWidth = Integer.MIN_VALUE;
-    private int syncedHeight = Integer.MIN_VALUE;
+    private final ExposedCodeEditorWidget widget;
 
     private boolean pollingDragActive = false;
     private int pollingDragButton = -1;
@@ -56,69 +40,45 @@ public class LDLibCodeEditorAdapter extends AbstractWidget {
     public LDLibCodeEditorAdapter(int x, int y, int width, int height, Component placeholder) {
         super(x, y, width, height, placeholder);
 
-        this.root = new UIElement();
-        this.root.setFocusable(false);
-        this.root.setOverflowVisible(false);
-
-        this.host = new UIElement();
-        this.host.setId("ae2_host");
-        this.host.setFocusable(true);
-        this.host.setOverflowVisible(false);
-
-        this.editor = new ExposedCodeEditor();
-        this.editor.setId("editor");
-        this.editor.setFocusable(true);
-        this.editor.layout(layout -> {
-            layout.widthPercent(100);
-            layout.heightPercent(100);
-        });
-        this.editor.textAreaStyle(style -> {
-            style.placeholder(placeholder);
-            style.viewMode(ScrollerMode.BOTH);
-            style.fontSize(8.0f);
-            style.lineSpacing(0.0f);
-        });
-
-        this.host.addChildren(this.editor);
-        this.root.addChildren(this.host);
-
-        this.modularUI = ModularUI.of(UI.of(this.root));
-
-        var widget = this.modularUI.getWidget();
-        this.guiDelegate = widget;
-        this.renderDelegate = widget;
+        this.widget = new ExposedCodeEditorWidget(x, y, width, height, this::isFocused);
+        this.widget.setLines(Arrays.asList(splitLines("")));
+        syncWidgetBounds();
     }
 
-    public LDLibCodeEditorAdapter setLanguage(@Nullable ILanguageDefinition language) {
-        this.editor.setLanguage(language);
+    public LDLibCodeEditorAdapter setLanguage(@NotNull ILanguageDefinition language) {
+        this.widget.codeEditor.setLanguageDefinition(language);
         return this;
     }
 
     public LDLibCodeEditorAdapter setStyleManager(@Nullable StyleManager styleManager) {
-        this.editor.setStyleManager(styleManager == null ? StyleManager.DEFAULT : styleManager);
+        StyleManager src = styleManager == null ? new StyleManager() : styleManager;
+        StyleManager dst = this.widget.codeEditor.getStyleManager();
+        dst.getStyleMap().clear();
+        dst.getStyleMap().putAll(src.getStyleMap());
+        dst.setDefaultStyle(src.getDefaultStyle());
         return this;
     }
 
     public CodeEditor getEditor() {
-        return this.editor;
+        return this.widget.codeEditor;
     }
 
     public String getValue() {
-        return String.join("\n", this.editor.getValue());
+        return String.join("\n", this.widget.codeEditor.getLines());
     }
 
     public void setValue(@Nullable String value) {
-        this.editor.setValue(splitLines(value), true);
+        this.widget.setLines(Arrays.asList(splitLines(value)));
     }
 
     public void insertText(@Nullable String text) {
-        this.editor.insertTextPublic(text);
+        this.widget.codeEditor.insertText(text == null ? "" : text);
     }
 
     public int getCursorPos() {
-        String[] lines = this.editor.getValue();
-        int line = this.editor.getCursorLine();
-        int col = this.editor.getCursorCol();
+        String[] lines = splitLines(getValue());
+        int line = this.widget.codeEditor.getCursor().line();
+        int col = this.widget.codeEditor.getCursor().column();
 
         int flat = 0;
         for (int i = 0; i < line && i < lines.length; i++) {
@@ -129,7 +89,7 @@ public class LDLibCodeEditorAdapter extends AbstractWidget {
     }
 
     public boolean hasSelection() {
-        return this.editor.hasSelectionPublic();
+        return this.widget.hasSelectionPublic();
     }
 
     public void applySelectedTextColor(int rgb) {
@@ -140,16 +100,17 @@ public class LDLibCodeEditorAdapter extends AbstractWidget {
         int start = -1;
         int end = -1;
 
-        if (this.editor.hasSelectionPublic()) {
+        int[] selectionRange = this.widget.getSelectionRangePublic();
+        if (selectionRange != null) {
             start = lineColToFlat(
-                    this.editor.getValue(),
-                    this.editor.getSelStartLine(),
-                    this.editor.getSelStartCol()
+                    this.widget.codeEditor.getLines().toArray(String[]::new),
+                    selectionRange[0],
+                    selectionRange[1]
             );
             end = lineColToFlat(
-                    this.editor.getValue(),
-                    this.editor.getSelEndLine(),
-                    this.editor.getSelEndCol()
+                    this.widget.codeEditor.getLines().toArray(String[]::new),
+                    selectionRange[2],
+                    selectionRange[3]
             );
 
             if (end < start) {
@@ -174,7 +135,7 @@ public class LDLibCodeEditorAdapter extends AbstractWidget {
             if (wrap != null) {
                 String updated = replaceColorWrap(current, wrap, rgb);
                 setValue(updated);
-                this.editor.setSelectionFlatPublic(updated, wrap.innerStart(), wrap.innerEnd());
+                this.widget.setSelectionFlatPublic(updated, wrap.innerStart(), wrap.innerEnd());
                 this.rememberedColorSelStart = wrap.innerStart();
                 this.rememberedColorSelEnd = wrap.innerEnd();
                 return;
@@ -193,7 +154,7 @@ public class LDLibCodeEditorAdapter extends AbstractWidget {
 
             int newStart = start + prefix.length();
             int newEnd = newStart + (end - start);
-            this.editor.setSelectionFlatPublic(updated, newStart, newEnd);
+            this.widget.setSelectionFlatPublic(updated, newStart, newEnd);
             this.rememberedColorSelStart = newStart;
             this.rememberedColorSelEnd = newEnd;
             return;
@@ -204,41 +165,30 @@ public class LDLibCodeEditorAdapter extends AbstractWidget {
         if (wrap != null) {
             String updated = replaceColorWrap(current, wrap, rgb);
             setValue(updated);
-            int[] lc = flatToLineCol(updated, Math.clamp(cursor, wrap.innerStart(), wrap.innerEnd()));
-            this.editor.setCursor(lc[0], lc[1]);
-            return;
+            int[] lc = flatToLineCol(updated, Mth.clamp(cursor, wrap.innerStart(), wrap.innerEnd()));
+            this.widget.codeEditor.setCursor(lc[0], lc[1]);
         }
     }
 
     public void tick() {
-        syncModularUI();
+        syncWidgetBounds();
         pollSyntheticDrag();
-        this.modularUI.tick();
+        this.widget.updateScreen();
     }
 
     public void removed() {
         stopSyntheticDrag();
-        this.modularUI.onRemoved();
     }
 
     public void invalidateLayout() {
-        this.syncedX = Integer.MIN_VALUE;
-        this.syncedY = Integer.MIN_VALUE;
-        this.syncedWidth = Integer.MIN_VALUE;
-        this.syncedHeight = Integer.MIN_VALUE;
+        syncWidgetBounds();
     }
 
     @Override
     public void setFocused(boolean focused) {
         super.setFocused(focused);
-        syncModularUI();
-        this.guiDelegate.setFocused(focused);
-
-        if (focused) {
-            this.modularUI.requestFocus(this.editor);
-        } else {
+        if (!focused) {
             stopSyntheticDrag();
-            this.modularUI.clearFocus();
         }
     }
 
@@ -253,8 +203,8 @@ public class LDLibCodeEditorAdapter extends AbstractWidget {
 
     @Override
     public void mouseMoved(double mouseX, double mouseY) {
-        syncModularUI();
-        this.guiDelegate.mouseMoved(mouseX, mouseY);
+        syncWidgetBounds();
+        this.widget.mouseMoved(mouseX, mouseY);
     }
 
     @Override
@@ -263,10 +213,9 @@ public class LDLibCodeEditorAdapter extends AbstractWidget {
             return false;
         }
 
-        syncModularUI();
-        this.guiDelegate.mouseMoved(mouseX, mouseY);
+        syncWidgetBounds();
 
-        boolean handled = this.guiDelegate.mouseClicked(mouseX, mouseY, button);
+        boolean handled = this.widget.mouseClicked(mouseX, mouseY, button);
         if (handled) {
             setFocused(true);
             startSyntheticDrag(button, mouseX, mouseY);
@@ -276,10 +225,9 @@ public class LDLibCodeEditorAdapter extends AbstractWidget {
 
     @Override
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        syncModularUI();
-        this.guiDelegate.mouseMoved(mouseX, mouseY);
+        syncWidgetBounds();
 
-        boolean handled = this.guiDelegate.mouseReleased(mouseX, mouseY, button);
+        boolean handled = this.widget.mouseReleased(mouseX, mouseY, button);
         if (button == this.pollingDragButton) {
             stopSyntheticDrag();
         }
@@ -288,20 +236,18 @@ public class LDLibCodeEditorAdapter extends AbstractWidget {
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-        syncModularUI();
-        this.guiDelegate.mouseMoved(mouseX, mouseY);
-        return this.guiDelegate.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+        syncWidgetBounds();
+        return this.widget.mouseDragged(mouseX, mouseY, button, dragX, dragY);
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
         if (!isMouseOver(mouseX, mouseY)) {
             return false;
         }
 
-        syncModularUI();
-        this.guiDelegate.mouseMoved(mouseX, mouseY);
-        return this.guiDelegate.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+        syncWidgetBounds();
+        return this.widget.mouseWheelMove(mouseX, mouseY, delta);
     }
 
     @Override
@@ -310,8 +256,18 @@ public class LDLibCodeEditorAdapter extends AbstractWidget {
             return false;
         }
 
-        syncModularUI();
-        return this.guiDelegate.keyPressed(keyCode, scanCode, modifiers);
+        syncWidgetBounds();
+        return this.widget.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+        if (!isFocused()) {
+            return false;
+        }
+
+        syncWidgetBounds();
+        return this.widget.keyReleased(keyCode, scanCode, modifiers);
     }
 
     @Override
@@ -320,8 +276,8 @@ public class LDLibCodeEditorAdapter extends AbstractWidget {
             return false;
         }
 
-        syncModularUI();
-        return this.guiDelegate.charTyped(codePoint, modifiers);
+        syncWidgetBounds();
+        return this.widget.charTyped(codePoint, modifiers);
     }
 
     @Override
@@ -330,9 +286,9 @@ public class LDLibCodeEditorAdapter extends AbstractWidget {
             return;
         }
 
-        syncModularUI();
-        this.guiDelegate.mouseMoved(mouseX, mouseY);
-        this.renderDelegate.render(guiGraphics, mouseX, mouseY, partialTick);
+        syncWidgetBounds();
+        this.widget.drawInBackground(guiGraphics, mouseX, mouseY, partialTick);
+        this.widget.drawInForeground(guiGraphics, mouseX, mouseY, partialTick);
     }
 
     @Override
@@ -343,66 +299,11 @@ public class LDLibCodeEditorAdapter extends AbstractWidget {
         }
     }
 
-    private void syncModularUI() {
-        Screen screen = Minecraft.getInstance().screen;
-        if (screen == null) {
-            return;
-        }
-
-        boolean screenChanged =
-                screen != this.lastScreen
-                        || screen.width != this.lastScreenWidth
-                        || screen.height != this.lastScreenHeight;
-
-        boolean boundsChanged =
-                getX() != this.syncedX
-                        || getY() != this.syncedY
-                        || this.width != this.syncedWidth
-                        || this.height != this.syncedHeight;
-
-        if (!screenChanged && !boundsChanged) {
-            return;
-        }
-
-        this.lastScreen = screen;
-        this.lastScreenWidth = screen.width;
-        this.lastScreenHeight = screen.height;
-
-        applyBounds(screen);
-
-        this.modularUI.setScreen(screen);
-        this.modularUI.init(screen.width, screen.height);
-
-        this.syncedX = getX();
-        this.syncedY = getY();
-        this.syncedWidth = this.width;
-        this.syncedHeight = this.height;
-    }
-
-    private void applyBounds(Screen screen) {
-        final float screenW = (float) screen.width;
-        final float screenH = (float) screen.height;
-
-        final float x = (float) getX();
-        final float y = (float) getY();
-        final float w = (float) this.width;
-        final float h = (float) this.height;
-
-        this.root.layout(layout -> {
-            layout.width(screenW);
-            layout.height(screenH);
-        });
-
-        this.host.layout(layout -> {
-            layout.positionType(TaffyPosition.ABSOLUTE);
-            layout.left(x);
-            layout.top(y);
-            layout.width(w);
-            layout.height(h);
-        });
-
-        this.root.markTaffyStyleDirty();
-        this.host.markTaffyStyleDirty();
+    private void syncWidgetBounds() {
+        this.widget.setVisible(this.visible);
+        this.widget.setActive(this.active);
+        this.widget.setSelfPosition(getX(), getY());
+        this.widget.setSize(this.width, this.height);
     }
 
     private void startSyntheticDrag(int button, double mouseX, double mouseY) {
@@ -434,19 +335,19 @@ public class LDLibCodeEditorAdapter extends AbstractWidget {
 
         int buttonState = GLFW.glfwGetMouseButton(handle, this.pollingDragButton);
 
-        syncModularUI();
-        this.guiDelegate.mouseMoved(guiX, guiY);
+        syncWidgetBounds();
+        this.widget.mouseMoved(guiX, guiY);
 
         if (buttonState == GLFW.GLFW_PRESS) {
             double dragX = guiX - this.lastDragMouseX;
             double dragY = guiY - this.lastDragMouseY;
 
-            this.guiDelegate.mouseDragged(guiX, guiY, this.pollingDragButton, dragX, dragY);
+            this.widget.mouseDragged(guiX, guiY, this.pollingDragButton, dragX, dragY);
 
             this.lastDragMouseX = guiX;
             this.lastDragMouseY = guiY;
         } else {
-            this.guiDelegate.mouseReleased(guiX, guiY, this.pollingDragButton);
+            this.widget.mouseReleased(guiX, guiY, this.pollingDragButton);
             stopSyntheticDrag();
         }
     }
@@ -604,21 +505,22 @@ public class LDLibCodeEditorAdapter extends AbstractWidget {
     }
 
     public void rememberSelectionForColorApply() {
-        if (!this.editor.hasSelectionPublic()) {
+        int[] range = this.widget.getSelectionRangePublic();
+        if (range == null) {
             this.rememberedColorSelStart = -1;
             this.rememberedColorSelEnd = -1;
             return;
         }
 
         int start = lineColToFlat(
-                this.editor.getValue(),
-                this.editor.getSelStartLine(),
-                this.editor.getSelStartCol()
+                this.widget.codeEditor.getLines().toArray(String[]::new),
+                range[0],
+                range[1]
         );
         int end = lineColToFlat(
-                this.editor.getValue(),
-                this.editor.getSelEndLine(),
-                this.editor.getSelEndCol()
+                this.widget.codeEditor.getLines().toArray(String[]::new),
+                range[2],
+                range[3]
         );
 
         if (end < start) {
@@ -637,60 +539,40 @@ public class LDLibCodeEditorAdapter extends AbstractWidget {
         this.rememberedColorSelEnd = end;
     }
 
-    private static final class ExposedCodeEditor extends CodeEditor {
-        public void insertTextPublic(@Nullable String text) {
-            super.insertText(text);
+    private static final class ExposedCodeEditorWidget extends CodeEditorWidget {
+        private final BooleanSupplier focusedSupplier;
+
+        private ExposedCodeEditorWidget(int x, int y, int width, int height, BooleanSupplier focusedSupplier) {
+            super(x, y, width, height);
+            this.focusedSupplier = focusedSupplier;
+        }
+
+        @Override
+        public boolean canConsumeInput() {
+            return this.isVisible() && this.isActive() && this.focusedSupplier.getAsBoolean();
         }
 
         public boolean hasSelectionPublic() {
-            return hasSelection();
+            return this.codeEditor.isSelectionValid();
         }
 
-        public void wrapSelectionWithColorPublic(int rgb) {
-            String prefix = String.format(Locale.ROOT, "&c%06X(", rgb & 0xFFFFFF);
-            String suffix = ")";
-
-            if (hasSelectionPublic()) {
-                int sl = getSelStartLine();
-                int sc = getSelStartCol();
-                int el = getSelEndLine();
-                int ec = getSelEndCol();
-
-                if (sl > el || (sl == el && sc > ec)) {
-                    int tsl = sl; sl = el; el = tsl;
-                    int tsc = sc; sc = ec; ec = tsc;
-                }
-
-                String selected;
-                if (sl == el) {
-                    String line = lines.get(sl);
-                    selected = line.substring(Math.min(sc, line.length()), Math.min(ec, line.length()));
-                } else {
-                    StringBuilder sb = new StringBuilder();
-                    String first = lines.get(sl);
-                    sb.append(first.substring(Math.min(sc, first.length()))).append('\n');
-                    for (int i = sl + 1; i < el; i++) {
-                        sb.append(lines.get(i)).append('\n');
-                    }
-                    String last = lines.get(el);
-                    sb.append(last, 0, Math.min(ec, last.length()));
-                    selected = sb.toString();
-                }
-
-                super.insertText(prefix + selected + suffix);
-            } else {
-                int line = getCursorLine();
-                int col = getCursorCol();
-                super.insertText(prefix + suffix);
-                setCursor(line, col + prefix.length());
+        @Nullable
+        public int[] getSelectionRangePublic() {
+            if (!this.codeEditor.isSelectionValid() || this.codeEditor.getSelection() == null) {
+                return null;
             }
+            return this.codeEditor.getSelection().getSelectionRange();
         }
 
         public void setSelectionFlatPublic(String text, int startFlat, int endFlat) {
             int[] a = flatToLineCol(text, startFlat);
             int[] b = flatToLineCol(text, endFlat);
-            setSelection(new Cursor(a[0], a[1]), new Cursor(b[0], b[1]));
-            setCursor(b[0], b[1]);
+
+            this.codeEditor.setCursor(new Cursor(a[0], a[1]));
+            this.codeEditor.startSelection();
+            this.codeEditor.setCursor(new Cursor(b[0], b[1]));
+            this.codeEditor.updateSelection();
+            this.codeEditor.endSelection();
         }
     }
 }

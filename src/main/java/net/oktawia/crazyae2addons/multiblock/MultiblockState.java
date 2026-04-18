@@ -19,7 +19,7 @@ import java.util.Map;
 
 public final class MultiblockState {
     private static final int FAST_POLL_INTERVAL_TICKS = 10;
-    private static final int ATTACHED_CALLBACK_VALIDATE_INTERVAL_TICKS = 200; // 10 sekund
+    private static final int ATTACHED_CALLBACK_VALIDATE_INTERVAL_TICKS = 200;
 
     private final MultiblockDefinition definition;
     private final BlockEntity controller;
@@ -85,11 +85,9 @@ public final class MultiblockState {
             return;
         }
 
-        // POLLED entries sprawdzamy co 10 ticków
         syncPolledCallbacks(level);
         boolean polledOk = pollPolledEntries(level);
 
-        // CALLBACK entries, których jeszcze nie mamy, próbujemy dopiąć co 10 ticków
         registerMissingCallbacks(level);
         boolean callbacksOk = areAllCallbackEntriesRegistered();
 

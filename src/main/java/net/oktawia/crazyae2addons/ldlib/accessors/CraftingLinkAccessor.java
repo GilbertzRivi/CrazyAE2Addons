@@ -3,27 +3,26 @@ package net.oktawia.crazyae2addons.ldlib.accessors;
 import appeng.api.networking.crafting.ICraftingLink;
 import appeng.api.networking.crafting.ICraftingRequester;
 import appeng.api.storage.StorageHelper;
-import com.lowdragmc.lowdraglib2.Platform;
-import com.lowdragmc.lowdraglib2.core.mixins.accessor.DelegatingOpsAccessor;
-import com.lowdragmc.lowdraglib2.syncdata.accessor.IAccessor;
-import com.lowdragmc.lowdraglib2.syncdata.field.ManagedKey;
-import com.lowdragmc.lowdraglib2.syncdata.ref.IRef;
-import com.lowdragmc.lowdraglib2.syncdata.ref.UniqueDirectRef;
-import com.lowdragmc.lowdraglib2.syncdata.var.FieldVar;
-import com.mojang.serialization.DynamicOps;
-import net.minecraft.core.HolderLookup;
+import com.lowdragmc.lowdraglib.syncdata.AccessorOp;
+import com.lowdragmc.lowdraglib.syncdata.IAccessor;
+import com.lowdragmc.lowdraglib.syncdata.managed.IManagedVar;
+import com.lowdragmc.lowdraglib.syncdata.managed.IRef;
+import com.lowdragmc.lowdraglib.syncdata.managed.ManagedRef;
+import com.lowdragmc.lowdraglib.syncdata.payload.ITypedPayload;
+import com.lowdragmc.lowdraglib.syncdata.payload.NbtTagPayload;
+import com.lowdragmc.lowdraglib.syncdata.payload.PrimitiveTypedPayload;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtOps;
-import net.minecraft.nbt.Tag;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.resources.RegistryOps;
-import net.neoforged.neoforge.common.CommonHooks;
 import net.oktawia.crazyae2addons.CrazyAddons;
 
-import javax.annotation.Nonnull;
-import java.util.Objects;
+import java.lang.reflect.Field;
 
-public final class CraftingLinkAccessor implements IAccessor<ICraftingLink> {
+public final class CraftingLinkAccessor implements IAccessor {
+    private byte defaultType = -1;
+
+    @Override
+    public boolean hasPredicate() {
+        return true;
+    }
 
     @Override
     public boolean test(Class<?> type) {
@@ -31,46 +30,41 @@ public final class CraftingLinkAccessor implements IAccessor<ICraftingLink> {
     }
 
     @Override
-    public <T> T readField(DynamicOps<T> op, IRef<ICraftingLink> ref) {
-        CompoundTag tag = serialize(ref.readRaw());
+    public boolean isManaged() {
+        return false;
+    }
 
-        if (isNbtOps(op)) {
-            T out = (T) tag;
-            return out;
+    @Override
+    public void setDefaultType(byte payloadType) {
+        this.defaultType = payloadType;
+    }
+
+    @Override
+    public byte getDefaultType() {
+        return this.defaultType;
+    }
+
+    @Override
+    public ITypedPayload<?> readField(AccessorOp op, IRef field) {
+        ICraftingLink value = field.readRaw();
+        if (value == null) {
+            return PrimitiveTypedPayload.ofNull();
+        }
+        return NbtTagPayload.of(serialize(value));
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public void writeField(AccessorOp op, IRef field, ITypedPayload<?> payload) {
+        if (!(field instanceof ManagedRef managedRef)) {
+            return;
         }
 
-        return NbtOps.INSTANCE.convertTo(op, tag);
-    }
+        CompoundTag tag = payload.serializeNBT() instanceof CompoundTag c ? c : new CompoundTag();
+        ICraftingLink link = deserialize(field, tag);
 
-    @Override
-    public <T> void writeField(DynamicOps<T> op, IRef<ICraftingLink> ref, T payload) {
-        Tag tag = isNbtOps(op)
-                ? (Tag) payload
-                : op.convertTo(NbtOps.INSTANCE, payload);
-
-        ICraftingLink value = deserialize(ref, tag instanceof CompoundTag c ? c : new CompoundTag());
-        ref.writeRaw(value);
-    }
-
-    @Override
-    public void readFieldToStream(RegistryFriendlyByteBuf buffer, IRef<ICraftingLink> ref) {
-        buffer.writeNbt(serialize(ref.readRaw()));
-    }
-
-    @Override
-    public void writeFieldFromStream(RegistryFriendlyByteBuf buffer, IRef<ICraftingLink> ref) {
-        CompoundTag tag = buffer.readNbt();
-        ref.writeRaw(deserialize(ref, tag == null ? new CompoundTag() : tag));
-    }
-
-    @Override
-    public IRef<ICraftingLink> createRef(ManagedKey managedKey, @Nonnull Object holder) {
-        return new CraftingLinkRef(managedKey, holder, this);
-    }
-
-    @Override
-    public boolean isReadOnly() {
-        return false;
+        IManagedVar<ICraftingLink> managedVar = managedRef.getField();
+        managedVar.set(link);
     }
 
     private static CompoundTag serialize(ICraftingLink link) {
@@ -81,16 +75,14 @@ public final class CraftingLinkAccessor implements IAccessor<ICraftingLink> {
         return tag;
     }
 
-    private static ICraftingLink deserialize(IRef<ICraftingLink> ref, CompoundTag tag) {
+    private static ICraftingLink deserialize(IRef ref, CompoundTag tag) {
         if (tag.isEmpty()) {
             return null;
         }
 
-        Object holder = ((CraftingLinkRef) ref).holder;
+        Object holder = extractHolder(ref);
         if (!(holder instanceof ICraftingRequester requester)) {
-            throw new IllegalStateException(
-                    "CraftingLinkAccessor requires the field holder to implement ICraftingRequester: " + holder.getClass().getName()
-            );
+            return null;
         }
 
         try {
@@ -105,43 +97,27 @@ public final class CraftingLinkAccessor implements IAccessor<ICraftingLink> {
         }
     }
 
-    private static boolean isNbtOps(DynamicOps<?> op) {
-        return op == NbtOps.INSTANCE
-                || op instanceof DelegatingOpsAccessor<?> accessor
-                && accessor.getDelegate() == NbtOps.INSTANCE;
-    }
-
-    private static final class CraftingLinkRef extends UniqueDirectRef<ICraftingLink> {
-        private final Object holder;
-
-        private CraftingLinkRef(ManagedKey key, Object holder, IAccessor<ICraftingLink> accessor) {
-            super(FieldVar.of(key, holder), key, accessor);
-            this.holder = holder;
+    private static Object extractHolder(IRef ref) {
+        if (!(ref instanceof ManagedRef managedRef)) {
+            return null;
         }
 
-        @Override
-        protected void updateSync() {
-            ICraftingLink oldLink = oldValue;
-            ICraftingLink newLink = readRaw();
+        Object fieldObj = managedRef.getField();
+        Class<?> type = fieldObj.getClass();
 
-            if (!sameLink(oldLink, newLink)) {
-                oldValue = newLink;
-                markAsDirty();
-            }
-        }
-
-        private static boolean sameLink(ICraftingLink a, ICraftingLink b) {
-            if (a == b) return true;
-            if (a == null || b == null) return false;
-
+        while (type != null) {
             try {
-                return Objects.equals(a.getCraftingID(), b.getCraftingID())
-                        && a.isDone() == b.isDone()
-                        && a.isCanceled() == b.isCanceled();
+                Field instanceField = type.getDeclaredField("instance");
+                instanceField.setAccessible(true);
+                return instanceField.get(fieldObj);
+            } catch (NoSuchFieldException ignored) {
+                type = type.getSuperclass();
             } catch (Throwable e) {
-                CrazyAddons.LOGGER.debug("failed to compare crafting links", e);
-                return false;
+                CrazyAddons.LOGGER.debug("failed to extract managed field holder", e);
+                return null;
             }
         }
+
+        return null;
     }
 }

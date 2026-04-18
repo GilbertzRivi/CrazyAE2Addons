@@ -1,6 +1,0 @@
-{
-  "parent": "ae2:item/export_bus",
-  "textures": {
-    "type": "ae2:part/export_bus_base"
-  }
-}

@@ -16,11 +16,11 @@ public class MixinPatternProviderLogic implements IProviderLogicResizable {
     @Shadow @Mutable @Final private AppEngInternalInventory patternInventory;
 
     @Override
-    public void setSize(int size, HolderLookup.Provider registries) {
+    public void crazyAE2Addons$setSize(int size) {
         var tag = new CompoundTag();
         var host = patternInventory.getHost();
-        patternInventory.writeToNBT(tag, "patterns", registries);
+        patternInventory.writeToNBT(tag, "patterns");
         this.patternInventory = new AppEngInternalInventory(host, size);
-        this.patternInventory.readFromNBT(tag, "patterns", registries);
+        this.patternInventory.readFromNBT(tag, "patterns");
     }
 }

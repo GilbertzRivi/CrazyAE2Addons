@@ -1,5 +1,7 @@
 package net.oktawia.crazyae2addons.client.renderer.preview.multiblock;
 
+import net.minecraft.util.Mth;
+
 public final class SimpleGradient {
     public static final int START = 0x5CC8FF;
     public static final int END = 0x3B82F6;
@@ -8,7 +10,7 @@ public final class SimpleGradient {
     }
 
     public static int blueGradient(double t) {
-        t = Math.clamp(t, 0.0, 1.0);
+        t = Mth.clamp(t, 0.0, 1.0);
 
         int r1 = (START >> 16) & 0xFF;
         int g1 = (START >> 8) & 0xFF;

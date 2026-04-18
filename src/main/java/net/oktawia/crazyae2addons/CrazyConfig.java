@@ -1,157 +1,396 @@
 package net.oktawia.crazyae2addons;
 
-import net.neoforged.neoforge.common.ModConfigSpec;
+import com.electronwill.nightconfig.core.Config;
+import com.electronwill.nightconfig.core.UnmodifiableConfig;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraftforge.common.ForgeConfigSpec;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.List;
 
 public class CrazyConfig {
-    public static final ModConfigSpec COMMON_SPEC;
+    public static final ForgeConfigSpec COMMON_SPEC;
     public static final Common COMMON;
 
     static {
-        Pair<Common, ModConfigSpec> pair = new ModConfigSpec.Builder().configure(Common::new);
+        Pair<Common, ForgeConfigSpec> pair = new ForgeConfigSpec.Builder().configure(Common::new);
         COMMON = pair.getLeft();
         COMMON_SPEC = pair.getRight();
     }
 
     public static class Common {
-        public final ModConfigSpec.IntValue CrazyProviderMaxAddRows;
-        public final ModConfigSpec.IntValue AutoEnchanterCost;
-        public final ModConfigSpec.IntValue AutobuilderPreviewLimit;
-        public final ModConfigSpec.DoubleValue AutobuilderCostMult;
-        public final ModConfigSpec.IntValue AutobuilderSpeed;
-        public final ModConfigSpec.IntValue AutobuilderMineDelay;
-        public final ModConfigSpec.ConfigValue<List<? extends String>> PenroseGtTiers;
 
-        // ===== Penrose Sphere =====
-        public final ModConfigSpec.BooleanValue PenroseFEOutputEnabled;
-        public final ModConfigSpec.BooleanValue PenroseMeltdownExplosionsEnabled;
-        public final ModConfigSpec.IntValue     PenroseMeltdownFieldRadius;
-        public final ModConfigSpec.LongValue    PenroseStartupCostSingu;
-        public final ModConfigSpec.LongValue    PenroseInitialMassMu;
-        public final ModConfigSpec.LongValue    PenroseMassWindowMu;
-        public final ModConfigSpec.DoubleValue  PenroseMassFactorMax;
-        public final ModConfigSpec.DoubleValue  PenroseDutyCompensation;
-        public final ModConfigSpec.DoubleValue  PenroseFeBasePerSinguFlow;
-        public final ModConfigSpec.DoubleValue  PenroseHeatPerSinguFlow;
-        public final ModConfigSpec.DoubleValue  PenroseHeatPeakMK;
-        public final ModConfigSpec.DoubleValue  PenroseMaxHeatMK;
-        public final ModConfigSpec.IntValue     PenroseMaxFeedPerTick;
-        public final ModConfigSpec.IntValue    PenroseDiskWindowSeconds;
-        public final ModConfigSpec.DoubleValue PenroseDiskSigmaTicks;
-        public final ModConfigSpec.LongValue   PenroseDiskRenderFullAtMu;
+        public final ForgeConfigSpec.BooleanValue enablePeacefullSpawner;
+        public final ForgeConfigSpec.BooleanValue enableEntityTicker;
+        public final ForgeConfigSpec.IntValue     EntityTickerCost;
+        public final ForgeConfigSpec.IntValue     EntityTickerMaxSpeedCards;
+        public final ForgeConfigSpec.ConfigValue<List<? extends String>> EntityTickerBlackList;
+        public final ForgeConfigSpec.BooleanValue P2PWormholeNesting;
+        public final ForgeConfigSpec.BooleanValue P2PWormholeTeleportation;
+        public final ForgeConfigSpec.BooleanValue ImmersiveP2PWormhole;
 
-        public Common(ModConfigSpec.Builder builder) {
+        public final ForgeConfigSpec.IntValue     AutoEnchanterCost;
+        public final ForgeConfigSpec.BooleanValue GregEnergyExporter;
+        public final ForgeConfigSpec.BooleanValue GregWormholeEUP2P;
+        public final ForgeConfigSpec.BooleanValue GregWormholeGoodEuP2P;
+
+        public final ForgeConfigSpec.IntValue     AutobuilderCostMult;
+        public final ForgeConfigSpec.IntValue     AutobuilderMineDelay;
+        public final ForgeConfigSpec.IntValue     AutobuilderSpeed;
+        public final ForgeConfigSpec.IntValue     AutobuilderPreviewLimit;
+
+        public final ForgeConfigSpec.IntValue     CrazyProviderMaxAddRows;
+
+        public final ForgeConfigSpec.IntValue     CradleCapacity;
+        public final ForgeConfigSpec.IntValue     CradleCost;
+        public final ForgeConfigSpec.IntValue     CradleChargingSpeed;
+
+        public final ForgeConfigSpec.BooleanValue PenroseMeltdownExplosionsEnabled;
+        public final ForgeConfigSpec.IntValue     PenroseMeltdownFieldRadius;
+
+        public final ForgeConfigSpec.BooleanValue PenroseSphereEnabled;
+        public final ForgeConfigSpec.BooleanValue PenroseFEOutputEnabled;
+        public final ForgeConfigSpec.BooleanValue PenroseEUOutputEnabled;
+        public final ForgeConfigSpec.ConfigValue<List<? extends String>> PenroseGtTiers;
+
+        public final ForgeConfigSpec.LongValue    PenroseStartupCostSingu;
+
+        public final ForgeConfigSpec.LongValue    PenroseInitialMassMu;
+        public final ForgeConfigSpec.LongValue    PenroseMassWindowMu;
+        public final ForgeConfigSpec.DoubleValue  PenroseMassFactorMax;
+
+        public final ForgeConfigSpec.DoubleValue  PenroseDutyCompensation;
+        public final ForgeConfigSpec.DoubleValue  PenroseFeBasePerSinguFlow;
+        public final ForgeConfigSpec.DoubleValue  PenroseHeatPerSinguFlow;
+
+        public final ForgeConfigSpec.DoubleValue  PenroseHeatPeakMK;
+        public final ForgeConfigSpec.DoubleValue  PenroseMaxHeatMK;
+
+        public final ForgeConfigSpec.IntValue     PenroseMaxFeedPerTick;
+
+        public final ForgeConfigSpec.BooleanValue ResearchRequired;
+
+        public final ForgeConfigSpec.IntValue     PortableSpatialStorageCostMult;
+
+        public final ForgeConfigSpec.BooleanValue EnergyExporterEnabled;
+        public final ForgeConfigSpec.BooleanValue EnergyInterfaceEnabled;
+
+        public final ForgeConfigSpec.BooleanValue FEp2pEnabled;
+        public final ForgeConfigSpec.IntValue     FEp2pSpeed;
+        public final ForgeConfigSpec.BooleanValue Fluidp2pEnabled;
+        public final ForgeConfigSpec.IntValue     Fluidp2pSpeed;
+        public final ForgeConfigSpec.BooleanValue Itemp2pEnabled;
+        public final ForgeConfigSpec.IntValue     Itemp2pSpeed;
+
+        public final ForgeConfigSpec.ConfigValue<UnmodifiableConfig> ResearchUnitExtraQBlocks;
+
+
+        public Common(ForgeConfigSpec.Builder builder) {
             builder.comment("Crazy AE2 Addons - Config").push("general");
-            builder.push("Features");
 
+            builder.push("Features");
+            enablePeacefullSpawner = builder
+                    .comment("Allow Spawner Controller to work in Peaceful mode")
+                    .define("enablePeacefullSpawner", true);
+
+            enableEntityTicker = builder
+                    .comment("Enable/disable Entity Ticker")
+                    .define("enableEntityTicker", true);
+
+            EntityTickerCost = builder
+                    .comment("Power cost multiplier for Entity Ticker")
+                    .defineInRange("EntityTickerCost", 512, 0, Integer.MAX_VALUE);
+
+            EntityTickerMaxSpeedCards = builder
+                    .comment("Maximum number of speed cards that can be installed in Entity Ticker")
+                    .defineInRange("entityTickerMaxSpeedCards", 8, 0, 8);
+
+            EntityTickerBlackList = builder
+                    .comment("Blocks on which Entity Ticker should not work")
+                    .defineList("EntityTickerBlackList", List.of(), o -> o instanceof String);
+
+            P2PWormholeNesting = builder
+                    .comment("Allow routing P2P tunnels through a Wormhole tunnel")
+                    .define("nestedP2Pwormhole", false);
+
+            P2PWormholeTeleportation = builder
+                    .comment("Allow teleporting through a Wormhole P2P")
+                    .define("wormholeP2PTeleportation", true);
+
+            ImmersiveP2PWormhole = builder
+                    .comment("Create immersive portals on wormhole p2ps. Expect visual glitches with shaders.\n" +
+                            "You need to install additional library for this feature to work")
+                    .define("immersiveP2PWormhole", false);
+            builder.pop();
+
+
+            builder.push("Machines");
+            AutoEnchanterCost = builder
+                    .comment("XP cost multiplier for Auto Enchanter")
+                    .defineInRange("autoEnchanterCost", 10, 0, 100);
+
+            GregWormholeEUP2P = builder
+                    .comment("Allow Wormhole P2P to transfer EU")
+                    .define("wormholeEUP2PGT", true);
+
+            GregWormholeGoodEuP2P = builder
+                    .comment("Allow Wormhole P2P to transfer EU to more than 1 output simultaneously")
+                    .define("wormholeGoodEUP2PGT", false);
+            builder.pop();
+
+
+            builder.push("Autobuilder");
+            AutobuilderCostMult = builder
+                    .comment("FE cost multiplier for Autobuilder")
+                    .defineInRange("autobuilderCost", 5, 0, 100);
+
+            AutobuilderMineDelay = builder
+                    .comment("Ticks to wait after each broken block")
+                    .defineInRange("autobuilderMineDelay", 2, 0, 10);
+
+            AutobuilderSpeed = builder
+                    .comment("Operations per tick Autobuilder can perform")
+                    .defineInRange("autobuilderSpeed", 128, 0, Integer.MAX_VALUE);
+
+            AutobuilderPreviewLimit = builder
+                    .comment("How many preview blocks Autobuilder can show at once")
+                    .defineInRange("autobuilderPreviewLimit", 8192, 0, Integer.MAX_VALUE);
+            builder.pop();
+
+
+            builder.push("CrazyPatternProvider");
             CrazyProviderMaxAddRows = builder
                     .comment("How many times player can upgrade the provider; -1 to disable limit")
                     .defineInRange("crazyProviderMaxAddRows", -1, -1, Integer.MAX_VALUE);
-
-            AutoEnchanterCost = builder
-                    .comment("XP cost multiplier for the Auto Enchanter (applied to base enchant cost)")
-                    .defineInRange("autoEnchanterCost", 1, 1, Integer.MAX_VALUE);
-
-            AutobuilderPreviewLimit = builder
-                    .comment("Max number of blocks shown in AutoBuilder preview")
-                    .defineInRange("autobuilderPreviewLimit", 4096, 1, Integer.MAX_VALUE);
-
-            AutobuilderCostMult = builder
-                    .comment("Energy cost multiplier per block placed/mined by AutoBuilder")
-                    .defineInRange("autobuilderCostMult", 1.0, 0.0, Double.MAX_VALUE);
-
-            AutobuilderSpeed = builder
-                    .comment("Ticks of delay between AutoBuilder build steps (base)")
-                    .defineInRange("autobuilderSpeed", 20, 1, Integer.MAX_VALUE);
-
-            AutobuilderMineDelay = builder
-                    .comment("Extra tick delay after mining a block")
-                    .defineInRange("autobuilderMineDelay", 1, 1, Integer.MAX_VALUE);
-
-            PenroseGtTiers = builder
-                    .comment("GregTech energy hatch tiers accepted in Penrose Sphere structure.\n" +
-                            "Used when a block ID contains '#' as a tier wildcard, e.g. \"gtceu:#_energy_output_hatch\".\n" +
-                            "Each entry replaces '#' and the result is looked up in the block registry.")
-                    .defineListAllowEmpty(
-                            "penroseGtTiers",
-                            List.of("ulv", "lv", "mv", "hv", "ev", "iv", "luv", "zpm", "uv",
-                                    "uhv", "uev", "uiv", "uxv", "opv", "max"),
-                            () -> "ulv",
-                            obj -> obj instanceof String s && !s.isBlank()
-                    );
-
             builder.pop();
+
+
+            builder.push("EntropyCradle");
+            CradleCapacity = builder
+                    .comment("How much FE Entropy Cradle can store")
+                    .defineInRange("cradleCapacity", 600_000_000, 0, Integer.MAX_VALUE);
+
+            CradleCost = builder
+                    .comment("How much FE the cradle uses per operation")
+                    .defineInRange("cradleCost", 600_000_000, 0, Integer.MAX_VALUE);
+
+            CradleChargingSpeed = builder
+                    .comment("How much FE per second the cradle can receive")
+                    .defineInRange("cradleChargingSpeed", 50_000_000, 0, Integer.MAX_VALUE);
+            builder.pop();
+
 
             // ===== Penrose Sphere =====
             builder.push("PenroseSphere");
 
+            PenroseSphereEnabled = builder
+                    .comment("Enable/disable Penrose Sphere entirely.")
+                    .define("penroseSphereEnabled", true);
+
             PenroseFEOutputEnabled = builder
-                    .comment("Enable FE output from Penrose Sphere.")
+                    .comment(
+                            "Enable FE output from Penrose Sphere.",
+                            "Set to false to completely disable FE output."
+                    )
                     .define("penroseFeOutputEnabled", true);
 
+            PenroseEUOutputEnabled = builder
+                    .comment(
+                            "Enable EU output from Penrose Sphere.",
+                            "Set to true if Penrose should give GregTech EU output."
+                    )
+                    .define("penroseEuOutputEnabled", false);
+
+            PenroseGtTiers = builder
+                    .comment(
+                            "GT hatch tiers allowed for the Penrose Sphere.",
+                            "Works only when penroseEuOutputEnabled is set to true.",
+                            "Default: ULV, LV, MV, HV, EV, IV, LuV, ZPM, UV, UHV, UEV, UIV, UXV, OpV, MAX"
+                    )
+                    .defineList(
+                            "penroseGtTiers",
+                            List.of(
+                                    "ULV", "LV", "MV", "HV", "EV", "IV", "LuV", "ZPM",
+                                    "UV", "UHV", "UEV", "UIV", "UXV", "OpV", "MAX"
+                            ),
+                            o -> o instanceof String s && !s.isBlank()
+                    );
+
+            builder.push("Meltdown");
             PenroseMeltdownExplosionsEnabled = builder
-                    .comment("Enable meltdown explosions and black hole field effect.")
+                    .comment(
+                            "Enable/disable meltdown world effect (explosions + black hole field).",
+                            "Default: true."
+                    )
                     .define("penroseMeltdownExplosionsEnabled", true);
-
             PenroseMeltdownFieldRadius = builder
-                    .comment("Radius for BlackHoleManager.start() after meltdown. 0 = disabled.")
+                    .comment(
+                            "Radius used by BlackHoleManager.start(...) after meltdown.",
+                            "Set to 0 to disable the field entirely."
+                    )
                     .defineInRange("penroseMeltdownFieldRadius", 768, 0, 4096);
+            builder.pop();
 
+            builder.push("Startup");
             PenroseStartupCostSingu = builder
-                    .comment("Super Singularity items consumed to start the black hole.")
+                    .comment(
+                            "How many Super Singularity items are consumed to start the black hole.",
+                            "Units: items. Default: 32512."
+                    )
                     .defineInRange("penroseStartupCostSingu", 32_512L, 0L, Long.MAX_VALUE);
+            builder.pop();
 
+            builder.push("Balance");
             PenroseInitialMassMu = builder
-                    .comment("Initial black hole mass at startup (MU).")
+                    .comment(
+                            "Initial black hole mass at startup.",
+                            "Units: MU (internal mass unit). Default matches old hardcoded value."
+                    )
                     .defineInRange("penroseInitialMassMu", 32_768L * 8_192L, 0L, Long.MAX_VALUE);
 
             PenroseMassWindowMu = builder
-                    .comment("Mass window above initial mass before meltdown (MU).")
+                    .comment(
+                            "Allowed mass window above initial mass before meltdown triggers.",
+                            "Max mass = initialMassMu + massWindowMu.",
+                            "Units: MU. Default: 1113600."
+                    )
                     .defineInRange("penroseMassWindowMu", 1_113_600L, 0L, Long.MAX_VALUE);
 
             PenroseMassFactorMax = builder
-                    .comment("Max mass factor multiplier at sweet-spot (1.0 .. massFactorMax).")
+                    .comment(
+                            "Max mass factor multiplier at the sweet-spot (peak of the mass curve).",
+                            "massFactorSweet(): 1.0 .. massFactorMax.",
+                            "Default: 2.0 (matches current)."
+                    )
                     .defineInRange("penroseMassFactorMax", 2.0, 1.0, 64.0);
 
             PenroseDutyCompensation = builder
-                    .comment("Duty-cycle compensation multiplier in energy calculations. Default: 4/3.")
+                    .comment(
+                            "Duty-cycle compensation multiplier used in energy calculations.",
+                            "Default: 4/3 (~1.3333333)."
+                    )
                     .defineInRange("penroseDutyCompensation", 4.0 / 3.0, 0.0, 1000.0);
 
             PenroseFeBasePerSinguFlow = builder
-                    .comment("Base FE per tick per 1.0 singu/t disk flow at heatEff=1 massFactor=1.")
+                    .comment(
+                            "Base FE produced per 1.0 singu/t disk flow at heatEff=1 and massFactor=1.",
+                            "Units: FE per tick per (singu/t).",
+                            "Default equals current PenroseControllerBE FE_BASE_PER_SINGU."
+                    )
                     .defineInRange("penroseFeBasePerSinguFlow", (double) (1L << 27) * 0.5, 0.0, 1.0e18);
 
             PenroseHeatPerSinguFlow = builder
-                    .comment("Heat added per tick per 1.0 singu/t disk flow (MK/t per singu/t).")
+                    .comment(
+                            "Heat added per tick per 1.0 singu/t disk flow at massFactor=1.",
+                            "Units: MK per tick per (singu/t)."
+                    )
                     .defineInRange("penroseHeatPerSinguFlow", 0.5, 0.0, 1.0e12);
 
             PenroseHeatPeakMK = builder
-                    .comment("Heat where efficiency peaks (heatEff=1). Units: MK. Default: 50000.")
+                    .comment(
+                            "Heat value where the efficiency curve peaks (heatEff reaches 1.0 at heat=peak).",
+                            "Used by computeHeatEff(): x=heat/peak; eff=2x-x^2 clamped to [0..1].",
+                            "Units: MK. Default: 50000."
+                    )
                     .defineInRange("penroseHeatPeakMK", 50_000.0, 1.0, 1.0e12);
 
             PenroseMaxHeatMK = builder
-                    .comment("Overheat threshold -> meltdown. Units: MK. Default: 100000.")
+                    .comment(
+                            "Overheat threshold. If heat >= maxHeat -> meltdown.",
+                            "Units: MK. Default: 100000."
+                    )
                     .defineInRange("penroseMaxHeatMK", 100_000.0, 0.0, 1.0e12);
 
             PenroseMaxFeedPerTick = builder
-                    .comment("Hard cap on singularities injected per tick. Default: 4096.")
+                    .comment(
+                            "Hard cap on how many singularities per tick can be injected into the disk.",
+                            "Units: items/t. Default: 4096."
+                    )
                     .defineInRange("penroseMaxFeedPerTick", 4_096, 0, Integer.MAX_VALUE);
-
-            PenroseDiskWindowSeconds = builder
-                    .comment("Accretion disk history window in seconds. Default: 120.")
-                    .defineInRange("penroseDiskWindowSeconds", 120, 1, 3600);
-
-            PenroseDiskSigmaTicks = builder
-                    .comment("Gaussian sigma for disk mass transfer distribution, in ticks. Default: 400.")
-                    .defineInRange("penroseDiskSigmaTicks", 400.0, 1.0, 100000.0);
-
-            PenroseDiskRenderFullAtMu = builder
-                    .comment("Disk preview reaches full visual thickness at this disk mass (MU). Widget only.")
-                    .defineInRange("penroseDiskRenderFullAtMu", 30_000L, 1L, Long.MAX_VALUE);
+            builder.pop();
 
             builder.pop(); // PenroseSphere
+
+
+            builder.push("Research");
+            ResearchRequired = builder
+                    .comment("Enable research mechanic (if false: Recipe Fabricator works without data drive)")
+                    .define("researchEnabled", true);
+            ResearchUnitExtraQBlocks = builder
+                    .comment(
+                            "Extra blocks allowed in the Research Unit multiblock in 'Q' slots.",
+                            "Format: TOML map of \"namespace:block\" -> integer.",
+                            "The integer is currently used as a multiplier for computation (count * value).",
+                            "Keys with ':' must be quoted, e.g. { \"minecraft:glass\" = 1 }.",
+                            "Default: empty map."
+                    )
+                    .define(
+                            "researchUnitExtraQBlocks",
+                            Config.inMemory(),
+                            o -> {
+                                if (!(o instanceof UnmodifiableConfig c)) return false;
+                                for (var e : c.valueMap().entrySet()) {
+                                    String key = e.getKey();
+                                    Object val = e.getValue();
+
+                                    if (key == null || ResourceLocation.tryParse(key) == null) return false;
+                                    if (!(val instanceof Number)) return false;
+                                }
+                                return true;
+                            }
+                    );
+            builder.pop();
+
+
+            builder.push("Portable Spatial IO");
+            PortableSpatialStorageCostMult = builder
+                    .comment("FE cost multiplier for Portable Spatial IO")
+                    .defineInRange("portableSpatialStorageCost", 5, 0, 100);
+            builder.pop();
+
+
+            builder.push("EnergyParts");
+            EnergyExporterEnabled = builder
+                    .comment("Enable Energy Exporter")
+                    .define("energyExporterEnabled", false);
+
+            GregEnergyExporter = builder
+                    .comment("Allow Energy Exporter part to export EU if a GregTech battery is inserted")
+                    .define("energyExporterGT", false);
+
+            EnergyInterfaceEnabled = builder
+                    .comment("Enable Energy Interface")
+                    .define("energyInterfaceEnabled", false);
+            builder.pop();
+
+
+            builder.push("P2PSpeeds");
+            FEp2pEnabled = builder
+                    .comment("Enable/disable Extracting FE P2P tunnel entirely")
+                    .define("fep2pEnabled", true);
+
+            FEp2pSpeed = builder
+                    .comment("Extract speed for FE P2P (FE/t)")
+                    .defineInRange("fep2pSpeed", 262144, 0, Integer.MAX_VALUE);
+
+            Fluidp2pEnabled = builder
+                    .comment("Enable/disable Extracting Fluid P2P tunnel entirely")
+                    .define("fluidp2pEnabled", true);
+
+            Fluidp2pSpeed = builder
+                    .comment("Extract speed for Fluid P2P (mB/t)")
+                    .defineInRange("fluidp2pSpeed", 500, 0, Integer.MAX_VALUE);
+
+            Itemp2pEnabled = builder
+                    .comment("Enable/disable Extracting Item P2P tunnel entirely")
+                    .define("itemp2pEnabled", true);
+
+            Itemp2pSpeed = builder
+                    .comment("Extract speed for Item P2P (items/t)")
+                    .defineInRange("itemp2pSpeed", 16, 0, Integer.MAX_VALUE);
+            builder.pop();
+
+            builder.pop();
         }
     }
 }

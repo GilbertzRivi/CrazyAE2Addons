@@ -1,8 +1,8 @@
 package net.oktawia.crazyae2addons.client.textures;
 
 record NeighborBits(
-    boolean up, boolean right, boolean down, boolean left,
-    boolean upRight, boolean upLeft, boolean downRight, boolean downLeft
+        boolean up, boolean right, boolean down, boolean left,
+        boolean upRight, boolean upLeft, boolean downRight, boolean downLeft
 ) {}
 
 enum QuarterType {
@@ -17,8 +17,8 @@ enum QuarterType {
 }
 
 record FaceQuarters(
-    QuarterType topLeft,
-    QuarterType topRight,
-    QuarterType bottomLeft,
-    QuarterType bottomRight
+        QuarterType topLeft,
+        QuarterType topRight,
+        QuarterType bottomLeft,
+        QuarterType bottomRight
 ) {}

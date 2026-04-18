@@ -6,7 +6,6 @@ import appeng.items.AEBaseItem;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.CreativeModeTab;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.defs.LangDefs;
@@ -21,16 +20,16 @@ public final class CrazyCreativeTabRegistrar {
             .displayItems(CrazyCreativeTabRegistrar::populate)
             .build();
 
-    private static void populate(CreativeModeTab.ItemDisplayParameters params, CreativeModeTab.Output out) {
-        CrazyItemRegistrar.ITEMS.getEntries().forEach(h -> push(params, out, h.get()));
-        CrazyBlockRegistrar.BLOCK_ITEMS.getEntries().forEach(h -> push(params, out, h.get()));
+    private static void populate(CreativeModeTab.ItemDisplayParameters ignored, CreativeModeTab.Output out) {
+        CrazyItemRegistrar.ITEMS.getEntries().forEach(ro -> push(out, ro.get()));
+        CrazyBlockRegistrar.BLOCK_ITEMS.getEntries().forEach(ro -> push(out, ro.get()));
     }
 
-    private static void push(CreativeModeTab.ItemDisplayParameters params, CreativeModeTab.Output out, Item item) {
+    private static void push(CreativeModeTab.Output out, net.minecraft.world.item.Item item) {
         if (item instanceof AEBaseBlockItem bItem && bItem.getBlock() instanceof AEBaseBlock blk) {
-            blk.addToMainCreativeTab(params, out);
+            blk.addToMainCreativeTab(out);
         } else if (item instanceof AEBaseItem baseItem) {
-            baseItem.addToMainCreativeTab(params, out);
+            baseItem.addToMainCreativeTab(out);
         } else {
             out.accept(item);
         }

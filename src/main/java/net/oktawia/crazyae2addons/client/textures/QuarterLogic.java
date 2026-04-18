@@ -5,10 +5,10 @@ final class QuarterLogic {
 
     static FaceQuarters resolve(NeighborBits b) {
         return new FaceQuarters(
-            topLeft(b.up(), b.left(), b.upLeft()),
-            topRight(b.up(), b.right(), b.upRight()),
-            bottomLeft(b.down(), b.left(), b.downLeft()),
-            bottomRight(b.down(), b.right(), b.downRight())
+                topLeft(b.up(), b.left(), b.upLeft()),
+                topRight(b.up(), b.right(), b.upRight()),
+                bottomLeft(b.down(), b.left(), b.downLeft()),
+                bottomRight(b.down(), b.right(), b.downRight())
         );
     }
 

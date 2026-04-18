@@ -1,22 +1,17 @@
 package net.oktawia.crazyae2addons.client.misc;
 
-import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
-import com.lowdragmc.lowdraglib2.gui.ui.UI;
-import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
-import com.lowdragmc.lowdraglib2.gui.ui.elements.ColorSelector;
+import com.lowdragmc.lowdraglib.gui.widget.HsbColorWidget;
 import com.mojang.blaze3d.platform.Window;
-import dev.vfyjxf.taffy.style.TaffyPosition;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
-import net.minecraft.client.gui.components.Renderable;
-import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarratedElementType;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
+import net.minecraft.util.Mth;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
@@ -30,12 +25,7 @@ public class LDLibColorSelectorAdapter extends AbstractWidget {
     private static final int POPUP_PAD = 4;
     private static final float POPUP_Z = 800.0f;
 
-    private final UIElement root;
-    private final UIElement popupHost;
-    private final ColorSelector selector;
-    private final ModularUI modularUI;
-    private final GuiEventListener guiDelegate;
-    private final Renderable renderDelegate;
+    private final HsbColorWidget selector;
 
     @Nullable
     private Screen lastScreen;
@@ -64,39 +54,23 @@ public class LDLibColorSelectorAdapter extends AbstractWidget {
     public LDLibColorSelectorAdapter(int x, int y, int width, int height, Component narration) {
         super(x, y, width, height, narration);
 
-        this.root = new UIElement();
-        this.root.setFocusable(false);
-        this.root.setOverflowVisible(false);
+        this.selector = new HsbColorWidget(0, 0, POPUP_W, POPUP_H)
+                .setShowRGB(true)
+                .setShowAlpha(true)
+                .setOnChanged(color -> {
+                    this.currentColor = color;
+                    this.changedSincePress = true;
+                });
 
-        this.popupHost = new UIElement();
-        this.popupHost.setId("color_popup_host");
-        this.popupHost.setFocusable(true);
-        this.popupHost.setOverflowVisible(false);
-
-        this.selector = new ColorSelector();
-        this.selector.layout(layout -> {
-            layout.widthPercent(100);
-            layout.heightPercent(100);
-        });
-        this.selector.setOnColorChangeListener(color -> {
-            this.currentColor = color;
-            this.changedSincePress = true;
-        });
-
-        this.popupHost.addChildren(this.selector);
-        this.root.addChildren(this.popupHost);
-
-        this.modularUI = ModularUI.of(UI.of(this.root));
-
-        var widget = this.modularUI.getWidget();
-        this.guiDelegate = widget;
-        this.renderDelegate = widget;
+        this.selector.setColor(this.currentColor);
+        this.selector.setVisible(false);
+        this.selector.setActive(false);
     }
 
     public LDLibColorSelectorAdapter setColor(int color) {
         this.currentColor = color;
         this.lastCommittedColor = color;
-        this.selector.setColor(color, false);
+        this.selector.setColor(color);
         return this;
     }
 
@@ -151,11 +125,12 @@ public class LDLibColorSelectorAdapter extends AbstractWidget {
             commitCurrentColor();
         } else {
             this.currentColor = this.lastCommittedColor;
-            this.selector.setColor(this.currentColor, false);
+            this.selector.setColor(this.currentColor);
         }
 
         this.open = false;
-        this.guiDelegate.setFocused(false);
+        this.selector.setVisible(false);
+        this.selector.setActive(false);
         super.setFocused(false);
         this.onClose.run();
     }
@@ -167,20 +142,16 @@ public class LDLibColorSelectorAdapter extends AbstractWidget {
 
         syncPopup();
         pollSyntheticDrag();
-        this.modularUI.tick();
+        this.selector.updateScreen();
     }
 
     public void removed() {
         closePopup(false);
-        this.modularUI.onRemoved();
     }
 
     @Override
     public void setFocused(boolean focused) {
         super.setFocused(focused);
-        if (!focused) {
-            this.guiDelegate.setFocused(false);
-        }
     }
 
     @Override
@@ -190,7 +161,7 @@ public class LDLibColorSelectorAdapter extends AbstractWidget {
         }
 
         syncPopup();
-        this.guiDelegate.mouseMoved(mouseX, mouseY);
+        this.selector.mouseMoved(mouseX, mouseY);
     }
 
     @Override
@@ -203,11 +174,9 @@ public class LDLibColorSelectorAdapter extends AbstractWidget {
             syncPopup();
 
             if (isPopupMouseOver(mouseX, mouseY)) {
-                this.guiDelegate.mouseMoved(mouseX, mouseY);
-                boolean handled = this.guiDelegate.mouseClicked(mouseX, mouseY, button);
+                boolean handled = this.selector.mouseClicked(mouseX, mouseY, button);
                 if (handled) {
                     super.setFocused(true);
-                    this.guiDelegate.setFocused(true);
                     startSyntheticDrag(button, mouseX, mouseY);
                 }
                 return handled;
@@ -238,9 +207,8 @@ public class LDLibColorSelectorAdapter extends AbstractWidget {
         }
 
         syncPopup();
-        this.guiDelegate.mouseMoved(mouseX, mouseY);
 
-        boolean handled = this.guiDelegate.mouseReleased(mouseX, mouseY, button);
+        boolean handled = this.selector.mouseReleased(mouseX, mouseY, button);
 
         if (button == this.pollingDragButton) {
             stopSyntheticDrag();
@@ -257,19 +225,12 @@ public class LDLibColorSelectorAdapter extends AbstractWidget {
         }
 
         syncPopup();
-        this.guiDelegate.mouseMoved(mouseX, mouseY);
-        return this.guiDelegate.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+        return this.selector.mouseDragged(mouseX, mouseY, button, dragX, dragY);
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-        if (!this.open || !isPopupMouseOver(mouseX, mouseY)) {
-            return false;
-        }
-
-        syncPopup();
-        this.guiDelegate.mouseMoved(mouseX, mouseY);
-        return this.guiDelegate.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+        return false;
     }
 
     @Override
@@ -283,18 +244,12 @@ public class LDLibColorSelectorAdapter extends AbstractWidget {
             return true;
         }
 
-        syncPopup();
-        return this.guiDelegate.keyPressed(keyCode, scanCode, modifiers);
+        return false;
     }
 
     @Override
     public boolean charTyped(char codePoint, int modifiers) {
-        if (!this.open) {
-            return false;
-        }
-
-        syncPopup();
-        return this.guiDelegate.charTyped(codePoint, modifiers);
+        return false;
     }
 
     @Override
@@ -327,8 +282,8 @@ public class LDLibColorSelectorAdapter extends AbstractWidget {
         graphics.fill(this.popupX - 1, this.popupY - 1, this.popupX + POPUP_W + 1, this.popupY + POPUP_H + 1, 0xFF101010);
         graphics.fill(this.popupX, this.popupY, this.popupX + POPUP_W, this.popupY + POPUP_H, 0xFF2A2A2A);
 
-        this.guiDelegate.mouseMoved(mouseX, mouseY);
-        this.renderDelegate.render(graphics, mouseX, mouseY, partialTick);
+        this.selector.drawInBackground(graphics, mouseX, mouseY, partialTick);
+        this.selector.drawInForeground(graphics, mouseX, mouseY, partialTick);
 
         graphics.pose().popPose();
     }
@@ -340,9 +295,11 @@ public class LDLibColorSelectorAdapter extends AbstractWidget {
 
     private void openPopup() {
         this.open = true;
-        this.selector.setColor(this.currentColor, false);
+        this.selector.setColor(this.currentColor);
+        this.selector.setVisible(true);
+        this.selector.setActive(true);
         super.setFocused(true);
-        this.guiDelegate.setFocused(true);
+        syncPopup();
     }
 
     private void commitCurrentColor() {
@@ -378,24 +335,9 @@ public class LDLibColorSelectorAdapter extends AbstractWidget {
         this.lastScreenWidth = screen.width;
         this.lastScreenHeight = screen.height;
 
-        this.root.layout(layout -> {
-            layout.width((float) screen.width);
-            layout.height((float) screen.height);
-        });
-
-        this.popupHost.layout(layout -> {
-            layout.positionType(TaffyPosition.ABSOLUTE);
-            layout.left((float) this.popupX);
-            layout.top((float) this.popupY);
-            layout.width((float) POPUP_W);
-            layout.height((float) POPUP_H);
-        });
-
-        this.root.markTaffyStyleDirty();
-        this.popupHost.markTaffyStyleDirty();
-
-        this.modularUI.setScreen(screen);
-        this.modularUI.init(screen.width, screen.height);
+        this.selector.setSelfPosition(this.popupX, this.popupY);
+        this.selector.setSize(POPUP_W, POPUP_H);
+        this.selector.onScreenSizeUpdate(screen.width, screen.height);
 
         this.syncedPopupX = this.popupX;
         this.syncedPopupY = this.popupY;
@@ -415,12 +357,11 @@ public class LDLibColorSelectorAdapter extends AbstractWidget {
         } else if (preferredRightX <= maxX) {
             this.popupX = preferredRightX;
         } else {
-            this.popupX = Math.clamp(preferredLeftX, minX, maxX);
+            this.popupX = Mth.clamp(preferredLeftX, minX, maxX);
         }
 
         int preferredY = this.getY() + (this.height / 2) - (POPUP_H / 2);
-
-        this.popupY = Math.clamp(preferredY, minY, maxY);
+        this.popupY = Mth.clamp(preferredY, minY, maxY);
     }
 
     private void startSyntheticDrag(int button, double mouseX, double mouseY) {
@@ -455,18 +396,18 @@ public class LDLibColorSelectorAdapter extends AbstractWidget {
         int buttonState = GLFW.glfwGetMouseButton(handle, this.pollingDragButton);
 
         syncPopup();
-        this.guiDelegate.mouseMoved(guiX, guiY);
+        this.selector.mouseMoved(guiX, guiY);
 
         if (buttonState == GLFW.GLFW_PRESS) {
             double dragX = guiX - this.lastDragMouseX;
             double dragY = guiY - this.lastDragMouseY;
 
-            this.guiDelegate.mouseDragged(guiX, guiY, this.pollingDragButton, dragX, dragY);
+            this.selector.mouseDragged(guiX, guiY, this.pollingDragButton, dragX, dragY);
 
             this.lastDragMouseX = guiX;
             this.lastDragMouseY = guiY;
         } else {
-            this.guiDelegate.mouseReleased(guiX, guiY, this.pollingDragButton);
+            this.selector.mouseReleased(guiX, guiY, this.pollingDragButton);
             stopSyntheticDrag();
             commitCurrentColor();
         }

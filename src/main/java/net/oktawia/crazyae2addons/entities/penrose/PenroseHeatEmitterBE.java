@@ -102,7 +102,7 @@ public class PenroseHeatEmitterBE extends AbstractMultiblockFrameBE<PenroseContr
     private double getMaxAllowedHeatGk() {
         PenroseControllerBE controller = getResolvedController();
         if (controller != null) {
-            return Math.max(0.0, controller.maxHeatGK);
+            return Math.max(0.0, controller.getMaxHeatGK());
         }
         return Math.max(0.0, PenroseLogic.MAX_HEAT_GK);
     }

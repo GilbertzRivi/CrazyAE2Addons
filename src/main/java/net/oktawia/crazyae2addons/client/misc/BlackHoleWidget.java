@@ -148,7 +148,7 @@ public class BlackHoleWidget extends AbstractWidget {
 
         out.add(Component.translatable(
                 LangDefs.PENROSE_DISK_MASS.getTranslationKey(),
-                Utils.shortenNumber(host.diskMassSingu)
+                Utils.shortenNumber(host.getDiskMassSingu())
         ).withStyle(ChatFormatting.GRAY));
 
         out.add(Component.empty());
@@ -182,7 +182,7 @@ public class BlackHoleWidget extends AbstractWidget {
 
         out.add(Component.translatable(
                 LangDefs.PENROSE_DISK_MASS.getTranslationKey(),
-                Utils.shortenNumber(host.diskMassSingu)
+                Utils.shortenNumber(host.getDiskMassSingu())
         ).withStyle(ChatFormatting.GRAY));
 
         out.add(Component.translatable(
@@ -291,7 +291,7 @@ public class BlackHoleWidget extends AbstractWidget {
 
         drawTS(gg, font, tr(
                 LangDefs.PENROSE_OVERLAY_DISK_MASS.getTranslationKey(),
-                Utils.shortenNumber(host.diskMassSingu)
+                Utils.shortenNumber(host.getDiskMassSingu())
         ), 0, yy);
         yy += line;
 
@@ -568,7 +568,7 @@ public class BlackHoleWidget extends AbstractWidget {
     }
 
     private float diskMass01() {
-        return (float) Mth.clamp(menu.getHost().diskMassSingu / DISK_FULL_AT_MU, 0.0, 1.0);
+        return (float) Mth.clamp(menu.getHost().getDiskMassSingu() / DISK_FULL_AT_MU, 0.0, 1.0);
     }
 
     private double getMassProgress() {
@@ -735,19 +735,19 @@ public class BlackHoleWidget extends AbstractWidget {
     }
 
     private long hostInitialMass() {
-        return Math.max(1L, menu.getHost().initialBhMass);
+        return Math.max(1L, menu.getHost().getInitialBhMass());
     }
 
     private long hostMaxMass() {
-        return Math.max(hostInitialMass(), menu.getHost().maxBhMass);
+        return Math.max(hostInitialMass(), menu.getHost().getMaxBhMass());
     }
 
     private double hostMaxHeatGK() {
-        return Math.max(1.0, menu.getHost().maxHeatGK);
+        return Math.max(1.0, menu.getHost().getMaxHeatGK());
     }
 
     private double hostHeatPeakGK() {
-        return Math.max(1.0, menu.getHost().heatPeakGk);
+        return Math.max(1.0, menu.getHost().getHeatPeakGk());
     }
 
     private record DiskGeom(float cx, float cy, float bhHoleR, float shadowR, float diskInnerR, float diskOuterR) {

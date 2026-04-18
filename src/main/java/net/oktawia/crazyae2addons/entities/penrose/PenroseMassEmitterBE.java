@@ -113,8 +113,8 @@ public class PenroseMassEmitterBE extends AbstractMultiblockFrameBE<PenroseContr
             return 0L;
         }
 
-        long initial = controller.initialBhMass;
-        long max = controller.maxBhMass;
+        long initial = controller.getInitialBhMass();
+        long max = controller.getMaxBhMass();
 
         double p = Math.clamp(percent, 0.0, 100.0) / 100.0;
         long span = max - initial;

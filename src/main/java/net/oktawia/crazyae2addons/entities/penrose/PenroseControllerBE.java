@@ -125,7 +125,7 @@ public class PenroseControllerBE extends AbstractMultiblockControllerBE
     @DropSaved
     private int ventingLockTicks = 0;
 
-    @Getter @Setter
+    @Getter
     @Persisted(subPersisted = true)
     @DescSynced
     @DropSaved

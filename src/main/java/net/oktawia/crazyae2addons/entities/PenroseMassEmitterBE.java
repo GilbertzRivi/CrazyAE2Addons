@@ -170,9 +170,7 @@ public class PenroseMassEmitterBE extends AENetworkBlockEntity implements MenuPr
     }
 
     public void openMenu(Player player, MenuLocator locator) {
-        if (controller != null) {
-            MenuOpener.open(CrazyMenuRegistrar.PENROSE_MASS_EMITTER_MENU.get(), player, locator);
-        }
+        MenuOpener.open(CrazyMenuRegistrar.PENROSE_MASS_EMITTER_MENU.get(), player, locator);
     }
 
     @Override

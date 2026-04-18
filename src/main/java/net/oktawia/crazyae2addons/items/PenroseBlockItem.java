@@ -12,14 +12,14 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public class PenroseInjectionPortItem extends AEBaseBlockItem {
-    public PenroseInjectionPortItem(Block block, Properties properties) {
+public class PenroseBlockItem extends AEBaseBlockItem {
+    public PenroseBlockItem(Block block, Properties properties) {
         super(block, properties);
     }
 
     @Override
     public void addCheckedInformation(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(Component.translatable("gui.crazyae2addons.penrose_injection_tooltip"));
+        super.addCheckedInformation(stack, level, tooltip, flag);
         if (!CrazyConfig.COMMON.PenroseSphereEnabled.get()) {
             tooltip.add(Component.literal("Penrose Sphere DISABLED").withStyle(ChatFormatting.RED));
             tooltip.add(Component.literal("in mod's config").withStyle(ChatFormatting.GRAY));

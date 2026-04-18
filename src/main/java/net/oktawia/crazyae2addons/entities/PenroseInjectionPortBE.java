@@ -95,9 +95,7 @@ public class PenroseInjectionPortBE extends AENetworkBlockEntity implements Menu
     }
 
     public void openMenu(Player player, MenuLocator locator) {
-        if (controller != null) {
-            MenuOpener.open(CrazyMenuRegistrar.PENROSE_INJECTION_PORT_MENU.get(), player, locator);
-        }
+        MenuOpener.open(CrazyMenuRegistrar.PENROSE_INJECTION_PORT_MENU.get(), player, locator);
     }
 
     // >>> tickowane przez kontroler

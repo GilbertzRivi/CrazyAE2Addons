@@ -678,6 +678,12 @@ public class PenroseValidator implements net.oktawia.crazyae2addons.interfaces.P
     }
 
     public boolean matchesStructure(Level level, BlockPos origin, BlockState state, PenroseControllerBE controller) {
+        if (!CrazyConfig.COMMON.PenroseSphereEnabled.get()) {
+            controller.clearDynamoHatches();
+            markWalls(level, origin, state, PenroseFrameBlock.FORMED, false, controller);
+            return false;
+        }
+
         controller.clearDynamoHatches();
 
         Direction facing = state.getValue(BlockStateProperties.HORIZONTAL_FACING).getOpposite();

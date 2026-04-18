@@ -2,16 +2,16 @@ package net.oktawia.crazyae2addons.mixins;
 
 import java.util.UUID;
 
+import appeng.api.networking.IGrid;
+import appeng.api.parts.IPartItem;
+import appeng.parts.automation.StorageLevelEmitterPart;
+import net.minecraft.nbt.CompoundTag;
 import net.oktawia.crazyae2addons.interfaces.StorageLevelEmitterUuid;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
-import appeng.api.parts.IPartItem;
-import appeng.parts.automation.StorageLevelEmitterPart;
-import net.minecraft.nbt.CompoundTag;
 
 @Mixin(value = StorageLevelEmitterPart.class, remap = false)
 public abstract class StorageLevelEmitterPartMixin implements StorageLevelEmitterUuid {
@@ -22,9 +22,16 @@ public abstract class StorageLevelEmitterPartMixin implements StorageLevelEmitte
     @Unique
     private UUID persistentUuid;
 
+    @Unique
+    private boolean uuidNeedsValidation = true;
+
+    @Unique
+    private boolean uuidValidationInProgress = false;
+
     @Inject(method = "<init>", at = @At("TAIL"))
     private void init(IPartItem<?> partItem, CallbackInfo ci) {
         ensureUuid();
+        this.uuidNeedsValidation = true;
     }
 
     @Inject(method = "readFromNBT", at = @At("TAIL"))
@@ -32,13 +39,15 @@ public abstract class StorageLevelEmitterPartMixin implements StorageLevelEmitte
         if (data.hasUUID(UUID_TAG)) {
             this.persistentUuid = data.getUUID(UUID_TAG);
         } else {
-            ensureUuid();
+            this.persistentUuid = UUID.randomUUID();
         }
+
+        this.uuidNeedsValidation = true;
     }
 
     @Inject(method = "writeToNBT", at = @At("TAIL"))
     private void afterWriteToNBT(CompoundTag data, CallbackInfo ci) {
-        data.putUUID(UUID_TAG, ensureUuid());
+        data.putUUID(UUID_TAG, getPersistentUuid());
     }
 
     @Unique
@@ -49,8 +58,73 @@ public abstract class StorageLevelEmitterPartMixin implements StorageLevelEmitte
         return this.persistentUuid;
     }
 
+    @Unique
+    private UUID validateUuidAgainstGridIfPossible() {
+        UUID current = ensureUuid();
+
+        if (!this.uuidNeedsValidation || this.uuidValidationInProgress) {
+            return current;
+        }
+
+        StorageLevelEmitterPart self = (StorageLevelEmitterPart) (Object) this;
+        if (self.getMainNode() == null || !self.getMainNode().hasGridBooted()) {
+            return current;
+        }
+
+        IGrid grid = self.getMainNode().getGrid();
+        if (grid == null) {
+            return current;
+        }
+
+        this.uuidValidationInProgress = true;
+        boolean changed = false;
+
+        try {
+            var emitters = grid.getMachines(StorageLevelEmitterPart.class);
+            if (emitters == null || emitters.isEmpty()) {
+                this.uuidNeedsValidation = false;
+                return current;
+            }
+
+            int safety = 0;
+            while (safety++ < 128) {
+                boolean duplicateFound = false;
+
+                for (var emitter : emitters) {
+                    if (emitter == self) {
+                        continue;
+                    }
+
+                    UUID otherUuid = ((StorageLevelEmitterUuid) emitter).getPersistentUuid();
+                    if (current.equals(otherUuid)) {
+                        this.persistentUuid = UUID.randomUUID();
+                        current = this.persistentUuid;
+                        duplicateFound = true;
+                        changed = true;
+                        break;
+                    }
+                }
+
+                if (!duplicateFound) {
+                    break;
+                }
+            }
+
+            this.uuidNeedsValidation = false;
+
+            if (changed && self.getHost() != null) {
+                self.getHost().markForSave();
+                self.getHost().markForUpdate();
+            }
+
+            return current;
+        } finally {
+            this.uuidValidationInProgress = false;
+        }
+    }
+
     @Override
     public UUID getPersistentUuid() {
-        return ensureUuid();
+        return validateUuidAgainstGridIfPossible();
     }
 }

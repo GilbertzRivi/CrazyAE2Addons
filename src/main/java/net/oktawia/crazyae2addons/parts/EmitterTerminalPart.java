@@ -11,7 +11,6 @@ import appeng.menu.locator.MenuLocators;
 import appeng.parts.PartModel;
 import appeng.parts.automation.StorageLevelEmitterPart;
 import appeng.parts.reporting.AbstractDisplayPart;
-import com.mojang.logging.LogUtils;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
@@ -22,6 +21,7 @@ import net.oktawia.crazyae2addons.menus.EmitterTerminalMenu;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 
 public class EmitterTerminalPart extends AbstractDisplayPart implements IUpgradeableObject {
     @PartModels
@@ -37,6 +37,7 @@ public class EmitterTerminalPart extends AbstractDisplayPart implements IUpgrade
         super(partItem, false);
     }
 
+    @Override
     public boolean onPartActivate(Player player, InteractionHand hand, Vec3 pos) {
         if (!super.onPartActivate(player, hand, pos) && !this.isClientSide()) {
             MenuOpener.open(CrazyMenuRegistrar.EMITTER_TERMINAL_MENU.get(), player, MenuLocators.forPart(this));
@@ -50,41 +51,25 @@ public class EmitterTerminalPart extends AbstractDisplayPart implements IUpgrade
         return this.selectModel(MODELS_OFF, MODELS_ON, MODELS_HAS_CHANNEL);
     }
 
-
     public List<EmitterTerminalMenu.StorageEmitterInfo> getEmitters(String filter) {
         var grid = getMainNode().getGrid();
-        if (grid == null) return List.of();
+        if (grid == null) {
+            return List.of();
+        }
 
-        String f = filter == null ? "" : filter.toLowerCase().trim();
+        String f = filter == null ? "" : filter.toLowerCase(Locale.ROOT).trim();
 
         return grid.getActiveMachines(StorageLevelEmitterPart.class)
                 .stream()
-                .filter(emitter -> {
-                    emitter.getName();
-                    String name = emitter.getName().getString().trim();
-
-                    if (f.isEmpty()) {
-                        return true;
-                    }
-
-                    if (name.isEmpty()) {
-                        return false;
-                    }
-
-                    return name.toLowerCase().contains(f);
-                })
+                .filter(emitter -> matchesFilter(emitter, f))
                 .sorted(
                         Comparator
                                 .comparing((StorageLevelEmitterPart part) -> {
-                                    part.getName();
                                     String name = part.getName().getString().trim();
                                     return name.startsWith("ME Level Emitter");
                                 })
                                 .thenComparing(
-                                        part -> {
-                                            part.getName();
-                                            return part.getName().getString();
-                                        },
+                                        part -> part.getName().getString(),
                                         String.CASE_INSENSITIVE_ORDER
                                 )
                                 .thenComparing(
@@ -105,6 +90,33 @@ public class EmitterTerminalPart extends AbstractDisplayPart implements IUpgrade
 
     public List<EmitterTerminalMenu.StorageEmitterInfo> getEmitters() {
         return getEmitters("");
+    }
+
+    private boolean matchesFilter(StorageLevelEmitterPart emitter, String filter) {
+        if (filter == null || filter.isBlank()) {
+            return true;
+        }
+
+        String emitterName = emitter.getName() != null
+                ? emitter.getName().getString().trim().toLowerCase(Locale.ROOT)
+                : "";
+
+        if (!emitterName.isEmpty() && emitterName.contains(filter)) {
+            return true;
+        }
+
+        GenericStack config = emitter.getConfig().getStack(0);
+        if (config == null || config.what() == null) {
+            return false;
+        }
+
+        String configName = config.what()
+                .getDisplayName()
+                .getString()
+                .trim()
+                .toLowerCase(Locale.ROOT);
+
+        return !configName.isEmpty() && configName.contains(filter);
     }
 
     private StorageLevelEmitterPart findEmitterByUuid(String uuid) {

@@ -121,6 +121,9 @@ public class ExtractingItemP2PTunnelPart extends ItemP2PTunnelPart implements IG
 
     @Override
     public TickRateModulation tickingRequest(IGridNode node, int ticksSinceLastCall) {
+        if (!CrazyConfig.COMMON.Itemp2pEnabled.get()) {
+            return TickRateModulation.IDLE;
+        }
         if (!this.isOutput() || !this.isActive() || this.getOutputs().isEmpty()) {
             return TickRateModulation.IDLE;
         }

@@ -118,9 +118,7 @@ public class PenroseHawkingVentBE extends AENetworkBlockEntity implements MenuPr
     }
 
     public void openMenu(Player player, MenuLocator locator) {
-        if (controller != null) {
-            MenuOpener.open(CrazyMenuRegistrar.PENROSE_HAWKING_VENT_MENU.get(), player, locator);
-        }
+        MenuOpener.open(CrazyMenuRegistrar.PENROSE_HAWKING_VENT_MENU.get(), player, locator);
     }
 
     public static long computeCostForEvap(double evapRate) {

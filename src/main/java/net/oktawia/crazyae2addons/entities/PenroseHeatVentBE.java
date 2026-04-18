@@ -120,9 +120,7 @@ public class PenroseHeatVentBE extends AENetworkBlockEntity implements MenuProvi
     }
 
     public void openMenu(Player player, MenuLocator locator) {
-        if (controller != null){
-            MenuOpener.open(CrazyMenuRegistrar.PENROSE_HEAT_VENT_MENU.get(), player, locator);
-        }
+        MenuOpener.open(CrazyMenuRegistrar.PENROSE_HEAT_VENT_MENU.get(), player, locator);
     }
 
     public static long computeCostForCooling(double cooling) {

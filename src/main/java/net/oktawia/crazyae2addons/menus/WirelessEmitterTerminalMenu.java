@@ -1,6 +1,7 @@
 package net.oktawia.crazyae2addons.menus;
 
 import appeng.api.inventories.InternalInventory;
+import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.GenericStack;
 import appeng.menu.SlotSemantics;
 import appeng.menu.guisync.GuiSync;
@@ -8,42 +9,51 @@ import appeng.menu.implementations.MenuTypeBuilder;
 import appeng.menu.implementations.UpgradeableMenu;
 import appeng.menu.slot.FakeSlot;
 import appeng.menu.slot.RestrictedInputSlot;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
 import de.mari_023.ae2wtlib.AE2wtlibSlotSemantics;
 import de.mari_023.ae2wtlib.wct.WCTMenuHost;
 import de.mari_023.ae2wtlib.wut.ItemWUT;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.network.PacketDistributor;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.logic.WirelessEmitterTerminalItemLogicHost;
-import net.oktawia.crazyae2addons.misc.StorageEmitterInfoAdapter;
-import org.jetbrains.annotations.Nullable;
+import net.oktawia.crazyae2addons.network.EmitterWindowPacket;
+import net.oktawia.crazyae2addons.network.NetworkHandler;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class WirelessEmitterTerminalMenu extends UpgradeableMenu<WirelessEmitterTerminalItemLogicHost> {
 
     private static final String ACTION_SEARCH = "search";
     private static final String ACTION_SET_VALUE = "setValue";
-    private static final int MAX_CONFIG_SLOTS = 1024;
+    private static final String ACTION_SCROLL = "scroll";
 
-    public static final Gson GSON = new GsonBuilder()
-            .registerTypeAdapter(EmitterTerminalMenu.StorageEmitterInfo.class, new StorageEmitterInfoAdapter())
-            .create();
+    public static final int VISIBLE_ROWS = 6;
 
     public static final MenuType<WirelessEmitterTerminalMenu> TYPE =
             MenuTypeBuilder.create(WirelessEmitterTerminalMenu::new, WirelessEmitterTerminalItemLogicHost.class)
                     .build("wireless_emitter_terminal");
 
     @GuiSync(625)
-    public String emitters = "[]";
+    public int totalEmitterCount = 0;
+
+    public List<EmitterTerminalMenu.StorageEmitterInfo> clientWindow = List.of();
+    public int clientWindowOffset = 0;
+    public int clientWindowRevision = 0;
 
     private final WirelessEmitterTerminalItemLogicHost host;
     private String currentSearch = "";
+    private int currentOffset = 0;
+    private int windowRevision = 0;
+
+    private List<EmitterTerminalMenu.StorageEmitterInfo> fullList = List.of();
+    private List<EmitterTerminalMenu.StorageEmitterInfo> serverWindow = List.of();
+
+    private WindowedEmitterInventory windowedInventory;
 
     public WirelessEmitterTerminalMenu(int id, Inventory ip, WirelessEmitterTerminalItemLogicHost host) {
         super(CrazyMenuRegistrar.WIRELESS_EMITTER_TERMINAL_MENU.get(), id, ip, host);
@@ -51,23 +61,27 @@ public class WirelessEmitterTerminalMenu extends UpgradeableMenu<WirelessEmitter
 
         registerClientAction(ACTION_SEARCH, String.class, this::search);
         registerClientAction(ACTION_SET_VALUE, String.class, this::setValue);
+        registerClientAction(ACTION_SCROLL, Integer.class, this::onScroll);
 
         if (!isClientSide()) {
             refreshEmitters();
         }
 
         this.addSlot(
-                new RestrictedInputSlot(RestrictedInputSlot.PlacableItemType.QE_SINGULARITY,
-                        this.host.getSubInventory(WCTMenuHost.INV_SINGULARITY), 0),
+                new RestrictedInputSlot(
+                        RestrictedInputSlot.PlacableItemType.QE_SINGULARITY,
+                        this.host.getSubInventory(WCTMenuHost.INV_SINGULARITY),
+                        0
+                ),
                 AE2wtlibSlotSemantics.SINGULARITY
         );
     }
 
     @Override
     protected void setupConfig() {
-        var inv = new EmitterConfigInventory();
-        for (int i = 0; i < MAX_CONFIG_SLOTS; i++) {
-            this.addSlot(new FakeSlot(inv, i), SlotSemantics.CONFIG);
+        windowedInventory = new WindowedEmitterInventory();
+        for (int i = 0; i < VISIBLE_ROWS; i++) {
+            this.addSlot(new FakeSlot(windowedInventory, i), SlotSemantics.CONFIG);
         }
     }
 
@@ -84,7 +98,9 @@ public class WirelessEmitterTerminalMenu extends UpgradeableMenu<WirelessEmitter
             sendClientAction(ACTION_SEARCH, search);
             return;
         }
+
         this.currentSearch = search == null ? "" : search;
+        this.currentOffset = 0;
         refreshEmitters();
     }
 
@@ -93,10 +109,15 @@ public class WirelessEmitterTerminalMenu extends UpgradeableMenu<WirelessEmitter
             sendClientAction(ACTION_SET_VALUE, payload);
             return;
         }
-        if (payload == null) return;
+
+        if (payload == null) {
+            return;
+        }
 
         String[] parts = payload.split("\\|", 2);
-        if (parts.length != 2 || parts[0].isBlank()) return;
+        if (parts.length != 2 || parts[0].isBlank()) {
+            return;
+        }
 
         long value = 0L;
         if (!parts[1].isBlank()) {
@@ -111,79 +132,168 @@ public class WirelessEmitterTerminalMenu extends UpgradeableMenu<WirelessEmitter
         refreshEmitters();
     }
 
-    private void refreshEmitters() {
-        if (isClientSide()) return;
-
-        List<EmitterTerminalMenu.StorageEmitterInfo> list;
-        if (currentSearch == null || currentSearch.isBlank()) {
-            list = host.getEmitters();
-        } else {
-            list = host.getEmitters(currentSearch);
+    public void onScroll(int offset) {
+        if (isClientSide()) {
+            sendClientAction(ACTION_SCROLL, offset);
+            return;
         }
-        this.emitters = GSON.toJson(list);
+
+        this.currentOffset = Math.max(0, offset);
+        clampOffset();
+        sendWindow();
     }
 
-    private List<EmitterTerminalMenu.StorageEmitterInfo> getSyncedEmitters() {
-        if (this.emitters == null || this.emitters.isBlank()) return List.of();
-        List<EmitterTerminalMenu.StorageEmitterInfo> list = GSON.fromJson(
-                this.emitters,
-                new TypeToken<List<EmitterTerminalMenu.StorageEmitterInfo>>() {}.getType()
+    public void applyClientWindow(EmitterWindowPacket pkt) {
+        this.totalEmitterCount = pkt.totalCount();
+        this.clientWindow = pkt.window();
+        this.clientWindowOffset = pkt.windowOffset();
+        this.clientWindowRevision = pkt.revision();
+
+        if (this.windowedInventory != null) {
+            this.windowedInventory.setClientCache(pkt.window());
+        }
+    }
+
+    private void refreshEmitters() {
+        if (isClientSide()) {
+            return;
+        }
+
+        fullList = currentSearch.isBlank() ? host.getEmitters() : host.getEmitters(currentSearch);
+        totalEmitterCount = fullList.size();
+        clampOffset();
+        sendWindow();
+    }
+
+    private void clampOffset() {
+        if (fullList.isEmpty()) {
+            currentOffset = 0;
+        } else {
+            currentOffset = Math.min(currentOffset, Math.max(0, fullList.size() - VISIBLE_ROWS));
+        }
+    }
+
+    private void sendWindow() {
+        if (!(getPlayer() instanceof ServerPlayer sp)) {
+            return;
+        }
+
+        int from = currentOffset;
+        int to = Math.min(from + VISIBLE_ROWS, fullList.size());
+
+        serverWindow = from < fullList.size()
+                ? new ArrayList<>(fullList.subList(from, to))
+                : List.of();
+
+        int revision = ++windowRevision;
+
+        NetworkHandler.INSTANCE.send(
+                PacketDistributor.PLAYER.with(() -> sp),
+                new EmitterWindowPacket(fullList.size(), from, revision, serverWindow)
         );
-        return list != null ? list : List.of();
-    }
-
-    private List<EmitterTerminalMenu.StorageEmitterInfo> getCurrentEmitterList() {
-        if (isClientSide()) return getSyncedEmitters();
-        if (currentSearch == null || currentSearch.isBlank()) return host.getEmitters();
-        return host.getEmitters(currentSearch);
-    }
-
-    @Nullable
-    private EmitterTerminalMenu.StorageEmitterInfo getEmitterForConfigSlot(int slotIndex) {
-        if (slotIndex < 0 || slotIndex >= MAX_CONFIG_SLOTS) return null;
-        List<EmitterTerminalMenu.StorageEmitterInfo> list = getCurrentEmitterList();
-        if (slotIndex >= list.size()) return null;
-        return list.get(slotIndex);
     }
 
     public boolean isWUT() {
         return this.host.getItemStack().getItem() instanceof ItemWUT;
     }
 
-    private final class EmitterConfigInventory implements InternalInventory {
+    private final class WindowedEmitterInventory implements InternalInventory {
 
-        @Override
-        public int size() {
-            return MAX_CONFIG_SLOTS;
+        private final ItemStack[] clientCache = new ItemStack[VISIBLE_ROWS];
+
+        WindowedEmitterInventory() {
+            for (int i = 0; i < VISIBLE_ROWS; i++) {
+                clientCache[i] = ItemStack.EMPTY;
+            }
+        }
+
+        void setClientCache(List<EmitterTerminalMenu.StorageEmitterInfo> window) {
+            for (int i = 0; i < VISIBLE_ROWS; i++) {
+                if (i < window.size() && window.get(i).config() != null) {
+                    clientCache[i] = GenericStack.wrapInItemStack(window.get(i).config());
+                } else {
+                    clientCache[i] = ItemStack.EMPTY;
+                }
+            }
         }
 
         @Override
-        public ItemStack getStackInSlot(int slotIndex) {
-            var emitter = getEmitterForConfigSlot(slotIndex);
-            if (emitter == null || emitter.config() == null) return ItemStack.EMPTY;
+        public int size() {
+            return VISIBLE_ROWS;
+        }
+
+        @Override
+        public ItemStack getStackInSlot(int slot) {
+            if (slot < 0 || slot >= VISIBLE_ROWS) {
+                return ItemStack.EMPTY;
+            }
+
+            if (isClientSide()) {
+                return clientCache[slot];
+            }
+
+            if (slot >= serverWindow.size()) {
+                return ItemStack.EMPTY;
+            }
+
+            var emitter = serverWindow.get(slot);
+            if (emitter == null || emitter.config() == null) {
+                return ItemStack.EMPTY;
+            }
+
             return GenericStack.wrapInItemStack(emitter.config());
         }
 
         @Override
-        public void setItemDirect(int slotIndex, ItemStack stack) {
-            if (isClientSide()) return;
+        public void setItemDirect(int slot, ItemStack stack) {
+            if (isClientSide()) {
+                if (slot >= 0 && slot < VISIBLE_ROWS) {
+                    clientCache[slot] = stack;
+                }
+                return;
+            }
 
-            var emitter = getEmitterForConfigSlot(slotIndex);
-            if (emitter == null) return;
+            if (slot < 0 || slot >= VISIBLE_ROWS) {
+                return;
+            }
 
-            GenericStack generic = stack.isEmpty() ? null : GenericStack.fromItemStack(stack);
+            if (slot >= serverWindow.size()) {
+                return;
+            }
+
+            var emitter = serverWindow.get(slot);
+            if (emitter == null || emitter.uuid() == null || emitter.uuid().isBlank()) {
+                return;
+            }
+
+            GenericStack generic = stack.isEmpty() ? null : convertStack(stack);
             host.setEmitterConfig(emitter.uuid(), generic);
             refreshEmitters();
         }
 
+        private GenericStack convertStack(ItemStack stack) {
+            if (stack.isEmpty()) {
+                return null;
+            }
+
+            GenericStack unwrapped = GenericStack.fromItemStack(stack);
+            if (unwrapped != null) {
+                return unwrapped;
+            }
+
+            return new GenericStack(AEItemKey.of(stack), stack.getCount());
+        }
+
         @Override
         public boolean isItemValid(int slot, ItemStack stack) {
-            return stack.isEmpty() || GenericStack.fromItemStack(stack) != null;
+            return stack.isEmpty() || convertStack(stack) != null;
         }
 
         @Override
         public void sendChangeNotification(int slot) {
-            if (!isClientSide()) refreshEmitters();
+            if (!isClientSide()) {
+                refreshEmitters();
+            }
         }
     }
 }

@@ -909,6 +909,10 @@ public class PenroseControllerBE extends AENetworkInvBlockEntity
     @Override
     public TickRateModulation tickingRequest(IGridNode node, int ticksSinceLastCall) {
 
+        if (!CrazyConfig.COMMON.PenroseSphereEnabled.get()) {
+            return TickRateModulation.IDLE;
+        }
+
         int t = Math.max(1, ticksSinceLastCall);
 
         lastGeneratedFePerTickGross = 0L;

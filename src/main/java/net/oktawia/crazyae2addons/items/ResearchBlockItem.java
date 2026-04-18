@@ -1,26 +1,26 @@
 package net.oktawia.crazyae2addons.items;
 
-import appeng.items.parts.PartItem;
+import appeng.block.AEBaseBlockItem;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.oktawia.crazyae2addons.CrazyConfig;
-import net.oktawia.crazyae2addons.parts.ExtractingFEP2PTunnelPart;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
-public class ExtractingFEP2PTunnelPartItem extends PartItem<ExtractingFEP2PTunnelPart> {
-    public ExtractingFEP2PTunnelPartItem(Properties properties) {
-        super(properties, ExtractingFEP2PTunnelPart.class, ExtractingFEP2PTunnelPart::new);
+public class ResearchBlockItem extends AEBaseBlockItem {
+    public ResearchBlockItem(Block block, Properties properties) {
+        super(block, properties);
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
-        super.appendHoverText(stack, level, tooltip, flag);
-        if (!CrazyConfig.COMMON.FEp2pEnabled.get()) {
+    public void addCheckedInformation(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
+        super.addCheckedInformation(stack, level, tooltip, flag);
+        if (!CrazyConfig.COMMON.ResearchRequired.get()) {
             tooltip.add(Component.literal("DISABLED").withStyle(ChatFormatting.RED));
             tooltip.add(Component.literal("in mod's config").withStyle(ChatFormatting.GRAY));
         }

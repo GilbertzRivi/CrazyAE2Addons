@@ -48,6 +48,7 @@ public class CrazyConfig {
         public final ForgeConfigSpec.BooleanValue PenroseMeltdownExplosionsEnabled;
         public final ForgeConfigSpec.IntValue     PenroseMeltdownFieldRadius;
 
+        public final ForgeConfigSpec.BooleanValue PenroseSphereEnabled;
         public final ForgeConfigSpec.BooleanValue PenroseFEOutputEnabled;
         public final ForgeConfigSpec.BooleanValue PenroseEUOutputEnabled;
         public final ForgeConfigSpec.ConfigValue<List<? extends String>> PenroseGtTiers;
@@ -74,8 +75,11 @@ public class CrazyConfig {
         public final ForgeConfigSpec.BooleanValue EnergyExporterEnabled;
         public final ForgeConfigSpec.BooleanValue EnergyInterfaceEnabled;
 
+        public final ForgeConfigSpec.BooleanValue FEp2pEnabled;
         public final ForgeConfigSpec.IntValue     FEp2pSpeed;
+        public final ForgeConfigSpec.BooleanValue Fluidp2pEnabled;
         public final ForgeConfigSpec.IntValue     Fluidp2pSpeed;
+        public final ForgeConfigSpec.BooleanValue Itemp2pEnabled;
         public final ForgeConfigSpec.IntValue     Itemp2pSpeed;
 
         public final ForgeConfigSpec.ConfigValue<UnmodifiableConfig> ResearchUnitExtraQBlocks;
@@ -113,9 +117,9 @@ public class CrazyConfig {
                     .comment("Allow teleporting through a Wormhole P2P")
                     .define("wormholeP2PTeleportation", true);
 
-
             ImmersiveP2PWormhole = builder
-                    .comment("Create immersive portals on wormhole p2ps. Expect visual glitches with shaders.")
+                    .comment("Create immersive portals on wormhole p2ps. Expect visual glitches with shaders.\n" +
+                            "You need to install additional library for this feature to work")
                     .define("immersiveP2PWormhole", false);
             builder.pop();
 
@@ -124,10 +128,6 @@ public class CrazyConfig {
             AutoEnchanterCost = builder
                     .comment("XP cost multiplier for Auto Enchanter")
                     .defineInRange("autoEnchanterCost", 10, 0, 100);
-
-            GregEnergyExporter = builder
-                    .comment("Allow Energy Exporter part to export EU if a GregTech battery is inserted")
-                    .define("energyExporterGT", false);
 
             GregWormholeEUP2P = builder
                     .comment("Allow Wormhole P2P to transfer EU")
@@ -182,6 +182,10 @@ public class CrazyConfig {
 
             // ===== Penrose Sphere =====
             builder.push("PenroseSphere");
+
+            PenroseSphereEnabled = builder
+                    .comment("Enable/disable Penrose Sphere entirely.")
+                    .define("penroseSphereEnabled", true);
 
             PenroseFEOutputEnabled = builder
                     .comment(
@@ -341,29 +345,45 @@ public class CrazyConfig {
             builder.push("Portable Spatial IO");
             PortableSpatialStorageCostMult = builder
                     .comment("FE cost multiplier for Portable Spatial IO")
-                    .defineInRange("nokiaCost", 5, 0, 100);
+                    .defineInRange("portableSpatialStorageCost", 5, 0, 100);
             builder.pop();
 
 
             builder.push("EnergyParts");
             EnergyExporterEnabled = builder
                     .comment("Enable Energy Exporter")
-                    .define("energyExporterEnabled", true);
+                    .define("energyExporterEnabled", false);
+
+            GregEnergyExporter = builder
+                    .comment("Allow Energy Exporter part to export EU if a GregTech battery is inserted")
+                    .define("energyExporterGT", false);
 
             EnergyInterfaceEnabled = builder
                     .comment("Enable Energy Interface")
-                    .define("energyInterfaceEnabled", true);
+                    .define("energyInterfaceEnabled", false);
             builder.pop();
 
 
             builder.push("P2PSpeeds");
+            FEp2pEnabled = builder
+                    .comment("Enable/disable Extracting FE P2P tunnel entirely")
+                    .define("fep2pEnabled", true);
+
             FEp2pSpeed = builder
                     .comment("Extract speed for FE P2P (FE/t)")
                     .defineInRange("fep2pSpeed", 262144, 0, Integer.MAX_VALUE);
 
+            Fluidp2pEnabled = builder
+                    .comment("Enable/disable Extracting Fluid P2P tunnel entirely")
+                    .define("fluidp2pEnabled", true);
+
             Fluidp2pSpeed = builder
                     .comment("Extract speed for Fluid P2P (mB/t)")
                     .defineInRange("fluidp2pSpeed", 500, 0, Integer.MAX_VALUE);
+
+            Itemp2pEnabled = builder
+                    .comment("Enable/disable Extracting Item P2P tunnel entirely")
+                    .define("itemp2pEnabled", true);
 
             Itemp2pSpeed = builder
                     .comment("Extract speed for Item P2P (items/t)")

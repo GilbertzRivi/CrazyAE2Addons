@@ -35,8 +35,6 @@ public class SendLongStringToServerPacket {
             ServerPlayer sender = ctx.getSender();
             if (sender != null && sender.containerMenu instanceof BuilderPatternMenu menu) {
                 menu.updateData(packet.data);
-            } else if (sender != null && sender.containerMenu instanceof PortableSpatialStorageMenu menu) {
-                menu.updateData(packet.data);
             } else if (sender != null && sender.containerMenu instanceof PortableAutobuilderMenu menu) {
                 menu.updateData(packet.data);
             }

@@ -108,7 +108,7 @@ public class CrazyBlockRegistrar {
 
     public static final RegistryObject<BlockItem> REINFORCED_MATTER_CONDENSER_BLOCK_ITEM =
             BLOCK_ITEMS.register("reinforced_matter_condenser",
-                    () -> new AEBaseBlockItem(REINFORCED_MATTER_CONDENSER_BLOCK.get(), new Item.Properties()));
+                    () -> new PenroseBlockItem(REINFORCED_MATTER_CONDENSER_BLOCK.get(), new Item.Properties()));
 
     // =========================================================
     // =========================================================
@@ -267,7 +267,7 @@ public class CrazyBlockRegistrar {
 
     public static final RegistryObject<BlockItem> SUPER_SINGULARITY_BLOCK_ITEM =
             BLOCK_ITEMS.register("super_singularity_block",
-                    () -> new AEBaseBlockItem(SUPER_SINGULARITY_BLOCK.get(), new Item.Properties()));
+                    () -> new PenroseBlockItem(SUPER_SINGULARITY_BLOCK.get(), new Item.Properties()));
 
     // =========================================================
     // =========================================================
@@ -277,21 +277,21 @@ public class CrazyBlockRegistrar {
 
     public static final RegistryObject<BlockItem> RESEARCH_STATION_BLOCK_ITEM =
             BLOCK_ITEMS.register("research_station",
-                    () -> new AEBaseBlockItem(RESEARCH_STATION.get(), new Item.Properties()));
+                    () -> new ResearchBlockItem(RESEARCH_STATION.get(), new Item.Properties()));
 
     public static final RegistryObject<ResearchPedestalBottomBlock> RESEARCH_PEDESTAL_BOTTOM =
             BLOCKS.register("research_pedestal_bottom", ResearchPedestalBottomBlock::new);
 
     public static final RegistryObject<BlockItem> RESEARCH_PEDESTAL_BOTTOM_BLOCK_ITEM =
             BLOCK_ITEMS.register("research_pedestal_bottom",
-                    () -> new AEBaseBlockItem(RESEARCH_PEDESTAL_BOTTOM.get(), new Item.Properties()));
+                    () -> new ResearchBlockItem(RESEARCH_PEDESTAL_BOTTOM.get(), new Item.Properties()));
 
     public static final RegistryObject<ResearchPedestalTopBlock> RESEARCH_PEDESTAL_TOP =
             BLOCKS.register("research_pedestal_top", ResearchPedestalTopBlock::new);
 
     public static final RegistryObject<BlockItem> RESEARCH_PEDESTAL_TOP_BLOCK_ITEM =
             BLOCK_ITEMS.register("research_pedestal_top",
-                    () -> new AEBaseBlockItem(RESEARCH_PEDESTAL_TOP.get(), new Item.Properties()));
+                    () -> new ResearchBlockItem(RESEARCH_PEDESTAL_TOP.get(), new Item.Properties()));
 
     public static final RegistryObject<ResearchCableBlock> RESEARCH_CABLE_BLOCK =
             BLOCKS.register("research_cable", ResearchCableBlock::new);
@@ -305,14 +305,14 @@ public class CrazyBlockRegistrar {
 
     public static final RegistryObject<BlockItem> RESEARCH_UNIT_FRAME_BLOCK_ITEM =
             BLOCK_ITEMS.register("research_unit_frame",
-                    () -> new AEBaseBlockItem(CrazyBlockRegistrar.RESEARCH_UNIT_FRAME.get(), new Item.Properties()));
+                    () -> new ResearchBlockItem(CrazyBlockRegistrar.RESEARCH_UNIT_FRAME.get(), new Item.Properties()));
 
     public static final RegistryObject<ResearchUnit> RESEARCH_UNIT =
             BLOCKS.register("research_unit", ResearchUnit::new);
 
     public static final RegistryObject<BlockItem> RESEARCH_UNIT_BLOCK_ITEM =
             BLOCK_ITEMS.register("research_unit",
-                    () -> new AEBaseBlockItem(CrazyBlockRegistrar.RESEARCH_UNIT.get(), new Item.Properties()));
+                    () -> new ResearchBlockItem(CrazyBlockRegistrar.RESEARCH_UNIT.get(), new Item.Properties()));
 
     // =========================================================
     // =========================================================
@@ -322,42 +322,42 @@ public class CrazyBlockRegistrar {
 
     public static final RegistryObject<BlockItem> PENROSE_CONTROLLER_ITEM =
             BLOCK_ITEMS.register("penrose_controller",
-                    () -> new AEBaseBlockItem(PENROSE_CONTROLLER.get(), new Item.Properties()));
+                    () -> new PenroseBlockItem(PENROSE_CONTROLLER.get(), new Item.Properties()));
 
     public static final RegistryObject<PenroseFrameBlock> PENROSE_FRAME =
             BLOCKS.register("penrose_frame", PenroseFrameBlock::new);
 
     public static final RegistryObject<BlockItem> PENROSE_FRAME_ITEM =
             BLOCK_ITEMS.register("penrose_frame",
-                    () -> new AEBaseBlockItem(PENROSE_FRAME.get(), new Item.Properties()));
+                    () -> new PenroseFrameItem(PENROSE_FRAME.get(), new Item.Properties()));
 
     public static final RegistryObject<PenroseCoilBlock> PENROSE_COIL =
             BLOCKS.register("penrose_coil", PenroseCoilBlock::new);
 
     public static final RegistryObject<BlockItem> PENROSE_COIL_ITEM =
             BLOCK_ITEMS.register("penrose_coil",
-                    () -> new AEBaseBlockItem(PENROSE_COIL.get(), new Item.Properties()));
+                    () -> new PenroseCoilItem(PENROSE_COIL.get(), new Item.Properties()));
 
     public static final RegistryObject<PenrosePortBlock> PENROSE_PORT =
             BLOCKS.register("penrose_port", PenrosePortBlock::new);
 
     public static final RegistryObject<BlockItem> PENROSE_PORT_ITEM =
             BLOCK_ITEMS.register("penrose_port",
-                    () -> new AEBaseBlockItem(PENROSE_PORT.get(), new Item.Properties()));
+                    () -> new PenrosePortItem(PENROSE_PORT.get(), new Item.Properties()));
 
     public static final RegistryObject<PenroseMassEmitter> PENROSE_MASS_EMITTER =
             BLOCKS.register("penrose_mass_emitter", PenroseMassEmitter::new);
 
     public static final RegistryObject<BlockItem> PENROSE_MASS_EMITTER_BLOCK_ITEM =
             BLOCK_ITEMS.register("penrose_mass_emitter",
-                    () -> new AEBaseBlockItem(CrazyBlockRegistrar.PENROSE_MASS_EMITTER.get(), new Item.Properties()));
+                    () -> new PenroseBlockItem(CrazyBlockRegistrar.PENROSE_MASS_EMITTER.get(), new Item.Properties()));
 
     public static final RegistryObject<PenroseHeatEmitter> PENROSE_HEAT_EMITTER =
             BLOCKS.register("penrose_heat_emitter", PenroseHeatEmitter::new);
 
     public static final RegistryObject<BlockItem> PENROSE_HEAT_EMITTER_BLOCK_ITEM =
             BLOCK_ITEMS.register("penrose_heat_emitter",
-                    () -> new AEBaseBlockItem(CrazyBlockRegistrar.PENROSE_HEAT_EMITTER.get(), new Item.Properties()));
+                    () -> new PenroseBlockItem(CrazyBlockRegistrar.PENROSE_HEAT_EMITTER.get(), new Item.Properties()));
 
     public static final RegistryObject<PenroseInjectionPort> PENROSE_INJECTION_PORT =
             BLOCKS.register("penrose_injection_port", PenroseInjectionPort::new);
@@ -371,14 +371,14 @@ public class CrazyBlockRegistrar {
 
     public static final RegistryObject<BlockItem> PENROSE_HEAT_VENT_BLOCK_ITEM =
             BLOCK_ITEMS.register("penrose_heat_vent",
-                    () -> new AEBaseBlockItem(CrazyBlockRegistrar.PENROSE_HEAT_VENT.get(), new Item.Properties()));
+                    () -> new PenroseBlockItem(CrazyBlockRegistrar.PENROSE_HEAT_VENT.get(), new Item.Properties()));
 
     public static final RegistryObject<PenroseHawkingVent> PENROSE_HAWKING_VENT =
             BLOCKS.register("penrose_hawking_vent", PenroseHawkingVent::new);
 
     public static final RegistryObject<BlockItem> PENROSE_HAWKING_VENT_BLOCK_ITEM =
             BLOCK_ITEMS.register("penrose_hawking_vent",
-                    () -> new AEBaseBlockItem(CrazyBlockRegistrar.PENROSE_HAWKING_VENT.get(), new Item.Properties()));
+                    () -> new PenroseBlockItem(CrazyBlockRegistrar.PENROSE_HAWKING_VENT.get(), new Item.Properties()));
 
     private CrazyBlockRegistrar() {}
 }

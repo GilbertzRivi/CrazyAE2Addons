@@ -18,6 +18,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.BiConsumer;
 
 public class WirelessEmitterTerminalItemLogicHost extends WTMenuHost implements IUpgradeableObject {
@@ -36,24 +37,23 @@ public class WirelessEmitterTerminalItemLogicHost extends WTMenuHost implements 
     }
 
     private IGrid getGrid() {
-        if (!(this.getItemStack().getItem() instanceof ItemWT wt)) return null;
+        if (!(this.getItemStack().getItem() instanceof ItemWT wt)) {
+            return null;
+        }
         return wt.getLinkedGrid(this.getItemStack(), this.getPlayer().level(), this.getPlayer());
     }
 
     public List<EmitterTerminalMenu.StorageEmitterInfo> getEmitters(String filter) {
         IGrid grid = getGrid();
-        if (grid == null) return List.of();
+        if (grid == null) {
+            return List.of();
+        }
 
-        String f = filter == null ? "" : filter.toLowerCase().trim();
+        String f = filter == null ? "" : filter.toLowerCase(Locale.ROOT).trim();
 
         return grid.getActiveMachines(StorageLevelEmitterPart.class)
                 .stream()
-                .filter(emitter -> {
-                    String name = emitter.getName().getString().trim();
-                    if (f.isEmpty()) return true;
-                    if (name.isEmpty()) return false;
-                    return name.toLowerCase().contains(f);
-                })
+                .filter(emitter -> matchesFilter(emitter, f))
                 .sorted(
                         Comparator
                                 .comparing((StorageLevelEmitterPart part) -> {
@@ -84,30 +84,72 @@ public class WirelessEmitterTerminalItemLogicHost extends WTMenuHost implements 
         return getEmitters("");
     }
 
+    private boolean matchesFilter(StorageLevelEmitterPart emitter, String filter) {
+        if (filter == null || filter.isBlank()) {
+            return true;
+        }
+
+        String emitterName = emitter.getName() != null
+                ? emitter.getName().getString().trim().toLowerCase(Locale.ROOT)
+                : "";
+
+        if (!emitterName.isEmpty() && emitterName.contains(filter)) {
+            return true;
+        }
+
+        GenericStack config = emitter.getConfig().getStack(0);
+        if (config == null || config.what() == null) {
+            return false;
+        }
+
+        String configName = config.what()
+                .getDisplayName()
+                .getString()
+                .trim()
+                .toLowerCase(Locale.ROOT);
+
+        return !configName.isEmpty() && configName.contains(filter);
+    }
+
     private StorageLevelEmitterPart findEmitterByUuid(String uuid) {
-        if (uuid == null || uuid.isBlank()) return null;
+        if (uuid == null || uuid.isBlank()) {
+            return null;
+        }
+
         IGrid grid = getGrid();
-        if (grid == null) return null;
+        if (grid == null) {
+            return null;
+        }
 
         return grid.getActiveMachines(StorageLevelEmitterPart.class)
                 .stream()
                 .filter(emitter -> uuid.equals(((StorageLevelEmitterUuid) emitter)
-                        .getPersistentUuid().toString()))
+                        .getPersistentUuid()
+                        .toString()))
                 .findFirst()
                 .orElse(null);
     }
 
     public boolean setEmitterValue(String uuid, long value) {
-        if (value < 0) return false;
+        if (value < 0) {
+            return false;
+        }
+
         var emitter = findEmitterByUuid(uuid);
-        if (emitter == null) return false;
+        if (emitter == null) {
+            return false;
+        }
+
         emitter.setReportingValue(value);
         return true;
     }
 
     public boolean setEmitterConfig(String uuid, GenericStack stack) {
         var emitter = findEmitterByUuid(uuid);
-        if (emitter == null) return false;
+        if (emitter == null) {
+            return false;
+        }
+
         emitter.getConfig().setStack(0, stack);
         return true;
     }

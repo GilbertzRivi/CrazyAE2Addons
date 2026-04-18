@@ -44,6 +44,9 @@ public class ExtractingFEP2PTunnelPart extends CapabilityP2PTunnelPart<Extractin
 
     @Override
     public TickRateModulation tickingRequest(IGridNode node, int ticksSinceLastCall) {
+        if (!CrazyConfig.COMMON.FEp2pEnabled.get()) {
+            return TickRateModulation.IDLE;
+        }
         if (getBlockEntity() == null || getBlockEntity().getLevel() == null || getBlockEntity().getLevel().isClientSide) {
             return TickRateModulation.IDLE;
         }

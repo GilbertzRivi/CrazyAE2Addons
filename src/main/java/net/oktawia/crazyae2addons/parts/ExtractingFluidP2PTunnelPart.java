@@ -107,6 +107,9 @@ public class ExtractingFluidP2PTunnelPart extends FluidP2PTunnelPart implements 
 
     @Override
     public TickRateModulation tickingRequest(IGridNode node, int ticksSinceLastCall) {
+        if (!CrazyConfig.COMMON.Fluidp2pEnabled.get()) {
+            return TickRateModulation.IDLE;
+        }
         if (!this.isOutput() || !this.isActive() || this.getOutputs().isEmpty()) {
             return TickRateModulation.IDLE;
         }

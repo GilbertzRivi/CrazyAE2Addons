@@ -17,6 +17,7 @@ import appeng.api.stacks.KeyCounter;
 import appeng.api.storage.StorageHelper;
 import appeng.helpers.patternprovider.PatternProviderLogic;
 import appeng.helpers.patternprovider.PatternProviderLogicHost;
+import appeng.me.helpers.MachineSource;
 import com.google.common.collect.ImmutableSet;
 import it.unimi.dsi.fastutil.objects.Object2LongMap;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
@@ -107,15 +108,19 @@ public class ManagedBuffer {
         if (grid == null) return;
         var storage = grid.getStorageService().getInventory();
         var es = grid.getEnergyService();
+
         for (var stack : required) {
             if (stack == null) continue;
             var key = stack.what();
             if (key == null) continue;
             long need = stack.amount() - get(key);
             if (need <= 0) continue;
+
             long pulled = StorageHelper.poweredExtraction(es, storage, key, need, src(), Actionable.MODULATE);
             if (pulled > 0) add(key, pulled);
         }
+
+        grid.getStorageService().invalidateCache();
     }
 
     public GenericStack[] computeMissing(GenericStack[] required, Supplier<Boolean> hasCreative) {
@@ -203,10 +208,10 @@ public class ManagedBuffer {
         return !stillHasExcess;
     }
 
-    public void requestCrafting(GenericStack[] inputs) {
-        if (!canCraft || hasActiveCrafting()) return;
+    public boolean requestCrafting(GenericStack[] inputs) {
+        if (!canCraft || hasActiveCrafting()) return false;
         var grid = grid();
-        if (grid == null) return;
+        if (grid == null) return false;
 
         var dummy = logicHost.getBlockEntity().getBlockState().getBlock().asItem().getDefaultInstance();
         dummy.getOrCreateTag().putUUID("s", UUID.randomUUID());
@@ -217,11 +222,16 @@ public class ManagedBuffer {
         logic.updatePatterns();
 
         var plan = grid.getCraftingService().beginCraftingCalculation(
-                level(), () -> IActionSource.ofMachine(actionHost),
-                dummyOutput.what(), dummyOutput.amount(), CalculationStrategy.REPORT_MISSING_ITEMS
+                level(),
+                () -> new MachineSource(actionHost),
+                dummyOutput.what(),
+                dummyOutput.amount(),
+                CalculationStrategy.REPORT_MISSING_ITEMS
         );
+
         pendingPlans.add(plan);
         onDirty.run();
+        return true;
     }
 
     public void onPushPatternComplete() {
@@ -254,6 +264,7 @@ public class ManagedBuffer {
             var future = it.next();
             if (!future.isDone()) continue;
             it.remove();
+
             try {
                 var plan = future.get();
                 var grid = grid();
@@ -264,8 +275,13 @@ public class ManagedBuffer {
                 }
 
                 var result = grid.getCraftingService().submitJob(
-                        plan, actionHost instanceof ICraftingRequester r ? r : null,
-                        null, true, src());
+                        plan,
+                        actionHost instanceof ICraftingRequester r ? r : null,
+                        null,
+                        true,
+                        src()
+                );
+
                 if (result.successful() && result.link() != null) {
                     activeLinks.add(result.link());
                     onDirty.run();
@@ -402,7 +418,6 @@ public class ManagedBuffer {
         flushPending = tag.getBoolean("flushPending") && !items.isEmpty();
         flushTickAcc = tag.getInt("flushTickAcc");
         readyAtTick = 0;
-
         pendingPlans.clear();
         activeLinks.clear();
 
@@ -421,6 +436,8 @@ public class ManagedBuffer {
             ItemStack patternSlot = ItemStack.of(tag.getCompound("patternSlot"));
             if (!patternSlot.isEmpty()) {
                 logic.getPatternInv().setItemDirect(0, patternSlot);
+                // updatePatterns() nie wołamy tu, bo level może być jeszcze null.
+                // Zostanie zrobione w onLoad().
             }
         }
     }

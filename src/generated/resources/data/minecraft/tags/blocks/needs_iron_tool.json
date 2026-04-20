@@ -1,6 +1,11 @@
 {
   "values": [
     "crazyae2addons:crazy_pattern_provider",
-    "crazyae2addons:ampere_meter"
+    "crazyae2addons:ampere_meter",
+    "crazyae2addons:auto_builder",
+    "crazyae2addons:auto_builder_creative_supply",
+    "crazyae2addons:broken_pattern_provider",
+    "crazyae2addons:ejector",
+    "crazyae2addons:crafting_scheduler"
   ]
 }

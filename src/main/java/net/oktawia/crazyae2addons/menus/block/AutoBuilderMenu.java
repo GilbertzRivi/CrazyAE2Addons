@@ -9,6 +9,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.player.Inventory;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.entities.AutoBuilderBE;
+import net.oktawia.crazyae2addons.util.ProgramExpander;
 
 public class AutoBuilderMenu extends UpgradeableMenu<AutoBuilderBE> {
 
@@ -89,6 +90,13 @@ public class AutoBuilderMenu extends UpgradeableMenu<AutoBuilderBE> {
         if (isClientSide()) {
             sendClientAction(TOGGLE_PREVIEW);
         }
+    }
+
+    @Override
+    public void broadcastChanges() {
+        this.skipEmptyLocked = !getHost().code.isEmpty()
+                && ProgramExpander.hasConditionalInstructions(String.join("/", getHost().code));
+        super.broadcastChanges();
     }
 
     @Override

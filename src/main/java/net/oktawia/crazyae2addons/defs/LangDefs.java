@@ -32,7 +32,6 @@ public enum LangDefs implements LocalizationEnum {
     FLIP_VERTICAL("gui.crazyae2addons.flip_vertical", "Flip Vertical"),
     ROTATE_CW("gui.crazyae2addons.rotate_cw", "Rotate CW"),
     RENAME("gui.crazyae2addons.rename", "Rename"),
-    DELAY("gui.crazyae2addons.delay", "Tick Delay"),
     PROGRAM_SAVED("gui.crazyae2addons.program_saved", "Pattern saved!"),
     SYNTAX_ERROR("gui.crazyae2addons.syntax_error", "Syntax Error!"),
     PROGRAM_INVALID("gui.crazyae2addons.program_invalid", "Pattern is invalid"),

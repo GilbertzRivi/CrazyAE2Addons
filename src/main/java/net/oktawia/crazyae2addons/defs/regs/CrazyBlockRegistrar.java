@@ -9,6 +9,8 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.blocks.*;
+import net.oktawia.crazyae2addons.entities.AutoBuilderCreativeSupplyBE;
+import net.oktawia.crazyae2addons.entities.BrokenPatternProviderBE;
 import net.oktawia.crazyae2addons.items.*;
 
 import java.util.List;
@@ -41,6 +43,41 @@ public class CrazyBlockRegistrar {
     public static final RegistryObject<BlockItem> AMPERE_METER_BLOCK_ITEM =
             BLOCK_ITEMS.register("ampere_meter",
                     () -> new AEBaseBlockItem(AMPERE_METER_BLOCK.get(), new Item.Properties()));
+
+    public static final RegistryObject<AutoBuilderBlock> AUTO_BUILDER_BLOCK =
+            BLOCKS.register("auto_builder", AutoBuilderBlock::new);
+
+    public static final RegistryObject<BlockItem> AUTO_BUILDER_BLOCK_ITEM =
+            BLOCK_ITEMS.register("auto_builder",
+                    () -> new AEBaseBlockItem(AUTO_BUILDER_BLOCK.get(), new Item.Properties()));
+
+    public static final RegistryObject<AutoBuilderCreativeSupplyBlock> AUTO_BUILDER_CREATIVE_SUPPLY_BLOCK =
+            BLOCKS.register("auto_builder_creative_supply", AutoBuilderCreativeSupplyBlock::new);
+
+    public static final RegistryObject<BlockItem> AUTO_BUILDER_CREATIVE_SUPPLY_BLOCK_ITEM =
+            BLOCK_ITEMS.register("auto_builder_creative_supply",
+                    () -> new AEBaseBlockItem(AUTO_BUILDER_CREATIVE_SUPPLY_BLOCK.get(), new Item.Properties()));
+
+    public static final RegistryObject<BrokenPatternProviderBlock> BROKEN_PATTERN_PROVIDER_BLOCK =
+            BLOCKS.register("broken_pattern_provider", BrokenPatternProviderBlock::new);
+
+    public static final RegistryObject<BlockItem> BROKEN_PATTERN_PROVIDER_BLOCK_ITEM =
+            BLOCK_ITEMS.register("broken_pattern_provider",
+                    () -> new AEBaseBlockItem(BROKEN_PATTERN_PROVIDER_BLOCK.get(), new Item.Properties()));
+
+    public static final RegistryObject<EjectorBlock> EJECTOR_BLOCK =
+            BLOCKS.register("ejector", EjectorBlock::new);
+
+    public static final RegistryObject<BlockItem> EJECTOR_BLOCK_ITEM =
+            BLOCK_ITEMS.register("ejector",
+                    () -> new AEBaseBlockItem(EJECTOR_BLOCK.get(), new Item.Properties()));
+
+    public static final RegistryObject<CraftingSchedulerBlock> CRAFTING_SCHEDULER_BLOCK =
+            BLOCKS.register("crafting_scheduler", CraftingSchedulerBlock::new);
+
+    public static final RegistryObject<BlockItem> CRAFTING_SCHEDULER_BLOCK_ITEM =
+            BLOCK_ITEMS.register("crafting_scheduler",
+                    () -> new AEBaseBlockItem(CRAFTING_SCHEDULER_BLOCK.get(), new Item.Properties()));
 
     private CrazyBlockRegistrar() {}
 }

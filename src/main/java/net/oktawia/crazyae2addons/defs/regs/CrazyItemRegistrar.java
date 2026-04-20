@@ -9,6 +9,7 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import net.oktawia.crazyae2addons.CrazyAddons;
+import net.oktawia.crazyae2addons.items.BuilderPatternItem;
 import net.oktawia.crazyae2addons.items.CrazyPatternProviderPartItem;
 
 import java.util.List;
@@ -51,6 +52,10 @@ public class CrazyItemRegistrar {
     public static final RegistryObject<Item> CRAZY_UPGRADE =
             ITEMS.register("crazy_upgrade",
                     () -> new Item(new Item.Properties()));
+
+    public static final RegistryObject<BuilderPatternItem> BUILDER_PATTERN =
+            ITEMS.register("builder_pattern",
+                    () -> new BuilderPatternItem(new Item.Properties()));
 
     private CrazyItemRegistrar() {}
 }

@@ -11,8 +11,11 @@ import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.IsModLoaded;
 import net.oktawia.crazyae2addons.compat.GregTech.GTAmpereMeterBE;
 import net.oktawia.crazyae2addons.entities.*;
+import net.oktawia.crazyae2addons.logic.autobuilder.BuilderPatternHost;
 import net.oktawia.crazyae2addons.menus.CrazyPatternProviderMenu;
 import net.oktawia.crazyae2addons.menus.block.*;
+import net.oktawia.crazyae2addons.menus.item.BuilderPatternMenu;
+import net.oktawia.crazyae2addons.menus.item.BuilderPatternSubMenu;
 
 public class CrazyMenuRegistrar {
 
@@ -33,6 +36,24 @@ public class CrazyMenuRegistrar {
             IsModLoaded.GTCEU
                     ? reg("ampere_meter", AmpereMeterMenu::new, GTAmpereMeterBE.class)
                     : reg("ampere_meter", AmpereMeterMenu::new, AmpereMeterBE.class);
+
+    public static final RegistryObject<MenuType<AutoBuilderMenu>> AUTO_BUILDER_MENU =
+            reg("auto_builder_menu", AutoBuilderMenu::new, AutoBuilderBE.class);
+
+    public static final RegistryObject<MenuType<BuilderPatternMenu>> BUILDER_PATTERN_MENU =
+            reg("builder_pattern_menu", BuilderPatternMenu::new, BuilderPatternHost.class);
+
+    public static final RegistryObject<MenuType<BuilderPatternSubMenu>> BUILDER_PATTERN_SUBMENU =
+            reg("builder_pattern_submenu", BuilderPatternSubMenu::new, BuilderPatternHost.class);
+
+    public static final RegistryObject<MenuType<BrokenPatternProviderMenu>> BROKEN_PATTERN_PROVIDER_MENU =
+            reg("broken_pattern_provider_menu", BrokenPatternProviderMenu::new, BrokenPatternProviderBE.class);
+
+    public static final RegistryObject<MenuType<EjectorMenu>> EJECTOR_MENU =
+            reg("ejector_menu", EjectorMenu::new, EjectorBE.class);
+
+    public static final RegistryObject<MenuType<CraftingSchedulerMenu>> CRAFTING_SCHEDULER_MENU =
+            reg("crafting_scheduler_menu", CraftingSchedulerMenu::new, CraftingSchedulerBE.class);
 
     private CrazyMenuRegistrar() {}
 }

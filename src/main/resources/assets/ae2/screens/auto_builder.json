@@ -1,0 +1,130 @@
+{
+  "$schema": "schema.json",
+  "includes": [
+    "common/common.json",
+    "common/player_inventory.json"
+  ],
+  "background": {
+    "texture": "guis/auto_builder.png",
+    "srcRect": [0, 0, 176, 205]
+  },
+  "slots": {
+    "CONFIG": {
+      "left": 118,
+      "top": 66,
+      "grid": "HORIZONTAL"
+    }
+  },
+  "text": {
+    "dialog_title": {
+      "text": {
+        "translate": "block.crazyae2addons.auto_builder"
+      },
+      "position": {
+        "left": 8,
+        "top": 6
+      }
+    },
+    "info1": {
+      "text": {
+        "translate": "gui.crazyae2addons.pattern"
+      },
+      "position": {
+        "left": 136,
+        "top": 50
+      },
+      "align": "CENTER"
+    },
+    "info2": {
+      "text": {
+        "translate": "gui.crazyae2addons.offset"
+      },
+      "position": {
+        "left": 52,
+        "top": 32
+      },
+      "align": "CENTER"
+    },
+    "missing": {
+      "position": {
+        "left": 110,
+        "top": 6
+      },
+      "align": "CENTER"
+    },
+    "energy": {
+      "position": {
+        "left": 8,
+        "top": 16
+      }
+    }
+  },
+  "widgets": {
+    "skipmissing": {
+      "left": 128,
+      "top": 90,
+      "width": 32,
+      "height": 16
+    },
+    "right": {
+      "left": 18,
+      "top": 44,
+      "width": 16,
+      "height": 16
+    },
+    "xl": {
+      "left": 14,
+      "top": 68,
+      "width": 24,
+      "height": 16
+    },
+    "left": {
+      "left": 18,
+      "top": 84,
+      "width": 16,
+      "height": 16
+    },
+    "up": {
+      "left": 44,
+      "top": 44,
+      "width": 16,
+      "height": 16
+    },
+    "yl": {
+      "left": 40,
+      "top": 68,
+      "width": 24,
+      "height": 16
+    },
+    "down": {
+      "left": 44,
+      "top": 84,
+      "width": 16,
+      "height": 16
+    },
+    "front": {
+      "left": 70,
+      "top": 44,
+      "width": 16,
+      "height": 16
+    },
+    "zl": {
+      "left": 66,
+      "top": 68,
+      "width": 24,
+      "height": 16
+    },
+    "back": {
+      "left": 70,
+      "top": 84,
+      "width": 16,
+      "height": 16
+    },
+    "preview": {
+      "right": 24,
+      "top": 4,
+      "width": 16,
+      "height": 16
+    }
+  }
+}

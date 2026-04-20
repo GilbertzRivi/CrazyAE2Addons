@@ -17,6 +17,8 @@ import appeng.api.upgrades.IUpgradeInventory;
 import appeng.api.upgrades.IUpgradeableObject;
 import appeng.api.upgrades.UpgradeInventories;
 import appeng.blockentity.grid.AENetworkBlockEntity;
+import appeng.helpers.patternprovider.PatternProviderLogic;
+import appeng.helpers.patternprovider.PatternProviderLogicHost;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuLocator;
 import appeng.util.inv.AppEngInternalInventory;
@@ -52,14 +54,15 @@ import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
+import net.oktawia.crazyae2addons.items.BuilderPatternItem;
+import net.oktawia.crazyae2addons.logic.autobuilder.AutoBuilderPreviewOps;
+import net.oktawia.crazyae2addons.logic.autobuilder.AutoBuilderWorldOps;
+import net.oktawia.crazyae2addons.logic.autobuilder.BuilderPatternHost;
 import net.oktawia.crazyae2addons.logic.buffer.ManagedBuffer;
-import net.oktawia.crazyae2addons.logic.builder.AutoBuilderPreviewOps;
-import net.oktawia.crazyae2addons.logic.builder.AutoBuilderWorldOps;
-import net.oktawia.crazyae2addons.logic.builder.BuilderPatternHost;
 import net.oktawia.crazyae2addons.menus.block.AutoBuilderMenu;
-import net.oktawia.crazyae2addons.misc.ProgramExpander;
 import net.oktawia.crazyae2addons.util.IManagedBEHelper;
 import net.oktawia.crazyae2addons.util.IMenuOpeningBlockEntity;
+import net.oktawia.crazyae2addons.util.ProgramExpander;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -68,8 +71,14 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class AutoBuilderBE extends AENetworkBlockEntity implements
-        IGridTickable, MenuProvider, InternalInventoryHost, IUpgradeableObject,
-        ICraftingRequester, IManagedBEHelper, IMenuOpeningBlockEntity {
+        IGridTickable,
+        MenuProvider,
+        InternalInventoryHost,
+        IUpgradeableObject,
+        ICraftingRequester,
+        PatternProviderLogicHost,
+        IManagedBEHelper,
+        IMenuOpeningBlockEntity {
 
     protected static final ManagedFieldHolder MANAGED_FIELD_HOLDER =
             new ManagedFieldHolder(AutoBuilderBE.class);
@@ -87,10 +96,6 @@ public class AutoBuilderBE extends AENetworkBlockEntity implements
     @Persisted
     @LazyManaged
     public final AppEngInternalInventory inventory = new AppEngInternalInventory(this, 2);
-
-    @Persisted
-    @DescSynced
-    public int delay = 20;
 
     @Persisted
     @DescSynced
@@ -161,7 +166,6 @@ public class AutoBuilderBE extends AENetworkBlockEntity implements
     @Getter
     public int[] previewIndices = new int[0];
 
-    @Persisted
     @DescSynced
     @Getter
     public boolean previewEnabled = false;
@@ -211,13 +215,12 @@ public class AutoBuilderBE extends AENetworkBlockEntity implements
                 );
 
         this.inventory.setFilter(new IAEItemFilter() {
-             @Override
-             public boolean allowInsert(InternalInventory inv, int slot, ItemStack stack) {
-                 return slot == 0 && stack.getItem().equals(CrazyItemRegistrar.BUILDER_PATTERN.get().asItem());
-             }
+            @Override
+            public boolean allowInsert(InternalInventory inv, int slot, ItemStack stack) {
+                return slot == 0 && stack.getItem().equals(CrazyItemRegistrar.BUILDER_PATTERN.get().asItem());
+            }
         });
     }
-
 
     @Override
     public ManagedFieldHolder getFieldHolder() {
@@ -299,29 +302,56 @@ public class AutoBuilderBE extends AENetworkBlockEntity implements
         }
     }
 
-    public ManagedBuffer getLogic() {
-        return buffer;
+    @Override
+    public PatternProviderLogic getLogic() {
+        return buffer.getLogic();
     }
 
+    @Override
     public BlockEntity getBlockEntity() {
         return this;
     }
 
+    @Override
     public EnumSet<Direction> getTargets() {
         return EnumSet.allOf(Direction.class);
     }
 
+    @Override
     public void saveChanges() {
         setChanged();
     }
 
     @Override
+    public AEItemKey getTerminalIcon() {
+        return AEItemKey.of(CrazyBlockRegistrar.AUTO_BUILDER_BLOCK.get());
+    }
+
+    @Override
+    public void openMenu(Player player, MenuLocator locator) {
+        if (!player.level().isClientSide) {
+            forceSyncManaged();
+        }
+        MenuOpener.open(CrazyMenuRegistrar.AUTO_BUILDER_MENU.get(), player, locator);
+    }
+
+    @Override
+    public ItemStack getMainMenuIcon() {
+        return CrazyBlockRegistrar.AUTO_BUILDER_BLOCK.get().asItem().getDefaultInstance();
+    }
+
+    @Override
+    public boolean isClientSide() {
+        return level == null || level.isClientSide;
+    }
+
+    @Override
     public void onChangeInventory(InternalInventory inv, int slot) {
         clearMissingItem();
-        this.previewEnabled = false;
         this.setChanged();
 
         loadCode();
+        updateSkipEmptyFromCode();
         recalculateRequiredEnergy();
 
         if (inventory.getStackInSlot(0).isEmpty() && inventory.getStackInSlot(1).isEmpty()) {
@@ -351,23 +381,9 @@ public class AutoBuilderBE extends AENetworkBlockEntity implements
         }
 
         if (!isClientSide()) {
-            syncManaged();
-        }
-    }
-
-    @Override
-    public void openMenu(Player player, MenuLocator locator) {
-        if (!player.level().isClientSide()) {
             forceSyncManaged();
         }
-        MenuOpener.open(CrazyMenuRegistrar.AUTO_BUILDER_MENU.get(), player, locator);
     }
-
-    @Override
-    public boolean isClientSide() {
-        return level == null || level.isClientSide();
-    }
-
 
     @Override
     public @Nullable InternalInventory getSubInventory(ResourceLocation id) {
@@ -390,7 +406,7 @@ public class AutoBuilderBE extends AENetworkBlockEntity implements
             return;
         }
 
-        if (level != null) {
+        if (level != null && !level.isClientSide) {
             loadCode();
             recalculateRequiredEnergy();
             buffer.onLoad();
@@ -509,9 +525,8 @@ public class AutoBuilderBE extends AENetworkBlockEntity implements
             this.code.clear();
         }
 
-        Direction d = net.oktawia.crazyae2addons.items.BuilderPatternItem.getSourceFacing(s);
+        Direction d = BuilderPatternItem.getSourceFacing(s);
         this.sourceFacing = d != null ? d : Direction.NORTH;
-        this.delay = net.oktawia.crazyae2addons.items.BuilderPatternItem.getDelay(s);
         setChanged();
 
         if (!isClientSide()) {
@@ -527,15 +542,9 @@ public class AutoBuilderBE extends AENetworkBlockEntity implements
     }
 
     public void updateSkipEmptyFromCode() {
-        if (this.code.isEmpty()) {
-            this.skipEmpty = false;
-            setChanged();
-            if (!isClientSide()) {
-                syncManaged();
-            }
-            return;
+        if (!this.code.isEmpty() && ProgramExpander.hasConditionalInstructions(String.join("/", this.code))) {
+            this.skipEmpty = true;
         }
-        this.skipEmpty = ProgramExpander.hasConditionalInstructions(String.join("/", this.code));
         setChanged();
         if (!isClientSide()) {
             syncManaged();

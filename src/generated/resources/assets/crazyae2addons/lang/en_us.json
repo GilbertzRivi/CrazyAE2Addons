@@ -1,6 +1,11 @@
 {
   "block.crazyae2addons.ampere_meter": "Ampere Meter",
+  "block.crazyae2addons.auto_builder": "Auto Builder",
+  "block.crazyae2addons.auto_builder_creative_supply": "Auto Builder Creative Supply",
+  "block.crazyae2addons.broken_pattern_provider": "Broken Pattern Provider",
+  "block.crazyae2addons.crafting_scheduler": "Crafting Scheduler",
   "block.crazyae2addons.crazy_pattern_provider": "Crazy Pattern Provider",
+  "block.crazyae2addons.ejector": "Ejector",
   "gui.crazyae2addons.action": "Action",
   "gui.crazyae2addons.active": "Active",
   "gui.crazyae2addons.add": "Add",
@@ -40,7 +45,6 @@
   "gui.crazyae2addons.cost_per_tick": "FE cost: %s/t",
   "gui.crazyae2addons.crafting_scheduler_target": "Target",
   "gui.crazyae2addons.crazy_provider_capacity_tooltip": "Capacity: ",
-  "gui.crazyae2addons.delay": "Tick Delay",
   "gui.crazyae2addons.delta": "Delta",
   "gui.crazyae2addons.depth": "Depth",
   "gui.crazyae2addons.display_images": "Display Images",
@@ -203,6 +207,7 @@
   "gui.crazyae2addons.x_percent_tooltip": "Horizontal position in percent. 0 = left edge, 100 = right edge",
   "gui.crazyae2addons.y_percent": "Y %",
   "gui.crazyae2addons.y_percent_tooltip": "Vertical position in percent. 0 = top edge, 100 = bottom edge",
+  "item.crazyae2addons.builder_pattern": "Builder Pattern",
   "item.crazyae2addons.crazy_pattern_provider_part": "Crazy Pattern Provider Part",
   "item.crazyae2addons.crazy_upgrade": "Crazy Upgrade",
   "key": "val"

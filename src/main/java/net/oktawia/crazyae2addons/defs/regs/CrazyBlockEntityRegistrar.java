@@ -10,8 +10,7 @@ import net.minecraftforge.registries.RegistryObject;
 import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.IsModLoaded;
 import net.oktawia.crazyae2addons.compat.GregTech.GTAmpereMeterBE;
-import net.oktawia.crazyae2addons.entities.AmpereMeterBE;
-import net.oktawia.crazyae2addons.entities.CrazyPatternProviderBE;
+import net.oktawia.crazyae2addons.entities.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -128,6 +127,21 @@ public class CrazyBlockEntityRegistrar {
                     AmpereMeterBE::new,
                     AmpereMeterBE.class
             );
+
+    public static final RegistryObject<BlockEntityType<AutoBuilderBE>> AUTO_BUILDER_BE =
+            reg("auto_builder_be", CrazyBlockRegistrar.AUTO_BUILDER_BLOCK, AutoBuilderBE::new, AutoBuilderBE.class);
+
+    public static final RegistryObject<BlockEntityType<AutoBuilderCreativeSupplyBE>> AUTO_BUILDER_CREATIVE_SUPPLY_BE =
+            reg("auto_builder_creative_supply_be", CrazyBlockRegistrar.AUTO_BUILDER_CREATIVE_SUPPLY_BLOCK, AutoBuilderCreativeSupplyBE::new, AutoBuilderCreativeSupplyBE.class);
+
+    public static final RegistryObject<BlockEntityType<BrokenPatternProviderBE>> BROKEN_PATTERN_PROVIDER_BE =
+            reg("broken_pattern_provider_be", CrazyBlockRegistrar.BROKEN_PATTERN_PROVIDER_BLOCK, BrokenPatternProviderBE::new, BrokenPatternProviderBE.class);
+
+    public static final RegistryObject<BlockEntityType<EjectorBE>> EJECTOR_BE =
+            reg("ejector_be", CrazyBlockRegistrar.EJECTOR_BLOCK, EjectorBE::new, EjectorBE.class);
+
+    public static final RegistryObject<BlockEntityType<CraftingSchedulerBE>> CRAFTING_SCHEDULER_BE =
+            reg("crafting_scheduler_be", CrazyBlockRegistrar.CRAFTING_SCHEDULER_BLOCK, CraftingSchedulerBE::new, CraftingSchedulerBE.class);
 
     private CrazyBlockEntityRegistrar() {}
 }

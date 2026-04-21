@@ -27,6 +27,8 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemp
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.oktawia.crazyae2addons.IsModLoaded;
+import net.oktawia.crazyae2addons.compat.gtceu.GTCEuPasteCompat;
 import net.oktawia.crazyae2addons.defs.LangDefs;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.logic.cutpaste.CutPasteStackState;
@@ -40,43 +42,74 @@ import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
+
 public class PortableSpatialStorage extends WirelessTerminalItem implements IMenuItem {
 
     public PortableSpatialStorage(Properties properties) {
         super(() -> 200000, properties.stacksTo(1));
     }
 
+    public static ItemStack findHeld(@Nullable Player player) {
+        if (player == null) return ItemStack.EMPTY;
+        ItemStack mainHand = player.getMainHandItem();
+        if (mainHand.getItem() instanceof PortableSpatialStorage) return mainHand;
+        ItemStack offHand = player.getOffhandItem();
+        if (offHand.getItem() instanceof PortableSpatialStorage) return offHand;
+        return ItemStack.EMPTY;
+    }
+
+    public static ItemStack findActive(@Nullable Player player) {
+        if (player == null) return ItemStack.EMPTY;
+        ItemStack mainHand = player.getMainHandItem();
+        if (mainHand.getItem() instanceof PortableSpatialStorage && CutPasteStackState.hasStructure(mainHand)) return mainHand;
+        ItemStack offHand = player.getOffhandItem();
+        if (offHand.getItem() instanceof PortableSpatialStorage && CutPasteStackState.hasStructure(offHand)) return offHand;
+        return ItemStack.EMPTY;
+    }
+
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
 
-        if (!level.isClientSide() && player.isShiftKeyDown()) {
-            MenuOpener.open(
-                    CrazyMenuRegistrar.PORTABLE_SPATIAL_STORAGE_MENU.get(),
-                    player,
-                    MenuLocators.forHand(player, hand)
-            );
-            return InteractionResultHolder.success(stack);
-        }
+        if (!level.isClientSide()) {
+            boolean hasStructure = CutPasteStackState.hasStructure(stack);
 
-        if (!level.isClientSide() && CutPasteStackState.hasStructure(stack)) {
-            ServerLevel serverLevel = (ServerLevel) level;
-            BlockHitResult hit = rayTrace(serverLevel, player, 50.0D);
+            if (player.isShiftKeyDown()) {
+                if (hasStructure) {
+                    openMenu(player, hand);
+                } else {
+                    CutPasteStackState.clearSelection(stack);
+                    player.displayClientMessage(
+                            Component.translatable(LangDefs.SELECTION_RESTARTED.getTranslationKey()),
+                            true
+                    );
+                }
 
-            if (hit.getType() == HitResult.Type.BLOCK) {
-                BlockPos pasteOrigin = hit.getBlockPos().relative(hit.getDirection());
-                paste(serverLevel, player, stack, pasteOrigin);
-            } else {
-                player.displayClientMessage(
-                        Component.translatable(LangDefs.NO_BLOCK_IN_RANGE.getTranslationKey()),
-                        true
-                );
+                return InteractionResultHolder.success(stack);
             }
 
-            return InteractionResultHolder.success(stack);
-        }
+            if (hasStructure) {
+                ServerLevel serverLevel = (ServerLevel) level;
+                BlockHitResult hit = rayTrace(serverLevel, player, 50.0D);
 
-        if (!level.isClientSide()) {
+                if (hit.getType() == HitResult.Type.BLOCK) {
+                    BlockPos pasteOrigin = hit.getBlockPos().relative(hit.getDirection());
+                    paste(serverLevel, player, stack, pasteOrigin);
+                } else {
+                    player.displayClientMessage(
+                            Component.translatable(LangDefs.NO_BLOCK_IN_RANGE.getTranslationKey()),
+                            true
+                    );
+                }
+
+                return InteractionResultHolder.success(stack);
+            }
+
+            if (isWaitingForSecondCorner(stack)) {
+                selectSecondCorner((ServerLevel) level, player, stack);
+                return InteractionResultHolder.success(stack);
+            }
+
             tryCut((ServerLevel) level, player, stack);
         }
 
@@ -90,12 +123,52 @@ public class PortableSpatialStorage extends WirelessTerminalItem implements IMen
         if (player == null) {
             return InteractionResult.PASS;
         }
-
         ItemStack stack = context.getItemInHand();
         BlockPos clickedPos = context.getClickedPos();
 
-        if (!player.isShiftKeyDown()) {
-            if (!level.isClientSide() && CutPasteStackState.hasStructure(stack)) {
+        boolean hasStructure = CutPasteStackState.hasStructure(stack);
+
+        if (player.isShiftKeyDown()) {
+            if (hasStructure) {
+                if (!level.isClientSide()) {
+                    openMenu(player, context.getHand());
+                }
+                return InteractionResult.sidedSuccess(level.isClientSide());
+            }
+
+            BlockPos selectionA = CutPasteStackState.getSelectionA(stack);
+            BlockPos selectionB = CutPasteStackState.getSelectionB(stack);
+
+            if (selectionA == null) {
+                CutPasteStackState.setSelectionA(stack, clickedPos.immutable());
+                player.displayClientMessage(
+                        Component.translatable(LangDefs.CORNER_A_SELECTED.getTranslationKey()),
+                        true
+                );
+            } else if (selectionB == null) {
+                CutPasteStackState.setSelectionB(stack, clickedPos.immutable());
+                CutPasteStackState.setOrigin(stack, clickedPos.immutable());
+                CutPasteStackState.setSourceFacing(stack, player.getDirection());
+
+                player.displayClientMessage(
+                        Component.translatable(LangDefs.CORNER_B_SELECTED.getTranslationKey()),
+                        true
+                );
+            } else {
+                CutPasteStackState.clearSelection(stack);
+                CutPasteStackState.setSelectionA(stack, clickedPos.immutable());
+
+                player.displayClientMessage(
+                        Component.translatable(LangDefs.SELECTION_RESTARTED.getTranslationKey()),
+                        true
+                );
+            }
+
+            return InteractionResult.sidedSuccess(level.isClientSide());
+        }
+
+        if (hasStructure) {
+            if (!level.isClientSide()) {
                 paste(
                         (ServerLevel) level,
                         player,
@@ -103,46 +176,51 @@ public class PortableSpatialStorage extends WirelessTerminalItem implements IMen
                         clickedPos.relative(context.getClickedFace())
                 );
             }
-            return InteractionResult.SUCCESS;
+            return InteractionResult.sidedSuccess(level.isClientSide());
         }
 
-        if (CutPasteStackState.hasStructure(stack)) {
-            player.displayClientMessage(
-                    Component.translatable(LangDefs.PASTE_OR_CLEAR_FIRST.getTranslationKey()),
-                    true
-            );
-            return InteractionResult.SUCCESS;
+        if (!level.isClientSide() && isWaitingForSecondCorner(stack)) {
+            selectSecondCorner((ServerLevel) level, player, stack);
         }
 
-        BlockPos selectionA = CutPasteStackState.getSelectionA(stack);
-        BlockPos selectionB = CutPasteStackState.getSelectionB(stack);
+        return InteractionResult.sidedSuccess(level.isClientSide());
+    }
 
-        if (selectionA == null) {
-            CutPasteStackState.setSelectionA(stack, clickedPos.immutable());
+
+    private static boolean isWaitingForSecondCorner(ItemStack stack) {
+        return !CutPasteStackState.hasStructure(stack)
+                && CutPasteStackState.getSelectionA(stack) != null
+                && CutPasteStackState.getSelectionB(stack) == null;
+    }
+
+    private void openMenu(Player player, InteractionHand hand) {
+        MenuOpener.open(
+                CrazyMenuRegistrar.PORTABLE_SPATIAL_STORAGE_MENU.get(),
+                player,
+                MenuLocators.forHand(player, hand)
+        );
+    }
+
+    private void selectSecondCorner(ServerLevel level, Player player, ItemStack stack) {
+        BlockHitResult hit = rayTrace(level, player, 50.0D);
+
+        if (hit.getType() != HitResult.Type.BLOCK) {
             player.displayClientMessage(
-                    Component.translatable(LangDefs.CORNER_A_SELECTED.getTranslationKey()),
+                    Component.translatable(LangDefs.NO_BLOCK_IN_RANGE.getTranslationKey()),
                     true
             );
-        } else if (selectionB == null) {
-            CutPasteStackState.setSelectionB(stack, clickedPos.immutable());
-            CutPasteStackState.setOrigin(stack, clickedPos.immutable());
-            CutPasteStackState.setSourceFacing(stack, player.getDirection());
-
-            player.displayClientMessage(
-                    Component.translatable(LangDefs.CORNER_B_SELECTED.getTranslationKey()),
-                    true
-            );
-        } else {
-            CutPasteStackState.clearSelection(stack);
-            CutPasteStackState.setSelectionA(stack, clickedPos.immutable());
-
-            player.displayClientMessage(
-                    Component.translatable(LangDefs.SELECTION_RESTARTED.getTranslationKey()),
-                    true
-            );
+            return;
         }
 
-        return InteractionResult.SUCCESS;
+        BlockPos pos = hit.getBlockPos().immutable();
+        CutPasteStackState.setSelectionB(stack, pos);
+        CutPasteStackState.setOrigin(stack, pos);
+        CutPasteStackState.setSourceFacing(stack, player.getDirection());
+
+        player.displayClientMessage(
+                Component.translatable(LangDefs.CORNER_B_SELECTED.getTranslationKey()),
+                true
+        );
     }
 
     private void tryCut(ServerLevel level, Player player, ItemStack stack) {
@@ -175,9 +253,12 @@ public class PortableSpatialStorage extends WirelessTerminalItem implements IMen
 
         try {
             savedTag = template.save(new CompoundTag());
+
             CutPasteStructureStore.save(level.getServer(), id, savedTag);
+
             CutPasteStackState.setStructureId(stack, id);
             CutPasteStackState.clearSelection(stack);
+            CutPasteStackState.resetPreviewSideMap(stack);
         } catch (IOException exception) {
             player.displayClientMessage(
                     Component.translatable(LangDefs.FAILED_TO_SAVE_STRUCTURE.getTranslationKey()),
@@ -189,7 +270,8 @@ public class PortableSpatialStorage extends WirelessTerminalItem implements IMen
         for (int y = min.getY(); y <= max.getY(); y++) {
             for (int z = min.getZ(); z <= max.getZ(); z++) {
                 for (int x = min.getX(); x <= max.getX(); x++) {
-                    level.removeBlock(new BlockPos(x, y, z), false);
+                    level.removeBlockEntity(new BlockPos(x, y, z));
+                    level.setBlock(new BlockPos(x, y, z), Blocks.AIR.defaultBlockState(), 3);
                 }
             }
         }
@@ -228,6 +310,7 @@ public class PortableSpatialStorage extends WirelessTerminalItem implements IMen
             );
             CutPasteStackState.clearStructure(stack);
             CutPasteStackState.clearSelection(stack);
+            CutPasteStackState.resetPreviewSideMap(stack);
 
             if (player instanceof ServerPlayer serverPlayer) {
                 PortableSpatialStoragePreviewDispatcher.sendPreviewToPlayer(serverPlayer, null);
@@ -258,6 +341,10 @@ public class PortableSpatialStorage extends WirelessTerminalItem implements IMen
             return;
         }
 
+        if (IsModLoaded.GTCEU) {
+            GTCEuPasteCompat.schedulePostPlacementInit(level, origin, savedTag);
+        }
+
         try {
             CutPasteStructureStore.delete(level.getServer(), id);
         } catch (IOException ignored) {
@@ -265,6 +352,7 @@ public class PortableSpatialStorage extends WirelessTerminalItem implements IMen
 
         CutPasteStackState.clearStructure(stack);
         CutPasteStackState.clearSelection(stack);
+        CutPasteStackState.resetPreviewSideMap(stack);
 
         if (player instanceof ServerPlayer serverPlayer) {
             PortableSpatialStoragePreviewDispatcher.sendPreviewToPlayer(serverPlayer, null);
@@ -293,7 +381,7 @@ public class PortableSpatialStorage extends WirelessTerminalItem implements IMen
         return false;
     }
 
-    private static BlockHitResult rayTrace(ServerLevel level, Player player, double maxDistance) {
+    public static BlockHitResult rayTrace(Level level, Player player, double maxDistance) {
         Vec3 eye = player.getEyePosition(1.0F);
         Vec3 look = player.getViewVector(1.0F);
         Vec3 end = eye.add(look.x * maxDistance, look.y * maxDistance, look.z * maxDistance);

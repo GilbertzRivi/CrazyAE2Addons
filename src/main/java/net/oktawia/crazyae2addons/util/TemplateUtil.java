@@ -32,6 +32,7 @@ public final class TemplateUtil {
     public record BlockInfo(BlockPos pos, BlockState state, @Nullable CompoundTag blockEntityTag) {}
 
     private static final String AE2_CABLE_BUS_ID = "ae2:cable_bus";
+    private static final String GTCEU_ID_PREFIX = "gtceu:";
 
     private static final String KEY_NORTH = "north";
     private static final String KEY_SOUTH = "south";
@@ -40,6 +41,7 @@ public final class TemplateUtil {
     private static final String KEY_UP = "up";
     private static final String KEY_DOWN = "down";
     private static final String KEY_CABLE = "cable";
+    private static final String KEY_COVER = "cover";
 
     private TemplateUtil() {
     }
@@ -104,10 +106,6 @@ public final class TemplateUtil {
     }
 
     public static CompoundTag applyFlipHToTag(CompoundTag tag, Direction sourceFacing) {
-        Mirror mirror = sourceFacing.getAxis() == Direction.Axis.Z
-                ? Mirror.FRONT_BACK
-                : Mirror.LEFT_RIGHT;
-
         CableBusTransform cableBusTransform = sourceFacing.getAxis() == Direction.Axis.Z
                 ? CableBusTransform.FLIP_H_AXIS_Z
                 : CableBusTransform.FLIP_H_AXIS_X;
@@ -115,9 +113,88 @@ public final class TemplateUtil {
         return applyTransform(
                 tag,
                 (x, y, z, minX, maxX, minY, maxY, minZ, maxZ) -> new int[]{minX + maxX - x, y, z},
-                state -> state.mirror(mirror),
+                state -> flipHorizontalState(state, sourceFacing),
                 cableBusTransform
         );
+    }
+
+    private static BlockState flipHorizontalState(BlockState state, Direction sourceFacing) {
+        Mirror mirror = sourceFacing.getAxis() == Direction.Axis.Z
+                ? Mirror.FRONT_BACK
+                : Mirror.LEFT_RIGHT;
+
+        BlockState mirrored = state.mirror(mirror);
+
+        if (hasHorizontalDirectionPropertyChange(state, mirrored)) {
+            return mirrored;
+        }
+
+        return remapHorizontalDirectionProperties(mirrored, sourceFacing.getAxis());
+    }
+
+    private static boolean hasHorizontalDirectionPropertyChange(BlockState before, BlockState after) {
+        for (Map.Entry<Property<?>, Comparable<?>> entry : before.getValues().entrySet()) {
+            Comparable<?> beforeValue = entry.getValue();
+            if (!(beforeValue instanceof Direction beforeDirection) || !beforeDirection.getAxis().isHorizontal()) {
+                continue;
+            }
+
+            Comparable<?> afterValue = after.getValue(entry.getKey());
+            if (afterValue instanceof Direction afterDirection && afterDirection != beforeDirection) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static boolean hasDirectionPropertyChange(BlockState before, BlockState after) {
+        for (Map.Entry<Property<?>, Comparable<?>> entry : before.getValues().entrySet()) {
+            Comparable<?> beforeValue = entry.getValue();
+            if (!(beforeValue instanceof Direction beforeDirection)) {
+                continue;
+            }
+
+            Comparable<?> afterValue = after.getValue(entry.getKey());
+            if (afterValue instanceof Direction afterDirection && afterDirection != beforeDirection) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static BlockState remapHorizontalDirectionProperties(BlockState state, Direction.Axis sourceAxis) {
+        BlockState result = state;
+
+        for (Map.Entry<Property<?>, Comparable<?>> entry : state.getValues().entrySet()) {
+            Property<?> property = entry.getKey();
+            Comparable<?> value = entry.getValue();
+
+            if (!(value instanceof Direction direction) || !direction.getAxis().isHorizontal()) {
+                continue;
+            }
+
+            Direction flipped = switch (sourceAxis) {
+                case Z -> switch (direction) {
+                    case EAST -> Direction.WEST;
+                    case WEST -> Direction.EAST;
+                    default -> direction;
+                };
+                case X -> switch (direction) {
+                    case NORTH -> Direction.SOUTH;
+                    case SOUTH -> Direction.NORTH;
+                    default -> direction;
+                };
+                default -> direction;
+            };
+
+            if (flipped != direction) {
+                result = setUnchecked(result, property, flipped);
+            }
+        }
+
+        return result;
     }
 
     public static CompoundTag applyFlipVToTag(CompoundTag tag) {
@@ -170,7 +247,7 @@ public final class TemplateUtil {
                     };
                     default -> new int[]{x, y, z};
                 },
-                state -> state.rotate(rotation),
+                state -> rotateState(state, rotation),
                 cableBusTransform
         );
     }
@@ -371,11 +448,205 @@ public final class TemplateUtil {
         }
 
         String id = tag.getString("id");
-        if (!AE2_CABLE_BUS_ID.equals(id)) {
-            return tag.copy();
+
+        if (AE2_CABLE_BUS_ID.equals(id)) {
+            return transformCableBusTag(tag, transform);
         }
 
-        return transformCableBusTag(tag, transform);
+        if (!id.isBlank() && id.startsWith(GTCEU_ID_PREFIX)) {
+            return transformGregBlockEntityTag(tag, transform);
+        }
+
+        return tag.copy();
+    }
+
+    private static CompoundTag transformGregBlockEntityTag(CompoundTag tag, CableBusTransform transform) {
+        CompoundTag result = tag.copy();
+
+        if (result.contains("connections", Tag.TAG_INT)) {
+            result.putInt("connections", remapGregConnectionMask(result.getInt("connections"), transform));
+        }
+
+        if (result.contains("blockedConnections", Tag.TAG_INT)) {
+            result.putInt("blockedConnections", remapGregConnectionMask(result.getInt("blockedConnections"), transform));
+        }
+
+        if (result.contains(KEY_COVER, Tag.TAG_COMPOUND)) {
+            CompoundTag transformedCoverTag = transformGregPipeCoverTag(result.getCompound(KEY_COVER), transform);
+            result.put(KEY_COVER, transformedCoverTag);
+        }
+
+        remapGregDirectionalFieldsInPlace(result, transform);
+
+        return result;
+    }
+
+    private static void remapGregDirectionalFieldsInPlace(CompoundTag tag, CableBusTransform transform) {
+        List<String> keys = new ArrayList<>(tag.getAllKeys());
+
+        for (String key : keys) {
+            if (KEY_COVER.equals(key)) {
+                continue;
+            }
+
+            Tag value = tag.get(key);
+            if (value == null) {
+                continue;
+            }
+
+            if (value instanceof CompoundTag childTag) {
+                remapGregDirectionalFieldsInPlace(childTag, transform);
+                continue;
+            }
+
+            if (value instanceof ListTag listTag) {
+                remapGregDirectionalListInPlace(listTag, transform);
+                continue;
+            }
+
+            if (!looksLikeGregDirectionalKey(key)) {
+                continue;
+            }
+
+            if (value.getId() == Tag.TAG_STRING) {
+                Direction direction = directionFromName(tag.getString(key));
+                if (direction != null) {
+                    tag.putString(key, directionName(mapCableBusSide(direction, transform)));
+                }
+                continue;
+            }
+
+            if (value.getId() == Tag.TAG_INT) {
+                int raw = tag.getInt(key);
+                if (raw >= 0 && raw < Direction.values().length) {
+                    Direction direction = Direction.values()[raw];
+                    tag.putInt(key, mapCableBusSide(direction, transform).ordinal());
+                }
+            }
+        }
+    }
+
+    private static void remapGregDirectionalListInPlace(ListTag listTag, CableBusTransform transform) {
+        for (int i = 0; i < listTag.size(); i++) {
+            Tag entry = listTag.get(i);
+
+            if (entry instanceof CompoundTag childTag) {
+                remapGregDirectionalFieldsInPlace(childTag, transform);
+                continue;
+            }
+
+            if (entry instanceof ListTag childList) {
+                remapGregDirectionalListInPlace(childList, transform);
+            }
+        }
+    }
+
+    private static boolean looksLikeGregDirectionalKey(String key) {
+        String normalized = key.toLowerCase();
+
+        return normalized.contains("facing")
+                || normalized.endsWith("side")
+                || normalized.contains("outputside")
+                || normalized.contains("inputside")
+                || normalized.contains("frontside")
+                || normalized.contains("backside")
+                || normalized.equals("front")
+                || normalized.equals("back");
+    }
+
+    private static @Nullable Direction directionFromName(String name) {
+        if (name == null || name.isBlank()) {
+            return null;
+        }
+
+        return switch (name.toLowerCase()) {
+            case "down" -> Direction.DOWN;
+            case "up" -> Direction.UP;
+            case "north" -> Direction.NORTH;
+            case "south" -> Direction.SOUTH;
+            case "west" -> Direction.WEST;
+            case "east" -> Direction.EAST;
+            default -> null;
+        };
+    }
+
+    private static String directionName(Direction direction) {
+        return switch (direction) {
+            case DOWN -> "down";
+            case UP -> "up";
+            case NORTH -> "north";
+            case SOUTH -> "south";
+            case WEST -> "west";
+            case EAST -> "east";
+        };
+    }
+
+    private static CompoundTag transformGregPipeCoverTag(CompoundTag coverTag, CableBusTransform transform) {
+        CompoundTag result = new CompoundTag();
+
+        for (String key : coverTag.getAllKeys()) {
+            Direction side = directionFromKey(key);
+            Tag rawValue = coverTag.get(key);
+
+            if (rawValue == null) {
+                continue;
+            }
+
+            if (side == null) {
+                result.put(key, rawValue.copy());
+                continue;
+            }
+
+            if (!(rawValue instanceof CompoundTag sideCoverTag)) {
+                result.put(key, rawValue.copy());
+                continue;
+            }
+
+            Direction mappedSide = mapCableBusSide(side, transform);
+            CompoundTag movedCoverTag = sideCoverTag.copy();
+
+            if (movedCoverTag.contains("uid", Tag.TAG_COMPOUND)) {
+                CompoundTag uidTag = movedCoverTag.getCompound("uid").copy();
+                uidTag.putInt("side", mappedSide.ordinal());
+                movedCoverTag.put("uid", uidTag);
+            }
+
+            result.put(directionKey(mappedSide), movedCoverTag);
+        }
+
+        return result;
+    }
+
+    private static @Nullable Direction directionFromKey(String key) {
+        return switch (key) {
+            case KEY_NORTH -> Direction.NORTH;
+            case KEY_SOUTH -> Direction.SOUTH;
+            case KEY_EAST -> Direction.EAST;
+            case KEY_WEST -> Direction.WEST;
+            case KEY_UP -> Direction.UP;
+            case KEY_DOWN -> Direction.DOWN;
+            default -> null;
+        };
+    }
+
+    private static int remapGregConnectionMask(int mask, CableBusTransform transform) {
+        int out = 0;
+
+        for (Direction side : Direction.values()) {
+            int bit = gregBit(side);
+            if ((mask & bit) == 0) {
+                continue;
+            }
+
+            Direction mapped = mapCableBusSide(side, transform);
+            out |= gregBit(mapped);
+        }
+
+        return out;
+    }
+
+    private static int gregBit(Direction side) {
+        return 1 << side.ordinal();
     }
 
     private static CompoundTag transformCableBusTag(CompoundTag tag, CableBusTransform transform) {
@@ -518,7 +789,7 @@ public final class TemplateUtil {
                 continue;
             }
 
-            Optional<?> value = ((Property<?>) property).getValue(properties.getString(key));
+            Optional<?> value = property.getValue(properties.getString(key));
             if (value.isPresent()) {
                 state = setUnchecked(state, property, (Comparable<?>) value.get());
             }
@@ -546,9 +817,77 @@ public final class TemplateUtil {
                 "ceiling", "floor"
         ));
 
+        result = remapPropertyValues(result, "upwards_facing", java.util.Map.of(
+                "north", "south",
+                "south", "north"
+        ));
+
         result = flipVerticalDirectionProperties(result);
 
         return result;
+    }
+
+    private static BlockState rotateState(BlockState state, Rotation rotation) {
+        BlockState rotated = state.rotate(rotation);
+
+        if (rotation == Rotation.NONE) {
+            return rotated;
+        }
+
+        if (hasDirectionPropertyChange(state, rotated)) {
+            return rotated;
+        }
+
+        return rotateFacingProperty(rotated, rotation);
+    }
+
+    private static BlockState rotateFacingProperty(BlockState state, Rotation rotation) {
+        Property property = state.getBlock().getStateDefinition().getProperty("facing");
+        if (property == null) {
+            return state;
+        }
+
+        Object currentValue = state.getValue(property);
+        if (!(currentValue instanceof Direction direction)) {
+            return state;
+        }
+
+        Direction rotated = rotateDirection(direction, rotation);
+        if (rotated == direction) {
+            return state;
+        }
+
+        return setUnchecked(state, property, rotated);
+    }
+
+    private static Direction rotateDirection(Direction direction, Rotation rotation) {
+        return switch (rotation) {
+            case CLOCKWISE_90 -> switch (direction) {
+                case NORTH -> Direction.EAST;
+                case EAST -> Direction.SOUTH;
+                case SOUTH -> Direction.WEST;
+                case WEST -> Direction.NORTH;
+                case UP -> Direction.UP;
+                case DOWN -> Direction.DOWN;
+            };
+            case CLOCKWISE_180 -> switch (direction) {
+                case NORTH -> Direction.SOUTH;
+                case SOUTH -> Direction.NORTH;
+                case EAST -> Direction.WEST;
+                case WEST -> Direction.EAST;
+                case UP -> Direction.UP;
+                case DOWN -> Direction.DOWN;
+            };
+            case COUNTERCLOCKWISE_90 -> switch (direction) {
+                case NORTH -> Direction.WEST;
+                case WEST -> Direction.SOUTH;
+                case SOUTH -> Direction.EAST;
+                case EAST -> Direction.NORTH;
+                case UP -> Direction.UP;
+                case DOWN -> Direction.DOWN;
+            };
+            case NONE -> direction;
+        };
     }
 
     private static BlockState remapPropertyValues(BlockState state, String propertyName, java.util.Map<String, String> mapping) {

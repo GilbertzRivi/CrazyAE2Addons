@@ -48,7 +48,7 @@ public final class PortableSpatialStoragePreviewDispatcher {
     }
 
     public static void sendPreviewForHeldItem(ServerPlayer player) {
-        ItemStack stack = findActivePortableSpatialStorage(player);
+        ItemStack stack = PortableSpatialStorage.findActive(player);
         if (stack.isEmpty()) {
             sendPreviewToPlayer(player, null);
             return;
@@ -68,17 +68,4 @@ public final class PortableSpatialStoragePreviewDispatcher {
         }
     }
 
-    public static ItemStack findActivePortableSpatialStorage(ServerPlayer player) {
-        ItemStack mainHand = player.getMainHandItem();
-        if (mainHand.getItem() instanceof PortableSpatialStorage && CutPasteStackState.hasStructure(mainHand)) {
-            return mainHand;
-        }
-
-        ItemStack offHand = player.getOffhandItem();
-        if (offHand.getItem() instanceof PortableSpatialStorage && CutPasteStackState.hasStructure(offHand)) {
-            return offHand;
-        }
-
-        return ItemStack.EMPTY;
-    }
 }

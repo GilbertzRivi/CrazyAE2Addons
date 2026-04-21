@@ -30,8 +30,8 @@ public class PortableSpatialStorageHost extends ItemMenuHost {
         }
 
         try {
-            CompoundTagHolder holder = loadStructureTag(server, id);
-            return holder == null ? null : TemplateUtil.compressNbt(holder.tag());
+            var tag = CutPasteStructureStore.load(server, id);
+            return tag == null ? null : TemplateUtil.compressNbt(tag);
         } catch (Exception ignored) {
             return null;
         }
@@ -60,11 +60,4 @@ public class PortableSpatialStorageHost extends ItemMenuHost {
         }
     }
 
-    private CompoundTagHolder loadStructureTag(MinecraftServer server, String id) throws Exception {
-        var tag = CutPasteStructureStore.load(server, id);
-        return tag == null ? null : new CompoundTagHolder(tag);
-    }
-
-    private record CompoundTagHolder(net.minecraft.nbt.CompoundTag tag) {
-    }
 }

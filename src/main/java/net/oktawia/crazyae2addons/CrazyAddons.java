@@ -9,6 +9,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.ModelEvent;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModLoadingContext;
@@ -19,6 +20,8 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegisterEvent;
+import net.oktawia.crazyae2addons.client.renderer.preview.PortableSpatialStoragePreviewRenderer;
+import net.oktawia.crazyae2addons.compat.gtceu.PortableSpatialStoragePreviewRendererGTCEu;
 import net.oktawia.crazyae2addons.defs.Screens;
 import net.oktawia.crazyae2addons.defs.UpgradeCards;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
@@ -26,7 +29,6 @@ import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyCreativeTabRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
-import net.oktawia.crazyae2addons.items.wireless.WirelessRedstoneTerminal;
 import net.oktawia.crazyae2addons.ldlib.CrazyLDLibPlugin;
 import net.oktawia.crazyae2addons.logic.wireless.WirelessEmitterTerminalItemLogicHost;
 import net.oktawia.crazyae2addons.logic.wireless.WirelessNotificationTerminalItemLogicHost;
@@ -134,6 +136,14 @@ public class CrazyAddons {
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
             Screens.register();
+            event.enqueueWork(() -> {
+                PortableSpatialStoragePreviewRenderer renderer =
+                        IsModLoaded.GTCEU
+                                ? new PortableSpatialStoragePreviewRendererGTCEu()
+                                : new PortableSpatialStoragePreviewRenderer();
+
+                MinecraftForge.EVENT_BUS.register(renderer);
+            });
         }
 
         @SubscribeEvent

@@ -1,47 +1,54 @@
 package net.oktawia.crazyae2addons.client.renderer.preview;
 
+import appeng.blockentity.networking.CableBusBlockEntity;
+import appeng.client.render.cablebus.CableBusRenderState;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.block.BlockRenderDispatcher;
+import net.minecraft.client.renderer.block.ModelBlockRenderer;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.RenderTypeHelper;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.client.model.data.ModelData;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
 import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.items.PortableSpatialStorage;
 import net.oktawia.crazyae2addons.logic.cutpaste.CutPasteStackState;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 
-@Mod.EventBusSubscriber(modid = CrazyAddons.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
-public final class PortableSpatialStoragePreviewRenderer {
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Set;
+
+public class PortableSpatialStoragePreviewRenderer {
 
     private static final double MAX_DISTANCE = 50.0D;
 
-    private PortableSpatialStoragePreviewRenderer() {
+    public PortableSpatialStoragePreviewRenderer() {
     }
 
     @SubscribeEvent
-    public static void onRenderLevelStage(RenderLevelStageEvent event) {
+    public void onRenderLevelStage(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) {
             return;
         }
@@ -51,10 +58,13 @@ public final class PortableSpatialStoragePreviewRenderer {
             return;
         }
 
-        ItemStack stack = findHeldPortableSpatialStorage(minecraft);
+        ItemStack stack = PortableSpatialStorage.findHeld(minecraft.player);
         if (stack.isEmpty()) {
             return;
         }
+
+        int[] sideMap = CutPasteStackState.getPreviewSideMap(stack);
+        String sideMapKey = Arrays.toString(sideMap);
 
         PoseStack poseStack = event.getPoseStack();
         Vec3 camera = event.getCamera().getPosition();
@@ -65,12 +75,13 @@ public final class PortableSpatialStoragePreviewRenderer {
         if (CutPasteStackState.hasStructure(stack)) {
             String structureId = CutPasteStackState.getStructureId(stack);
             if (!structureId.isBlank()) {
-                PreviewStructure structure = PortableSpatialStoragePreviewCache.get(structureId);
+                PreviewStructure structure = PortableSpatialStoragePreviewSync.cacheGet(structureId);
                 if (structure != null && !structure.blocks().isEmpty()) {
-                    BlockHitResult hit = rayTrace(minecraft, MAX_DISTANCE);
+                    BlockHitResult hit = PortableSpatialStorage.rayTrace(minecraft.level, minecraft.player, MAX_DISTANCE);
                     if (hit.getType() == HitResult.Type.BLOCK) {
                         BlockPos origin = hit.getBlockPos().relative(hit.getDirection());
-                        renderGhostModels(minecraft, poseStack, structure, origin);
+                        renderGhostModels(minecraft, poseStack, structure, origin, sideMap, sideMapKey);
+                        renderBlockEntityRenderers(minecraft, poseStack, structure, origin, event.getPartialTick());
                         renderLineBoxes(minecraft, poseStack, structure, origin);
                     }
                 }
@@ -86,7 +97,7 @@ public final class PortableSpatialStoragePreviewRenderer {
         if (selectionA != null) {
             BlockPos previewB = selectionB;
             if (previewB == null) {
-                BlockHitResult hit = rayTrace(minecraft, MAX_DISTANCE);
+                BlockHitResult hit = PortableSpatialStorage.rayTrace(minecraft.level, minecraft.player, MAX_DISTANCE);
                 if (hit.getType() == HitResult.Type.BLOCK) {
                     previewB = hit.getBlockPos();
                 }
@@ -100,119 +111,30 @@ public final class PortableSpatialStoragePreviewRenderer {
         poseStack.popPose();
     }
 
-    private static ItemStack findHeldPortableSpatialStorage(Minecraft minecraft) {
-        ItemStack mainHand = minecraft.player.getMainHandItem();
-        if (mainHand.getItem() instanceof PortableSpatialStorage) {
-            return mainHand;
-        }
-
-        ItemStack offHand = minecraft.player.getOffhandItem();
-        if (offHand.getItem() instanceof PortableSpatialStorage) {
-            return offHand;
-        }
-
-        return ItemStack.EMPTY;
-    }
-
-    private static void renderGhostModels(
-            Minecraft minecraft,
-            PoseStack poseStack,
-            PreviewStructure structure,
-            BlockPos origin
-    ) {
-        MultiBufferSource.BufferSource bufferSource = minecraft.renderBuffers().bufferSource();
-        PreviewBlockAndTintGetter previewLevel = new PreviewBlockAndTintGetter(minecraft.level, structure.blocks(), origin);
-
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 0.45f);
-
-        for (PreviewBlock previewBlock : structure.surfaceBlocks()) {
-            BlockPos worldPos = origin.offset(previewBlock.pos());
-
-            BlockState previewState = previewBlock.state();
-            BlockState currentState = minecraft.level.getBlockState(worldPos);
-
-            boolean replaceable = currentState.canBeReplaced() || currentState.isAir();
-
-            if (!replaceable) {
-                continue;
-            }
-
-            ModelData modelData = getPreviewModelData(previewLevel, worldPos);
-
-            poseStack.pushPose();
-            poseStack.translate(worldPos.getX(), worldPos.getY(), worldPos.getZ());
-
-            try {
-                renderBlockModelWithAllLayers(
-                        minecraft,
-                        previewLevel,
-                        previewState,
-                        worldPos,
-                        poseStack,
-                        bufferSource,
-                        modelData
-                );
-            } catch (Exception ignored) {
-                try {
-                    minecraft.getBlockRenderer().renderSingleBlock(
-                            previewState,
-                            poseStack,
-                            bufferSource,
-                            LightTexture.FULL_BRIGHT,
-                            OverlayTexture.NO_OVERLAY
-                    );
-                } catch (Exception ignoredToo) {
-                }
-            }
-
-            poseStack.popPose();
-        }
-
-        bufferSource.endBatch();
-        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-        RenderSystem.disableBlend();
-    }
-
-    private static ModelData getPreviewModelData(
-            PreviewBlockAndTintGetter previewLevel,
-            BlockPos worldPos
-    ) {
-        BlockEntity blockEntity = previewLevel.getBlockEntity(worldPos);
-        if (blockEntity == null) {
-            return ModelData.EMPTY;
-        }
-
-        return blockEntity.getModelData();
-    }
-
-    private static void renderBlockModelWithAllLayers(
-            Minecraft minecraft,
-            PreviewBlockAndTintGetter previewLevel,
+    protected void tesselatePreviewBlock(
+            PreviewBlock previewBlock,
+            int[] sideMap,
+            BlockRenderDispatcher dispatcher,
+            ModelBlockRenderer modelRenderer,
+            PreviewBlockAndTintGetter localLevel,
+            BakedModel model,
             BlockState state,
-            BlockPos worldPos,
+            BlockPos localPos,
             PoseStack poseStack,
-            MultiBufferSource.BufferSource bufferSource,
+            BufferBuilder bufferBuilder,
+            long seed,
             ModelData modelData
     ) {
-        var dispatcher = minecraft.getBlockRenderer();
-        var modelRenderer = dispatcher.getModelRenderer();
-        BakedModel model = dispatcher.getBlockModel(state);
-
-        long seed = state.getSeed(worldPos);
         RandomSource random = RandomSource.create(seed);
 
         for (RenderType renderType : model.getRenderTypes(state, random, modelData)) {
-            var consumer = bufferSource.getBuffer(RenderTypeHelper.getMovingBlockRenderType(renderType));
-
             modelRenderer.tesselateBlock(
-                    previewLevel,
+                    localLevel,
                     model,
                     state,
-                    worldPos,
+                    localPos,
                     poseStack,
-                    consumer,
+                    bufferBuilder,
                     false,
                     RandomSource.create(seed),
                     seed,
@@ -221,6 +143,233 @@ public final class PortableSpatialStoragePreviewRenderer {
                     renderType
             );
         }
+    }
+
+    private void renderGhostModels(
+            Minecraft minecraft,
+            PoseStack poseStack,
+            PreviewStructure structure,
+            BlockPos origin,
+            int[] sideMap,
+            String sideMapKey
+    ) {
+        if (!structure.hasVertexBuffer(sideMapKey)) {
+            structure.storeVertexBuffer(sideMapKey, buildVertexBuffer(minecraft, structure, sideMap, sideMapKey));
+        }
+
+        VertexBuffer vb = structure.getVertexBuffer(sideMapKey);
+        if (vb == null) return;
+
+        Matrix4f modelView = new Matrix4f(poseStack.last().pose());
+        modelView.translate(origin.getX(), origin.getY(), origin.getZ());
+
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 0.45f);
+        RenderSystem.setShader(GameRenderer::getRendertypeSolidShader);
+        RenderSystem.setShaderTexture(0, TextureAtlas.LOCATION_BLOCKS);
+        minecraft.gameRenderer.lightTexture().turnOnLightLayer();
+
+        vb.bind();
+        vb.drawWithShader(modelView, RenderSystem.getProjectionMatrix(), RenderSystem.getShader());
+        VertexBuffer.unbind();
+
+        minecraft.gameRenderer.lightTexture().turnOffLightLayer();
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        RenderSystem.disableBlend();
+    }
+
+    private VertexBuffer buildVertexBuffer(
+            Minecraft minecraft,
+            PreviewStructure structure,
+            int[] sideMap,
+            String sideMapKey
+    ) {
+        ClientLevel level = minecraft.level;
+        var dispatcher = minecraft.getBlockRenderer();
+        var modelRenderer = dispatcher.getModelRenderer();
+        PreviewBlockAndTintGetter localLevel = new PreviewBlockAndTintGetter(level, structure, BlockPos.ZERO);
+
+        BufferBuilder bb = new BufferBuilder(2097152);
+        bb.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
+
+        PoseStack ps = new PoseStack();
+
+        for (PreviewBlock previewBlock : structure.surfaceBlocks()) {
+            BlockPos localPos = previewBlock.pos();
+            BlockState state = previewBlock.state();
+            BakedModel model = dispatcher.getBlockModel(state);
+            long seed = state.getSeed(localPos);
+
+            ModelData modelData = getPreviewModelData(structure, previewBlock, sideMap, sideMapKey, level);
+
+            ps.pushPose();
+            ps.translate(localPos.getX(), localPos.getY(), localPos.getZ());
+
+            try {
+                tesselatePreviewBlock(
+                        previewBlock,
+                        sideMap,
+                        dispatcher,
+                        modelRenderer,
+                        localLevel,
+                        model,
+                        state,
+                        localPos,
+                        ps,
+                        bb,
+                        seed,
+                        modelData
+                );
+            } catch (Throwable t) {
+                CrazyAddons.LOGGER.debug(t.getLocalizedMessage());
+            }
+
+            ps.popPose();
+        }
+
+        VertexBuffer vb = new VertexBuffer(VertexBuffer.Usage.STATIC);
+        vb.bind();
+        vb.upload(bb.end());
+        VertexBuffer.unbind();
+
+        return vb;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void renderBlockEntityRenderers(
+            Minecraft minecraft,
+            PoseStack poseStack,
+            PreviewStructure structure,
+            BlockPos origin,
+            float partialTick
+    ) {
+        Map<BlockPos, BlockEntity> blockEntities = structure.blockEntities(minecraft.level);
+        if (blockEntities.isEmpty()) return;
+
+        BlockEntityRenderDispatcher beDispatcher = minecraft.getBlockEntityRenderDispatcher();
+        MultiBufferSource.BufferSource bufferSource = minecraft.renderBuffers().bufferSource();
+
+        minecraft.gameRenderer.lightTexture().turnOnLightLayer();
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+
+        for (PreviewBlock previewBlock : structure.surfaceBlocks()) {
+            BlockEntity be = blockEntities.get(previewBlock.pos());
+            if (be == null) continue;
+
+            BlockEntityRenderer<BlockEntity> renderer = (BlockEntityRenderer<BlockEntity>) beDispatcher.getRenderer(be);
+            if (renderer == null) continue;
+
+            BlockPos worldPos = origin.offset(previewBlock.pos());
+            poseStack.pushPose();
+            poseStack.translate(worldPos.getX(), worldPos.getY(), worldPos.getZ());
+            try {
+                renderer.render(be, partialTick, poseStack, bufferSource, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);
+            } catch (Throwable t) {
+                CrazyAddons.LOGGER.debug(t.getLocalizedMessage());
+            }
+            poseStack.popPose();
+        }
+
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 0.45f);
+        bufferSource.endBatch();
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+
+        minecraft.gameRenderer.lightTexture().turnOffLightLayer();
+        RenderSystem.disableBlend();
+    }
+
+    private static ModelData getPreviewModelData(
+            PreviewStructure structure,
+            PreviewBlock previewBlock,
+            int[] sideMap,
+            String sideMapKey,
+            ClientLevel level
+    ) {
+        return structure.getOrComputeModelData(sideMapKey, previewBlock.pos(), () -> {
+            BlockEntity blockEntity = structure.blockEntities(level).get(previewBlock.pos());
+            if (blockEntity == null) {
+                return ModelData.EMPTY;
+            }
+
+            ModelData modelData;
+            try {
+                modelData = blockEntity.getModelData();
+            } catch (Throwable t) {
+                CrazyAddons.LOGGER.debug(t.getLocalizedMessage());
+                return ModelData.EMPTY;
+            }
+
+            if (!(blockEntity instanceof CableBusBlockEntity)) {
+                return modelData != null ? modelData : ModelData.EMPTY;
+            }
+
+            CableBusRenderState renderState = modelData.get(CableBusRenderState.PROPERTY);
+            if (renderState == null) {
+                return modelData;
+            }
+
+            CableBusRenderState transformedState = copyCableBusRenderState(renderState);
+            transformCableConnectionsOnly(transformedState, sideMap);
+
+            return ModelData.builder()
+                    .with(CableBusRenderState.PROPERTY, transformedState)
+                    .build();
+        });
+    }
+
+    private static CableBusRenderState copyCableBusRenderState(CableBusRenderState source) {
+        CableBusRenderState copy = new CableBusRenderState();
+
+        copy.setCableType(source.getCableType());
+        copy.setCoreType(source.getCoreType());
+        copy.setCableColor(source.getCableColor());
+
+        copy.getConnectionTypes().putAll(source.getConnectionTypes());
+        copy.getCableBusAdjacent().addAll(source.getCableBusAdjacent());
+        copy.getChannelsOnSide().putAll(source.getChannelsOnSide());
+
+        copy.getAttachments().putAll(source.getAttachments());
+        copy.getAttachmentConnections().putAll(source.getAttachmentConnections());
+        copy.getFacades().putAll(source.getFacades());
+        copy.getPartModelData().putAll(source.getPartModelData());
+        copy.getBoundingBoxes().addAll(source.getBoundingBoxes());
+
+        return copy;
+    }
+
+    private static <V> void remapDirectionMap(Map<Direction, V> map, int[] sideMap) {
+        if (map.isEmpty()) return;
+
+        java.util.EnumMap<Direction, V> old = new java.util.EnumMap<>(Direction.class);
+        old.putAll(map);
+        map.clear();
+
+        for (Map.Entry<Direction, V> entry : old.entrySet()) {
+            map.put(mapWithSideMap(entry.getKey(), sideMap), entry.getValue());
+        }
+    }
+
+    private static void remapDirectionSet(Set<Direction> set, int[] sideMap) {
+        if (set.isEmpty()) return;
+
+        java.util.EnumSet<Direction> old = java.util.EnumSet.copyOf(set);
+        set.clear();
+
+        for (Direction side : old) {
+            set.add(mapWithSideMap(side, sideMap));
+        }
+    }
+
+    private static Direction mapWithSideMap(Direction side, int[] sideMap) {
+        return Direction.values()[sideMap[side.ordinal()]];
+    }
+
+    private static void transformCableConnectionsOnly(CableBusRenderState renderState, int[] sideMap) {
+        remapDirectionMap(renderState.getConnectionTypes(), sideMap);
+        remapDirectionSet(renderState.getCableBusAdjacent(), sideMap);
+        remapDirectionMap(renderState.getChannelsOnSide(), sideMap);
     }
 
     private static void renderLineBoxes(
@@ -233,7 +382,7 @@ public final class PortableSpatialStoragePreviewRenderer {
         RenderSystem.depthMask(false);
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        RenderSystem.lineWidth(2.0F);
+        RenderSystem.lineWidth(5.0F);
         RenderSystem.setShader(GameRenderer::getRendertypeLinesShader);
 
         Tesselator tesselator = Tesselator.getInstance();
@@ -250,9 +399,7 @@ public final class PortableSpatialStoragePreviewRenderer {
 
             BlockState currentState = minecraft.level.getBlockState(worldPos);
 
-            boolean replaceable = currentState.canBeReplaced() || currentState.isAir();
-
-            if (replaceable) {
+            if (currentState.canBeReplaced() || currentState.isAir()) {
                 continue;
             }
 
@@ -463,26 +610,5 @@ public final class PortableSpatialStoragePreviewRenderer {
                 maxX, maxY, maxZ,
                 red, green, blue, alpha
         );
-    }
-
-    private static BlockHitResult rayTrace(Minecraft minecraft, double maxDistance) {
-        Vec3 eye = minecraft.player.getEyePosition(1.0F);
-        Vec3 look = minecraft.player.getViewVector(1.0F);
-        Vec3 end = eye.add(look.x * maxDistance, look.y * maxDistance, look.z * maxDistance);
-
-        ClipContext context = new ClipContext(
-                eye,
-                end,
-                ClipContext.Block.OUTLINE,
-                ClipContext.Fluid.NONE,
-                minecraft.player
-        );
-
-        HitResult result = minecraft.level.clip(context);
-        if (result instanceof BlockHitResult blockHit && result.getType() == HitResult.Type.BLOCK) {
-            return blockHit;
-        }
-
-        return BlockHitResult.miss(end, Direction.getNearest(look.x, look.y, look.z), BlockPos.containing(end));
     }
 }

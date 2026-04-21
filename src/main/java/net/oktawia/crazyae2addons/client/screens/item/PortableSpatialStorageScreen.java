@@ -1,14 +1,10 @@
 package net.oktawia.crazyae2addons.client.screens.item;
 
-import appeng.client.gui.AEBaseScreen;
 import appeng.client.gui.Icon;
 import appeng.client.gui.implementations.UpgradeableScreen;
 import appeng.client.gui.style.ScreenStyle;
-import appeng.client.gui.widgets.UpgradesPanel;
-import appeng.menu.SlotSemantics;
 import com.lowdragmc.lowdraglib.gui.widget.SceneWidget;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
-import com.lowdragmc.lowdraglib.utils.TrackedDummyWorld;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -18,17 +14,17 @@ import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.level.block.state.BlockState;
 import net.oktawia.crazyae2addons.client.misc.IconButton;
+import net.oktawia.crazyae2addons.client.misc.PortableSpatialStorageDummyWorld;
+import net.oktawia.crazyae2addons.client.renderer.preview.PreviewBlock;
+import net.oktawia.crazyae2addons.client.renderer.preview.PreviewStructure;
 import net.oktawia.crazyae2addons.defs.LangDefs;
 import net.oktawia.crazyae2addons.menus.item.PortableSpatialStorageMenu;
 import net.oktawia.crazyae2addons.util.TemplateUtil;
 import org.lwjgl.opengl.GL11;
 
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.HashSet;
 import java.util.Set;
 
 public class PortableSpatialStorageScreen<C extends PortableSpatialStorageMenu> extends UpgradeableScreen<C> {
@@ -43,10 +39,10 @@ public class PortableSpatialStorageScreen<C extends PortableSpatialStorageMenu> 
     private boolean receivingPreview = false;
 
     private final WidgetGroup root = new WidgetGroup(0, 0, 0, 0);
-    private final TrackedDummyWorld world = new TrackedDummyWorld();
+    private final PortableSpatialStorageDummyWorld world = new PortableSpatialStorageDummyWorld();
     private SceneWidget scene;
 
-    private Map<BlockPos, BlockState> blocks = Collections.emptyMap();
+    private PreviewStructure previewStructure;
     private Set<BlockPos> renderedCore = Collections.emptySet();
     private BlockPos min = BlockPos.ZERO;
     private BlockPos max = BlockPos.ZERO;
@@ -176,7 +172,7 @@ public class PortableSpatialStorageScreen<C extends PortableSpatialStorageMenu> 
 
     @Override
     public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
-        if (rotating) {
+        if (rotating && scene != null) {
             double dx = mouseX - lastMouseX;
             double dy = mouseY - lastMouseY;
 
@@ -222,6 +218,12 @@ public class PortableSpatialStorageScreen<C extends PortableSpatialStorageMenu> 
         root.updateScreen();
     }
 
+    @Override
+    public void removed() {
+        super.removed();
+        clearScene();
+    }
+
     private void reloadPreviewNow() {
         String base64 = previewBuffer.toString();
         if (base64.isEmpty()) {
@@ -232,14 +234,17 @@ public class PortableSpatialStorageScreen<C extends PortableSpatialStorageMenu> 
         try {
             byte[] bytes = TemplateUtil.fromBase64(base64);
             CompoundTag templateTag = TemplateUtil.decompressNbt(bytes);
-            List<TemplateUtil.BlockInfo> blockInfos = TemplateUtil.parseBlocksFromTag(templateTag);
+            PreviewStructure newStructure = PreviewStructure.fromTemplateTag(templateTag);
 
-            if (blockInfos.isEmpty()) {
+            if (newStructure.blocks().isEmpty()) {
                 clearScene();
                 return;
             }
 
-            HashMap<BlockPos, BlockState> newBlocks = new HashMap<>();
+            if (this.previewStructure != null) {
+                this.previewStructure.close();
+            }
+            this.previewStructure = newStructure;
 
             int minX = Integer.MAX_VALUE;
             int minY = Integer.MAX_VALUE;
@@ -248,10 +253,8 @@ public class PortableSpatialStorageScreen<C extends PortableSpatialStorageMenu> 
             int maxY = Integer.MIN_VALUE;
             int maxZ = Integer.MIN_VALUE;
 
-            for (TemplateUtil.BlockInfo info : blockInfos) {
-                BlockPos pos = info.pos();
-                newBlocks.put(pos, info.state());
-
+            for (PreviewBlock block : newStructure.blocks()) {
+                BlockPos pos = block.pos();
                 minX = Math.min(minX, pos.getX());
                 minY = Math.min(minY, pos.getY());
                 minZ = Math.min(minZ, pos.getZ());
@@ -260,14 +263,10 @@ public class PortableSpatialStorageScreen<C extends PortableSpatialStorageMenu> 
                 maxZ = Math.max(maxZ, pos.getZ());
             }
 
-            this.blocks = newBlocks;
             this.min = new BlockPos(minX, minY, minZ);
             this.max = new BlockPos(maxX, maxY, maxZ);
 
-            this.world.clear();
-            for (Map.Entry<BlockPos, BlockState> entry : blocks.entrySet()) {
-                this.world.setBlock(entry.getKey(), entry.getValue(), 3);
-            }
+            this.world.loadPreviewStructure(newStructure);
 
             if (this.scene == null) {
                 this.scene = new SceneWidget(0, 0, 32, 32, world);
@@ -275,9 +274,8 @@ public class PortableSpatialStorageScreen<C extends PortableSpatialStorageMenu> 
                 this.root.addWidget(scene);
             }
 
-            scene.clearAllWidgets();
-            this.renderedCore = computeSurface(this.blocks);
-            scene.setRenderedCore(this.renderedCore);
+            this.renderedCore = computeSurface(newStructure);
+            this.scene.setRenderedCore(this.renderedCore);
 
             BlockPos size = max.subtract(min).offset(1, 1, 1);
             BlockPos center = new BlockPos(
@@ -286,23 +284,35 @@ public class PortableSpatialStorageScreen<C extends PortableSpatialStorageMenu> 
                     (int) (min.getZ() + size.getZ() * 0.5)
             );
 
-            scene.setCenter(center.getCenter().toVector3f());
-            scene.setCameraYawAndPitch(yaw, pitch);
-            scene.setZoom(distance);
+            this.scene.setCenter(center.getCenter().toVector3f());
+            this.scene.setCameraYawAndPitch(yaw, pitch);
+            this.scene.setZoom(distance);
+
+            this.lastSceneWidth = -1;
+            this.lastSceneHeight = -1;
         } catch (Exception ignored) {
             clearScene();
         }
     }
 
     private void clearScene() {
-        this.blocks = Collections.emptyMap();
         this.renderedCore = Collections.emptySet();
-        this.world.clear();
+        this.world.loadPreviewStructure(null);
+
+        if (this.previewStructure != null) {
+            this.previewStructure.close();
+            this.previewStructure = null;
+        }
 
         if (this.scene != null) {
             this.root.clearAllWidgets();
             this.scene = null;
         }
+
+        this.min = BlockPos.ZERO;
+        this.max = BlockPos.ZERO;
+        this.lastSceneWidth = -1;
+        this.lastSceneHeight = -1;
     }
 
     private boolean insideScene(double mouseX, double mouseY) {
@@ -313,15 +323,21 @@ public class PortableSpatialStorageScreen<C extends PortableSpatialStorageMenu> 
                 && mouseY < scene.getPositionY() + scene.getSizeHeight();
     }
 
-    private static Set<BlockPos> computeSurface(Map<BlockPos, BlockState> map) {
-        java.util.HashSet<BlockPos> out = new java.util.HashSet<>();
-        if (map == null || map.isEmpty()) {
+    private static Set<BlockPos> computeSurface(PreviewStructure structure) {
+        HashSet<BlockPos> out = new HashSet<>();
+        if (structure == null || structure.blocks().isEmpty()) {
             return out;
         }
 
-        for (BlockPos pos : map.keySet()) {
+        Set<BlockPos> all = new HashSet<>();
+        for (PreviewBlock block : structure.blocks()) {
+            all.add(block.pos());
+        }
+
+        for (PreviewBlock block : structure.blocks()) {
+            BlockPos pos = block.pos();
             for (Direction direction : DIRECTIONS) {
-                if (!map.containsKey(pos.relative(direction))) {
+                if (!all.contains(pos.relative(direction))) {
                     out.add(pos);
                     break;
                 }

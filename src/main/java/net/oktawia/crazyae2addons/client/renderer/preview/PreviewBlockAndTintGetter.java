@@ -2,6 +2,7 @@ package net.oktawia.crazyae2addons.client.renderer.preview;
 
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.world.level.BlockAndTintGetter;
 import net.minecraft.world.level.ColorResolver;
 import net.minecraft.world.level.LightLayer;
@@ -12,7 +13,6 @@ import net.minecraft.world.level.material.FluidState;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public final class PreviewBlockAndTintGetter implements BlockAndTintGetter {
@@ -21,22 +21,19 @@ public final class PreviewBlockAndTintGetter implements BlockAndTintGetter {
     private final Map<BlockPos, BlockState> states = new HashMap<>();
     private final Map<BlockPos, BlockEntity> blockEntities = new HashMap<>();
 
-    public PreviewBlockAndTintGetter(ClientLevel level, List<PreviewBlock> blocks, BlockPos origin) {
+    public PreviewBlockAndTintGetter(ClientLevel level, PreviewStructure structure, BlockPos origin) {
         this.level = level;
-
-        for (PreviewBlock block : blocks) {
+        Map<BlockPos, BlockEntity> localBEs = structure.blockEntities(level);
+        for (PreviewBlock block : structure.blocks()) {
             BlockPos worldPos = origin.offset(block.pos());
             states.put(worldPos, block.state());
-
-            BlockEntity blockEntity = PreviewBlockEntityFactory.create(level, worldPos, block.state(), block.blockEntityTag());
-            if (blockEntity != null) {
-                blockEntities.put(worldPos, blockEntity);
-            }
+            BlockEntity be = localBEs.get(block.pos());
+            if (be != null) blockEntities.put(worldPos, be);
         }
     }
 
     @Override
-    public float getShade(net.minecraft.core.Direction direction, boolean shade) {
+    public float getShade(Direction direction, boolean shade) {
         return level.getShade(direction, shade);
     }
 
@@ -79,6 +76,6 @@ public final class PreviewBlockAndTintGetter implements BlockAndTintGetter {
 
     @Override
     public int getBrightness(LightLayer lightLayer, BlockPos pos) {
-        return level.getBrightness(lightLayer, pos);
+        return 15;
     }
 }

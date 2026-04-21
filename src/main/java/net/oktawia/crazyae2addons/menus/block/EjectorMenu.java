@@ -6,6 +6,7 @@ import appeng.api.stacks.AEKey;
 import appeng.api.stacks.GenericStack;
 import appeng.menu.AEBaseMenu;
 import appeng.menu.SlotSemantics;
+import appeng.menu.slot.AppEngSlot;
 import appeng.menu.slot.FakeSlot;
 import it.unimi.dsi.fastutil.ints.Int2IntMap;
 import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
@@ -36,7 +37,7 @@ public class EjectorMenu extends AEBaseMenu {
         this.player = ip.player;
         this.host = host;
 
-        this.addSlot(new Slot(host.pattern.toContainer(), 0, 0, 0), SlotSemantics.ENCODED_PATTERN);
+        this.addSlot(new AppEngSlot(host.pattern, 0), SlotSemantics.ENCODED_PATTERN);
 
         for (int i = 0; i < host.config.size(); i++) {
             var slot = new FakeSlot(host.config.createMenuWrapper(), i);

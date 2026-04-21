@@ -1,0 +1,106 @@
+{
+  "$schema": "schema.json",
+  "includes": ["common/common.json"],
+  "background": {
+    "texture": "guis/display_token_subscreen.png",
+    "srcRect": [0, 0, 256, 120]
+  },
+  "text": {
+    "dialog_title": {
+      "text": {
+        "translate": "gui.crazyae2addons.insert_token"
+      },
+      "position": {
+        "left": 8,
+        "top": 6
+      }
+    }
+  },
+  "widgets": {
+    "icon": {
+      "left": 5,
+      "top": 18,
+      "width": 65,
+      "height": 14
+    },
+    "stock": {
+      "left": 75,
+      "top": 18,
+      "width": 65,
+      "height": 14
+    },
+    "delta": {
+      "left": 145,
+      "top": 18,
+      "width": 65,
+      "height": 14
+    },
+
+    "itemId": {
+      "left": 52,
+      "top": 34,
+      "width": 100,
+      "height": 12
+    },
+
+    "type": {
+      "left": 52,
+      "top": 50,
+      "width": 72,
+      "height": 12
+    },
+    "typeDropdown": {
+      "left": 130,
+      "top": 50,
+      "width": 84,
+      "height": 12
+    },
+
+    "divisor": {
+      "left": 52,
+      "top": 66,
+      "width": 60,
+      "height": 12
+    },
+
+    "perN": {
+      "left": 52,
+      "top": 66,
+      "width": 26,
+      "height": 12
+    },
+    "perUnit": {
+      "left": 80,
+      "top": 66,
+      "width": 18,
+      "height": 12
+    },
+
+    "winN": {
+      "left": 167,
+      "top": 66,
+      "width": 26,
+      "height": 12
+    },
+    "winUnit": {
+      "left": 195,
+      "top": 66,
+      "width": 18,
+      "height": 12
+    },
+
+    "insert": {
+      "left": 85,
+      "top": 100,
+      "width": 75,
+      "height": 14
+    },
+
+    "back": {
+      "left": 226,
+      "top": 6,
+      "width": 16,
+      "height": 16
+    }
+  }
+}

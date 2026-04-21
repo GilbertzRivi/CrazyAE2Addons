@@ -1,7 +1,7 @@
 package net.oktawia.crazyae2addons.client.misc;
 
 import com.lowdragmc.lowdraglib.gui.widget.HsbColorWidget;
-import com.mojang.blaze3d.platform.Window;
+import java.util.function.IntConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
@@ -15,13 +15,11 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
 
-import java.util.function.IntConsumer;
-
 @OnlyIn(Dist.CLIENT)
 public class LDLibColorSelectorAdapter extends AbstractWidget {
 
     private static final int POPUP_W = 172;
-    private static final int POPUP_H = 236;
+    private static final int POPUP_H = 156;
     private static final int POPUP_PAD = 4;
     private static final float POPUP_Z = 800.0f;
 
@@ -150,11 +148,6 @@ public class LDLibColorSelectorAdapter extends AbstractWidget {
     }
 
     @Override
-    public void setFocused(boolean focused) {
-        super.setFocused(focused);
-    }
-
-    @Override
     public void mouseMoved(double mouseX, double mouseY) {
         if (!this.open) {
             return;
@@ -174,12 +167,14 @@ public class LDLibColorSelectorAdapter extends AbstractWidget {
             syncPopup();
 
             if (isPopupMouseOver(mouseX, mouseY)) {
-                boolean handled = this.selector.mouseClicked(mouseX, mouseY, button);
-                if (handled) {
-                    super.setFocused(true);
+                this.selector.mouseClicked(mouseX, mouseY, button);
+                super.setFocused(true);
+
+                if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
                     startSyntheticDrag(button, mouseX, mouseY);
                 }
-                return handled;
+
+                return true;
             }
 
             if (isMouseOver(mouseX, mouseY)) {
@@ -188,7 +183,7 @@ public class LDLibColorSelectorAdapter extends AbstractWidget {
             }
 
             closePopup(true);
-            return false;
+            return true;
         }
 
         if (isMouseOver(mouseX, mouseY)) {
@@ -207,15 +202,14 @@ public class LDLibColorSelectorAdapter extends AbstractWidget {
         }
 
         syncPopup();
-
-        boolean handled = this.selector.mouseReleased(mouseX, mouseY, button);
+        this.selector.mouseReleased(mouseX, mouseY, button);
 
         if (button == this.pollingDragButton) {
             stopSyntheticDrag();
             commitCurrentColor();
         }
 
-        return handled;
+        return true;
     }
 
     @Override
@@ -225,12 +219,19 @@ public class LDLibColorSelectorAdapter extends AbstractWidget {
         }
 
         syncPopup();
-        return this.selector.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+        this.selector.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+        return true;
     }
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
-        return false;
+        if (!this.open) {
+            return false;
+        }
+
+        syncPopup();
+        this.selector.mouseMoved(mouseX, mouseY);
+        return true;
     }
 
     @Override
@@ -244,12 +245,12 @@ public class LDLibColorSelectorAdapter extends AbstractWidget {
             return true;
         }
 
-        return false;
+        return true;
     }
 
     @Override
     public boolean charTyped(char codePoint, int modifiers) {
-        return false;
+        return this.open;
     }
 
     @Override
@@ -336,7 +337,6 @@ public class LDLibColorSelectorAdapter extends AbstractWidget {
         this.lastScreenHeight = screen.height;
 
         this.selector.setSelfPosition(this.popupX, this.popupY);
-        this.selector.setSize(POPUP_W, POPUP_H);
         this.selector.onScreenSizeUpdate(screen.width, screen.height);
 
         this.syncedPopupX = this.popupX;
@@ -384,14 +384,13 @@ public class LDLibColorSelectorAdapter extends AbstractWidget {
         }
 
         Minecraft mc = Minecraft.getInstance();
-        Window window = mc.getWindow();
-        long handle = window.getWindow();
+        long handle = mc.getWindow().getWindow();
 
         double rawX = mc.mouseHandler.xpos();
         double rawY = mc.mouseHandler.ypos();
 
-        double guiX = rawX * window.getGuiScaledWidth() / window.getScreenWidth();
-        double guiY = rawY * window.getGuiScaledHeight() / window.getScreenHeight();
+        double guiX = rawX * mc.getWindow().getGuiScaledWidth() / mc.getWindow().getScreenWidth();
+        double guiY = rawY * mc.getWindow().getGuiScaledHeight() / mc.getWindow().getScreenHeight();
 
         int buttonState = GLFW.glfwGetMouseButton(handle, this.pollingDragButton);
 

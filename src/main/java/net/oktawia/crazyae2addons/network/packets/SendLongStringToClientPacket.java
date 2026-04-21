@@ -3,7 +3,9 @@ package net.oktawia.crazyae2addons.network.packets;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.NetworkEvent;
-import net.oktawia.crazyae2addons.client.screens.item.BuilderPatternScreen;
+import net.oktawia.crazyae2addons.client.renderer.preview.PortableSpatialStoragePreviewSync;
+import net.oktawia.crazyae2addons.client.screens.item.PortableSpatialStorageScreen;
+import net.oktawia.crazyae2addons.items.PortableSpatialStorage;
 
 import java.nio.charset.StandardCharsets;
 import java.util.function.Supplier;
@@ -29,9 +31,9 @@ public class SendLongStringToClientPacket {
         NetworkEvent.Context ctx = ctxSupplier.get();
         ctx.enqueueWork(() -> {
             Minecraft mc = Minecraft.getInstance();
-
-            if (mc.screen instanceof BuilderPatternScreen<?> screen) {
-                screen.setProgram(packet.data);
+            PortableSpatialStoragePreviewSync.acceptChunk(packet.data);
+            if (mc.screen instanceof PortableSpatialStorageScreen<?> pss) {
+                pss.setProgram(packet.data);
             }
         });
         ctx.setPacketHandled(true);

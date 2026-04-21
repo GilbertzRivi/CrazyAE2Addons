@@ -8,14 +8,28 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import net.oktawia.crazyae2addons.CrazyAddons;
-import net.oktawia.crazyae2addons.IsModLoaded;
-import net.oktawia.crazyae2addons.compat.GregTech.GTAmpereMeterBE;
-import net.oktawia.crazyae2addons.entities.*;
-import net.oktawia.crazyae2addons.logic.autobuilder.BuilderPatternHost;
+import net.oktawia.crazyae2addons.entities.EjectorBE;
+import net.oktawia.crazyae2addons.logic.cutpaste.PortableSpatialStorageHost;
 import net.oktawia.crazyae2addons.menus.CrazyPatternProviderMenu;
-import net.oktawia.crazyae2addons.menus.block.*;
-import net.oktawia.crazyae2addons.menus.item.BuilderPatternMenu;
-import net.oktawia.crazyae2addons.menus.item.BuilderPatternSubMenu;
+import net.oktawia.crazyae2addons.menus.block.EjectorMenu;
+import net.oktawia.crazyae2addons.menus.item.PortableSpatialStorageMenu;
+import net.oktawia.crazyae2addons.menus.item.WirelessEmitterTerminalMenu;
+import net.oktawia.crazyae2addons.menus.item.WirelessNotificationTerminalMenu;
+import net.oktawia.crazyae2addons.menus.item.WirelessRedstoneTerminalMenu;
+import net.oktawia.crazyae2addons.menus.part.DisplayImagesSubMenu;
+import net.oktawia.crazyae2addons.menus.part.DisplayMenu;
+import net.oktawia.crazyae2addons.menus.part.DisplayTokenSubMenu;
+import net.oktawia.crazyae2addons.menus.part.EmitterTerminalMenu;
+import net.oktawia.crazyae2addons.menus.part.MultiLevelEmitterMenu;
+import net.oktawia.crazyae2addons.menus.part.RedstoneEmitterMenu;
+import net.oktawia.crazyae2addons.menus.part.RedstoneTerminalMenu;
+import net.oktawia.crazyae2addons.menus.part.TagLevelEmitterMenu;
+import net.oktawia.crazyae2addons.parts.Display;
+import net.oktawia.crazyae2addons.parts.EmitterTerminal;
+import net.oktawia.crazyae2addons.parts.MultiLevelEmitter;
+import net.oktawia.crazyae2addons.parts.RedstoneEmitter;
+import net.oktawia.crazyae2addons.parts.RedstoneTerminal;
+import net.oktawia.crazyae2addons.parts.TagLevelEmitter;
 
 public class CrazyMenuRegistrar {
 
@@ -23,37 +37,57 @@ public class CrazyMenuRegistrar {
             DeferredRegister.create(ForgeRegistries.MENU_TYPES, CrazyAddons.MODID);
 
     private static <C extends AEBaseMenu, I> RegistryObject<MenuType<C>> reg(
-            String id, MenuTypeBuilder.MenuFactory<C, I> factory, Class<I> host) {
-
-        return MENU_TYPES.register(id,
-                () -> MenuTypeBuilder.create(factory, host).build(id));
+            String id,
+            MenuTypeBuilder.MenuFactory<C, I> factory,
+            Class<I> host
+    ) {
+        return MENU_TYPES.register(
+                id,
+                () -> MenuTypeBuilder.create(factory, host).build(id)
+        );
     }
 
+    public static final RegistryObject<MenuType<WirelessNotificationTerminalMenu>> WIRELESS_NOTIFICATION_TERMINAL_MENU =
+            MENU_TYPES.register("wireless_notification_terminal_menu", () -> WirelessNotificationTerminalMenu.TYPE);
+
+    public static final RegistryObject<MenuType<WirelessEmitterTerminalMenu>> WIRELESS_EMITTER_TERMINAL_MENU =
+            MENU_TYPES.register("wireless_emitter_terminal_menu", () -> WirelessEmitterTerminalMenu.TYPE);
+
+    public static final RegistryObject<MenuType<WirelessRedstoneTerminalMenu>> WIRELESS_REDSTONE_TERMINAL_MENU =
+            MENU_TYPES.register("wireless_redstone_terminal_menu", () -> WirelessRedstoneTerminalMenu.TYPE);
+
     public static final RegistryObject<MenuType<CrazyPatternProviderMenu>> CRAZY_PATTERN_PROVIDER_MENU =
-            reg("crazy_pattern_provider", CrazyPatternProviderMenu::new, PatternProviderLogicHost.class);
-
-    public static final RegistryObject<MenuType<AmpereMeterMenu>> AMPERE_METER_MENU =
-            IsModLoaded.GTCEU
-                    ? reg("ampere_meter", AmpereMeterMenu::new, GTAmpereMeterBE.class)
-                    : reg("ampere_meter", AmpereMeterMenu::new, AmpereMeterBE.class);
-
-    public static final RegistryObject<MenuType<AutoBuilderMenu>> AUTO_BUILDER_MENU =
-            reg("auto_builder_menu", AutoBuilderMenu::new, AutoBuilderBE.class);
-
-    public static final RegistryObject<MenuType<BuilderPatternMenu>> BUILDER_PATTERN_MENU =
-            reg("builder_pattern_menu", BuilderPatternMenu::new, BuilderPatternHost.class);
-
-    public static final RegistryObject<MenuType<BuilderPatternSubMenu>> BUILDER_PATTERN_SUBMENU =
-            reg("builder_pattern_submenu", BuilderPatternSubMenu::new, BuilderPatternHost.class);
-
-    public static final RegistryObject<MenuType<BrokenPatternProviderMenu>> BROKEN_PATTERN_PROVIDER_MENU =
-            reg("broken_pattern_provider_menu", BrokenPatternProviderMenu::new, BrokenPatternProviderBE.class);
+            reg("crazy_pattern_provider_menu", CrazyPatternProviderMenu::new, PatternProviderLogicHost.class);
 
     public static final RegistryObject<MenuType<EjectorMenu>> EJECTOR_MENU =
             reg("ejector_menu", EjectorMenu::new, EjectorBE.class);
 
-    public static final RegistryObject<MenuType<CraftingSchedulerMenu>> CRAFTING_SCHEDULER_MENU =
-            reg("crafting_scheduler_menu", CraftingSchedulerMenu::new, CraftingSchedulerBE.class);
+    public static final RegistryObject<MenuType<DisplayMenu>> DISPLAY_MENU =
+            reg("display_menu", DisplayMenu::new, Display.class);
+
+    public static final RegistryObject<MenuType<DisplayTokenSubMenu>> DISPLAY_TOKEN_SUBMENU =
+            reg("display_token_submenu", DisplayTokenSubMenu::new, Display.class);
+
+    public static final RegistryObject<MenuType<DisplayImagesSubMenu>> DISPLAY_IMAGES_SUBMENU =
+            reg("display_images_submenu", DisplayImagesSubMenu::new, Display.class);
+
+    public static final RegistryObject<MenuType<EmitterTerminalMenu>> EMITTER_TERMINAL_MENU =
+            reg("emitter_terminal_menu", EmitterTerminalMenu::new, EmitterTerminal.class);
+
+    public static final RegistryObject<MenuType<MultiLevelEmitterMenu>> MULTI_LEVEL_EMITTER_MENU =
+            reg("multi_level_emitter_menu", MultiLevelEmitterMenu::new, MultiLevelEmitter.class);
+
+    public static final RegistryObject<MenuType<TagLevelEmitterMenu>> TAG_LEVEL_EMITTER_MENU =
+            reg("tag_level_emitter_menu", TagLevelEmitterMenu::new, TagLevelEmitter.class);
+
+    public static final RegistryObject<MenuType<RedstoneTerminalMenu>> REDSTONE_TERMINAL_MENU =
+            reg("redstone_terminal_menu", RedstoneTerminalMenu::new, RedstoneTerminal.class);
+
+    public static final RegistryObject<MenuType<RedstoneEmitterMenu>> REDSTONE_EMITTER_MENU =
+            reg("redstone_emitter_menu", RedstoneEmitterMenu::new, RedstoneEmitter.class);
+
+    public static final RegistryObject<MenuType<PortableSpatialStorageMenu>> PORTABLE_SPATIAL_STORAGE_MENU =
+            reg("portable_spatial_storage_menu", PortableSpatialStorageMenu::new, PortableSpatialStorageHost.class);
 
     private CrazyMenuRegistrar() {}
 }

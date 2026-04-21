@@ -1,0 +1,20 @@
+{
+  "parent": "block/block",
+  "textures": {
+    "txt_on": "crazyae2addons:part/display_on"
+  },
+  "elements": [
+    {
+      "from": [ 0, 0, 0 ],
+      "to":   [ 16, 16, 0.5 ],
+      "faces": {
+        "up":    { "texture": "#txt_on" },
+        "down":  { "texture": "#txt_on" },
+        "north": { "texture": "#txt_on" },
+        "south": { "texture": "#txt_on" },
+        "west":  { "texture": "#txt_on" },
+        "east":  { "texture": "#txt_on" }
+      }
+    }
+  ]
+}

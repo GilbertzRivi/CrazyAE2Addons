@@ -1,7 +1,9 @@
 package net.oktawia.crazyae2addons.client.misc;
 
 import appeng.client.gui.Icon;
+import lombok.Setter;
 
+@Setter
 public class IconButton extends appeng.client.gui.widgets.IconButton {
 
     private Icon icon;
@@ -16,7 +18,4 @@ public class IconButton extends appeng.client.gui.widgets.IconButton {
         return this.icon;
     }
 
-    public void setIcon(Icon icon) {
-        this.icon = icon;
-    }
 }

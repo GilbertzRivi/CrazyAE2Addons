@@ -7,9 +7,7 @@ import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.simple.SimpleChannel;
 import net.oktawia.crazyae2addons.CrazyAddons;
-import net.oktawia.crazyae2addons.network.packets.SendLongStringToClientPacket;
-import net.oktawia.crazyae2addons.network.packets.SendLongStringToServerPacket;
-import net.oktawia.crazyae2addons.network.packets.SetConfigAmountPacket;
+import net.oktawia.crazyae2addons.network.packets.*;
 
 public final class NetworkHandler {
 
@@ -43,6 +41,48 @@ public final class NetworkHandler {
                 .encoder(SetConfigAmountPacket::encode)
                 .decoder(SetConfigAmountPacket::decode)
                 .consumerMainThread(SetConfigAmountPacket::handle)
+                .add();
+
+        CHANNEL.messageBuilder(DisplaySyncPacket.class, nextId++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(DisplaySyncPacket::encode)
+                .decoder(DisplaySyncPacket::decode)
+                .consumerMainThread(DisplaySyncPacket::handle)
+                .add();
+
+        CHANNEL.messageBuilder(SyncDisplayImagePreviewPacket.class, nextId++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(SyncDisplayImagePreviewPacket::encode)
+                .decoder(SyncDisplayImagePreviewPacket::decode)
+                .consumerMainThread(SyncDisplayImagePreviewPacket::handle)
+                .add();
+
+        CHANNEL.messageBuilder(UploadDisplayImagePacket.class, nextId++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(UploadDisplayImagePacket::encode)
+                .decoder(UploadDisplayImagePacket::decode)
+                .consumerMainThread(UploadDisplayImagePacket::handle)
+                .add();
+
+        CHANNEL.messageBuilder(NotificationHudPacket.class, nextId++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(NotificationHudPacket::encode)
+                .decoder(NotificationHudPacket::decode)
+                .consumerMainThread(NotificationHudPacket::handle)
+                .add();
+
+        CHANNEL.messageBuilder(EmitterWindowPacket.class, nextId++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(EmitterWindowPacket::encode)
+                .decoder(EmitterWindowPacket::decode)
+                .consumerMainThread(EmitterWindowPacket::handle)
+                .add();
+
+        CHANNEL.messageBuilder(RedstoneWindowPacket.class, nextId++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(RedstoneWindowPacket::encode)
+                .decoder(RedstoneWindowPacket::decode)
+                .consumerMainThread(RedstoneWindowPacket::handle)
+                .add();
+
+        CHANNEL.messageBuilder(RequestPortableSpatialStoragePreviewPacket.class, nextId++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(RequestPortableSpatialStoragePreviewPacket::encode)
+                .decoder(RequestPortableSpatialStoragePreviewPacket::decode)
+                .consumerMainThread(RequestPortableSpatialStoragePreviewPacket::handle)
                 .add();
     }
 

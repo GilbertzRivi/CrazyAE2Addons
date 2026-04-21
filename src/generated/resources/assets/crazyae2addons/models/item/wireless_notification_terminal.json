@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "crazyae2addons:item/wireless_notification_terminal"
+  }
+}

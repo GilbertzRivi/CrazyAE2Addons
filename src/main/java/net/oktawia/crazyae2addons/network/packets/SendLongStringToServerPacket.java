@@ -3,7 +3,6 @@ package net.oktawia.crazyae2addons.network.packets;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
-import net.oktawia.crazyae2addons.menus.item.BuilderPatternMenu;
 
 import java.nio.charset.StandardCharsets;
 import java.util.function.Supplier;
@@ -29,9 +28,6 @@ public class SendLongStringToServerPacket {
         NetworkEvent.Context ctx = ctxSupplier.get();
         ctx.enqueueWork(() -> {
             ServerPlayer sender = ctx.getSender();
-            if (sender != null && sender.containerMenu instanceof BuilderPatternMenu menu) {
-                menu.updateData(packet.data);
-            }
         });
         ctx.setPacketHandled(true);
     }

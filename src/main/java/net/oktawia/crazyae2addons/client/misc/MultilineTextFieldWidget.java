@@ -20,6 +20,7 @@ import org.lwjgl.glfw.GLFW;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -45,6 +46,9 @@ public class MultilineTextFieldWidget extends AbstractWidget {
             this(Pattern.compile(regex, Pattern.MULTILINE | Pattern.DOTALL), color);
         }
     }
+
+    private record Line(int begin, int end) {}
+    private record ColorScope(int tokenStart, int contentStart, int contentEnd, int tokenEnd) {}
 
     private final Font font;
     private final CachedTextField textField;
@@ -626,9 +630,9 @@ public class MultilineTextFieldWidget extends AbstractWidget {
     }
 
     @Override
-    protected void updateWidgetNarration(NarrationElementOutput out) {}
-
-    private record Line(int begin, int end) {}
+    protected void updateWidgetNarration(NarrationElementOutput out) {
+        out.add(NarratedElementType.TITLE, getMessage());
+    }
 
     private static final class CachedTextField extends MultilineTextField {
         private List<Line> cache = new ArrayList<>();
@@ -680,9 +684,7 @@ public class MultilineTextFieldWidget extends AbstractWidget {
                 cache = new ArrayList<>();
             }
             cache.clear();
-            super.iterateLines().forEach(sv ->
-                    cache.add(new Line(sv.beginIndex(), sv.endIndex()))
-            );
+            super.iterateLines().forEach(sv -> cache.add(new Line(sv.beginIndex(), sv.endIndex())));
         }
     }
 
@@ -744,5 +746,222 @@ public class MultilineTextFieldWidget extends AbstractWidget {
 
     private boolean blink() {
         return (Util.getMillis() / 500) % 2 == 0;
+    }
+
+    public int getCursorPos() {
+        return textField.cursor();
+    }
+
+    public boolean hasSelectionRange() {
+        return textField.hasSelection();
+    }
+
+    public int getSelectionStart() {
+        if (!textField.hasSelection()) {
+            return textField.cursor();
+        }
+        return textField.selection().begin();
+    }
+
+    public int getSelectionEnd() {
+        if (!textField.hasSelection()) {
+            return textField.cursor();
+        }
+        return textField.selection().end();
+    }
+
+    public void insertAtCursor(int cursorPos, String text) {
+        String current = getValue();
+        int pos = Mth.clamp(cursorPos, 0, current.length());
+        String updated = current.substring(0, pos) + text + current.substring(pos);
+        setValue(updated);
+        moveCursorToIndex(pos + text.length());
+        ensureCursorVisible();
+        ensureCursorVisibleX();
+    }
+
+    public void applySelectedTextColor(int argb) {
+        String text = getValue();
+        if (text.isEmpty() || !textField.hasSelection()) {
+            return;
+        }
+
+        CachedTextField.Selection selection = textField.selection();
+        int begin = Mth.clamp(selection.begin(), 0, text.length());
+        int end = Mth.clamp(selection.end(), 0, text.length());
+
+        if (end <= begin) {
+            return;
+        }
+
+        String hex = String.format(Locale.ROOT, "%06X", argb & 0xFFFFFF);
+        String colorToken = "&c" + hex;
+
+        ColorScope wrapped = findWrappingColorScope(text, begin, end);
+
+        int replaceStart;
+        int replaceEnd;
+        String innerText;
+
+        if (wrapped != null) {
+            replaceStart = wrapped.tokenStart();
+            replaceEnd = wrapped.tokenEnd();
+            innerText = text.substring(wrapped.contentStart(), wrapped.contentEnd());
+        } else {
+            replaceStart = begin;
+            replaceEnd = end;
+            innerText = text.substring(begin, end);
+        }
+
+        String replacement = colorToken + "(" + innerText + ")";
+        String updated = text.substring(0, replaceStart) + replacement + text.substring(replaceEnd);
+
+        setValue(updated);
+
+        int newSelStart = replaceStart + colorToken.length() + 1;
+        int newSelEnd = newSelStart + innerText.length();
+
+        setSelectionRange(newSelStart, newSelEnd);
+        ensureCursorVisible();
+        ensureCursorVisibleX();
+    }
+
+    private void setSelectionRange(int begin, int end) {
+        String text = textField.value();
+        int len = text.length();
+
+        begin = Mth.clamp(begin, 0, len);
+        end = Mth.clamp(end, 0, len);
+
+        if (end < begin) {
+            int tmp = begin;
+            begin = end;
+            end = tmp;
+        }
+
+        textField.setSelecting(false);
+        moveCursorToIndex(begin);
+        textField.setSelecting(true);
+        moveCursorToIndex(end);
+        textField.setSelecting(false);
+
+        setFocused(true);
+    }
+
+    private void moveCursorToIndex(int index) {
+        String text = textField.value();
+        int len = text.length();
+
+        index = Mth.clamp(index, 0, len);
+
+        if (textField.lineCount() <= 0) {
+            return;
+        }
+
+        int targetLine = 0;
+        Line target = textField.line(0);
+
+        for (int i = 0; i < textField.lineCount(); i++) {
+            Line ln = textField.line(i);
+            int renderEnd = getRenderableLineEnd(text, ln);
+
+            if (index >= ln.begin() && index <= renderEnd) {
+                targetLine = i;
+                target = ln;
+                break;
+            }
+
+            if (i == textField.lineCount() - 1) {
+                targetLine = i;
+                target = ln;
+            }
+        }
+
+        int renderEnd = getRenderableLineEnd(text, target);
+        int clampedIndex = Mth.clamp(index, target.begin(), renderEnd);
+
+        double relX = font.width(text.substring(target.begin(), clampedIndex));
+        double relY = targetLine * font.lineHeight + font.lineHeight / 2.0;
+
+        textField.seekCursorToPoint(relX, relY);
+    }
+
+    @Nullable
+    private ColorScope findWrappingColorScope(String text, int begin, int end) {
+        if (begin < 9 || end > text.length()) {
+            return null;
+        }
+
+        int tokenStart = begin - 9;
+        int openParen = begin - 1;
+
+        if (openParen < 0 || text.charAt(openParen) != '(') {
+            return null;
+        }
+
+        if (!isColorTokenAt(text, tokenStart)) {
+            return null;
+        }
+
+        int closeParen = findMatchingParen(text, openParen);
+        if (closeParen < 0) {
+            return null;
+        }
+
+        if (closeParen != end) {
+            return null;
+        }
+
+        return new ColorScope(tokenStart, begin, end, closeParen + 1);
+    }
+
+    private boolean isColorTokenAt(String text, int index) {
+        if (index < 0 || index + 9 > text.length()) {
+            return false;
+        }
+
+        if (text.charAt(index) != '&') {
+            return false;
+        }
+
+        char c = text.charAt(index + 1);
+        if (c != 'c' && c != 'C') {
+            return false;
+        }
+
+        for (int i = 0; i < 6; i++) {
+            char ch = text.charAt(index + 2 + i);
+            boolean hex =
+                    (ch >= '0' && ch <= '9')
+                            || (ch >= 'a' && ch <= 'f')
+                            || (ch >= 'A' && ch <= 'F');
+            if (!hex) {
+                return false;
+            }
+        }
+
+        return text.charAt(index + 8) == '(';
+    }
+
+    private int findMatchingParen(String text, int openParenIndex) {
+        if (openParenIndex < 0 || openParenIndex >= text.length() || text.charAt(openParenIndex) != '(') {
+            return -1;
+        }
+
+        int depth = 0;
+        for (int i = openParenIndex + 1; i < text.length(); i++) {
+            char ch = text.charAt(i);
+
+            if (ch == '(') {
+                depth++;
+            } else if (ch == ')') {
+                if (depth == 0) {
+                    return i;
+                }
+                depth--;
+            }
+        }
+
+        return -1;
     }
 }

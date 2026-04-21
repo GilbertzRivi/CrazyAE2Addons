@@ -16,9 +16,6 @@ public class CrazyBlockStateProvider extends BlockStateProvider {
     protected void registerStatesAndModels() {
         for (var block : CrazyBlockRegistrar.getBlocks()){
             if (block != CrazyBlockRegistrar.CRAZY_PATTERN_PROVIDER_BLOCK.get()
-                    && block != CrazyBlockRegistrar.AMPERE_METER_BLOCK.get()
-                    && block != CrazyBlockRegistrar.AUTO_BUILDER_BLOCK.get()
-                    && block != CrazyBlockRegistrar.BROKEN_PATTERN_PROVIDER_BLOCK.get()
                     && block != CrazyBlockRegistrar.EJECTOR_BLOCK.get()
             ){
                 simpleBlockWithItem(block);

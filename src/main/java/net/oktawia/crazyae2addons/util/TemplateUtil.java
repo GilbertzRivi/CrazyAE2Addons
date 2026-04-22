@@ -8,6 +8,7 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
@@ -43,6 +44,10 @@ public final class TemplateUtil {
     private static final String KEY_CABLE = "cable";
     private static final String KEY_COVER = "cover";
 
+    public static final String TEMPLATE_OFFSET_X_KEY = "crazy_template_offset_x";
+    public static final String TEMPLATE_OFFSET_Y_KEY = "crazy_template_offset_y";
+    public static final String TEMPLATE_OFFSET_Z_KEY = "crazy_template_offset_z";
+
     private TemplateUtil() {
     }
 
@@ -64,11 +69,61 @@ public final class TemplateUtil {
         return java.util.Base64.getDecoder().decode(value);
     }
 
+    public static BlockPos getTemplateOffset(@Nullable CompoundTag tag) {
+        if (tag == null) {
+            return BlockPos.ZERO;
+        }
+
+        return new BlockPos(
+                clampOffset(tag.getInt(TEMPLATE_OFFSET_X_KEY)),
+                clampOffset(tag.getInt(TEMPLATE_OFFSET_Y_KEY)),
+                clampOffset(tag.getInt(TEMPLATE_OFFSET_Z_KEY))
+        );
+    }
+
+    public static void setTemplateOffset(CompoundTag tag, BlockPos offset) {
+        if (tag == null) {
+            return;
+        }
+
+        tag.putInt(TEMPLATE_OFFSET_X_KEY, clampOffset(offset.getX()));
+        tag.putInt(TEMPLATE_OFFSET_Y_KEY, clampOffset(offset.getY()));
+        tag.putInt(TEMPLATE_OFFSET_Z_KEY, clampOffset(offset.getZ()));
+    }
+
+    public static void copyTemplateOffset(CompoundTag source, CompoundTag target) {
+        setTemplateOffset(target, getTemplateOffset(source));
+    }
+
+    public static CompoundTag applyOffsetToTag(CompoundTag tag, int dx, int dy, int dz) {
+        CompoundTag result = tag.copy();
+        BlockPos current = getTemplateOffset(result);
+
+        setTemplateOffset(result, new BlockPos(
+                current.getX() + dx,
+                current.getY() + dy,
+                current.getZ() + dz
+        ));
+
+        return result;
+    }
+
+    public static String getTemplateOffsetDisplay(@Nullable CompoundTag tag) {
+        BlockPos offset = getTemplateOffset(tag);
+        return "X: " + offset.getX() + "  Y: " + offset.getY() + "  Z: " + offset.getZ();
+    }
+
+    private static int clampOffset(int value) {
+        return Mth.clamp(value, -99, 99);
+    }
+
     public static List<BlockInfo> parseBlocksFromTag(CompoundTag tag) {
         List<BlockInfo> out = new ArrayList<>();
         if (tag == null) {
             return out;
         }
+
+        BlockPos templateOffset = getTemplateOffset(tag);
 
         ListTag paletteTag = tag.getList("palette", Tag.TAG_COMPOUND);
         List<BlockState> palette = new ArrayList<>(paletteTag.size());
@@ -94,7 +149,7 @@ public final class TemplateUtil {
                 continue;
             }
 
-            BlockPos pos = new BlockPos(posTag.getInt(0), posTag.getInt(1), posTag.getInt(2));
+            BlockPos pos = new BlockPos(posTag.getInt(0), posTag.getInt(1), posTag.getInt(2)).offset(templateOffset);
             CompoundTag blockEntityTag = blockTag.contains("nbt", Tag.TAG_COMPOUND)
                     ? blockTag.getCompound("nbt").copy()
                     : null;
@@ -277,7 +332,10 @@ public final class TemplateUtil {
         ListTag paletteTag = tag.getList("palette", Tag.TAG_COMPOUND);
 
         if (blocksTag.isEmpty() || paletteTag.isEmpty()) {
-            return tag;
+            CompoundTag unchanged = tag.copy();
+            setEnergyOrigin(unchanged, getEnergyOrigin(tag));
+            setTemplateOffset(unchanged, getTemplateOffset(tag));
+            return unchanged;
         }
 
         BlockState[] oldPalette = new BlockState[paletteTag.size()];
@@ -438,6 +496,9 @@ public final class TemplateUtil {
         sizeTag.add(IntTag.valueOf(newMaxY + 1));
         sizeTag.add(IntTag.valueOf(newMaxZ + 1));
         result.put("size", sizeTag);
+
+        setEnergyOrigin(result, getEnergyOrigin(tag));
+        setTemplateOffset(result, getTemplateOffset(tag));
 
         return result;
     }
@@ -928,5 +989,81 @@ public final class TemplateUtil {
         }
 
         return result;
+    }
+
+    public static final String ENERGY_ORIGIN_KEY = "energyOrigin";
+
+    public static BlockPos getEnergyOrigin(@Nullable CompoundTag tag) {
+        if (tag == null || !tag.contains(ENERGY_ORIGIN_KEY, Tag.TAG_COMPOUND)) {
+            return BlockPos.ZERO;
+        }
+
+        CompoundTag origin = tag.getCompound(ENERGY_ORIGIN_KEY);
+        return new BlockPos(origin.getInt("x"), origin.getInt("y"), origin.getInt("z"));
+    }
+
+    public static void setEnergyOrigin(CompoundTag tag, BlockPos pos) {
+        CompoundTag origin = new CompoundTag();
+        origin.putInt("x", pos.getX());
+        origin.putInt("y", pos.getY());
+        origin.putInt("z", pos.getZ());
+        tag.put(ENERGY_ORIGIN_KEY, origin);
+    }
+
+    public static void copyPreviewTransformState(CompoundTag source, CompoundTag target) {
+        setTemplateOffset(target, getTemplateOffset(source));
+        setEnergyOrigin(target, getEnergyOrigin(source));
+    }
+
+    public static List<BlockInfo> parseRawBlocksFromTag(CompoundTag tag) {
+        return parseBlocksFromTag(tag, false);
+    }
+
+    private static List<BlockInfo> parseBlocksFromTag(CompoundTag tag, boolean applyTemplateOffset) {
+        List<BlockInfo> out = new ArrayList<>();
+        if (tag == null) {
+            return out;
+        }
+
+        BlockPos templateOffset = applyTemplateOffset ? getTemplateOffset(tag) : BlockPos.ZERO;
+
+        ListTag paletteTag = tag.getList("palette", Tag.TAG_COMPOUND);
+        List<BlockState> palette = new ArrayList<>(paletteTag.size());
+        for (int i = 0; i < paletteTag.size(); i++) {
+            palette.add(parseBlockStateFromTag(paletteTag.getCompound(i)));
+        }
+
+        ListTag blocksTag = tag.getList("blocks", Tag.TAG_COMPOUND);
+        for (int i = 0; i < blocksTag.size(); i++) {
+            CompoundTag blockTag = blocksTag.getCompound(i);
+            int stateIdx = blockTag.getInt("state");
+            if (stateIdx < 0 || stateIdx >= palette.size()) {
+                continue;
+            }
+
+            BlockState state = palette.get(stateIdx);
+            if (state == null) {
+                continue;
+            }
+
+            ListTag posTag = blockTag.getList("pos", Tag.TAG_INT);
+            if (posTag.size() < 3) {
+                continue;
+            }
+
+            BlockPos pos = new BlockPos(
+                    posTag.getInt(0),
+                    posTag.getInt(1),
+                    posTag.getInt(2)
+            ).offset(templateOffset);
+
+            CompoundTag blockEntityTag = blockTag.contains("nbt", Tag.TAG_COMPOUND)
+                    ? blockTag.getCompound("nbt").copy()
+                    : null;
+
+            out.add(new BlockInfo(pos, state, blockEntityTag));
+        }
+
+        return out;
     }
 }

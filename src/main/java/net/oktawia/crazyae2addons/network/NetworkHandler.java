@@ -84,6 +84,12 @@ public final class NetworkHandler {
                 .decoder(RequestPortableSpatialStoragePreviewPacket::decode)
                 .consumerMainThread(RequestPortableSpatialStoragePreviewPacket::handle)
                 .add();
+
+        CHANNEL.messageBuilder(ShowHudMessagePacket.class, nextId++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(ShowHudMessagePacket::encode)
+                .decoder(ShowHudMessagePacket::decode)
+                .consumerMainThread(ShowHudMessagePacket::handle)
+                .add();
     }
 
     public static void sendToPlayer(ServerPlayer player, Object packet) {

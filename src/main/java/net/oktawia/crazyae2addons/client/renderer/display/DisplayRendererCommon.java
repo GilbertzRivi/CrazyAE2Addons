@@ -114,30 +114,6 @@ public final class DisplayRendererCommon {
             boolean margin,
             int widthBlocks,
             int heightBlocks,
-            boolean powered
-    ) {
-        return prepare(
-                font,
-                textValue,
-                resolvedTokens,
-                center,
-                margin,
-                widthBlocks,
-                heightBlocks,
-                List.of(),
-                Map.of(),
-                powered
-        );
-    }
-
-    public static PreparedDisplay prepare(
-            Font font,
-            @Nullable String textValue,
-            Map<String, String> resolvedTokens,
-            boolean center,
-            boolean margin,
-            int widthBlocks,
-            int heightBlocks,
             List<DisplayImageEntry> images,
             Map<String, byte[]> imageData,
             boolean powered

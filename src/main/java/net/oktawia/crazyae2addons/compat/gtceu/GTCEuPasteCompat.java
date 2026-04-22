@@ -76,7 +76,7 @@ public final class GTCEuPasteCompat {
     }
 
     private static void runPostPlacementInit(ServerLevel level, BlockPos origin, CompoundTag templateTag) {
-        for (TemplateUtil.BlockInfo info : TemplateUtil.parseBlocksFromTag(templateTag)) {
+        for (TemplateUtil.BlockInfo info : TemplateUtil.parseRawBlocksFromTag(templateTag)) {
             CompoundTag blockEntityTag = info.blockEntityTag();
             if (!isGregBlockEntityTag(blockEntityTag)) {
                 continue;

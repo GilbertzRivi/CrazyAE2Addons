@@ -1,6 +1,5 @@
 package net.oktawia.crazyae2addons.compat.gtceu;
 
-import com.gregtechceu.gtceu.api.block.MaterialPipeBlock;
 import com.gregtechceu.gtceu.api.block.PipeBlock;
 import com.gregtechceu.gtceu.client.model.PipeModel;
 import com.gregtechceu.gtceu.client.renderer.block.PipeBlockRenderer;
@@ -27,8 +26,38 @@ import net.oktawia.crazyae2addons.client.renderer.preview.PreviewBlockAndTintGet
 import java.util.List;
 
 public class PortableSpatialStoragePreviewRendererGTCEu extends PortableSpatialStoragePreviewRenderer {
+
     @Override
-    protected void tesselatePreviewBlock(
+    protected Iterable<RenderType> getPreviewRenderTypes(
+            PreviewBlock previewBlock,
+            int[] sideMap,
+            BlockRenderDispatcher dispatcher,
+            PreviewBlockAndTintGetter localLevel,
+            BakedModel model,
+            BlockState state,
+            BlockPos localPos,
+            long seed,
+            ModelData modelData
+    ) {
+        if (!(state.getBlock() instanceof PipeBlock<?, ?, ?> pipeBlock)) {
+            return super.getPreviewRenderTypes(previewBlock, sideMap, dispatcher, localLevel, model, state, localPos, seed, modelData);
+        }
+
+        CompoundTag tag = previewBlock.blockEntityTag();
+        if (tag == null) {
+            return super.getPreviewRenderTypes(previewBlock, sideMap, dispatcher, localLevel, model, state, localPos, seed, modelData);
+        }
+
+        PipeBlockRenderer pipeRenderer = pipeBlock.getRenderer(state);
+        if (pipeRenderer == null) {
+            return super.getPreviewRenderTypes(previewBlock, sideMap, dispatcher, localLevel, model, state, localPos, seed, modelData);
+        }
+
+        return List.of(RenderType.cutoutMipped());
+    }
+
+    @Override
+    protected void tesselatePreviewBlockForRenderType(
             PreviewBlock previewBlock,
             int[] sideMap,
             BlockRenderDispatcher dispatcher,
@@ -39,11 +68,12 @@ public class PortableSpatialStoragePreviewRendererGTCEu extends PortableSpatialS
             BlockPos localPos,
             PoseStack poseStack,
             BufferBuilder bufferBuilder,
+            RenderType renderType,
             long seed,
             ModelData modelData
     ) {
         if (!(state.getBlock() instanceof PipeBlock<?, ?, ?> pipeBlock)) {
-            super.tesselatePreviewBlock(
+            super.tesselatePreviewBlockForRenderType(
                     previewBlock,
                     sideMap,
                     dispatcher,
@@ -54,6 +84,7 @@ public class PortableSpatialStoragePreviewRendererGTCEu extends PortableSpatialS
                     localPos,
                     poseStack,
                     bufferBuilder,
+                    renderType,
                     seed,
                     modelData
             );
@@ -62,7 +93,7 @@ public class PortableSpatialStoragePreviewRendererGTCEu extends PortableSpatialS
 
         CompoundTag tag = previewBlock.blockEntityTag();
         if (tag == null) {
-            super.tesselatePreviewBlock(
+            super.tesselatePreviewBlockForRenderType(
                     previewBlock,
                     sideMap,
                     dispatcher,
@@ -73,6 +104,7 @@ public class PortableSpatialStoragePreviewRendererGTCEu extends PortableSpatialS
                     localPos,
                     poseStack,
                     bufferBuilder,
+                    renderType,
                     seed,
                     modelData
             );
@@ -81,7 +113,7 @@ public class PortableSpatialStoragePreviewRendererGTCEu extends PortableSpatialS
 
         PipeBlockRenderer pipeRenderer = pipeBlock.getRenderer(state);
         if (pipeRenderer == null) {
-            super.tesselatePreviewBlock(
+            super.tesselatePreviewBlockForRenderType(
                     previewBlock,
                     sideMap,
                     dispatcher,
@@ -92,9 +124,14 @@ public class PortableSpatialStoragePreviewRendererGTCEu extends PortableSpatialS
                     localPos,
                     poseStack,
                     bufferBuilder,
+                    renderType,
                     seed,
                     modelData
             );
+            return;
+        }
+
+        if (renderType != RenderType.cutoutMipped()) {
             return;
         }
 

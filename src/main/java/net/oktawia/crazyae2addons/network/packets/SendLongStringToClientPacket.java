@@ -30,11 +30,7 @@ public class SendLongStringToClientPacket {
     public static void handle(SendLongStringToClientPacket packet, Supplier<NetworkEvent.Context> ctxSupplier) {
         NetworkEvent.Context ctx = ctxSupplier.get();
         ctx.enqueueWork(() -> {
-            Minecraft mc = Minecraft.getInstance();
             PortableSpatialStoragePreviewSync.acceptChunk(packet.data);
-            if (mc.screen instanceof PortableSpatialStorageScreen<?> pss) {
-                pss.setProgram(packet.data);
-            }
         });
         ctx.setPacketHandled(true);
     }

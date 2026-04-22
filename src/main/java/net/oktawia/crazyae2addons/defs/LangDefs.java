@@ -96,17 +96,28 @@ public enum LangDefs implements LocalizationEnum {
     ROTATE_CLOCKWISE("gui.crazyae2addons.rotate_clockwise", "Rotate clockwise"),
     NO_BLOCK_IN_RANGE("gui.crazyae2addons.no_block_in_range", "No block in range."),
     PASTE_OR_CLEAR_FIRST("gui.crazyae2addons.paste_or_clear_first", "Paste or clear stored structure first."),
-    CORNER_A_SELECTED("gui.crazyae2addons.corner_a_selected", "Corner A selected."),
-    CORNER_B_SELECTED("gui.crazyae2addons.corner_b_selected", "Corner B selected."),
+    CORNER_0_SELECTED("gui.crazyae2addons.corner_0_selected", "Shift Right click a block to select it."),
+    CORNER_A_SELECTED("gui.crazyae2addons.corner_a_selected", "Right click to select another."),
+    CORNER_B_SELECTED("gui.crazyae2addons.corner_b_selected", "Right click air to cut or shift click block to cancel."),
     SELECTION_RESTARTED("gui.crazyae2addons.selection_restarted", "Selection restarted."),
     FAILED_TO_SAVE_STRUCTURE("gui.crazyae2addons.failed_to_save_structure", "Failed to save structure."),
-    STRUCTURE_CUT_AND_SAVED("gui.crazyae2addons.structure_cut_and_saved", "Structure cut and saved."),
+    STRUCTURE_CUT_AND_SAVED("gui.crazyae2addons.structure_cut_and_saved", "Right click to paste."),
     FAILED_TO_LOAD_STRUCTURE("gui.crazyae2addons.failed_to_load_structure", "Failed to load structure."),
     STORED_STRUCTURE_NOT_FOUND("gui.crazyae2addons.stored_structure_not_found", "Stored structure not found."),
     FAILED_TO_PASTE_STRUCTURE("gui.crazyae2addons.failed_to_paste_structure", "Failed to paste structure."),
     STRUCTURE_PASTED("gui.crazyae2addons.structure_pasted", "Structure pasted."),
-    PORTABLE_SPATIAL_IO_SHORT("gui.crazyae2addons.portable_spatial_storage_short", "Portable Spatial IO"),
-    PASTE_COLLISION("gui.crazyae2addons.paste_collision", "Cannot paste structure: collision detected.");
+    PASTE_COLLISION("gui.crazyae2addons.paste_collision", "Cannot paste structure: collision detected."),
+    OFFSET_X_TOOLTIP("gui.crazyae2addons.offset_x_tooltip", "X offset"),
+    OFFSET_Y_TOOLTIP("gui.crazyae2addons.offset_y_tooltip", "Y offset"),
+    OFFSET_Z_TOOLTIP("gui.crazyae2addons.offset_z_tooltip", "Z offset"),
+    OFFSET_LEFT_TOOLTIP("gui.crazyae2addons.offset_left_tooltip", "Move left (-X)"),
+    OFFSET_RIGHT_TOOLTIP("gui.crazyae2addons.offset_right_tooltip", "Move right (+X)"),
+    OFFSET_UP_TOOLTIP("gui.crazyae2addons.offset_up_tooltip", "Move up (+Y)"),
+    OFFSET_DOWN_TOOLTIP("gui.crazyae2addons.offset_down_tooltip", "Move down (-Y)"),
+    OFFSET_FRONT_TOOLTIP("gui.crazyae2addons.offset_front_tooltip", "Move forward (+Z)"),
+    OFFSET_BACK_TOOLTIP("gui.crazyae2addons.offset_back_tooltip", "Move backward (-Z)"),
+    CUT_COST_PREVIEW("gui.crazyae2addons.cut_cost_preview", "Cut: %s AE"),
+    PASTE_COST_PREVIEW("gui.crazyae2addons.paste_cost_preview", "Paste: %s AE");
 
 
     private final String key;

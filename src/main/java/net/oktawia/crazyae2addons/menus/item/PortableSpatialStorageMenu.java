@@ -1,6 +1,7 @@
 package net.oktawia.crazyae2addons.menus.item;
 
-import appeng.menu.implementations.UpgradeableMenu;
+import appeng.menu.AEBaseMenu;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
@@ -15,12 +16,20 @@ import net.oktawia.crazyae2addons.util.TemplateUtil;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-public class PortableSpatialStorageMenu extends UpgradeableMenu<PortableSpatialStorageHost> {
+public class PortableSpatialStorageMenu extends AEBaseMenu {
 
-    private static final String ACTION_REQUEST_PREVIEW = "portable_spatial_storage.request_preview";
-    private static final String ACTION_FLIP_HORIZONTAL = "portable_spatial_storage.flip_horizontal";
-    private static final String ACTION_FLIP_VERTICAL = "portable_spatial_storage.flip_vertical";
-    private static final String ACTION_ROTATE_CLOCKWISE = "portable_spatial_storage.rotate_clockwise";
+    private static final String ACTION_REQUEST_PREVIEW = "request_preview";
+    private static final String ACTION_FLIP_HORIZONTAL = "flip_horizontal";
+    private static final String ACTION_FLIP_VERTICAL = "flip_vertical";
+    private static final String ACTION_ROTATE_CLOCKWISE = "rotate_clockwise";
+
+    private static final String ACTION_OFFSET_LEFT = "offset_left";
+    private static final String ACTION_OFFSET_RIGHT = "offset_right";
+    private static final String ACTION_OFFSET_UP = "offset_up";
+    private static final String ACTION_OFFSET_DOWN = "offset_down";
+    private static final String ACTION_OFFSET_FRONT = "offset_front";
+    private static final String ACTION_OFFSET_BACK = "offset_back";
+
     private static final String PREVIEW_SIDE_MAP_KEY = "crazy_preview_side_map";
     private static final int CHUNK_SIZE = 1_000_000;
 
@@ -37,6 +46,15 @@ public class PortableSpatialStorageMenu extends UpgradeableMenu<PortableSpatialS
         registerClientAction(ACTION_FLIP_VERTICAL, this::flipVertical);
         registerClientAction(ACTION_ROTATE_CLOCKWISE, Integer.class, this::rotateClockwise);
 
+        registerClientAction(ACTION_OFFSET_LEFT, this::offsetLeft);
+        registerClientAction(ACTION_OFFSET_RIGHT, this::offsetRight);
+        registerClientAction(ACTION_OFFSET_UP, this::offsetUp);
+        registerClientAction(ACTION_OFFSET_DOWN, this::offsetDown);
+        registerClientAction(ACTION_OFFSET_FRONT, this::offsetFront);
+        registerClientAction(ACTION_OFFSET_BACK, this::offsetBack);
+
+        createPlayerInventorySlots(playerInventory);
+
         if (!isClientSide()) {
             requestPreview();
         }
@@ -49,17 +67,26 @@ public class PortableSpatialStorageMenu extends UpgradeableMenu<PortableSpatialS
         }
 
         if (!host.hasStoredStructure()) {
+            clearItemPreviewMirror();
             sendPreviewString("");
             return;
         }
 
         byte[] bytes = host.getStructureBytes();
         if (bytes == null || bytes.length == 0) {
+            clearItemPreviewMirror();
             sendPreviewString("");
             return;
         }
 
-        sendPreviewString(TemplateUtil.toBase64(bytes));
+        try {
+            CompoundTag tag = TemplateUtil.decompressNbt(bytes);
+            syncItemPreviewMirror(tag);
+            sendPreviewString(TemplateUtil.toBase64(bytes));
+        } catch (Exception ignored) {
+            clearItemPreviewMirror();
+            sendPreviewString("");
+        }
     }
 
     public void flipHorizontal() {
@@ -115,6 +142,54 @@ public class PortableSpatialStorageMenu extends UpgradeableMenu<PortableSpatialS
         );
     }
 
+    public void offsetLeft() {
+        if (isClientSide()) {
+            sendClientAction(ACTION_OFFSET_LEFT);
+            return;
+        }
+        applyOffsetAndResend(-1, 0, 0);
+    }
+
+    public void offsetRight() {
+        if (isClientSide()) {
+            sendClientAction(ACTION_OFFSET_RIGHT);
+            return;
+        }
+        applyOffsetAndResend(1, 0, 0);
+    }
+
+    public void offsetUp() {
+        if (isClientSide()) {
+            sendClientAction(ACTION_OFFSET_UP);
+            return;
+        }
+        applyOffsetAndResend(0, 1, 0);
+    }
+
+    public void offsetDown() {
+        if (isClientSide()) {
+            sendClientAction(ACTION_OFFSET_DOWN);
+            return;
+        }
+        applyOffsetAndResend(0, -1, 0);
+    }
+
+    public void offsetFront() {
+        if (isClientSide()) {
+            sendClientAction(ACTION_OFFSET_FRONT);
+            return;
+        }
+        applyOffsetAndResend(0, 0, -1);
+    }
+
+    public void offsetBack() {
+        if (isClientSide()) {
+            sendClientAction(ACTION_OFFSET_BACK);
+            return;
+        }
+        applyOffsetAndResend(0, 0, 1);
+    }
+
     @FunctionalInterface
     private interface TagTransform {
         CompoundTag apply(CompoundTag tag);
@@ -131,11 +206,41 @@ public class PortableSpatialStorageMenu extends UpgradeableMenu<PortableSpatialS
             CompoundTag transformed = transform.apply(tag);
             host.setStructureBytes(TemplateUtil.compressNbt(transformed));
             updatePreviewSideMap(appliedSideMap);
+            syncItemPreviewMirror(transformed);
         } catch (Exception ignored) {
             return;
         }
 
         requestPreview();
+    }
+
+    private void applyOffsetAndResend(int dx, int dy, int dz) {
+        byte[] bytes = host.getStructureBytes();
+        if (bytes == null || bytes.length == 0) {
+            return;
+        }
+
+        try {
+            CompoundTag tag = TemplateUtil.decompressNbt(bytes);
+            CompoundTag transformed = TemplateUtil.applyOffsetToTag(tag, dx, dy, dz);
+            host.setStructureBytes(TemplateUtil.compressNbt(transformed));
+            syncItemPreviewMirror(transformed);
+        } catch (Exception ignored) {
+            return;
+        }
+
+        requestPreview();
+    }
+
+    private void syncItemPreviewMirror(CompoundTag structureTag) {
+        CompoundTag stackTag = host.getItemStack().getOrCreateTag();
+        TemplateUtil.copyPreviewTransformState(structureTag, stackTag);
+    }
+
+    private void clearItemPreviewMirror() {
+        CompoundTag stackTag = host.getItemStack().getOrCreateTag();
+        TemplateUtil.setTemplateOffset(stackTag, BlockPos.ZERO);
+        TemplateUtil.setEnergyOrigin(stackTag, BlockPos.ZERO);
     }
 
     private int normalizeQuarterTurns(int turns) {

@@ -1,7 +1,5 @@
 package net.oktawia.crazyae2addons.client.renderer.preview;
 
-import appeng.blockentity.networking.CableBusBlockEntity;
-import appeng.client.render.cablebus.CableBusRenderState;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Minecraft;
@@ -19,7 +17,8 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -33,16 +32,28 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.items.PortableSpatialStorage;
 import net.oktawia.crazyae2addons.logic.cutpaste.CutPasteStackState;
+import net.oktawia.crazyae2addons.logic.interfaces.RenderTypeTextureAccess;
+import net.oktawia.crazyae2addons.util.TemplateUtil;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 
 import java.util.Arrays;
+import java.util.IdentityHashMap;
 import java.util.Map;
-import java.util.Set;
 
 public class PortableSpatialStoragePreviewRenderer {
 
     private static final double MAX_DISTANCE = 50.0D;
+    private static final float PREVIEW_ALPHA = 0.75f;
+
+    private enum PreviewPass {
+        SOLID,
+        CUTOUT,
+        CUTOUT_MIPPED,
+        TRANSLUCENT
+    }
+
+    private static final Map<RenderType, RenderType> translucentTypeCache = new IdentityHashMap<>();
 
     public PortableSpatialStoragePreviewRenderer() {
     }
@@ -79,10 +90,16 @@ public class PortableSpatialStoragePreviewRenderer {
                 if (structure != null && !structure.blocks().isEmpty()) {
                     BlockHitResult hit = PortableSpatialStorage.rayTrace(minecraft.level, minecraft.player, MAX_DISTANCE);
                     if (hit.getType() == HitResult.Type.BLOCK) {
-                        BlockPos origin = hit.getBlockPos().relative(hit.getDirection());
-                        renderGhostModels(minecraft, poseStack, structure, origin, sideMap, sideMapKey);
-                        renderBlockEntityRenderers(minecraft, poseStack, structure, origin, event.getPartialTick());
-                        renderLineBoxes(minecraft, poseStack, structure, origin);
+                        BlockPos anchor = hit.getBlockPos().relative(hit.getDirection());
+
+                        CompoundTag stackTag = stack.getTag();
+                        BlockPos energyOrigin = TemplateUtil.getEnergyOrigin(stackTag);
+
+                        BlockPos placementOrigin = anchor.subtract(energyOrigin);
+
+                        renderGhostModels(minecraft, poseStack, structure, placementOrigin, sideMap, sideMapKey);
+                        renderBlockEntityRenderers(minecraft, poseStack, structure, placementOrigin, event.getPartialTick());
+                        renderLineBoxes(minecraft, poseStack, structure, placementOrigin);
                     }
                 }
             }
@@ -111,7 +128,21 @@ public class PortableSpatialStoragePreviewRenderer {
         poseStack.popPose();
     }
 
-    protected void tesselatePreviewBlock(
+    protected Iterable<RenderType> getPreviewRenderTypes(
+            PreviewBlock previewBlock,
+            int[] sideMap,
+            BlockRenderDispatcher dispatcher,
+            PreviewBlockAndTintGetter localLevel,
+            BakedModel model,
+            BlockState state,
+            BlockPos localPos,
+            long seed,
+            ModelData modelData
+    ) {
+        return model.getRenderTypes(state, RandomSource.create(seed), modelData);
+    }
+
+    protected void tesselatePreviewBlockForRenderType(
             PreviewBlock previewBlock,
             int[] sideMap,
             BlockRenderDispatcher dispatcher,
@@ -122,27 +153,24 @@ public class PortableSpatialStoragePreviewRenderer {
             BlockPos localPos,
             PoseStack poseStack,
             BufferBuilder bufferBuilder,
+            RenderType renderType,
             long seed,
             ModelData modelData
     ) {
-        RandomSource random = RandomSource.create(seed);
-
-        for (RenderType renderType : model.getRenderTypes(state, random, modelData)) {
-            modelRenderer.tesselateBlock(
-                    localLevel,
-                    model,
-                    state,
-                    localPos,
-                    poseStack,
-                    bufferBuilder,
-                    false,
-                    RandomSource.create(seed),
-                    seed,
-                    OverlayTexture.NO_OVERLAY,
-                    modelData,
-                    renderType
-            );
-        }
+        modelRenderer.tesselateBlock(
+                localLevel,
+                model,
+                state,
+                localPos,
+                poseStack,
+                bufferBuilder,
+                false,
+                RandomSource.create(seed),
+                seed,
+                OverlayTexture.NO_OVERLAY,
+                modelData,
+                renderType
+        );
     }
 
     private void renderGhostModels(
@@ -153,45 +181,105 @@ public class PortableSpatialStoragePreviewRenderer {
             int[] sideMap,
             String sideMapKey
     ) {
-        if (!structure.hasVertexBuffer(sideMapKey)) {
-            structure.storeVertexBuffer(sideMapKey, buildVertexBuffer(minecraft, structure, sideMap, sideMapKey));
-        }
+        String solidKey = sideMapKey + ":solid";
+        String cutoutKey = sideMapKey + ":cutout";
+        String cutoutMippedKey = sideMapKey + ":cutout_mipped";
+        String translucentKey = sideMapKey + ":translucent";
 
-        VertexBuffer vb = structure.getVertexBuffer(sideMapKey);
-        if (vb == null) return;
+        if (!structure.hasVertexBuffer(solidKey)
+                || !structure.hasVertexBuffer(cutoutKey)
+                || !structure.hasVertexBuffer(cutoutMippedKey)
+                || !structure.hasVertexBuffer(translucentKey)) {
+            buildAndStoreVertexBuffers(
+                    minecraft,
+                    structure,
+                    sideMap,
+                    sideMapKey,
+                    solidKey,
+                    cutoutKey,
+                    cutoutMippedKey,
+                    translucentKey
+            );
+        }
 
         Matrix4f modelView = new Matrix4f(poseStack.last().pose());
         modelView.translate(origin.getX(), origin.getY(), origin.getZ());
 
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 0.45f);
-        RenderSystem.setShader(GameRenderer::getRendertypeSolidShader);
+        RenderSystem.enableDepthTest();
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, PREVIEW_ALPHA);
         RenderSystem.setShaderTexture(0, TextureAtlas.LOCATION_BLOCKS);
         minecraft.gameRenderer.lightTexture().turnOnLightLayer();
 
-        vb.bind();
-        vb.drawWithShader(modelView, RenderSystem.getProjectionMatrix(), RenderSystem.getShader());
-        VertexBuffer.unbind();
+        VertexBuffer solidVb = structure.getVertexBuffer(solidKey);
+        if (solidVb != null) {
+            RenderSystem.setShader(GameRenderer::getRendertypeSolidShader);
+            RenderSystem.depthMask(true);
+            solidVb.bind();
+            solidVb.drawWithShader(modelView, RenderSystem.getProjectionMatrix(), RenderSystem.getShader());
+            VertexBuffer.unbind();
+        }
+
+        VertexBuffer cutoutVb = structure.getVertexBuffer(cutoutKey);
+        if (cutoutVb != null) {
+            RenderSystem.setShader(GameRenderer::getRendertypeCutoutShader);
+            RenderSystem.depthMask(true);
+            cutoutVb.bind();
+            cutoutVb.drawWithShader(modelView, RenderSystem.getProjectionMatrix(), RenderSystem.getShader());
+            VertexBuffer.unbind();
+        }
+
+        VertexBuffer cutoutMippedVb = structure.getVertexBuffer(cutoutMippedKey);
+        if (cutoutMippedVb != null) {
+            RenderSystem.setShader(GameRenderer::getRendertypeCutoutMippedShader);
+            RenderSystem.depthMask(true);
+            cutoutMippedVb.bind();
+            cutoutMippedVb.drawWithShader(modelView, RenderSystem.getProjectionMatrix(), RenderSystem.getShader());
+            VertexBuffer.unbind();
+        }
+
+        VertexBuffer translucentVb = structure.getVertexBuffer(translucentKey);
+        if (translucentVb != null) {
+            RenderSystem.setShader(GameRenderer::getRendertypeTranslucentShader);
+            RenderSystem.depthMask(false);
+            translucentVb.bind();
+            translucentVb.drawWithShader(modelView, RenderSystem.getProjectionMatrix(), RenderSystem.getShader());
+            VertexBuffer.unbind();
+        }
 
         minecraft.gameRenderer.lightTexture().turnOffLightLayer();
+        RenderSystem.depthMask(true);
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
         RenderSystem.disableBlend();
     }
 
-    private VertexBuffer buildVertexBuffer(
+    private void buildAndStoreVertexBuffers(
             Minecraft minecraft,
             PreviewStructure structure,
             int[] sideMap,
-            String sideMapKey
+            String sideMapKey,
+            String solidKey,
+            String cutoutKey,
+            String cutoutMippedKey,
+            String translucentKey
     ) {
         ClientLevel level = minecraft.level;
         var dispatcher = minecraft.getBlockRenderer();
         var modelRenderer = dispatcher.getModelRenderer();
         PreviewBlockAndTintGetter localLevel = new PreviewBlockAndTintGetter(level, structure, BlockPos.ZERO);
 
-        BufferBuilder bb = new BufferBuilder(2097152);
-        bb.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
+        BufferBuilder solidBB = new BufferBuilder(1048576);
+        solidBB.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
+
+        BufferBuilder cutoutBB = new BufferBuilder(1048576);
+        cutoutBB.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
+
+        BufferBuilder cutoutMippedBB = new BufferBuilder(1048576);
+        cutoutMippedBB.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
+
+        BufferBuilder translucentBB = new BufferBuilder(1048576);
+        translucentBB.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
 
         PoseStack ps = new PoseStack();
 
@@ -201,39 +289,109 @@ public class PortableSpatialStoragePreviewRenderer {
             BakedModel model = dispatcher.getBlockModel(state);
             long seed = state.getSeed(localPos);
 
-            ModelData modelData = getPreviewModelData(structure, previewBlock, sideMap, sideMapKey, level);
+            ModelData modelData = PreviewRenderModelDataHelper.getPreviewModelData(
+                    structure,
+                    previewBlock,
+                    sideMap,
+                    sideMapKey,
+                    level,
+                    model,
+                    localLevel
+            );
 
             ps.pushPose();
             ps.translate(localPos.getX(), localPos.getY(), localPos.getZ());
 
             try {
-                tesselatePreviewBlock(
+                for (RenderType renderType : getPreviewRenderTypes(
                         previewBlock,
                         sideMap,
                         dispatcher,
-                        modelRenderer,
                         localLevel,
                         model,
                         state,
                         localPos,
-                        ps,
-                        bb,
                         seed,
                         modelData
-                );
+                )) {
+                    BufferBuilder target = switch (classifyRenderType(renderType)) {
+                        case SOLID -> solidBB;
+                        case CUTOUT -> cutoutBB;
+                        case CUTOUT_MIPPED -> cutoutMippedBB;
+                        case TRANSLUCENT -> translucentBB;
+                    };
+
+                    tesselatePreviewBlockForRenderType(
+                            previewBlock,
+                            sideMap,
+                            dispatcher,
+                            modelRenderer,
+                            localLevel,
+                            model,
+                            state,
+                            localPos,
+                            ps,
+                            target,
+                            renderType,
+                            seed,
+                            modelData
+                    );
+                }
             } catch (Throwable t) {
-                CrazyAddons.LOGGER.debug(t.getLocalizedMessage());
+                CrazyAddons.LOGGER.debug("Preview tesselation failed for {} at {}: {}", state, localPos, t.getMessage());
             }
 
             ps.popPose();
         }
 
+        structure.storeVertexBuffer(solidKey, uploadBuffer(solidBB));
+        structure.storeVertexBuffer(cutoutKey, uploadBuffer(cutoutBB));
+        structure.storeVertexBuffer(cutoutMippedKey, uploadBuffer(cutoutMippedBB));
+        structure.storeVertexBuffer(translucentKey, uploadBuffer(translucentBB));
+    }
+
+    private static VertexBuffer uploadBuffer(BufferBuilder bb) {
         VertexBuffer vb = new VertexBuffer(VertexBuffer.Usage.STATIC);
         vb.bind();
         vb.upload(bb.end());
         VertexBuffer.unbind();
-
         return vb;
+    }
+
+    private static PreviewPass classifyRenderType(RenderType rt) {
+        if (rt == RenderType.translucent()
+                || rt == RenderType.translucentMovingBlock()
+                || rt == RenderType.tripwire()) {
+            return PreviewPass.TRANSLUCENT;
+        }
+
+        if (rt == RenderType.cutoutMipped()) {
+            return PreviewPass.CUTOUT_MIPPED;
+        }
+
+        if (rt == RenderType.cutout()) {
+            return PreviewPass.CUTOUT;
+        }
+
+        if (rt == RenderType.solid()) {
+            return PreviewPass.SOLID;
+        }
+
+        String s = rt.toString();
+
+        if (s.contains("translucent") || s.contains("tripwire")) {
+            return PreviewPass.TRANSLUCENT;
+        }
+
+        if (s.contains("cutout_mipped") || s.contains("cutoutmipped")) {
+            return PreviewPass.CUTOUT_MIPPED;
+        }
+
+        if (s.contains("cutout")) {
+            return PreviewPass.CUTOUT;
+        }
+
+        return PreviewPass.SOLID;
     }
 
     @SuppressWarnings("unchecked")
@@ -249,127 +407,102 @@ public class PortableSpatialStoragePreviewRenderer {
 
         BlockEntityRenderDispatcher beDispatcher = minecraft.getBlockEntityRenderDispatcher();
         MultiBufferSource.BufferSource bufferSource = minecraft.renderBuffers().bufferSource();
+        MultiBufferSource ghostSource = renderType ->
+                new AlphaScaledVertexConsumer(bufferSource.getBuffer(toTranslucentRenderType(renderType)), PREVIEW_ALPHA);
 
         minecraft.gameRenderer.lightTexture().turnOnLightLayer();
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
 
         for (PreviewBlock previewBlock : structure.surfaceBlocks()) {
             BlockEntity be = blockEntities.get(previewBlock.pos());
             if (be == null) continue;
 
-            BlockEntityRenderer<BlockEntity> renderer = (BlockEntityRenderer<BlockEntity>) beDispatcher.getRenderer(be);
+            BlockEntityRenderer<BlockEntity> renderer = beDispatcher.getRenderer(be);
             if (renderer == null) continue;
 
             BlockPos worldPos = origin.offset(previewBlock.pos());
             poseStack.pushPose();
             poseStack.translate(worldPos.getX(), worldPos.getY(), worldPos.getZ());
             try {
-                renderer.render(be, partialTick, poseStack, bufferSource, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);
+                renderer.render(be, partialTick, poseStack, ghostSource, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);
             } catch (Throwable t) {
                 CrazyAddons.LOGGER.debug(t.getLocalizedMessage());
             }
             poseStack.popPose();
         }
 
-        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 0.45f);
         bufferSource.endBatch();
-        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-
         minecraft.gameRenderer.lightTexture().turnOffLightLayer();
-        RenderSystem.disableBlend();
     }
 
-    private static ModelData getPreviewModelData(
-            PreviewStructure structure,
-            PreviewBlock previewBlock,
-            int[] sideMap,
-            String sideMapKey,
-            ClientLevel level
-    ) {
-        return structure.getOrComputeModelData(sideMapKey, previewBlock.pos(), () -> {
-            BlockEntity blockEntity = structure.blockEntities(level).get(previewBlock.pos());
-            if (blockEntity == null) {
-                return ModelData.EMPTY;
-            }
-
-            ModelData modelData;
-            try {
-                modelData = blockEntity.getModelData();
-            } catch (Throwable t) {
-                CrazyAddons.LOGGER.debug(t.getLocalizedMessage());
-                return ModelData.EMPTY;
-            }
-
-            if (!(blockEntity instanceof CableBusBlockEntity)) {
-                return modelData != null ? modelData : ModelData.EMPTY;
-            }
-
-            CableBusRenderState renderState = modelData.get(CableBusRenderState.PROPERTY);
-            if (renderState == null) {
-                return modelData;
-            }
-
-            CableBusRenderState transformedState = copyCableBusRenderState(renderState);
-            transformCableConnectionsOnly(transformedState, sideMap);
-
-            return ModelData.builder()
-                    .with(CableBusRenderState.PROPERTY, transformedState)
-                    .build();
+    private static RenderType toTranslucentRenderType(RenderType renderType) {
+        return translucentTypeCache.computeIfAbsent(renderType, rt -> {
+            ResourceLocation texture = extractRenderTypeTexture(rt);
+            if (texture == null) return rt;
+            return rt.toString().contains("no_cull")
+                    ? RenderType.entityTranslucent(texture)
+                    : RenderType.entityTranslucentCull(texture);
         });
     }
 
-    private static CableBusRenderState copyCableBusRenderState(CableBusRenderState source) {
-        CableBusRenderState copy = new CableBusRenderState();
-
-        copy.setCableType(source.getCableType());
-        copy.setCoreType(source.getCoreType());
-        copy.setCableColor(source.getCableColor());
-
-        copy.getConnectionTypes().putAll(source.getConnectionTypes());
-        copy.getCableBusAdjacent().addAll(source.getCableBusAdjacent());
-        copy.getChannelsOnSide().putAll(source.getChannelsOnSide());
-
-        copy.getAttachments().putAll(source.getAttachments());
-        copy.getAttachmentConnections().putAll(source.getAttachmentConnections());
-        copy.getFacades().putAll(source.getFacades());
-        copy.getPartModelData().putAll(source.getPartModelData());
-        copy.getBoundingBoxes().addAll(source.getBoundingBoxes());
-
-        return copy;
-    }
-
-    private static <V> void remapDirectionMap(Map<Direction, V> map, int[] sideMap) {
-        if (map.isEmpty()) return;
-
-        java.util.EnumMap<Direction, V> old = new java.util.EnumMap<>(Direction.class);
-        old.putAll(map);
-        map.clear();
-
-        for (Map.Entry<Direction, V> entry : old.entrySet()) {
-            map.put(mapWithSideMap(entry.getKey(), sideMap), entry.getValue());
+    private static ResourceLocation extractRenderTypeTexture(RenderType renderType) {
+        if (renderType instanceof RenderTypeTextureAccess access) {
+            return access.crazyae2addons$getTextureLocation();
         }
+        return null;
     }
 
-    private static void remapDirectionSet(Set<Direction> set, int[] sideMap) {
-        if (set.isEmpty()) return;
+    private record AlphaScaledVertexConsumer(VertexConsumer delegate, float alpha) implements VertexConsumer {
 
-        java.util.EnumSet<Direction> old = java.util.EnumSet.copyOf(set);
-        set.clear();
-
-        for (Direction side : old) {
-            set.add(mapWithSideMap(side, sideMap));
+        @Override
+        public VertexConsumer vertex(double x, double y, double z) {
+            delegate.vertex(x, y, z);
+            return this;
         }
-    }
 
-    private static Direction mapWithSideMap(Direction side, int[] sideMap) {
-        return Direction.values()[sideMap[side.ordinal()]];
-    }
+        @Override
+        public VertexConsumer color(int r, int g, int b, int a) {
+            delegate.color(r, g, b, Math.round(a * alpha));
+            return this;
+        }
 
-    private static void transformCableConnectionsOnly(CableBusRenderState renderState, int[] sideMap) {
-        remapDirectionMap(renderState.getConnectionTypes(), sideMap);
-        remapDirectionSet(renderState.getCableBusAdjacent(), sideMap);
-        remapDirectionMap(renderState.getChannelsOnSide(), sideMap);
+        @Override
+        public VertexConsumer uv(float u, float v) {
+            delegate.uv(u, v);
+            return this;
+        }
+
+        @Override
+        public VertexConsumer overlayCoords(int u, int v) {
+            delegate.overlayCoords(u, v);
+            return this;
+        }
+
+        @Override
+        public VertexConsumer uv2(int u, int v) {
+            delegate.uv2(u, v);
+            return this;
+        }
+
+        @Override
+        public VertexConsumer normal(float x, float y, float z) {
+            delegate.normal(x, y, z);
+            return this;
+        }
+
+        @Override
+        public void endVertex() {
+            delegate.endVertex();
+        }
+
+        @Override
+        public void defaultColor(int r, int g, int b, int a) {
+            delegate.defaultColor(r, g, b, Math.round(a * alpha));
+        }
+
+        @Override
+        public void unsetDefaultColor() {
+            delegate.unsetDefaultColor();
+        }
     }
 
     private static void renderLineBoxes(

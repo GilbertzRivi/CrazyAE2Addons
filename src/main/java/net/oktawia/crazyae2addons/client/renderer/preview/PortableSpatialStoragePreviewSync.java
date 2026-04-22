@@ -9,6 +9,7 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.oktawia.crazyae2addons.CrazyAddons;
+import net.oktawia.crazyae2addons.client.screens.item.PortableSpatialStorageScreen;
 import net.oktawia.crazyae2addons.items.PortableSpatialStorage;
 import net.oktawia.crazyae2addons.logic.cutpaste.CutPasteStackState;
 import net.oktawia.crazyae2addons.network.NetworkHandler;
@@ -36,7 +37,7 @@ public final class PortableSpatialStoragePreviewSync {
         STRUCTURE_CACHE.put(structureId, structure);
     }
 
-    static PreviewStructure cacheGet(String structureId) {
+    public static PreviewStructure cacheGet(String structureId) {
         if (structureId == null || structureId.isBlank()) return null;
         return STRUCTURE_CACHE.get(structureId);
     }
@@ -143,7 +144,11 @@ public final class PortableSpatialStoragePreviewSync {
             CompoundTag tag = TemplateUtil.decompressNbt(bytes);
             PreviewStructure structure = PreviewStructure.fromTemplateTag(tag);
             cachePut(structureId, structure);
-        } catch (Exception ignored) {
+            if (Minecraft.getInstance().screen instanceof PortableSpatialStorageScreen<?> pss) {
+                pss.markPreviewDirty();
+            }
+        } catch (Exception t) {
+            CrazyAddons.LOGGER.debug(t.getLocalizedMessage());
         } finally {
             BUFFER.setLength(0);
         }

@@ -8,6 +8,9 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import net.oktawia.crazyae2addons.CrazyAddons;
+import net.oktawia.crazyae2addons.IsModLoaded;
+import net.oktawia.crazyae2addons.compat.gtceu.PortableSpatialClonerGTCEu;
+import net.oktawia.crazyae2addons.compat.gtceu.PortableSpatialStorageGTCEu;
 import net.oktawia.crazyae2addons.items.CrazyPatternProviderPartItem;
 import net.oktawia.crazyae2addons.items.PortableSpatialCloner;
 import net.oktawia.crazyae2addons.items.PortableSpatialStorage;
@@ -111,10 +114,12 @@ public class CrazyItemRegistrar {
             );
 
     public static final RegistryObject<PortableSpatialStorage> PORTABLE_SPATIAL_STORAGE =
-            ITEMS.register("portable_spatial_storage", () -> new PortableSpatialStorage(new Item.Properties()));
+            ITEMS.register("portable_spatial_storage", () ->
+                    IsModLoaded.GTCEU ? new PortableSpatialStorageGTCEu(new Item.Properties()) : new PortableSpatialStorage(new Item.Properties()));
 
     public static final RegistryObject<PortableSpatialCloner> PORTABLE_SPATIAL_CLONER =
-            ITEMS.register("portable_spatial_cloner", () -> new PortableSpatialCloner(new Item.Properties()));
+            ITEMS.register("portable_spatial_cloner", () ->
+                    IsModLoaded.GTCEU ? new PortableSpatialClonerGTCEu(new Item.Properties()) : new PortableSpatialCloner(new Item.Properties()));
 
     private CrazyItemRegistrar() {}
 }

@@ -18,11 +18,11 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
-import net.oktawia.crazyae2addons.logic.structuretool.AbstractStructureCaptureToolItem;
 import net.oktawia.crazyae2addons.logic.structuretool.StructureToolHost;
 import net.oktawia.crazyae2addons.logic.structuretool.StructureToolStackState;
 import net.oktawia.crazyae2addons.network.NetworkHandler;
 import net.oktawia.crazyae2addons.network.packets.SyncClonerRequirementStatusPacket;
+import net.oktawia.crazyae2addons.util.StructureToolKeys;
 import net.oktawia.crazyae2addons.util.TemplateUtil;
 import org.jetbrains.annotations.Nullable;
 
@@ -124,17 +124,17 @@ public class PortableSpatialClonerMenu extends AbstractPortableStructureToolMenu
             return List.of();
         }
 
-        if (!structureTag.contains(AbstractStructureCaptureToolItem.CLONE_METADATA_KEY, Tag.TAG_COMPOUND)) {
+        if (!structureTag.contains(StructureToolKeys.CLONE_METADATA_KEY, Tag.TAG_COMPOUND)) {
             return List.of();
         }
 
-        CompoundTag metadata = structureTag.getCompound(AbstractStructureCaptureToolItem.CLONE_METADATA_KEY);
-        if (!metadata.contains(AbstractStructureCaptureToolItem.CLONE_REQUIREMENTS_KEY, Tag.TAG_LIST)) {
+        CompoundTag metadata = structureTag.getCompound(StructureToolKeys.CLONE_METADATA_KEY);
+        if (!metadata.contains(StructureToolKeys.CLONE_REQUIREMENTS_KEY, Tag.TAG_LIST)) {
             return List.of();
         }
 
         ListTag requirements = metadata.getList(
-                AbstractStructureCaptureToolItem.CLONE_REQUIREMENTS_KEY,
+                StructureToolKeys.CLONE_REQUIREMENTS_KEY,
                 Tag.TAG_COMPOUND
         );
 
@@ -157,11 +157,11 @@ public class PortableSpatialClonerMenu extends AbstractPortableStructureToolMenu
         for (int i = 0; i < requirements.size(); i++) {
             CompoundTag row = requirements.getCompound(i);
 
-            if (!row.contains(AbstractStructureCaptureToolItem.CLONE_KEY_STACK, Tag.TAG_COMPOUND)) {
+            if (!row.contains(StructureToolKeys.CLONE_KEY_STACK, Tag.TAG_COMPOUND)) {
                 continue;
             }
 
-            ItemStack stack = ItemStack.of(row.getCompound(AbstractStructureCaptureToolItem.CLONE_KEY_STACK));
+            ItemStack stack = ItemStack.of(row.getCompound(StructureToolKeys.CLONE_KEY_STACK));
             if (stack.isEmpty()) {
                 continue;
             }
@@ -169,7 +169,7 @@ public class PortableSpatialClonerMenu extends AbstractPortableStructureToolMenu
             stack = stack.copy();
             stack.setCount(1);
 
-            long required = Math.max(1L, row.getLong(AbstractStructureCaptureToolItem.CLONE_KEY_COUNT));
+            long required = Math.max(1L, row.getLong(StructureToolKeys.CLONE_KEY_COUNT));
             long available = countPlayerInventory(stack);
 
             AEItemKey key = AEItemKey.of(stack);

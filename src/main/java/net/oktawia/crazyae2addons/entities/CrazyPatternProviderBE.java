@@ -22,6 +22,7 @@ import com.lowdragmc.lowdraglib.syncdata.field.ManagedFieldHolder;
 import lombok.Getter;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -43,6 +44,8 @@ public class CrazyPatternProviderBE extends PatternProviderBlockEntity
 
     private static final int BASE_SIZE = 8 * 9;
     private static final int ROW_SIZE = 9;
+    private static final String NBT_STATE = "crazy_state";
+    private static final String NBT_ADDED = "added";
     private static final String NBT_PATTERNS = "crazy_patterns";
 
     protected static final ManagedFieldHolder MANAGED_FIELD_HOLDER =
@@ -122,6 +125,7 @@ public class CrazyPatternProviderBE extends PatternProviderBlockEntity
 
             ((AppEngInternalInventory) getLogic().getPatternInv()).readFromNBT(input, NBT_PATTERNS);
             getLogic().updatePatterns();
+            setChanged();
         }
     }
 

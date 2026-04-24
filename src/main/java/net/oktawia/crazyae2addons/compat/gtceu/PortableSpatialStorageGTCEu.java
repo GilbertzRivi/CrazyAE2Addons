@@ -1,4 +1,4 @@
-package net.oktawia.crazyae2addons.items;
+package net.oktawia.crazyae2addons.compat.gtceu;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
@@ -6,7 +6,6 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -15,52 +14,42 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlac
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
-import net.oktawia.crazyae2addons.IsModLoaded;
-import net.oktawia.crazyae2addons.compat.gtceu.GTCEuPasteCompat;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.oktawia.crazyae2addons.defs.LangDefs;
-import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
-import net.oktawia.crazyae2addons.logic.structuretool.*;
+import net.oktawia.crazyae2addons.items.PortableSpatialStorage;
+import net.oktawia.crazyae2addons.logic.structuretool.StructureToolPreviewDispatcher;
+import net.oktawia.crazyae2addons.logic.structuretool.StructureToolStackState;
+import net.oktawia.crazyae2addons.logic.structuretool.StructureToolStructureStore;
+import net.oktawia.crazyae2addons.logic.structuretool.StructureToolUtil;
 import net.oktawia.crazyae2addons.util.TemplateUtil;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.List;
 
-public class PortableSpatialStorage extends AbstractStructureCaptureToolItem {
+public class PortableSpatialStorageGTCEu extends PortableSpatialStorage {
 
-    private static final double POWER_PER_BLOCK_CUT = 1.0;
+    private static final double POWER_PER_BLOCK_PASTE = 1.0;
 
-    public PortableSpatialStorage(Item.Properties properties) {
-        super(DEFAULT_BASE_POWER, DEFAULT_UPGRADE_SLOTS, properties);
-    }
-
-    public static BlockHitResult rayTrace(net.minecraft.world.level.Level level, Player player, double maxDistance) {
-        return StructureToolUtil.rayTrace(level, player, maxDistance);
+    public PortableSpatialStorageGTCEu(Item.Properties properties) {
+        super(properties);
     }
 
     @Override
-    protected MenuType<?> getToolMenuType() {
-        return CrazyMenuRegistrar.PORTABLE_SPATIAL_STORAGE_MENU.get();
-    }
-
-    @Override
-    protected boolean removeCapturedBlocks() {
-        return true;
-    }
-
-    @Override
-    protected Component getCaptureSuccessMessage() {
-        return Component.translatable(LangDefs.STRUCTURE_CUT_AND_SAVED.getTranslationKey());
-    }
-
-    @Override
-    protected Component getStoredStructureActionNotImplementedMessage() {
-        return Component.translatable(LangDefs.STRUCTURE_PASTED.getTranslationKey());
-    }
-
-    @Override
-    protected double getPowerPerBlockCapture() {
-        return POWER_PER_BLOCK_CUT;
+    protected boolean collectAdditionalBlockMetadata(
+            @Nullable CompoundTag rawBeTag,
+            BlockEntity be,
+            Player player,
+            RequirementSink requirements,
+            CompoundTag blockEntry
+    ) {
+        return GTCEuStructureCaptureCompat.collectAdditionalBlockMetadata(
+                rawBeTag,
+                be,
+                player,
+                requirements,
+                blockEntry
+        );
     }
 
     @Override
@@ -69,7 +58,7 @@ public class PortableSpatialStorage extends AbstractStructureCaptureToolItem {
 
         if (hit.getType() == HitResult.Type.BLOCK) {
             BlockPos pasteOrigin = hit.getBlockPos().relative(hit.getDirection());
-            paste(level, player, stack, pasteOrigin);
+            pasteWithGreg(level, player, stack, pasteOrigin);
         } else {
             showHud(player, Component.translatable(LangDefs.NO_BLOCK_IN_RANGE.getTranslationKey()));
         }
@@ -77,14 +66,14 @@ public class PortableSpatialStorage extends AbstractStructureCaptureToolItem {
 
     @Override
     protected void onUseOnWithStoredStructure(ServerLevel level, Player player, ItemStack stack, BlockPos clickedFacePos) {
-        paste(level, player, stack, clickedFacePos);
+        pasteWithGreg(level, player, stack, clickedFacePos);
     }
 
     private double calculateStructurePower(CompoundTag templateTag, BlockPos localOrigin, double baseCostPerBlock) {
         return StructureToolUtil.calculatePreviewStructurePower(templateTag, localOrigin, baseCostPerBlock);
     }
 
-    private void paste(ServerLevel level, Player player, ItemStack stack, BlockPos origin) {
+    private void pasteWithGreg(ServerLevel level, Player player, ItemStack stack, BlockPos origin) {
         String id = StructureToolStackState.getStructureId(stack);
         if (id.isBlank()) {
             return;
@@ -140,9 +129,7 @@ public class PortableSpatialStorage extends AbstractStructureCaptureToolItem {
             return;
         }
 
-        if (IsModLoaded.GTCEU) {
-            GTCEuPasteCompat.schedulePostPlacementInit(level, placementOrigin, savedTag);
-        }
+        GTCEuPasteCompat.schedulePostPlacementInit(level, placementOrigin, savedTag);
 
         try {
             StructureToolStructureStore.delete(level.getServer(), id);

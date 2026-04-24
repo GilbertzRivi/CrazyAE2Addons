@@ -14,15 +14,11 @@ import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.RandomSource;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.client.ChunkRenderTypeSet;
 import net.minecraftforge.client.model.BakedModelWrapper;
 import net.minecraftforge.client.model.data.ModelData;
-import net.minecraftforge.registries.ForgeRegistries;
 import net.oktawia.crazyae2addons.client.renderer.preview.PortableSpatialStoragePreviewRenderer;
 import net.oktawia.crazyae2addons.client.renderer.preview.PreviewBlock;
 import net.oktawia.crazyae2addons.client.renderer.preview.PreviewBlockAndTintGetter;
@@ -65,7 +61,7 @@ public class PortableSpatialStoragePreviewRendererGTCEu extends PortableSpatialS
 
         types.add(RenderType.cutoutMipped());
 
-        BlockState frameState = getFrameState(tag);
+        BlockState frameState = GTCEuUtil.getFrameState(tag);
         if (frameState != null) {
             BakedModel frameModel = dispatcher.getBlockModel(frameState);
             for (RenderType frameType : frameModel.getRenderTypes(frameState, RandomSource.create(seed), ModelData.EMPTY)) {
@@ -194,7 +190,7 @@ public class PortableSpatialStoragePreviewRendererGTCEu extends PortableSpatialS
             );
         }
 
-        BlockState frameState = getFrameState(tag);
+        BlockState frameState = GTCEuUtil.getFrameState(tag);
         if (frameState == null) {
             return;
         }
@@ -229,30 +225,4 @@ public class PortableSpatialStoragePreviewRendererGTCEu extends PortableSpatialS
         );
     }
 
-    @Nullable
-    private static BlockState getFrameState(CompoundTag tag) {
-        if (!tag.contains("frameMaterial")) {
-            return null;
-        }
-
-        String frameMaterial = tag.getString("frameMaterial");
-        if (frameMaterial == null || frameMaterial.isBlank()) {
-            return null;
-        }
-
-        String materialPath = frameMaterial;
-        int namespaceSeparator = materialPath.indexOf(':');
-        if (namespaceSeparator >= 0 && namespaceSeparator + 1 < materialPath.length()) {
-            materialPath = materialPath.substring(namespaceSeparator + 1);
-        }
-
-        ResourceLocation frameId = new ResourceLocation("gtceu", materialPath + "_frame");
-        Block frameBlock = ForgeRegistries.BLOCKS.getValue(frameId);
-
-        if (frameBlock == null || frameBlock == Blocks.AIR) {
-            return null;
-        }
-
-        return frameBlock.defaultBlockState();
-    }
 }

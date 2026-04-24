@@ -56,6 +56,7 @@ public class CrazyPatternProviderPart extends PatternProviderPart implements IUp
 
     private static final String NBT_STATE = "crazy_state";
     private static final String NBT_PATTERNS = "crazy_patterns";
+    private static final String NBT_ADDED = "added";
 
     @PartModels
     public static final PartModel MODELS_OFF = new PartModel(
@@ -216,6 +217,7 @@ public class CrazyPatternProviderPart extends PatternProviderPart implements IUp
 
             ((AppEngInternalInventory) getLogic().getPatternInv()).readFromNBT(input, NBT_PATTERNS);
             getLogic().updatePatterns();
+            markForSync();
         }
     }
 

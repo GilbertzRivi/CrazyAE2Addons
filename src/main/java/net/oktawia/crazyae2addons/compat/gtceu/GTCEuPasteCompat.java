@@ -1,7 +1,9 @@
 package net.oktawia.crazyae2addons.compat.gtceu;
 
+import com.gregtechceu.gtceu.api.blockentity.MetaMachineBlockEntity;
 import com.gregtechceu.gtceu.api.blockentity.PipeBlockEntity;
 import com.gregtechceu.gtceu.api.cover.CoverBehavior;
+import com.gregtechceu.gtceu.api.machine.feature.IDataStickInteractable;
 import com.gregtechceu.gtceu.api.pipenet.PipeCoverContainer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -10,10 +12,14 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.util.FakePlayerFactory;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.oktawia.crazyae2addons.util.TemplateUtil;
@@ -24,11 +30,6 @@ import java.util.List;
 
 public final class GTCEuPasteCompat {
 
-    private static final String GT_CABLE_ID = "gtceu:cable";
-    private static final String GT_ITEM_PIPE_ID = "gtceu:item_pipe";
-    private static final String GT_FLUID_PIPE_ID = "gtceu:fluid_pipe";
-    private static final String GTCEU_ID_PREFIX = "gtceu:";
-
     private static final List<PendingInit> PENDING = new ArrayList<>();
     private static boolean registered = false;
 
@@ -36,8 +37,39 @@ public final class GTCEuPasteCompat {
     }
 
     public static void schedulePostPlacementInit(ServerLevel level, BlockPos origin, CompoundTag templateTag) {
+        List<PendingBlockInit> blocks = new ArrayList<>();
+
+        for (TemplateUtil.BlockInfo info : TemplateUtil.parseRawBlocksFromTag(templateTag)) {
+            CompoundTag blockEntityTag = info.blockEntityTag();
+            if (!isGregBlockEntityTag(blockEntityTag)) {
+                continue;
+            }
+
+            blocks.add(new PendingBlockInit(
+                    origin.offset(info.pos()).immutable(),
+                    blockEntityTag.copy()
+            ));
+        }
+
+        if (blocks.isEmpty()) {
+            return;
+        }
+
         ensureRegistered();
-        PENDING.add(new PendingInit(level, origin.immutable(), templateTag.copy(), 1));
+        PENDING.add(new PendingInit(level, blocks, 1));
+    }
+
+    public static void scheduleSinglePostPlacementInit(ServerLevel level, BlockPos pos, CompoundTag blockEntityTag) {
+        if (!isGregBlockEntityTag(blockEntityTag)) {
+            return;
+        }
+
+        ensureRegistered();
+
+        List<PendingBlockInit> blocks = new ArrayList<>();
+        blocks.add(new PendingBlockInit(pos.immutable(), blockEntityTag.copy()));
+
+        PENDING.add(new PendingInit(level, blocks, 1));
     }
 
     private static void ensureRegistered() {
@@ -70,19 +102,20 @@ public final class GTCEuPasteCompat {
                 continue;
             }
 
-            runPostPlacementInit(level, pending.origin, pending.templateTag);
+            runPostPlacementInit(level, pending.blocks);
             iterator.remove();
         }
     }
 
-    private static void runPostPlacementInit(ServerLevel level, BlockPos origin, CompoundTag templateTag) {
-        for (TemplateUtil.BlockInfo info : TemplateUtil.parseRawBlocksFromTag(templateTag)) {
-            CompoundTag blockEntityTag = info.blockEntityTag();
+    private static void runPostPlacementInit(ServerLevel level, List<PendingBlockInit> blocks) {
+        for (PendingBlockInit pendingBlock : blocks) {
+            BlockPos worldPos = pendingBlock.pos();
+            CompoundTag blockEntityTag = pendingBlock.blockEntityTag();
+
             if (!isGregBlockEntityTag(blockEntityTag)) {
                 continue;
             }
 
-            BlockPos worldPos = origin.offset(info.pos());
             BlockEntity blockEntity = level.getBlockEntity(worldPos);
             if (blockEntity == null) {
                 continue;
@@ -180,6 +213,8 @@ public final class GTCEuPasteCompat {
         } catch (Throwable ignored) {
         }
 
+        applySavedDataStickIfPresent(level, blockEntity, originalTag);
+
         try {
             blockEntity.setChanged();
         } catch (Throwable ignored) {
@@ -195,34 +230,73 @@ public final class GTCEuPasteCompat {
         }
     }
 
+    private static void applySavedDataStickIfPresent(
+            ServerLevel level,
+            BlockEntity blockEntity,
+            CompoundTag originalTag
+    ) {
+        if (!originalTag.contains("dataStick", Tag.TAG_COMPOUND)) {
+            return;
+        }
+
+        if (!(blockEntity instanceof MetaMachineBlockEntity mmbe)) {
+            return;
+        }
+
+        if (!(mmbe.getMetaMachine() instanceof IDataStickInteractable interactable)) {
+            return;
+        }
+
+        CompoundTag dataStickTag = originalTag.getCompound("dataStick").copy();
+        if (dataStickTag.isEmpty()) {
+            return;
+        }
+
+        ItemStack dataStick = new ItemStack(Items.STICK);
+        dataStick.setTag(dataStickTag);
+
+        try {
+            InteractionResult result = interactable.onDataStickUse(
+                    FakePlayerFactory.getMinecraft(level),
+                    dataStick
+            );
+
+            if (result.consumesAction() || result == InteractionResult.SUCCESS) {
+                blockEntity.setChanged();
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
     private static boolean isGregBlockEntityTag(CompoundTag tag) {
         if (tag == null) {
             return false;
         }
 
         String id = tag.getString("id");
-        if (!id.isBlank() && id.startsWith(GTCEU_ID_PREFIX)) {
+        if (!id.isBlank() && id.startsWith(GTCEuKeys.GTCEU_ID_PREFIX)) {
             return true;
         }
 
-        return GT_CABLE_ID.equals(id)
-                || GT_ITEM_PIPE_ID.equals(id)
-                || GT_FLUID_PIPE_ID.equals(id)
+        return GTCEuKeys.GT_CABLE_ID.equals(id)
+                || GTCEuKeys.GT_ITEM_PIPE_ID.equals(id)
+                || GTCEuKeys.GT_FLUID_PIPE_ID.equals(id)
                 || (tag.contains("connections", Tag.TAG_INT)
                 && tag.contains("blockedConnections", Tag.TAG_INT)
                 && tag.contains("frameMaterial", Tag.TAG_STRING));
     }
 
+    private record PendingBlockInit(BlockPos pos, CompoundTag blockEntityTag) {
+    }
+
     private static final class PendingInit {
         private final ServerLevel level;
-        private final BlockPos origin;
-        private final CompoundTag templateTag;
+        private final List<PendingBlockInit> blocks;
         private int delayTicks;
 
-        private PendingInit(ServerLevel level, BlockPos origin, CompoundTag templateTag, int delayTicks) {
+        private PendingInit(ServerLevel level, List<PendingBlockInit> blocks, int delayTicks) {
             this.level = level;
-            this.origin = origin;
-            this.templateTag = templateTag;
+            this.blocks = blocks;
             this.delayTicks = delayTicks;
         }
     }

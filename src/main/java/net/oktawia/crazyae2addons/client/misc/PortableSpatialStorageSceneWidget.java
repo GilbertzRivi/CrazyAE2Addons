@@ -33,24 +33,25 @@ public class PortableSpatialStorageSceneWidget extends SceneWidget {
     private static final BlockState FLOOR_B = Blocks.POLISHED_ANDESITE.defaultBlockState();
     private static final int FLOOR_PADDING = 2;
 
-    private final PortableSpatialStorageDummyWorld previewWorld;
+    protected final PortableSpatialStorageDummyWorld previewWorld;
 
-    private PreviewStructure previewStructure;
-    private int[] sideMap = new int[] {0, 1, 2, 3, 4, 5};
-    private String sideMapKey = Arrays.toString(sideMap);
+    protected PreviewStructure previewStructure;
+    protected int[] sideMap = new int[] {0, 1, 2, 3, 4, 5};
+    protected String sideMapKey = Arrays.toString(sideMap);
 
-    private final Set<BlockPos> ae2Blocks = new HashSet<>();
-    private final Set<BlockPos> normalBlocks = new HashSet<>();
+    protected final Set<BlockPos> ae2Blocks = new HashSet<>();
+    protected final Set<BlockPos> specialBlocks = new HashSet<>();
+    protected final Set<BlockPos> normalBlocks = new HashSet<>();
 
-    private BlockPos originMarkerPos = BlockPos.ZERO;
-    private BlockPos floorAnchorPos = BlockPos.ZERO;
+    protected BlockPos originMarkerPos = BlockPos.ZERO;
+    protected BlockPos floorAnchorPos = BlockPos.ZERO;
 
-    private int floorMinX;
-    private int floorMaxX;
-    private int floorMinZ;
-    private int floorMaxZ;
-    private int floorY;
-    private boolean hasFloor = false;
+    protected int floorMinX;
+    protected int floorMaxX;
+    protected int floorMinZ;
+    protected int floorMaxZ;
+    protected int floorY;
+    protected boolean hasFloor = false;
 
     public PortableSpatialStorageSceneWidget(int x, int y, int width, int height, PortableSpatialStorageDummyWorld world) {
         super(x, y, width, height, world);
@@ -73,6 +74,7 @@ public class PortableSpatialStorageSceneWidget extends SceneWidget {
 
         this.ae2Blocks.clear();
         this.normalBlocks.clear();
+        this.specialBlocks.clear();
         this.hasFloor = false;
 
         if (structure == null || structure.blocks().isEmpty()) {
@@ -90,6 +92,7 @@ public class PortableSpatialStorageSceneWidget extends SceneWidget {
 
         for (PreviewBlock block : structure.blocks()) {
             BlockPos pos = block.pos();
+            BlockState state = block.state();
 
             minX = Math.min(minX, pos.getX());
             minY = Math.min(minY, pos.getY());
@@ -97,6 +100,10 @@ public class PortableSpatialStorageSceneWidget extends SceneWidget {
             maxX = Math.max(maxX, pos.getX());
             maxY = Math.max(maxY, pos.getY());
             maxZ = Math.max(maxZ, pos.getZ());
+
+            if (classifySpecialBlock(block, pos, state, renderedSurface)) {
+                continue;
+            }
 
             BlockEntity be = previewWorld.getBlockEntity(pos);
             if (be instanceof CableBusBlockEntity) {
@@ -119,6 +126,24 @@ public class PortableSpatialStorageSceneWidget extends SceneWidget {
         needCompileCache();
     }
 
+    protected boolean classifySpecialBlock(PreviewBlock block, BlockPos pos, BlockState state, Set<BlockPos> renderedSurface) {
+        return false;
+    }
+
+    protected boolean renderSpecialBlock(
+            PreviewBlock previewBlock,
+            BlockRenderDispatcher dispatcher,
+            PreviewBlockAndTintGetter localLevel,
+            BlockState state,
+            BakedModel model,
+            BlockPos localPos,
+            PoseStack poseStack,
+            MultiBufferSource bufferSource,
+            long seed
+    ) {
+        return false;
+    }
+
     @Override
     protected void renderBeforeBatchEnd(MultiBufferSource bufferSource, float partialTicks) {
         if (previewStructure == null) {
@@ -134,7 +159,7 @@ public class PortableSpatialStorageSceneWidget extends SceneWidget {
         renderFloor(bufferSource, minecraft);
         renderOriginMarker(bufferSource);
 
-        if (ae2Blocks.isEmpty()) {
+        if (ae2Blocks.isEmpty() && specialBlocks.isEmpty()) {
             return;
         }
 
@@ -146,7 +171,7 @@ public class PortableSpatialStorageSceneWidget extends SceneWidget {
         for (PreviewBlock previewBlock : previewStructure.blocks()) {
             BlockPos localPos = previewBlock.pos();
 
-            if (!ae2Blocks.contains(localPos)) {
+            if (!ae2Blocks.contains(localPos) && !specialBlocks.contains(localPos)) {
                 continue;
             }
 
@@ -168,21 +193,33 @@ public class PortableSpatialStorageSceneWidget extends SceneWidget {
             poseStack.translate(localPos.getX(), localPos.getY(), localPos.getZ());
 
             try {
-                for (RenderType renderType : model.getRenderTypes(state, RandomSource.create(seed), modelData)) {
-                    dispatcher.getModelRenderer().tesselateBlock(
-                            localLevel,
-                            model,
-                            state,
-                            localPos,
-                            poseStack,
-                            bufferSource.getBuffer(renderType),
-                            false,
-                            RandomSource.create(seed),
-                            seed,
-                            OverlayTexture.NO_OVERLAY,
-                            modelData,
-                            renderType
-                    );
+                if (!renderSpecialBlock(
+                        previewBlock,
+                        dispatcher,
+                        localLevel,
+                        state,
+                        model,
+                        localPos,
+                        poseStack,
+                        bufferSource,
+                        seed
+                )) {
+                    for (RenderType renderType : model.getRenderTypes(state, RandomSource.create(seed), modelData)) {
+                        dispatcher.getModelRenderer().tesselateBlock(
+                                localLevel,
+                                model,
+                                state,
+                                localPos,
+                                poseStack,
+                                bufferSource.getBuffer(renderType),
+                                false,
+                                RandomSource.create(seed),
+                                seed,
+                                OverlayTexture.NO_OVERLAY,
+                                modelData,
+                                renderType
+                        );
+                    }
                 }
             } catch (Throwable ignored) {
             }

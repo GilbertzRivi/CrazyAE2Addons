@@ -16,6 +16,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraftforge.registries.ForgeRegistries;
+import net.oktawia.crazyae2addons.compat.gtceu.GTCEuKeys;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.ByteArrayInputStream;
@@ -33,7 +34,6 @@ public final class TemplateUtil {
     public record BlockInfo(BlockPos pos, BlockState state, @Nullable CompoundTag blockEntityTag) {}
 
     private static final String AE2_CABLE_BUS_ID = "ae2:cable_bus";
-    private static final String GTCEU_ID_PREFIX = "gtceu:";
 
     private static final String KEY_NORTH = "north";
     private static final String KEY_SOUTH = "south";
@@ -589,6 +589,121 @@ public final class TemplateUtil {
                 clampOffset(oldOffset.getZ() + newOrigin.getZ() - oldOrigin.getZ())
         ));
 
+        transformCloneMetadata(
+                result,
+                positionTransform,
+                minX, maxX,
+                minY, maxY,
+                minZ, maxZ,
+                newMinX, newMinY, newMinZ,
+                cableBusTransform
+        );
+
+        return result;
+    }
+
+    private static void transformCloneMetadata(
+            CompoundTag tag,
+            Transform positionTransform,
+            int minX, int maxX,
+            int minY, int maxY,
+            int minZ, int maxZ,
+            int newMinX, int newMinY, int newMinZ,
+            CableBusTransform cableBusTransform
+    ) {
+        if (!tag.contains(StructureToolKeys.CLONE_METADATA_KEY, Tag.TAG_COMPOUND)) {
+            return;
+        }
+
+        CompoundTag cloneMetadata = tag.getCompound(StructureToolKeys.CLONE_METADATA_KEY).copy();
+        if (!cloneMetadata.contains(StructureToolKeys.CLONE_METADATA_BLOCKS_KEY, Tag.TAG_LIST)) {
+            tag.put(StructureToolKeys.CLONE_METADATA_KEY, cloneMetadata);
+            return;
+        }
+
+        ListTag oldBlocks = cloneMetadata.getList(StructureToolKeys.CLONE_METADATA_BLOCKS_KEY, Tag.TAG_COMPOUND);
+        ListTag newBlocks = new ListTag();
+
+        for (int i = 0; i < oldBlocks.size(); i++) {
+            CompoundTag blockEntry = oldBlocks.getCompound(i).copy();
+
+            if (blockEntry.contains(StructureToolKeys.CLONE_KEY_POS, Tag.TAG_COMPOUND)) {
+                CompoundTag posTag = blockEntry.getCompound(StructureToolKeys.CLONE_KEY_POS);
+                int oldX = posTag.getInt("x");
+                int oldY = posTag.getInt("y");
+                int oldZ = posTag.getInt("z");
+
+                int[] transformed = positionTransform.apply(
+                        oldX, oldY, oldZ,
+                        minX, maxX,
+                        minY, maxY,
+                        minZ, maxZ
+                );
+
+                CompoundTag newPos = new CompoundTag();
+                newPos.putInt("x", transformed[0] - newMinX);
+                newPos.putInt("y", transformed[1] - newMinY);
+                newPos.putInt("z", transformed[2] - newMinZ);
+                blockEntry.put(StructureToolKeys.CLONE_KEY_POS, newPos);
+            }
+
+            if (blockEntry.contains(StructureToolKeys.CLONE_KEY_PARTS, Tag.TAG_COMPOUND)) {
+                blockEntry.put(
+                        StructureToolKeys.CLONE_KEY_PARTS,
+                        transformDirectionalMetadataTag(blockEntry.getCompound(StructureToolKeys.CLONE_KEY_PARTS), cableBusTransform)
+                );
+            }
+
+            if (blockEntry.contains(GTCEuKeys.CLONE_KEY_GREG, Tag.TAG_COMPOUND)) {
+                CompoundTag gregTag = blockEntry.getCompound(GTCEuKeys.CLONE_KEY_GREG).copy();
+
+                if (gregTag.contains(KEY_COVER, Tag.TAG_COMPOUND)) {
+                    gregTag.put(KEY_COVER, transformGregPipeCoverTag(gregTag.getCompound(KEY_COVER), cableBusTransform));
+                }
+
+                if (gregTag.contains(GTCEuKeys.CLONE_KEY_GREG_PIPE, Tag.TAG_COMPOUND)) {
+                    CompoundTag pipeTag = gregTag.getCompound(GTCEuKeys.CLONE_KEY_GREG_PIPE).copy();
+
+                    if (pipeTag.contains("connections", Tag.TAG_INT)) {
+                        pipeTag.putInt("connections", remapGregConnectionMask(pipeTag.getInt("connections"), cableBusTransform));
+                    }
+
+                    if (pipeTag.contains("blockedConnections", Tag.TAG_INT)) {
+                        pipeTag.putInt("blockedConnections", remapGregConnectionMask(pipeTag.getInt("blockedConnections"), cableBusTransform));
+                    }
+
+                    gregTag.put(GTCEuKeys.CLONE_KEY_GREG_PIPE, pipeTag);
+                }
+
+                blockEntry.put(GTCEuKeys.CLONE_KEY_GREG, gregTag);
+            }
+
+            newBlocks.add(blockEntry);
+        }
+
+        cloneMetadata.put(StructureToolKeys.CLONE_METADATA_BLOCKS_KEY, newBlocks);
+        tag.put(StructureToolKeys.CLONE_METADATA_KEY, cloneMetadata);
+    }
+
+    private static CompoundTag transformDirectionalMetadataTag(CompoundTag tag, CableBusTransform transform) {
+        CompoundTag result = new CompoundTag();
+
+        for (String key : tag.getAllKeys()) {
+            Tag value = tag.get(key);
+            if (value == null) {
+                continue;
+            }
+
+            Direction side = directionFromKey(key);
+            if (side == null) {
+                result.put(key, value.copy());
+                continue;
+            }
+
+            Direction mappedSide = mapCableBusSide(side, transform);
+            result.put(directionKey(mappedSide), value.copy());
+        }
+
         return result;
     }
 
@@ -603,7 +718,7 @@ public final class TemplateUtil {
             return transformCableBusTag(tag, transform);
         }
 
-        if (!id.isBlank() && id.startsWith(GTCEU_ID_PREFIX)) {
+        if (!id.isBlank() && id.startsWith(GTCEuKeys.GTCEU_ID_PREFIX)) {
             return transformGregBlockEntityTag(tag, transform);
         }
 
@@ -886,7 +1001,7 @@ public final class TemplateUtil {
         };
     }
 
-    private static String directionKey(Direction direction) {
+    public static String directionKey(Direction direction) {
         return switch (direction) {
             case NORTH -> KEY_NORTH;
             case SOUTH -> KEY_SOUTH;

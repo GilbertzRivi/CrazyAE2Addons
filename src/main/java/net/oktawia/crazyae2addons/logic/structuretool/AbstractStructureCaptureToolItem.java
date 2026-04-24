@@ -9,21 +9,17 @@ import appeng.api.upgrades.Upgrades;
 import appeng.api.upgrades.UpgradeInventories;
 import appeng.blockentity.AEBaseBlockEntity;
 import appeng.blockentity.networking.CableBusBlockEntity;
-import appeng.core.definitions.AEItems;
 import appeng.core.localization.Tooltips;
 import appeng.items.tools.powered.WirelessTerminalItem;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuLocators;
 import appeng.util.SettingsFrom;
-import com.gregtechceu.gtceu.api.blockentity.MetaMachineBlockEntity;
-import com.gregtechceu.gtceu.api.machine.feature.IDataStickInteractable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
@@ -44,15 +40,15 @@ import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemp
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.registries.ForgeRegistries;
 import net.oktawia.crazyae2addons.defs.LangDefs;
 import net.oktawia.crazyae2addons.network.NetworkHandler;
 import net.oktawia.crazyae2addons.network.packets.ShowHudMessagePacket;
+import net.oktawia.crazyae2addons.util.NbtUtil;
+import net.oktawia.crazyae2addons.util.StructureToolKeys;
 import net.oktawia.crazyae2addons.util.TemplateUtil;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -62,27 +58,9 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
 
     protected static final int DEFAULT_BASE_POWER = 200_000;
     protected static final int DEFAULT_UPGRADE_SLOTS = 4;
+    protected static final double POWER_PER_BLOCK_PASTE = 1.0D;
     protected static final String CURRENT_POWER_NBT_KEY = "internalCurrentPower";
     private static final String WAS_HELD_IN_HAND_NBT_KEY = "wasHeldInHand";
-
-    public static final String CLONE_METADATA_KEY = "clone_metadata";
-    public static final String CLONE_METADATA_BLOCKS_KEY = "blocks";
-    public static final String CLONE_REQUIREMENTS_KEY = "requirements";
-    public static final String CLONE_KEY_POS = "pos";
-    public static final String CLONE_KEY_SETTINGS = "settings";
-    public static final String CLONE_KEY_UPGRADES = "upgrades";
-    public static final String CLONE_KEY_PARTS = "parts";
-    public static final String CLONE_KEY_STACK = "stack";
-    public static final String CLONE_KEY_COUNT = "count";
-    public static final String CLONE_KEY_GREG = "greg";
-    public static final String CLONE_KEY_GREG_COVER = "cover";
-    public static final String CLONE_KEY_GREG_PIPE = "pipe";
-    public static final String CLONE_KEY_GREG_MACHINE = "machine";
-
-    private static final String GTCEU_ID_PREFIX = "gtceu:";
-    private static final String GT_FLUID_PIPE_ID = "gtceu:fluid_pipe";
-    private static final String GT_ITEM_PIPE_ID = "gtceu:item_pipe";
-    private static final String GT_CABLE_ID = "gtceu:cable";
 
     private static final int HUD_COLOR_CYAN = 0x55FFFF;
     private static final int HUD_COLOR_RED = 0xFF4040;
@@ -96,6 +74,11 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
         this.upgradeSlots = upgradeSlots;
     }
 
+    @FunctionalInterface
+    public interface RequirementSink {
+        void add(ItemStack stack);
+    }
+
     protected abstract MenuType<?> getToolMenuType();
 
     protected abstract boolean removeCapturedBlocks();
@@ -106,6 +89,16 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
 
     protected double getPowerPerBlockCapture() {
         return 1.0D;
+    }
+
+    protected boolean collectAdditionalBlockMetadata(
+            @Nullable CompoundTag rawBeTag,
+            BlockEntity be,
+            Player player,
+            RequirementSink requirements,
+            CompoundTag blockEntry
+    ) {
+        return false;
     }
 
     @Override
@@ -358,7 +351,7 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
 
         CompoundTag metadata = getMetadata(level, player, min, max, savedTag);
         if (!metadata.isEmpty()) {
-            savedTag.put(CLONE_METADATA_KEY, metadata);
+            savedTag.put(StructureToolKeys.CLONE_METADATA_KEY, metadata);
         }
 
         BlockPos localOrigin = origin.subtract(min);
@@ -438,7 +431,7 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
                     }
 
                     CompoundTag blockEntry = new CompoundTag();
-                    blockEntry.put(CLONE_KEY_POS, writeBlockPos(localPos));
+                    blockEntry.put(StructureToolKeys.CLONE_KEY_POS, writeBlockPos(localPos));
 
                     boolean hasAnyData = false;
 
@@ -450,7 +443,7 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
                         }
 
                         if (!settings.isEmpty()) {
-                            blockEntry.put(CLONE_KEY_SETTINGS, settings);
+                            blockEntry.put(StructureToolKeys.CLONE_KEY_SETTINGS, settings);
                             hasAnyData = true;
                         }
                     }
@@ -460,11 +453,11 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
                         if (!upgrades.isEmpty()) {
                             for (ItemStack upgrade : upgrades) {
                                 if (!upgrade.isEmpty()) {
-                                    requirements.add(upgrade, RequirementKind.DEFAULT);
+                                    requirements.addDefault(upgrade);
                                 }
                             }
 
-                            upgrades.writeToNBT(blockEntry, CLONE_KEY_UPGRADES);
+                            upgrades.writeToNBT(blockEntry, StructureToolKeys.CLONE_KEY_UPGRADES);
                             hasAnyData = true;
                         }
                     }
@@ -488,7 +481,7 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
                             }
 
                             if (!partSettings.isEmpty()) {
-                                partEntry.put(CLONE_KEY_SETTINGS, partSettings);
+                                partEntry.put(StructureToolKeys.CLONE_KEY_SETTINGS, partSettings);
                                 hasPartData = true;
                             }
 
@@ -497,29 +490,27 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
                                 if (!upgrades.isEmpty()) {
                                     for (ItemStack upgrade : upgrades) {
                                         if (!upgrade.isEmpty()) {
-                                            requirements.add(upgrade, RequirementKind.DEFAULT);
+                                            requirements.addDefault(upgrade);
                                         }
                                     }
 
-                                    upgrades.writeToNBT(partEntry, CLONE_KEY_UPGRADES);
+                                    upgrades.writeToNBT(partEntry, StructureToolKeys.CLONE_KEY_UPGRADES);
                                     hasPartData = true;
                                 }
                             }
 
                             if (hasPartData) {
-                                partsTag.put(directionKey(dir), partEntry);
+                                partsTag.put(TemplateUtil.directionKey(dir), partEntry);
                             }
                         }
 
                         if (!partsTag.isEmpty()) {
-                            blockEntry.put(CLONE_KEY_PARTS, partsTag);
+                            blockEntry.put(StructureToolKeys.CLONE_KEY_PARTS, partsTag);
                             hasAnyData = true;
                         }
                     }
 
-                    CompoundTag gregData = collectGregMetadata(rawBeTag, be, player, requirements);
-                    if (!gregData.isEmpty()) {
-                        blockEntry.put(CLONE_KEY_GREG, gregData);
+                    if (collectAdditionalBlockMetadata(rawBeTag, be, player, requirements::add, blockEntry)) {
                         hasAnyData = true;
                     }
 
@@ -531,253 +522,23 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
         }
 
         if (!blocks.isEmpty()) {
-            data.put(CLONE_METADATA_BLOCKS_KEY, blocks);
+            data.put(StructureToolKeys.CLONE_METADATA_BLOCKS_KEY, blocks);
         }
 
         ListTag requirementList = requirements.toListTag();
         if (!requirementList.isEmpty()) {
-            data.put(CLONE_REQUIREMENTS_KEY, requirementList);
+            data.put(StructureToolKeys.CLONE_REQUIREMENTS_KEY, requirementList);
         }
 
         return data;
     }
-
-    private static CompoundTag collectGregMetadata(
-            @Nullable CompoundTag rawBeTag,
-            BlockEntity be,
-            Player player,
-            RequirementAccumulator requirements
-    ) {
-        CompoundTag out = new CompoundTag();
-
-        if (!isGregBlockEntityTag(rawBeTag)) {
-            return out;
-        }
-
-        if (rawBeTag.contains("cover", Tag.TAG_COMPOUND)) {
-            CompoundTag coverTag = rawBeTag.getCompound("cover").copy();
-            out.put(CLONE_KEY_GREG_COVER, coverTag);
-            collectGregCoverRequirements(coverTag, requirements);
-        }
-
-        if (isGregPipeTag(rawBeTag)) {
-            CompoundTag pipeTag = new CompoundTag();
-
-            copyIntIfPresent(rawBeTag, pipeTag, "blockedConnections");
-            copyIntIfPresent(rawBeTag, pipeTag, "paintingColor");
-
-            if (rawBeTag.contains("frameMaterial", Tag.TAG_STRING)) {
-                String frameMaterial = rawBeTag.getString("frameMaterial");
-                pipeTag.putString("frameMaterial", frameMaterial);
-                collectGregPipeFrameRequirement(frameMaterial, requirements);
-            }
-
-            if (!pipeTag.isEmpty()) {
-                out.put(CLONE_KEY_GREG_PIPE, pipeTag);
-            }
-        }
-
-        if (isGregMachineTag(rawBeTag)) {
-            CompoundTag machineTag = new CompoundTag();
-
-            copyTagIfPresent(rawBeTag, machineTag, "ownerUUID");
-            copyStringIfPresent(rawBeTag, machineTag, "workingMode");
-            copyStringIfPresent(rawBeTag, machineTag, "voidingMode");
-            copyByteIfPresent(rawBeTag, machineTag, "batchEnabled");
-            copyByteIfPresent(rawBeTag, machineTag, "isWorkingEnabled");
-            copyByteIfPresent(rawBeTag, machineTag, "isMuffled");
-            copyIntIfPresent(rawBeTag, machineTag, "paintingColor");
-
-            if (rawBeTag.contains("recipeLogic", Tag.TAG_COMPOUND)) {
-                CompoundTag recipeLogic = sanitizeGregRecipeLogic(rawBeTag.getCompound("recipeLogic"));
-                if (!recipeLogic.isEmpty()) {
-                    machineTag.put("recipeLogic", recipeLogic);
-                }
-            }
-
-            CompoundTag dataStick = collectGregDataStick(be, player);
-            if (!dataStick.isEmpty()) {
-                machineTag.put("dataStick", dataStick);
-            }
-
-            if (!machineTag.isEmpty()) {
-                out.put(CLONE_KEY_GREG_MACHINE, machineTag);
-            }
-        }
-
-        return out;
-    }
-
-    private static CompoundTag collectGregDataStick(BlockEntity be, Player player) {
-        if (!(be instanceof MetaMachineBlockEntity mmbe)) {
-            return new CompoundTag();
-        }
-        if (!(mmbe.getMetaMachine() instanceof IDataStickInteractable interactable)) {
-            return new CompoundTag();
-        }
-
-        ItemStack stick = new ItemStack(Items.STICK);
-
-        try {
-            InteractionResult result = interactable.onDataStickShiftUse(player, stick);
-
-            if (!result.consumesAction() && result != InteractionResult.SUCCESS) {
-                return new CompoundTag();
-            }
-
-            CompoundTag tag = stick.getTag();
-            return tag == null ? new CompoundTag() : tag.copy();
-        } catch (Throwable ignored) {
-            return new CompoundTag();
-        }
-    }
-
-    private static void collectGregPipeFrameRequirement(String frameMaterial, RequirementAccumulator requirements) {
-        if (frameMaterial == null || frameMaterial.isBlank()) {
-            return;
-        }
-
-        String materialPath = frameMaterial;
-
-        int namespaceSeparator = materialPath.indexOf(':');
-        if (namespaceSeparator >= 0 && namespaceSeparator + 1 < materialPath.length()) {
-            materialPath = materialPath.substring(namespaceSeparator + 1);
-        }
-
-        ResourceLocation frameId = new ResourceLocation("gtceu", materialPath + "_frame");
-        Item frameItem = ForgeRegistries.ITEMS.getValue(frameId);
-
-        if (frameItem != null && frameItem != Items.AIR) {
-            requirements.add(new ItemStack(frameItem), RequirementKind.DEFAULT);
-        }
-    }
-
-    private static CompoundTag sanitizeGregRecipeLogic(CompoundTag rawRecipeLogic) {
-        CompoundTag out = rawRecipeLogic.copy();
-
-        out.remove("progress");
-        out.remove("duration");
-        out.remove("isActive");
-        out.remove("totalContinuousRunningTime");
-        out.remove("chance_cache");
-        out.remove("eut");
-        out.remove("cwut");
-        out.remove("item");
-        out.remove("fluid");
-        out.remove("tick");
-        out.remove("block_state");
-        out.remove("consecutiveRecipes");
-
-        return out;
-    }
-
-    private static void collectGregCoverRequirements(CompoundTag coverTag, RequirementAccumulator requirements) {
-        for (String sideKey : coverTag.getAllKeys()) {
-            Tag sideTag = coverTag.get(sideKey);
-            collectGregAttachItems(sideTag, requirements);
-        }
-    }
-
-    private static void collectGregAttachItems(@Nullable Tag tag, RequirementAccumulator requirements) {
-        if (tag == null) {
-            return;
-        }
-
-        if (tag instanceof CompoundTag compoundTag) {
-            if (compoundTag.contains("attachItem", Tag.TAG_COMPOUND)) {
-                ItemStack stack = tryReadSavedItemStack(compoundTag.getCompound("attachItem"));
-                if (!stack.isEmpty()) {
-                    requirements.add(stack, RequirementKind.DEFAULT);
-                }
-            }
-
-            for (String key : compoundTag.getAllKeys()) {
-                collectGregAttachItems(compoundTag.get(key), requirements);
-            }
-            return;
-        }
-
-        if (tag instanceof ListTag listTag) {
-            for (int i = 0; i < listTag.size(); i++) {
-                collectGregAttachItems(listTag.get(i), requirements);
-            }
-        }
-    }
-
-    private static boolean isGregBlockEntityTag(@Nullable CompoundTag tag) {
-        if (tag == null) {
-            return false;
-        }
-
-        String id = tag.getString("id");
-        return !id.isBlank() && id.startsWith(GTCEU_ID_PREFIX);
-    }
-
-    private static boolean isGregPipeTag(@Nullable CompoundTag tag) {
-        if (tag == null) {
-            return false;
-        }
-
-        String id = tag.getString("id");
-        return GT_FLUID_PIPE_ID.equals(id)
-                || GT_ITEM_PIPE_ID.equals(id)
-                || GT_CABLE_ID.equals(id);
-    }
-
-    private static boolean isGregMachineTag(@Nullable CompoundTag tag) {
-        if (tag == null) {
-            return false;
-        }
-
-        String id = tag.getString("id");
-        return !id.isBlank()
-                && id.startsWith(GTCEU_ID_PREFIX)
-                && !isGregPipeTag(tag);
-    }
-
-    private static void copyTagIfPresent(CompoundTag from, CompoundTag to, String key) {
-        if (from.contains(key)) {
-            Tag value = from.get(key);
-            if (value != null) {
-                to.put(key, value.copy());
-            }
-        }
-    }
-
-    private static void copyStringIfPresent(CompoundTag from, CompoundTag to, String key) {
-        if (from.contains(key, Tag.TAG_STRING)) {
-            to.putString(key, from.getString(key));
-        }
-    }
-
-    private static void copyByteIfPresent(CompoundTag from, CompoundTag to, String key) {
-        if (from.contains(key, Tag.TAG_BYTE)) {
-            to.putByte(key, from.getByte(key));
-        }
-    }
-
-    private static void copyIntIfPresent(CompoundTag from, CompoundTag to, String key) {
-        if (from.contains(key, Tag.TAG_INT)) {
-            to.putInt(key, from.getInt(key));
-        }
-    }
-
-    private static final List<String> AE2_CABLE_BUS_KEYS = List.of(
-            "cable",
-            "north",
-            "south",
-            "east",
-            "west",
-            "up",
-            "down"
-    );
 
     private static void collectCableBusRequirements(@Nullable CompoundTag rawBeTag, RequirementAccumulator requirements) {
         if (rawBeTag == null) {
             return;
         }
 
-        for (String key : AE2_CABLE_BUS_KEYS) {
+        for (String key : StructureToolKeys.AE2_CABLE_BUS_KEYS) {
             if (!rawBeTag.contains(key)) {
                 continue;
             }
@@ -792,9 +553,9 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
         }
 
         if (tag instanceof CompoundTag compoundTag) {
-            ItemStack stack = tryReadSavedItemStack(compoundTag);
+            ItemStack stack = NbtUtil.tryReadSavedItemStack(compoundTag);
             if (!stack.isEmpty()) {
-                requirements.add(stack, RequirementKind.DEFAULT);
+                requirements.addDefault(stack);
                 return;
             }
 
@@ -811,20 +572,6 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
         }
     }
 
-    private static ItemStack tryReadSavedItemStack(CompoundTag tag) {
-        if (!tag.contains("id", Tag.TAG_STRING)) {
-            return ItemStack.EMPTY;
-        }
-
-        CompoundTag copy = tag.copy();
-        if (!copy.contains("Count", Tag.TAG_BYTE)) {
-            copy.putByte("Count", (byte) 1);
-        }
-
-        ItemStack stack = ItemStack.of(copy);
-        return stack.isEmpty() ? ItemStack.EMPTY : stack;
-    }
-
     private static void addBaseBlockRequirement(ServerLevel level, BlockPos pos, RequirementAccumulator requirements) {
         BlockHitResult hit = new BlockHitResult(
                 Vec3.atCenterOf(pos),
@@ -836,13 +583,13 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
         ItemStack picked = level.getBlockState(pos).getCloneItemStack(hit, level, pos, null);
 
         if (!picked.isEmpty()) {
-            requirements.add(picked, RequirementKind.DEFAULT);
+            requirements.addDefault(picked);
             return;
         }
 
         Item item = level.getBlockState(pos).getBlock().asItem();
         if (item != Items.AIR) {
-            requirements.add(new ItemStack(item), RequirementKind.DEFAULT);
+            requirements.addDefault(new ItemStack(item));
         }
     }
 
@@ -854,27 +601,15 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
         return tag;
     }
 
-    private static String directionKey(Direction direction) {
-        return switch (direction) {
-            case DOWN -> "down";
-            case UP -> "up";
-            case NORTH -> "north";
-            case SOUTH -> "south";
-            case WEST -> "west";
-            case EAST -> "east";
-        };
-    }
-
     private enum RequirementKind {
-        DEFAULT,
-        PATTERN
+        DEFAULT
     }
 
     private static final class RequirementAccumulator {
         private final Map<Item, RequirementEntry> entries = new LinkedHashMap<>();
 
         private void add(ItemStack stack, RequirementKind kind) {
-            ItemStack normalized = normalize(stack, kind);
+            ItemStack normalized = normalize(stack);
             if (normalized.isEmpty()) {
                 return;
             }
@@ -889,26 +624,30 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
             }
         }
 
+        private void add(ItemStack stack) {
+            add(stack, RequirementKind.DEFAULT);
+        }
+
+        private void addDefault(ItemStack stack) {
+            add(stack, RequirementKind.DEFAULT);
+        }
+
         private ListTag toListTag() {
             ListTag list = new ListTag();
 
             for (RequirementEntry entry : entries.values()) {
                 CompoundTag row = new CompoundTag();
-                row.put(CLONE_KEY_STACK, entry.stack.save(new CompoundTag()));
-                row.putInt(CLONE_KEY_COUNT, entry.count);
+                row.put(StructureToolKeys.CLONE_KEY_STACK, entry.stack.save(new CompoundTag()));
+                row.putInt(StructureToolKeys.CLONE_KEY_COUNT, entry.count);
                 list.add(row);
             }
 
             return list;
         }
 
-        private static ItemStack normalize(ItemStack stack, RequirementKind kind) {
+        private static ItemStack normalize(ItemStack stack) {
             if (stack.isEmpty()) {
                 return ItemStack.EMPTY;
-            }
-
-            if (kind == RequirementKind.PATTERN) {
-                return new ItemStack(AEItems.BLANK_PATTERN.asItem());
             }
 
             ItemStack copy = stack.copy();

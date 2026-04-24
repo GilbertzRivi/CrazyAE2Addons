@@ -1,14 +1,13 @@
-package net.oktawia.crazyae2addons.logic.cutpaste;
+package net.oktawia.crazyae2addons.logic.structuretool;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.world.item.ItemStack;
-
 import org.jetbrains.annotations.Nullable;
 
-public final class CutPasteStackState {
+public final class StructureToolStackState {
 
     private static final String TAG_SEL_A = "sel_a";
     private static final String TAG_SEL_B = "sel_b";
@@ -17,7 +16,7 @@ public final class CutPasteStackState {
     private static final String TAG_STRUCTURE_ID = "structure_id";
     public static final String TAG_PREVIEW_SIDE_MAP = "crazy_preview_side_map";
 
-    private CutPasteStackState() {
+    private StructureToolStackState() {
     }
 
     public static void setSelectionA(ItemStack stack, @Nullable BlockPos pos) {
@@ -73,8 +72,7 @@ public final class CutPasteStackState {
     }
 
     public static boolean hasStructure(ItemStack stack) {
-        String id = getStructureId(stack);
-        return !id.isBlank();
+        return !getStructureId(stack).isBlank();
     }
 
     public static void clearSelection(ItemStack stack) {
@@ -89,26 +87,25 @@ public final class CutPasteStackState {
         setStructureId(stack, null);
     }
 
-    private static void setPos(ItemStack stack, String key, @Nullable BlockPos pos) {
-        CompoundTag tag = stack.getOrCreateTag();
-        if (pos == null) {
-            tag.remove(key);
-            return;
-        }
-
-        tag.putIntArray(key, new int[]{pos.getX(), pos.getY(), pos.getZ()});
-    }
-
     public static int[] getPreviewSideMap(ItemStack stack) {
         int[] identity = identitySideMap();
         CompoundTag tag = stack.getTag();
-        if (tag == null || !tag.contains(TAG_PREVIEW_SIDE_MAP, Tag.TAG_INT_ARRAY)) return identity;
+        if (tag == null || !tag.contains(TAG_PREVIEW_SIDE_MAP, Tag.TAG_INT_ARRAY)) {
+            return identity;
+        }
+
         int[] raw = tag.getIntArray(TAG_PREVIEW_SIDE_MAP);
-        if (raw.length != Direction.values().length) return identity;
+        if (raw.length != Direction.values().length) {
+            return identity;
+        }
+
         for (Direction side : Direction.values()) {
             int mapped = raw[side.ordinal()];
-            if (mapped < 0 || mapped >= Direction.values().length) return identity;
+            if (mapped < 0 || mapped >= Direction.values().length) {
+                return identity;
+            }
         }
+
         return raw;
     }
 
@@ -118,8 +115,20 @@ public final class CutPasteStackState {
 
     public static int[] identitySideMap() {
         int[] map = new int[Direction.values().length];
-        for (Direction side : Direction.values()) map[side.ordinal()] = side.ordinal();
+        for (Direction side : Direction.values()) {
+            map[side.ordinal()] = side.ordinal();
+        }
         return map;
+    }
+
+    private static void setPos(ItemStack stack, String key, @Nullable BlockPos pos) {
+        CompoundTag tag = stack.getOrCreateTag();
+        if (pos == null) {
+            tag.remove(key);
+            return;
+        }
+
+        tag.putIntArray(key, new int[]{pos.getX(), pos.getY(), pos.getZ()});
     }
 
     private static BlockPos getPos(ItemStack stack, String key) {

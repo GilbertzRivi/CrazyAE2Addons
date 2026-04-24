@@ -29,6 +29,7 @@ import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyCreativeTabRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
+import net.oktawia.crazyae2addons.items.PortableSpatialCloner;
 import net.oktawia.crazyae2addons.ldlib.CrazyLDLibPlugin;
 import net.oktawia.crazyae2addons.logic.wireless.WirelessEmitterTerminalItemLogicHost;
 import net.oktawia.crazyae2addons.logic.wireless.WirelessNotificationTerminalItemLogicHost;
@@ -123,6 +124,7 @@ public class CrazyAddons {
         event.enqueueWork(() -> {
             new UpgradeCards(event);
             CrazyBlockEntityRegistrar.setupBlockEntityTypes();
+            GridLinkables.register(CrazyItemRegistrar.PORTABLE_SPATIAL_CLONER.get(), PortableSpatialCloner.LINKABLE_HANDLER);
             NetworkHandler.registerMessages();
         });
     }

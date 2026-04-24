@@ -1,0 +1,133 @@
+{
+  "$schema": "schema.json",
+  "includes": ["common/common.json", "common/player_inventory.json"],
+  "background": {
+    "texture": "guis/portable_spatial_cloner.png",
+    "srcRect": [0, 0, 256, 256]
+  },
+  "slots": {
+    "PLAYER_INVENTORY": {
+      "left": 47,
+      "bottom": 82,
+      "grid": "BREAK_AFTER_9COLS"
+    },
+    "PLAYER_HOTBAR": {
+      "left": 47,
+      "bottom": 24,
+      "grid": "HORIZONTAL"
+    }
+  },
+  "text": {
+    "dialog_title": {
+      "text": {
+        "translate": "item.crazyae2addons.portable_spatial_cloner"
+      },
+      "position": {
+        "left": 8,
+        "top": 6
+      }
+    },
+    "player_inventory_title": {
+      "text": {
+        "translate": "container.inventory"
+      },
+      "position": {
+        "left": 47,
+        "bottom": 93
+      }
+    }
+  },
+  "widgets": {
+    "forget": {
+      "left": 174,
+      "top": 6,
+      "width": 16,
+      "height": 16
+    },
+    "flipH": {
+      "left": 194,
+      "top": 6,
+      "width": 16,
+      "height": 16
+    },
+    "flipV": {
+      "left": 214,
+      "top": 6,
+      "width": 16,
+      "height": 16
+    },
+    "rotate": {
+      "left": 234,
+      "top": 6,
+      "width": 16,
+      "height": 16
+    },
+
+    "offsetDown": {
+      "left": -46,
+      "top": 34,
+      "width": 16,
+      "height": 16
+    },
+    "offsetUp": {
+      "left": -26,
+      "top": 34,
+      "width": 16,
+      "height": 16
+    },
+    "offsetLeft": {
+      "left": -46,
+      "top": 52,
+      "width": 16,
+      "height": 16
+    },
+    "offsetRight": {
+      "left": -26,
+      "top": 52,
+      "width": 16,
+      "height": 16
+    },
+    "offsetFront": {
+      "left": -46,
+      "top": 70,
+      "width": 16,
+      "height": 16
+    },
+    "offsetBack": {
+      "left": -26,
+      "top": 70,
+      "width": 16,
+      "height": 16
+    },
+    "offsetDisplayX": {
+      "left": -46,
+      "top": 92,
+      "width": 36,
+      "height": 12
+    },
+    "offsetDisplayY": {
+      "left": -46,
+      "top": 112,
+      "width": 36,
+      "height": 12
+    },
+    "offsetDisplayZ": {
+      "left": -46,
+      "top": 132,
+      "width": 36,
+      "height": 12
+    },
+    "materials": {
+      "left": 8,
+      "top": 26,
+      "width": 92,
+      "height": 135
+    },
+    "preview": {
+      "left": 104,
+      "top": 26,
+      "width": 144,
+      "height": 135
+    }
+  }
+}

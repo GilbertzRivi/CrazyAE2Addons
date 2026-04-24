@@ -30,9 +30,11 @@ import net.minecraftforge.client.event.RenderLevelStageEvent;
 import net.minecraftforge.client.model.data.ModelData;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.oktawia.crazyae2addons.CrazyAddons;
+import net.oktawia.crazyae2addons.items.PortableSpatialCloner;
 import net.oktawia.crazyae2addons.items.PortableSpatialStorage;
-import net.oktawia.crazyae2addons.logic.cutpaste.CutPasteStackState;
 import net.oktawia.crazyae2addons.logic.interfaces.RenderTypeTextureAccess;
+import net.oktawia.crazyae2addons.logic.structuretool.StructureToolStackState;
+import net.oktawia.crazyae2addons.logic.structuretool.StructureToolUtil;
 import net.oktawia.crazyae2addons.util.TemplateUtil;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
@@ -69,12 +71,16 @@ public class PortableSpatialStoragePreviewRenderer {
             return;
         }
 
-        ItemStack stack = PortableSpatialStorage.findHeld(minecraft.player);
+        ItemStack stack = StructureToolUtil.findHeld(
+                minecraft.player,
+                PortableSpatialStorage.class,
+                PortableSpatialCloner.class
+        );
         if (stack.isEmpty()) {
             return;
         }
 
-        int[] sideMap = CutPasteStackState.getPreviewSideMap(stack);
+        int[] sideMap = StructureToolStackState.getPreviewSideMap(stack);
         String sideMapKey = Arrays.toString(sideMap);
 
         PoseStack poseStack = event.getPoseStack();
@@ -83,12 +89,12 @@ public class PortableSpatialStoragePreviewRenderer {
         poseStack.pushPose();
         poseStack.translate(-camera.x, -camera.y, -camera.z);
 
-        if (CutPasteStackState.hasStructure(stack)) {
-            String structureId = CutPasteStackState.getStructureId(stack);
+        if (StructureToolStackState.hasStructure(stack)) {
+            String structureId = StructureToolStackState.getStructureId(stack);
             if (!structureId.isBlank()) {
                 PreviewStructure structure = PortableSpatialStoragePreviewSync.cacheGet(structureId);
                 if (structure != null && !structure.blocks().isEmpty()) {
-                    BlockHitResult hit = PortableSpatialStorage.rayTrace(minecraft.level, minecraft.player, MAX_DISTANCE);
+                    BlockHitResult hit = StructureToolUtil.rayTrace(minecraft.level, minecraft.player, MAX_DISTANCE);
                     if (hit.getType() == HitResult.Type.BLOCK) {
                         BlockPos anchor = hit.getBlockPos().relative(hit.getDirection());
 
@@ -108,13 +114,13 @@ public class PortableSpatialStoragePreviewRenderer {
             return;
         }
 
-        BlockPos selectionA = CutPasteStackState.getSelectionA(stack);
-        BlockPos selectionB = CutPasteStackState.getSelectionB(stack);
+        BlockPos selectionA = StructureToolStackState.getSelectionA(stack);
+        BlockPos selectionB = StructureToolStackState.getSelectionB(stack);
 
         if (selectionA != null) {
             BlockPos previewB = selectionB;
             if (previewB == null) {
-                BlockHitResult hit = PortableSpatialStorage.rayTrace(minecraft.level, minecraft.player, MAX_DISTANCE);
+                BlockHitResult hit = StructureToolUtil.rayTrace(minecraft.level, minecraft.player, MAX_DISTANCE);
                 if (hit.getType() == HitResult.Type.BLOCK) {
                     previewB = hit.getBlockPos();
                 }
@@ -529,7 +535,6 @@ public class PortableSpatialStoragePreviewRenderer {
 
         for (PreviewBlock previewBlock : structure.blocks()) {
             BlockPos worldPos = origin.offset(previewBlock.pos());
-
             BlockState currentState = minecraft.level.getBlockState(worldPos);
 
             if (currentState.canBeReplaced() || currentState.isAir()) {

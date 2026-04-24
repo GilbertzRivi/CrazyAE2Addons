@@ -14,16 +14,24 @@ import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.client.ChunkRenderTypeSet;
 import net.minecraftforge.client.model.BakedModelWrapper;
 import net.minecraftforge.client.model.data.ModelData;
+import net.minecraftforge.registries.ForgeRegistries;
 import net.oktawia.crazyae2addons.client.renderer.preview.PortableSpatialStoragePreviewRenderer;
 import net.oktawia.crazyae2addons.client.renderer.preview.PreviewBlock;
 import net.oktawia.crazyae2addons.client.renderer.preview.PreviewBlockAndTintGetter;
+import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 public class PortableSpatialStoragePreviewRendererGTCEu extends PortableSpatialStoragePreviewRenderer {
 
@@ -53,7 +61,19 @@ public class PortableSpatialStoragePreviewRendererGTCEu extends PortableSpatialS
             return super.getPreviewRenderTypes(previewBlock, sideMap, dispatcher, localLevel, model, state, localPos, seed, modelData);
         }
 
-        return List.of(RenderType.cutoutMipped());
+        Set<RenderType> types = new LinkedHashSet<>();
+
+        types.add(RenderType.cutoutMipped());
+
+        BlockState frameState = getFrameState(tag);
+        if (frameState != null) {
+            BakedModel frameModel = dispatcher.getBlockModel(frameState);
+            for (RenderType frameType : frameModel.getRenderTypes(frameState, RandomSource.create(seed), ModelData.EMPTY)) {
+                types.add(frameType);
+            }
+        }
+
+        return types;
     }
 
     @Override
@@ -131,40 +151,72 @@ public class PortableSpatialStoragePreviewRendererGTCEu extends PortableSpatialS
             return;
         }
 
-        if (renderType != RenderType.cutoutMipped()) {
-            return;
-        }
-
         PipeModel pipeModel = pipeRenderer.getPipeModel();
 
         int connections = tag.getInt("connections");
         int blockedConnections = tag.getInt("blockedConnections");
 
-        BakedModel pipePreviewModel = new BakedModelWrapper<>(model) {
-            @Override
-            public List<BakedQuad> getQuads(
-                    BlockState state,
-                    Direction side,
-                    RandomSource random,
-                    ModelData data,
-                    RenderType renderType
-            ) {
-                if (renderType == null || renderType == RenderType.cutoutMipped()) {
-                    return pipeModel.bakeQuads(side, connections, blockedConnections);
+        if (renderType == RenderType.cutoutMipped()) {
+            BakedModel pipePreviewModel = new BakedModelWrapper<>(model) {
+                @Override
+                public List<BakedQuad> getQuads(
+                        BlockState state,
+                        Direction side,
+                        RandomSource random,
+                        ModelData data,
+                        RenderType requestedRenderType
+                ) {
+                    if (requestedRenderType == null || requestedRenderType == RenderType.cutoutMipped()) {
+                        return pipeModel.bakeQuads(side, connections, blockedConnections);
+                    }
+                    return List.of();
                 }
-                return List.of();
-            }
 
-            @Override
-            public ChunkRenderTypeSet getRenderTypes(BlockState state, RandomSource random, ModelData data) {
-                return ChunkRenderTypeSet.of(RenderType.cutoutMipped());
+                @Override
+                public ChunkRenderTypeSet getRenderTypes(BlockState state, RandomSource random, ModelData data) {
+                    return ChunkRenderTypeSet.of(RenderType.cutoutMipped());
+                }
+            };
+
+            modelRenderer.tesselateBlock(
+                    localLevel,
+                    pipePreviewModel,
+                    state,
+                    localPos,
+                    poseStack,
+                    bufferBuilder,
+                    false,
+                    RandomSource.create(seed),
+                    seed,
+                    OverlayTexture.NO_OVERLAY,
+                    ModelData.EMPTY,
+                    RenderType.cutoutMipped()
+            );
+        }
+
+        BlockState frameState = getFrameState(tag);
+        if (frameState == null) {
+            return;
+        }
+
+        BakedModel frameModel = dispatcher.getBlockModel(frameState);
+
+        boolean shouldRenderFrameInThisPass = false;
+        for (RenderType frameType : frameModel.getRenderTypes(frameState, RandomSource.create(seed), ModelData.EMPTY)) {
+            if (frameType == renderType) {
+                shouldRenderFrameInThisPass = true;
+                break;
             }
-        };
+        }
+
+        if (!shouldRenderFrameInThisPass) {
+            return;
+        }
 
         modelRenderer.tesselateBlock(
                 localLevel,
-                pipePreviewModel,
-                state,
+                frameModel,
+                frameState,
                 localPos,
                 poseStack,
                 bufferBuilder,
@@ -173,7 +225,34 @@ public class PortableSpatialStoragePreviewRendererGTCEu extends PortableSpatialS
                 seed,
                 OverlayTexture.NO_OVERLAY,
                 ModelData.EMPTY,
-                RenderType.cutoutMipped()
+                renderType
         );
+    }
+
+    @Nullable
+    private static BlockState getFrameState(CompoundTag tag) {
+        if (!tag.contains("frameMaterial")) {
+            return null;
+        }
+
+        String frameMaterial = tag.getString("frameMaterial");
+        if (frameMaterial == null || frameMaterial.isBlank()) {
+            return null;
+        }
+
+        String materialPath = frameMaterial;
+        int namespaceSeparator = materialPath.indexOf(':');
+        if (namespaceSeparator >= 0 && namespaceSeparator + 1 < materialPath.length()) {
+            materialPath = materialPath.substring(namespaceSeparator + 1);
+        }
+
+        ResourceLocation frameId = new ResourceLocation("gtceu", materialPath + "_frame");
+        Block frameBlock = ForgeRegistries.BLOCKS.getValue(frameId);
+
+        if (frameBlock == null || frameBlock == Blocks.AIR) {
+            return null;
+        }
+
+        return frameBlock.defaultBlockState();
     }
 }

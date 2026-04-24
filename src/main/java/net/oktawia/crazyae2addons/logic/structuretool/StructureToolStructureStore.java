@@ -1,4 +1,4 @@
-package net.oktawia.crazyae2addons.logic.cutpaste;
+package net.oktawia.crazyae2addons.logic.structuretool;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
@@ -11,11 +11,11 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public final class CutPasteStructureStore {
+public final class StructureToolStructureStore {
 
-    private static final String DIR_NAME = "crazyae2addons/cut_paste_structures";
+    private static final String DIR_NAME = "crazyae2addons/structure_tools";
 
-    private CutPasteStructureStore() {
+    private StructureToolStructureStore() {
     }
 
     private static Path getRoot(MinecraftServer server) throws IOException {

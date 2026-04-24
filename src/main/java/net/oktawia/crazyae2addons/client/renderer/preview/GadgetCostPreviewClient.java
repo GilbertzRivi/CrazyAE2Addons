@@ -15,8 +15,11 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.defs.LangDefs;
+import net.oktawia.crazyae2addons.items.PortableSpatialCloner;
 import net.oktawia.crazyae2addons.items.PortableSpatialStorage;
-import net.oktawia.crazyae2addons.logic.cutpaste.CutPasteStackState;
+import net.oktawia.crazyae2addons.logic.structuretool.AbstractStructureCaptureToolItem;
+import net.oktawia.crazyae2addons.logic.structuretool.StructureToolStackState;
+import net.oktawia.crazyae2addons.logic.structuretool.StructureToolUtil;
 import net.oktawia.crazyae2addons.util.TemplateUtil;
 
 @Mod.EventBusSubscriber(modid = CrazyAddons.MODID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
@@ -25,6 +28,7 @@ public class GadgetCostPreviewClient {
     private static final int COLOR_OK = 0xFFFFFF;
     private static final int COLOR_CYAN = 0x55FFFF;
     private static final int COLOR_RED = 0xFF4040;
+    private static final double POWER_PER_BLOCK_CAPTURE = 1.0D;
 
     private static Component currentText = null;
     private static int currentColor = COLOR_OK;
@@ -43,15 +47,19 @@ public class GadgetCostPreviewClient {
             return;
         }
 
-        ItemStack held = PortableSpatialStorage.findHeld(mc.player);
-        if (held.isEmpty()) {
+        ItemStack held = StructureToolUtil.findHeld(
+                mc.player,
+                PortableSpatialStorage.class,
+                PortableSpatialCloner.class
+        );
+        if (held.isEmpty() || !(held.getItem() instanceof AbstractStructureCaptureToolItem tool)) {
             return;
         }
 
-        int energy = (int) Math.floor(((PortableSpatialStorage) held.getItem()).getAECurrentPower(held));
+        int energy = (int) Math.floor(tool.getAECurrentPower(held));
 
-        if (CutPasteStackState.hasStructure(held)) {
-            BlockHitResult hit = PortableSpatialStorage.rayTrace(mc.level, mc.player, 50.0D);
+        if (StructureToolStackState.hasStructure(held)) {
+            BlockHitResult hit = StructureToolUtil.rayTrace(mc.level, mc.player, 50.0D);
             if (hit.getType() != HitResult.Type.BLOCK) {
                 return;
             }
@@ -69,20 +77,26 @@ public class GadgetCostPreviewClient {
             return;
         }
 
-        BlockHitResult hit = PortableSpatialStorage.rayTrace(mc.level, mc.player, 50.0D);
+        BlockHitResult hit = StructureToolUtil.rayTrace(mc.level, mc.player, 50.0D);
         if (hit.getType() != HitResult.Type.BLOCK) {
             return;
         }
 
-        BlockPos selectionA = CutPasteStackState.getSelectionA(held);
+        BlockPos selectionA = StructureToolStackState.getSelectionA(held);
         if (selectionA == null) {
             return;
         }
 
-        BlockPos selectionB = CutPasteStackState.getSelectionB(held);
+        BlockPos selectionB = StructureToolStackState.getSelectionB(held);
         BlockPos previewB = selectionB == null ? hit.getBlockPos().immutable() : selectionB;
 
-        int cost = PortableSpatialStorage.computeCutPreviewCostAE(mc.level, selectionA, previewB, selectionA);
+        int cost = StructureToolUtil.computeCapturePreviewCostAE(
+                mc.level,
+                selectionA,
+                previewB,
+                selectionA,
+                POWER_PER_BLOCK_CAPTURE
+        );
 
         currentText = Component.translatable(
                 LangDefs.CUT_COST_PREVIEW.getTranslationKey(),
@@ -92,7 +106,7 @@ public class GadgetCostPreviewClient {
     }
 
     private static int computePastePreviewCostAE(ItemStack stack) {
-        String structureId = CutPasteStackState.getStructureId(stack);
+        String structureId = StructureToolStackState.getStructureId(stack);
         if (structureId == null || structureId.isBlank()) {
             return 0;
         }

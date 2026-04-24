@@ -9,13 +9,10 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.entities.EjectorBE;
-import net.oktawia.crazyae2addons.logic.cutpaste.PortableSpatialStorageHost;
+import net.oktawia.crazyae2addons.logic.structuretool.StructureToolHost;
 import net.oktawia.crazyae2addons.menus.CrazyPatternProviderMenu;
 import net.oktawia.crazyae2addons.menus.block.EjectorMenu;
-import net.oktawia.crazyae2addons.menus.item.PortableSpatialStorageMenu;
-import net.oktawia.crazyae2addons.menus.item.WirelessEmitterTerminalMenu;
-import net.oktawia.crazyae2addons.menus.item.WirelessNotificationTerminalMenu;
-import net.oktawia.crazyae2addons.menus.item.WirelessRedstoneTerminalMenu;
+import net.oktawia.crazyae2addons.menus.item.*;
 import net.oktawia.crazyae2addons.menus.part.DisplayImagesSubMenu;
 import net.oktawia.crazyae2addons.menus.part.DisplayMenu;
 import net.oktawia.crazyae2addons.menus.part.DisplayTokenSubMenu;
@@ -87,7 +84,10 @@ public class CrazyMenuRegistrar {
             reg("redstone_emitter_menu", RedstoneEmitterMenu::new, RedstoneEmitter.class);
 
     public static final RegistryObject<MenuType<PortableSpatialStorageMenu>> PORTABLE_SPATIAL_STORAGE_MENU =
-            reg("portable_spatial_storage_menu", PortableSpatialStorageMenu::new, PortableSpatialStorageHost.class);
+            reg("portable_spatial_storage_menu", PortableSpatialStorageMenu::new, StructureToolHost.class);
+
+    public static final RegistryObject<MenuType<PortableSpatialClonerMenu>> PORTABLE_SPATIAL_CLONER_MENU =
+            reg("portable_spatial_cloner_menu", PortableSpatialClonerMenu::new, StructureToolHost.class);
 
     private CrazyMenuRegistrar() {}
 }

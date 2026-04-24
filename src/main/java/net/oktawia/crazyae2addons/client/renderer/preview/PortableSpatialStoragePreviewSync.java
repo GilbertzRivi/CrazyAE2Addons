@@ -1,5 +1,6 @@
 package net.oktawia.crazyae2addons.client.renderer.preview;
 
+import lombok.Getter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
@@ -9,12 +10,16 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.oktawia.crazyae2addons.CrazyAddons;
+import net.oktawia.crazyae2addons.client.screens.item.PortableSpatialClonerScreen;
 import net.oktawia.crazyae2addons.client.screens.item.PortableSpatialStorageScreen;
+import net.oktawia.crazyae2addons.items.PortableSpatialCloner;
 import net.oktawia.crazyae2addons.items.PortableSpatialStorage;
-import net.oktawia.crazyae2addons.logic.cutpaste.CutPasteStackState;
+import net.oktawia.crazyae2addons.logic.structuretool.StructureToolStackState;
+import net.oktawia.crazyae2addons.logic.structuretool.StructureToolUtil;
 import net.oktawia.crazyae2addons.network.NetworkHandler;
-import net.oktawia.crazyae2addons.network.packets.RequestPortableSpatialStoragePreviewPacket;
+import net.oktawia.crazyae2addons.network.packets.RequestStructureToolPreviewPacket;
 import net.oktawia.crazyae2addons.util.TemplateUtil;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -24,6 +29,7 @@ public final class PortableSpatialStoragePreviewSync {
 
     private static final StringBuilder BUFFER = new StringBuilder();
     private static final Map<String, PreviewStructure> STRUCTURE_CACHE = new HashMap<>();
+    private static final Map<String, CompoundTag> RAW_TAG_CACHE = new HashMap<>();
 
     private static boolean receiving = false;
     private static String lastRequestedStructureId = "";
@@ -60,6 +66,11 @@ public final class PortableSpatialStoragePreviewSync {
         }
     }
 
+    public static @Nullable CompoundTag cacheGetRawTag(String structureId) {
+        CompoundTag tag = RAW_TAG_CACHE.get(structureId);
+        return tag == null ? null : tag.copy();
+    }
+
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
         resetClientState();
@@ -88,13 +99,17 @@ public final class PortableSpatialStoragePreviewSync {
             requestCooldownTicks--;
         }
 
-        ItemStack stack = PortableSpatialStorage.findActive(Minecraft.getInstance().player);
+        ItemStack stack = StructureToolUtil.findActive(
+                Minecraft.getInstance().player,
+                PortableSpatialStorage.class,
+                PortableSpatialCloner.class
+        );
         if (stack.isEmpty()) {
             lastRequestedStructureId = "";
             return;
         }
 
-        String structureId = CutPasteStackState.getStructureId(stack);
+        String structureId = StructureToolStackState.getStructureId(stack);
         if (structureId.isBlank()) {
             lastRequestedStructureId = "";
             return;
@@ -110,7 +125,7 @@ public final class PortableSpatialStoragePreviewSync {
 
         lastRequestedStructureId = structureId;
         requestCooldownTicks = 20;
-        NetworkHandler.sendToServer(new RequestPortableSpatialStoragePreviewPacket());
+        NetworkHandler.sendToServer(new RequestStructureToolPreviewPacket());
     }
 
     public static void resetClientState() {
@@ -122,13 +137,17 @@ public final class PortableSpatialStoragePreviewSync {
     }
 
     private static void finish() {
-        ItemStack stack = PortableSpatialStorage.findActive(Minecraft.getInstance().player);
+        ItemStack stack = StructureToolUtil.findActive(
+                Minecraft.getInstance().player,
+                PortableSpatialStorage.class,
+                PortableSpatialCloner.class
+        );
         if (stack.isEmpty()) {
             BUFFER.setLength(0);
             return;
         }
 
-        String structureId = CutPasteStackState.getStructureId(stack);
+        String structureId = StructureToolStackState.getStructureId(stack);
         if (structureId.isBlank()) {
             BUFFER.setLength(0);
             return;
@@ -142,9 +161,13 @@ public final class PortableSpatialStoragePreviewSync {
         try {
             byte[] bytes = TemplateUtil.fromBase64(BUFFER.toString());
             CompoundTag tag = TemplateUtil.decompressNbt(bytes);
+            RAW_TAG_CACHE.put(structureId, tag.copy());
             PreviewStructure structure = PreviewStructure.fromTemplateTag(tag);
             cachePut(structureId, structure);
             if (Minecraft.getInstance().screen instanceof PortableSpatialStorageScreen<?> pss) {
+                pss.markPreviewDirty();
+            }
+            if (Minecraft.getInstance().screen instanceof PortableSpatialClonerScreen<?> pss) {
                 pss.markPreviewDirty();
             }
         } catch (Exception t) {
@@ -153,5 +176,4 @@ public final class PortableSpatialStoragePreviewSync {
             BUFFER.setLength(0);
         }
     }
-
 }

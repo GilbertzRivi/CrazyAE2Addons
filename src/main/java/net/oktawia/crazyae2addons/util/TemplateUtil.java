@@ -48,6 +48,8 @@ public final class TemplateUtil {
     public static final String TEMPLATE_OFFSET_Y_KEY = "crazy_template_offset_y";
     public static final String TEMPLATE_OFFSET_Z_KEY = "crazy_template_offset_z";
 
+    public static final String ENERGY_ORIGIN_KEY = "energyOrigin";
+
     private TemplateUtil() {
     }
 
@@ -91,10 +93,6 @@ public final class TemplateUtil {
         tag.putInt(TEMPLATE_OFFSET_Z_KEY, clampOffset(offset.getZ()));
     }
 
-    public static void copyTemplateOffset(CompoundTag source, CompoundTag target) {
-        setTemplateOffset(target, getTemplateOffset(source));
-    }
-
     public static CompoundTag applyOffsetToTag(CompoundTag tag, int dx, int dy, int dz) {
         CompoundTag result = tag.copy();
         BlockPos current = getTemplateOffset(result);
@@ -108,22 +106,47 @@ public final class TemplateUtil {
         return result;
     }
 
-    public static String getTemplateOffsetDisplay(@Nullable CompoundTag tag) {
-        BlockPos offset = getTemplateOffset(tag);
-        return "X: " + offset.getX() + "  Y: " + offset.getY() + "  Z: " + offset.getZ();
-    }
-
     private static int clampOffset(int value) {
         return Mth.clamp(value, -99, 99);
     }
 
+    public static BlockPos getEnergyOrigin(@Nullable CompoundTag tag) {
+        if (tag == null || !tag.contains(ENERGY_ORIGIN_KEY, Tag.TAG_COMPOUND)) {
+            return BlockPos.ZERO;
+        }
+
+        CompoundTag origin = tag.getCompound(ENERGY_ORIGIN_KEY);
+        return new BlockPos(origin.getInt("x"), origin.getInt("y"), origin.getInt("z"));
+    }
+
+    public static void setEnergyOrigin(CompoundTag tag, BlockPos pos) {
+        CompoundTag origin = new CompoundTag();
+        origin.putInt("x", pos.getX());
+        origin.putInt("y", pos.getY());
+        origin.putInt("z", pos.getZ());
+        tag.put(ENERGY_ORIGIN_KEY, origin);
+    }
+
+    public static void copyPreviewTransformState(CompoundTag source, CompoundTag target) {
+        setTemplateOffset(target, getTemplateOffset(source));
+        setEnergyOrigin(target, getEnergyOrigin(source));
+    }
+
     public static List<BlockInfo> parseBlocksFromTag(CompoundTag tag) {
+        return parseBlocksFromTag(tag, true);
+    }
+
+    public static List<BlockInfo> parseRawBlocksFromTag(CompoundTag tag) {
+        return parseBlocksFromTag(tag, false);
+    }
+
+    private static List<BlockInfo> parseBlocksFromTag(CompoundTag tag, boolean applyTemplateOffset) {
         List<BlockInfo> out = new ArrayList<>();
         if (tag == null) {
             return out;
         }
 
-        BlockPos templateOffset = getTemplateOffset(tag);
+        BlockPos templateOffset = applyTemplateOffset ? getTemplateOffset(tag) : BlockPos.ZERO;
 
         ListTag paletteTag = tag.getList("palette", Tag.TAG_COMPOUND);
         List<BlockState> palette = new ArrayList<>(paletteTag.size());
@@ -149,7 +172,12 @@ public final class TemplateUtil {
                 continue;
             }
 
-            BlockPos pos = new BlockPos(posTag.getInt(0), posTag.getInt(1), posTag.getInt(2)).offset(templateOffset);
+            BlockPos pos = new BlockPos(
+                    posTag.getInt(0),
+                    posTag.getInt(1),
+                    posTag.getInt(2)
+            ).offset(templateOffset);
+
             CompoundTag blockEntityTag = blockTag.contains("nbt", Tag.TAG_COMPOUND)
                     ? blockTag.getCompound("nbt").copy()
                     : null;
@@ -158,6 +186,47 @@ public final class TemplateUtil {
         }
 
         return out;
+    }
+
+    public static CompoundTag stripAirFromTag(CompoundTag tag) {
+        if (tag == null) {
+            return new CompoundTag();
+        }
+
+        CompoundTag result = tag.copy();
+
+        ListTag paletteTag = result.getList("palette", Tag.TAG_COMPOUND);
+        ListTag blocksTag = result.getList("blocks", Tag.TAG_COMPOUND);
+
+        if (paletteTag.isEmpty() || blocksTag.isEmpty()) {
+            return result;
+        }
+
+        BlockState[] palette = new BlockState[paletteTag.size()];
+        for (int i = 0; i < paletteTag.size(); i++) {
+            palette[i] = parseBlockStateFromTag(paletteTag.getCompound(i));
+        }
+
+        ListTag filteredBlocks = new ListTag();
+
+        for (int i = 0; i < blocksTag.size(); i++) {
+            CompoundTag blockTag = blocksTag.getCompound(i);
+            int stateIdx = blockTag.getInt("state");
+
+            if (stateIdx < 0 || stateIdx >= palette.length) {
+                continue;
+            }
+
+            BlockState state = palette[stateIdx];
+            if (state == null || state.isAir()) {
+                continue;
+            }
+
+            filteredBlocks.add(blockTag.copy());
+        }
+
+        result.put("blocks", filteredBlocks);
+        return result;
     }
 
     public static CompoundTag applyFlipHToTag(CompoundTag tag, Direction sourceFacing) {
@@ -171,85 +240,6 @@ public final class TemplateUtil {
                 state -> flipHorizontalState(state, sourceFacing),
                 cableBusTransform
         );
-    }
-
-    private static BlockState flipHorizontalState(BlockState state, Direction sourceFacing) {
-        Mirror mirror = sourceFacing.getAxis() == Direction.Axis.Z
-                ? Mirror.FRONT_BACK
-                : Mirror.LEFT_RIGHT;
-
-        BlockState mirrored = state.mirror(mirror);
-
-        if (hasHorizontalDirectionPropertyChange(state, mirrored)) {
-            return mirrored;
-        }
-
-        return remapHorizontalDirectionProperties(mirrored, sourceFacing.getAxis());
-    }
-
-    private static boolean hasHorizontalDirectionPropertyChange(BlockState before, BlockState after) {
-        for (Map.Entry<Property<?>, Comparable<?>> entry : before.getValues().entrySet()) {
-            Comparable<?> beforeValue = entry.getValue();
-            if (!(beforeValue instanceof Direction beforeDirection) || !beforeDirection.getAxis().isHorizontal()) {
-                continue;
-            }
-
-            Comparable<?> afterValue = after.getValue(entry.getKey());
-            if (afterValue instanceof Direction afterDirection && afterDirection != beforeDirection) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static boolean hasDirectionPropertyChange(BlockState before, BlockState after) {
-        for (Map.Entry<Property<?>, Comparable<?>> entry : before.getValues().entrySet()) {
-            Comparable<?> beforeValue = entry.getValue();
-            if (!(beforeValue instanceof Direction beforeDirection)) {
-                continue;
-            }
-
-            Comparable<?> afterValue = after.getValue(entry.getKey());
-            if (afterValue instanceof Direction afterDirection && afterDirection != beforeDirection) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static BlockState remapHorizontalDirectionProperties(BlockState state, Direction.Axis sourceAxis) {
-        BlockState result = state;
-
-        for (Map.Entry<Property<?>, Comparable<?>> entry : state.getValues().entrySet()) {
-            Property<?> property = entry.getKey();
-            Comparable<?> value = entry.getValue();
-
-            if (!(value instanceof Direction direction) || !direction.getAxis().isHorizontal()) {
-                continue;
-            }
-
-            Direction flipped = switch (sourceAxis) {
-                case Z -> switch (direction) {
-                    case EAST -> Direction.WEST;
-                    case WEST -> Direction.EAST;
-                    default -> direction;
-                };
-                case X -> switch (direction) {
-                    case NORTH -> Direction.SOUTH;
-                    case SOUTH -> Direction.NORTH;
-                    default -> direction;
-                };
-                default -> direction;
-            };
-
-            if (flipped != direction) {
-                result = setUnchecked(result, property, flipped);
-            }
-        }
-
-        return result;
     }
 
     public static CompoundTag applyFlipVToTag(CompoundTag tag) {
@@ -307,6 +297,74 @@ public final class TemplateUtil {
         );
     }
 
+    public static CompoundTag applyFlipHAroundOriginToTag(CompoundTag tag, Direction sourceFacing) {
+        CompoundTag transformed = applyFlipHToTag(tag, sourceFacing);
+        setTemplateOffset(transformed, flipHorizontalOffset(getTemplateOffset(tag), sourceFacing));
+        return transformed;
+    }
+
+    public static CompoundTag applyFlipVAroundOriginToTag(CompoundTag tag) {
+        CompoundTag transformed = applyFlipVToTag(tag);
+        setTemplateOffset(transformed, flipVerticalOffset(getTemplateOffset(tag)));
+        return transformed;
+    }
+
+    public static CompoundTag applyRotateCWAroundOriginToTag(CompoundTag tag, int times) {
+        int normalizedTurns = ((times % 4) + 4) % 4;
+        if (normalizedTurns == 0) {
+            return tag;
+        }
+
+        CompoundTag transformed = applyRotateCWToTag(tag, times);
+        setTemplateOffset(transformed, rotateOffsetCW(getTemplateOffset(tag), normalizedTurns));
+        return transformed;
+    }
+
+    private static BlockPos rotateOffsetCW(BlockPos offset, int normalizedTurns) {
+        return switch (normalizedTurns) {
+            case 1 -> new BlockPos(
+                    clampOffset(-offset.getZ()),
+                    clampOffset(offset.getY()),
+                    clampOffset(offset.getX())
+            );
+            case 2 -> new BlockPos(
+                    clampOffset(-offset.getX()),
+                    clampOffset(offset.getY()),
+                    clampOffset(-offset.getZ())
+            );
+            case 3 -> new BlockPos(
+                    clampOffset(offset.getZ()),
+                    clampOffset(offset.getY()),
+                    clampOffset(-offset.getX())
+            );
+            default -> offset;
+        };
+    }
+
+    private static BlockPos flipHorizontalOffset(BlockPos offset, Direction sourceFacing) {
+        if (sourceFacing.getAxis() == Direction.Axis.Z) {
+            return new BlockPos(
+                    clampOffset(-offset.getX()),
+                    clampOffset(offset.getY()),
+                    clampOffset(offset.getZ())
+            );
+        }
+
+        return new BlockPos(
+                clampOffset(offset.getX()),
+                clampOffset(offset.getY()),
+                clampOffset(-offset.getZ())
+        );
+    }
+
+    private static BlockPos flipVerticalOffset(BlockPos offset) {
+        return new BlockPos(
+                clampOffset(offset.getX()),
+                clampOffset(-offset.getY()),
+                clampOffset(offset.getZ())
+        );
+    }
+
     @FunctionalInterface
     private interface Transform {
         int[] apply(int x, int y, int z, int minX, int maxX, int minY, int maxY, int minZ, int maxZ);
@@ -328,14 +386,20 @@ public final class TemplateUtil {
             UnaryOperator<BlockState> stateTransform,
             CableBusTransform cableBusTransform
     ) {
+        return applyTransformInternal(tag, positionTransform, stateTransform, cableBusTransform);
+    }
+
+    private static CompoundTag applyTransformInternal(
+            CompoundTag tag,
+            Transform positionTransform,
+            UnaryOperator<BlockState> stateTransform,
+            CableBusTransform cableBusTransform
+    ) {
         ListTag blocksTag = tag.getList("blocks", Tag.TAG_COMPOUND);
         ListTag paletteTag = tag.getList("palette", Tag.TAG_COMPOUND);
 
         if (blocksTag.isEmpty() || paletteTag.isEmpty()) {
-            CompoundTag unchanged = tag.copy();
-            setEnergyOrigin(unchanged, getEnergyOrigin(tag));
-            setTemplateOffset(unchanged, getTemplateOffset(tag));
-            return unchanged;
+            return tag.copy();
         }
 
         BlockState[] oldPalette = new BlockState[paletteTag.size()];
@@ -497,8 +561,33 @@ public final class TemplateUtil {
         sizeTag.add(IntTag.valueOf(newMaxZ + 1));
         result.put("size", sizeTag);
 
-        setEnergyOrigin(result, getEnergyOrigin(tag));
-        setTemplateOffset(result, getTemplateOffset(tag));
+        BlockPos oldOrigin = getEnergyOrigin(tag);
+        BlockPos oldOffset = getTemplateOffset(tag);
+
+        int[] transformedOrigin = positionTransform.apply(
+                oldOrigin.getX(),
+                oldOrigin.getY(),
+                oldOrigin.getZ(),
+                minX,
+                maxX,
+                minY,
+                maxY,
+                minZ,
+                maxZ
+        );
+
+        BlockPos newOrigin = new BlockPos(
+                transformedOrigin[0] - newMinX,
+                transformedOrigin[1] - newMinY,
+                transformedOrigin[2] - newMinZ
+        );
+
+        setEnergyOrigin(result, newOrigin);
+        setTemplateOffset(result, new BlockPos(
+                clampOffset(oldOffset.getX() + newOrigin.getX() - oldOrigin.getX()),
+                clampOffset(oldOffset.getY() + newOrigin.getY() - oldOrigin.getY()),
+                clampOffset(oldOffset.getZ() + newOrigin.getZ() - oldOrigin.getZ())
+        ));
 
         return result;
     }
@@ -863,22 +952,101 @@ public final class TemplateUtil {
         return state.setValue(property, value);
     }
 
+    private static BlockState flipHorizontalState(BlockState state, Direction sourceFacing) {
+        Mirror mirror = sourceFacing.getAxis() == Direction.Axis.Z
+                ? Mirror.FRONT_BACK
+                : Mirror.LEFT_RIGHT;
+
+        BlockState mirrored = state.mirror(mirror);
+
+        if (hasHorizontalDirectionPropertyChange(state, mirrored)) {
+            return mirrored;
+        }
+
+        return remapHorizontalDirectionProperties(mirrored, sourceFacing.getAxis());
+    }
+
+    private static boolean hasHorizontalDirectionPropertyChange(BlockState before, BlockState after) {
+        for (Map.Entry<Property<?>, Comparable<?>> entry : before.getValues().entrySet()) {
+            Comparable<?> beforeValue = entry.getValue();
+            if (!(beforeValue instanceof Direction beforeDirection) || !beforeDirection.getAxis().isHorizontal()) {
+                continue;
+            }
+
+            Comparable<?> afterValue = after.getValue(entry.getKey());
+            if (afterValue instanceof Direction afterDirection && afterDirection != beforeDirection) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static boolean hasDirectionPropertyChange(BlockState before, BlockState after) {
+        for (Map.Entry<Property<?>, Comparable<?>> entry : before.getValues().entrySet()) {
+            Comparable<?> beforeValue = entry.getValue();
+            if (!(beforeValue instanceof Direction beforeDirection)) {
+                continue;
+            }
+
+            Comparable<?> afterValue = after.getValue(entry.getKey());
+            if (afterValue instanceof Direction afterDirection && afterDirection != beforeDirection) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static BlockState remapHorizontalDirectionProperties(BlockState state, Direction.Axis sourceAxis) {
+        BlockState result = state;
+
+        for (Map.Entry<Property<?>, Comparable<?>> entry : state.getValues().entrySet()) {
+            Property<?> property = entry.getKey();
+            Comparable<?> value = entry.getValue();
+
+            if (!(value instanceof Direction direction) || !direction.getAxis().isHorizontal()) {
+                continue;
+            }
+
+            Direction flipped = switch (sourceAxis) {
+                case Z -> switch (direction) {
+                    case EAST -> Direction.WEST;
+                    case WEST -> Direction.EAST;
+                    default -> direction;
+                };
+                case X -> switch (direction) {
+                    case NORTH -> Direction.SOUTH;
+                    case SOUTH -> Direction.NORTH;
+                    default -> direction;
+                };
+                default -> direction;
+            };
+
+            if (flipped != direction) {
+                result = setUnchecked(result, property, flipped);
+            }
+        }
+
+        return result;
+    }
+
     private static BlockState flipVerticalState(BlockState state) {
         BlockState result = state;
 
-        result = remapPropertyValues(result, "half", java.util.Map.of(
+        result = remapPropertyValues(result, "half", Map.of(
                 "top", "bottom",
                 "bottom", "top",
                 "upper", "lower",
                 "lower", "upper"
         ));
 
-        result = remapPropertyValues(result, "face", java.util.Map.of(
+        result = remapPropertyValues(result, "face", Map.of(
                 "floor", "ceiling",
                 "ceiling", "floor"
         ));
 
-        result = remapPropertyValues(result, "upwards_facing", java.util.Map.of(
+        result = remapPropertyValues(result, "upwards_facing", Map.of(
                 "north", "south",
                 "south", "north"
         ));
@@ -951,7 +1119,7 @@ public final class TemplateUtil {
         };
     }
 
-    private static BlockState remapPropertyValues(BlockState state, String propertyName, java.util.Map<String, String> mapping) {
+    private static BlockState remapPropertyValues(BlockState state, String propertyName, Map<String, String> mapping) {
         Property property = state.getBlock().getStateDefinition().getProperty(propertyName);
         if (property == null) {
             return state;
@@ -967,12 +1135,12 @@ public final class TemplateUtil {
             return state;
         }
 
-        Optional parsed = property.getValue(targetValueName);
+        Optional<?> parsed = property.getValue(targetValueName);
         if (parsed.isEmpty()) {
             return state;
         }
 
-        return setUnchecked(state, property, (Comparable) parsed.get());
+        return setUnchecked(state, property, (Comparable<?>) parsed.get());
     }
 
     private static BlockState flipVerticalDirectionProperties(BlockState state) {
@@ -989,81 +1157,5 @@ public final class TemplateUtil {
         }
 
         return result;
-    }
-
-    public static final String ENERGY_ORIGIN_KEY = "energyOrigin";
-
-    public static BlockPos getEnergyOrigin(@Nullable CompoundTag tag) {
-        if (tag == null || !tag.contains(ENERGY_ORIGIN_KEY, Tag.TAG_COMPOUND)) {
-            return BlockPos.ZERO;
-        }
-
-        CompoundTag origin = tag.getCompound(ENERGY_ORIGIN_KEY);
-        return new BlockPos(origin.getInt("x"), origin.getInt("y"), origin.getInt("z"));
-    }
-
-    public static void setEnergyOrigin(CompoundTag tag, BlockPos pos) {
-        CompoundTag origin = new CompoundTag();
-        origin.putInt("x", pos.getX());
-        origin.putInt("y", pos.getY());
-        origin.putInt("z", pos.getZ());
-        tag.put(ENERGY_ORIGIN_KEY, origin);
-    }
-
-    public static void copyPreviewTransformState(CompoundTag source, CompoundTag target) {
-        setTemplateOffset(target, getTemplateOffset(source));
-        setEnergyOrigin(target, getEnergyOrigin(source));
-    }
-
-    public static List<BlockInfo> parseRawBlocksFromTag(CompoundTag tag) {
-        return parseBlocksFromTag(tag, false);
-    }
-
-    private static List<BlockInfo> parseBlocksFromTag(CompoundTag tag, boolean applyTemplateOffset) {
-        List<BlockInfo> out = new ArrayList<>();
-        if (tag == null) {
-            return out;
-        }
-
-        BlockPos templateOffset = applyTemplateOffset ? getTemplateOffset(tag) : BlockPos.ZERO;
-
-        ListTag paletteTag = tag.getList("palette", Tag.TAG_COMPOUND);
-        List<BlockState> palette = new ArrayList<>(paletteTag.size());
-        for (int i = 0; i < paletteTag.size(); i++) {
-            palette.add(parseBlockStateFromTag(paletteTag.getCompound(i)));
-        }
-
-        ListTag blocksTag = tag.getList("blocks", Tag.TAG_COMPOUND);
-        for (int i = 0; i < blocksTag.size(); i++) {
-            CompoundTag blockTag = blocksTag.getCompound(i);
-            int stateIdx = blockTag.getInt("state");
-            if (stateIdx < 0 || stateIdx >= palette.size()) {
-                continue;
-            }
-
-            BlockState state = palette.get(stateIdx);
-            if (state == null) {
-                continue;
-            }
-
-            ListTag posTag = blockTag.getList("pos", Tag.TAG_INT);
-            if (posTag.size() < 3) {
-                continue;
-            }
-
-            BlockPos pos = new BlockPos(
-                    posTag.getInt(0),
-                    posTag.getInt(1),
-                    posTag.getInt(2)
-            ).offset(templateOffset);
-
-            CompoundTag blockEntityTag = blockTag.contains("nbt", Tag.TAG_COMPOUND)
-                    ? blockTag.getCompound("nbt").copy()
-                    : null;
-
-            out.add(new BlockInfo(pos, state, blockEntityTag));
-        }
-
-        return out;
     }
 }

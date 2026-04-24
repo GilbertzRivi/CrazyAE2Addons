@@ -91,9 +91,9 @@ public enum LangDefs implements LocalizationEnum {
     APPLY("gui.crazyae2addons.apply", "Apply"),
     SEARCH("gui.crazyae2addons.search", "Search"),
     NAME("gui.crazyae2addons.name", "Name"),
-    FLIP_HORIZONTAL("gui.crazyae2addons.flip_horizontal", "Flip horizontally"),
-    FLIP_VERTICAL("gui.crazyae2addons.flip_vertical", "Flip vertically"),
-    ROTATE_CLOCKWISE("gui.crazyae2addons.rotate_clockwise", "Rotate clockwise"),
+    FLIP_HORIZONTAL("gui.crazyae2addons.flip_horizontal", "Flip horizontally in place"),
+    FLIP_VERTICAL("gui.crazyae2addons.flip_vertical", "Flip vertically in place"),
+    ROTATE_CLOCKWISE("gui.crazyae2addons.rotate_clockwise", "Rotate clockwise in place"),
     NO_BLOCK_IN_RANGE("gui.crazyae2addons.no_block_in_range", "No block in range."),
     PASTE_OR_CLEAR_FIRST("gui.crazyae2addons.paste_or_clear_first", "Paste or clear stored structure first."),
     CORNER_0_SELECTED("gui.crazyae2addons.corner_0_selected", "Shift Right click a block to select it."),
@@ -117,7 +117,23 @@ public enum LangDefs implements LocalizationEnum {
     OFFSET_FRONT_TOOLTIP("gui.crazyae2addons.offset_front_tooltip", "Move forward (+Z)"),
     OFFSET_BACK_TOOLTIP("gui.crazyae2addons.offset_back_tooltip", "Move backward (-Z)"),
     CUT_COST_PREVIEW("gui.crazyae2addons.cut_cost_preview", "Cut: %s AE"),
-    PASTE_COST_PREVIEW("gui.crazyae2addons.paste_cost_preview", "Paste: %s AE");
+    PASTE_COST_PREVIEW("gui.crazyae2addons.paste_cost_preview", "Paste: %s AE"),
+    NOT_ENOUGH_POWER("gui.crazyae2addons.not_enough_power", "Not enough power"),
+    NEED_AE("gui.crazyae2addons.need_ae", "Need: %s AE"),
+    HAVE_AE("gui.crazyae2addons.have_ae", "Have: %s AE"),
+    STRUCTURE_COPIED_AND_SAVED("gui.crazyae2addons.structure_copied_and_saved", "Structure copied and saved."),
+    COPY_PASTE_NOT_IMPLEMENTED_YET("gui.crazyae2addons.copy_paste_not_implemented_yet", "Copy/paste gadget paste is not implemented yet."),
+    NO_MATERIALS("gui.crazyae2addons.no_materials", "No materials"),
+    REQUIRED_COUNT("gui.crazyae2addons.required_count", "Required: %s"),
+    FORGET_STRUCTURE("gui.crazyae2addons.forget_structure", "Forget stored structure."),
+    FLIP_HORIZONTAL_AROUND_ORIGIN("gui.crazyae2addons.flip_horizontal_around_origin", "Flip horizontally around origin."),
+    FLIP_VERTICAL_AROUND_ORIGIN("gui.crazyae2addons.flip_vertical_around_origin", "Flip vertically around origin."),
+    ROTATE_CLOCKWISE_AROUND_ORIGIN("gui.crazyae2addons.rotate_clockwise_around_origin", "Rotate clockwise around origin."),
+    AVAILABLE_COUNT("gui.crazyae2addons.available_count", "Available: %s"),
+    STATUS_OK("gui.crazyae2addons.status_ok", "Status: OK"),
+    STATUS_MISSING("gui.crazyae2addons.status_missing", "Status: Missing"),
+    CRAFT_REQUEST_MISSING("gui.crazyae2addons.craft_request_missing", "Craft missing amount."),
+    COPY_PASTE_NO_STRUCTURE("gui.crazyae2addons.copy_paste_no_structure", "No stored structure.");
 
 
     private final String key;

@@ -111,7 +111,8 @@ public class PortableSpatialStorageSceneWidget extends SceneWidget {
         this.floorMinZ = Math.min(Math.min(minZ, this.floorAnchorPos.getZ()), this.originMarkerPos.getZ()) - FLOOR_PADDING;
         this.floorMaxZ = Math.max(Math.max(maxZ, this.floorAnchorPos.getZ()), this.originMarkerPos.getZ()) + FLOOR_PADDING;
 
-        this.floorY = this.floorAnchorPos.getY() - 1;
+        int floorBaseY = Math.min(minY, this.originMarkerPos.getY());
+        this.floorY = floorBaseY - 1;
         this.hasFloor = true;
 
         setRenderedCore(normalBlocks);

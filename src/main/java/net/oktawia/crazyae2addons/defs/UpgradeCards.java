@@ -21,6 +21,8 @@ public class UpgradeCards {
             Upgrades.add(AEItems.CRAFTING_CARD, CrazyItemRegistrar.MULTI_LEVEL_EMITTER.get(), 1);
             Upgrades.add(AEItems.FUZZY_CARD, CrazyItemRegistrar.MULTI_LEVEL_EMITTER.get(), 1);
             Upgrades.add(AEItems.ENERGY_CARD, CrazyItemRegistrar.PORTABLE_SPATIAL_STORAGE.get(), 4);
+            Upgrades.add(AEItems.ENERGY_CARD, CrazyItemRegistrar.PORTABLE_SPATIAL_CLONER.get(), 4);
+            Upgrades.add(AEItems.CRAFTING_CARD, CrazyItemRegistrar.PORTABLE_SPATIAL_CLONER.get(), 1);
             if (IsModLoaded.APP_FLUX){
                 Upgrades.add(AFItemAndBlock.INDUCTION_CARD, CrazyBlockRegistrar.CRAZY_PATTERN_PROVIDER_BLOCK.get(), 1);
                 Upgrades.add(AFItemAndBlock.INDUCTION_CARD, CrazyItemRegistrar.CRAZY_PATTERN_PROVIDER_PART.get(), 1);

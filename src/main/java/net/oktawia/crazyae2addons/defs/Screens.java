@@ -3,10 +3,7 @@ package net.oktawia.crazyae2addons.defs;
 import appeng.init.client.InitScreens;
 import net.oktawia.crazyae2addons.client.screens.CrazyPatternProviderScreen;
 import net.oktawia.crazyae2addons.client.screens.block.EjectorScreen;
-import net.oktawia.crazyae2addons.client.screens.item.PortableSpatialStorageScreen;
-import net.oktawia.crazyae2addons.client.screens.item.WirelessEmitterTerminalScreen;
-import net.oktawia.crazyae2addons.client.screens.item.WirelessNotificationTerminalScreen;
-import net.oktawia.crazyae2addons.client.screens.item.WirelessRedstoneTerminalScreen;
+import net.oktawia.crazyae2addons.client.screens.item.*;
 import net.oktawia.crazyae2addons.client.screens.part.DisplayImagesSubScreen;
 import net.oktawia.crazyae2addons.client.screens.part.DisplayScreen;
 import net.oktawia.crazyae2addons.client.screens.part.DisplayTokenSubScreen;
@@ -18,10 +15,7 @@ import net.oktawia.crazyae2addons.client.screens.part.TagLevelEmitterScreen;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.menus.CrazyPatternProviderMenu;
 import net.oktawia.crazyae2addons.menus.block.EjectorMenu;
-import net.oktawia.crazyae2addons.menus.item.PortableSpatialStorageMenu;
-import net.oktawia.crazyae2addons.menus.item.WirelessEmitterTerminalMenu;
-import net.oktawia.crazyae2addons.menus.item.WirelessNotificationTerminalMenu;
-import net.oktawia.crazyae2addons.menus.item.WirelessRedstoneTerminalMenu;
+import net.oktawia.crazyae2addons.menus.item.*;
 import net.oktawia.crazyae2addons.menus.part.DisplayMenu;
 import net.oktawia.crazyae2addons.menus.part.EmitterTerminalMenu;
 import net.oktawia.crazyae2addons.menus.part.MultiLevelEmitterMenu;
@@ -101,6 +95,11 @@ public final class Screens {
                 CrazyMenuRegistrar.PORTABLE_SPATIAL_STORAGE_MENU.get(),
                 PortableSpatialStorageScreen<PortableSpatialStorageMenu>::new,
                 "/screens/portable_spatial_storage.json"
+        );
+        InitScreens.register(
+                CrazyMenuRegistrar.PORTABLE_SPATIAL_CLONER_MENU.get(),
+                PortableSpatialClonerScreen<PortableSpatialClonerMenu>::new,
+                "/screens/portable_spatial_cloner.json"
         );
     }
 

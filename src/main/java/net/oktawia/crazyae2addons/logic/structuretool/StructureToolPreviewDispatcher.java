@@ -1,9 +1,7 @@
-package net.oktawia.crazyae2addons.logic.cutpaste;
+package net.oktawia.crazyae2addons.logic.structuretool;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.item.ItemStack;
-import net.oktawia.crazyae2addons.items.PortableSpatialStorage;
 import net.oktawia.crazyae2addons.network.NetworkHandler;
 import net.oktawia.crazyae2addons.network.packets.SendLongStringToClientPacket;
 import net.oktawia.crazyae2addons.util.TemplateUtil;
@@ -12,11 +10,11 @@ import org.jetbrains.annotations.Nullable;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-public final class PortableSpatialStoragePreviewDispatcher {
+public final class StructureToolPreviewDispatcher {
 
     private static final int PREVIEW_CHUNK_SIZE = 1_000_000;
 
-    private PortableSpatialStoragePreviewDispatcher() {
+    private StructureToolPreviewDispatcher() {
     }
 
     public static void sendPreviewToPlayer(ServerPlayer player, @Nullable CompoundTag structureTag) {
@@ -47,25 +45,17 @@ public final class PortableSpatialStoragePreviewDispatcher {
         NetworkHandler.sendToPlayer(player, new SendLongStringToClientPacket("__END__"));
     }
 
-    public static void sendPreviewForHeldItem(ServerPlayer player) {
-        ItemStack stack = PortableSpatialStorage.findActive(player);
-        if (stack.isEmpty()) {
-            sendPreviewToPlayer(player, null);
-            return;
-        }
-
-        String structureId = CutPasteStackState.getStructureId(stack);
-        if (structureId.isBlank()) {
+    public static void sendPreviewForStructureId(ServerPlayer player, String structureId) {
+        if (structureId == null || structureId.isBlank()) {
             sendPreviewToPlayer(player, null);
             return;
         }
 
         try {
-            CompoundTag tag = CutPasteStructureStore.load(player.server, structureId);
+            CompoundTag tag = StructureToolStructureStore.load(player.server, structureId);
             sendPreviewToPlayer(player, tag);
         } catch (Exception ignored) {
             sendPreviewToPlayer(player, null);
         }
     }
-
 }

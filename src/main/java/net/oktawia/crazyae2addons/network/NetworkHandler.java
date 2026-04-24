@@ -79,16 +79,22 @@ public final class NetworkHandler {
                 .consumerMainThread(RedstoneWindowPacket::handle)
                 .add();
 
-        CHANNEL.messageBuilder(RequestPortableSpatialStoragePreviewPacket.class, nextId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(RequestPortableSpatialStoragePreviewPacket::encode)
-                .decoder(RequestPortableSpatialStoragePreviewPacket::decode)
-                .consumerMainThread(RequestPortableSpatialStoragePreviewPacket::handle)
+        CHANNEL.messageBuilder(RequestStructureToolPreviewPacket.class, nextId++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(RequestStructureToolPreviewPacket::encode)
+                .decoder(RequestStructureToolPreviewPacket::decode)
+                .consumerMainThread(RequestStructureToolPreviewPacket::handle)
                 .add();
 
         CHANNEL.messageBuilder(ShowHudMessagePacket.class, nextId++, NetworkDirection.PLAY_TO_CLIENT)
                 .encoder(ShowHudMessagePacket::encode)
                 .decoder(ShowHudMessagePacket::decode)
                 .consumerMainThread(ShowHudMessagePacket::handle)
+                .add();
+
+        CHANNEL.messageBuilder(SyncClonerRequirementStatusPacket.class, nextId++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(SyncClonerRequirementStatusPacket::encode)
+                .decoder(SyncClonerRequirementStatusPacket::decode)
+                .consumerMainThread(SyncClonerRequirementStatusPacket::handle)
                 .add();
     }
 

@@ -8,6 +8,7 @@ import de.mari_023.ae2wtlib.wut.WUTHandler;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.ConfigScreenHandler;
 import net.minecraftforge.client.event.ModelEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -20,8 +21,11 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegisterEvent;
+import net.oktawia.crazyae2addons.client.screens.CrazyConfigScreen;
 import net.oktawia.crazyae2addons.client.renderer.preview.PortableSpatialStoragePreviewRenderer;
+import net.oktawia.crazyae2addons.compat.gtceu.GTWormholeCapabilityExtension;
 import net.oktawia.crazyae2addons.compat.gtceu.PortableSpatialStoragePreviewRendererGTCEu;
+import net.oktawia.crazyae2addons.parts.p2p.WormholeP2PTunnelPart;
 import net.oktawia.crazyae2addons.defs.Screens;
 import net.oktawia.crazyae2addons.defs.UpgradeCards;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
@@ -124,6 +128,9 @@ public class CrazyAddons {
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
+        if (IsModLoaded.GTCEU) {
+            WormholeP2PTunnelPart.registerExtension(GTWormholeCapabilityExtension::new);
+        }
         event.enqueueWork(() -> {
             new UpgradeCards(event);
             CrazyBlockEntityRegistrar.setupBlockEntityTypes();
@@ -140,6 +147,10 @@ public class CrazyAddons {
     public static class ClientModEvents {
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
+            ModLoadingContext.get().registerExtensionPoint(
+                    ConfigScreenHandler.ConfigScreenFactory.class,
+                    () -> new ConfigScreenHandler.ConfigScreenFactory((mc, parent) -> CrazyConfigScreen.create(parent))
+            );
             Screens.register();
             event.enqueueWork(() -> {
                 PortableSpatialStoragePreviewRenderer renderer =

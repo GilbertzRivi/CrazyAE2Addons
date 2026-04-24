@@ -1,4 +1,4 @@
-package net.oktawia.crazyae2addons.items;
+package net.oktawia.crazyae2addons.items.part;
 
 import appeng.items.parts.PartItem;
 import net.minecraft.ChatFormatting;

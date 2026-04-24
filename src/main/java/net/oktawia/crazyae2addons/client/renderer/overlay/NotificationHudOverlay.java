@@ -23,26 +23,35 @@ import java.util.Map;
 public class NotificationHudOverlay {
 
     private static final int MARGIN = 4;
-    private static final int ROW_H = 18;
+    private static final int ROW_H = 20;
     private static final long TTL_MS = 2500;
+    private static final int COLUMN_GAP = 8;
+    private static final int ICON_SIZE = 16;
+    private static final int TEXT_GAP = 4;
+    private static final int OVERLAY_PADDING = 4;
+    private static final int BACKGROUND_COLOR = 0x00000000;
 
     private static final class State {
         List<NotificationHudPacket.Entry> entries = List.of();
         int x = 100;
         int y = 0;
         long lastUpdateMs = 0;
+        int scale = 100;
     }
 
     private static final Map<Integer, State> states = new HashMap<>();
 
-    public static void update(List<NotificationHudPacket.Entry> entries, byte hudX, byte hudY) {
+    public static void update(List<NotificationHudPacket.Entry> entries, byte hudX, byte hudY, byte hudScale) {
         int x = Math.min(100, Math.max(0, hudX));
         int y = Math.min(100, Math.max(0, hudY));
+        int scale = Math.min(100, Math.max(0, hudScale));
+
         int key = (x << 8) | y;
 
         State st = states.computeIfAbsent(key, k -> new State());
         st.x = x;
         st.y = y;
+        st.scale = scale;
         st.entries = (entries == null) ? List.of() : new ArrayList<>(entries);
         st.lastUpdateMs = System.currentTimeMillis();
     }
@@ -74,28 +83,26 @@ public class NotificationHudOverlay {
     }
 
     private static void renderOne(GuiGraphics g, Minecraft mc, int w, int h, State st) {
-        int maxRowsFit = Math.max(0, (h - 2 * MARGIN) / ROW_H);
-        int rows = Math.min(st.entries.size(), maxRowsFit);
-        if (rows <= 0) return;
+        if (st.scale <= 0 || st.entries == null || st.entries.isEmpty()) {
+            return;
+        }
 
-        int widgetH = rows * ROW_H;
+        List<ItemStack> icons = new ArrayList<>();
+        List<String> texts = new ArrayList<>();
+        List<Integer> colors = new ArrayList<>();
 
-        int baseY = (int) Math.round(h * (st.y / 100.0));
-        int startY = baseY - widgetH;
-        startY = Math.min(Math.max(startY, MARGIN), h - widgetH - MARGIN);
+        int maxTextWidth = 0;
 
-        int baseX = (int) Math.round(w * (st.x / 100.0));
-        baseX = Math.min(Math.max(baseX, MARGIN), w - MARGIN);
-
-        for (int i = 0; i < rows; i++) {
-            var ent = st.entries.get(i);
+        for (NotificationHudPacket.Entry ent : st.entries) {
+            long threshold = ent.threshold();
+            if (threshold <= 0) {
+                continue;
+            }
 
             ItemStack icon = ent.icon().copy();
             icon.setCount(1);
 
             long amount = ent.amount();
-            long threshold = ent.threshold();
-            if (threshold <= 0) continue;
 
             double dispAmount = amount;
             double dispThreshold = threshold;
@@ -109,17 +116,89 @@ public class NotificationHudOverlay {
                 }
             }
 
-            String txt = Utils.shortenNumber(dispAmount) + "/" + Utils.shortenNumber(dispThreshold);
-            int color = pickColor(amount, threshold);
-            int textW = mc.font.width(txt);
-            int rowW = 16 + 2 + textW;
-            int x = baseX - rowW;
-            x = Math.min(Math.max(x, MARGIN), w - rowW - MARGIN);
-            int y = startY + i * ROW_H;
-            if (y < MARGIN || y > h - ROW_H - MARGIN) continue;
-            g.renderItem(icon, x, y);
-            g.drawString(mc.font, txt, x + 18, y + 4, color, true);
+            String txt = Utils.shortenNumber(dispAmount, 2) + "/" + Utils.shortenNumber(dispThreshold, 2);
+
+            icons.add(icon);
+            texts.add(txt);
+            colors.add(pickColor(amount, threshold));
+
+            maxTextWidth = Math.max(maxTextWidth, mc.font.width(txt));
         }
+
+        if (icons.isEmpty()) {
+            return;
+        }
+
+        int count = icons.size();
+        int availableW = Math.max(1, w - 2 * MARGIN);
+        int availableH = Math.max(1, h - 2 * MARGIN);
+
+        int textColumnWidth = maxTextWidth;
+        int entryWidth = ICON_SIZE + TEXT_GAP + textColumnWidth;
+
+        int contentW = entryWidth;
+        int contentH = count * ROW_H;
+
+        float autoScale = Math.min(
+                1.0f,
+                Math.min(
+                        availableW / (float) Math.max(1, contentW + OVERLAY_PADDING * 2),
+                        availableH / (float) Math.max(1, contentH + OVERLAY_PADDING * 2)
+                )
+        );
+
+        float manualScale = st.scale / 100.0f;
+        float finalScale = autoScale * manualScale;
+
+        if (finalScale <= 0.0001f) {
+            return;
+        }
+
+        int widgetW = Math.max(1, Math.round((contentW + OVERLAY_PADDING * 2) * finalScale));
+        int widgetH = Math.max(1, Math.round((contentH + OVERLAY_PADDING * 2) * finalScale));
+
+        int baseX = (int) Math.round(w * (st.x / 100.0));
+        int baseY = (int) Math.round(h * (st.y / 100.0));
+
+        int startX = baseX - widgetW;
+        int startY = baseY - widgetH;
+
+        startX = Math.min(Math.max(startX, MARGIN), w - widgetW - MARGIN);
+        startY = Math.min(Math.max(startY, MARGIN), h - widgetH - MARGIN);
+
+        g.pose().pushPose();
+        g.pose().scale(finalScale, finalScale, 1.0f);
+
+        float scaledStartX = startX / finalScale;
+        float scaledStartY = startY / finalScale;
+
+        int bgX0 = Math.round(scaledStartX);
+        int bgY0 = Math.round(scaledStartY);
+        int bgX1 = Math.round(scaledStartX + contentW + OVERLAY_PADDING * 2);
+        int bgY1 = Math.round(scaledStartY + contentH + OVERLAY_PADDING * 2);
+
+        g.fill(bgX0, bgY0, bgX1, bgY1, BACKGROUND_COLOR);
+
+        float contentStartX = scaledStartX + OVERLAY_PADDING;
+        float contentStartY = scaledStartY + OVERLAY_PADDING;
+
+        for (int i = 0; i < count; i++) {
+            float entryX = contentStartX;
+            float entryY = contentStartY + i * ROW_H;
+
+            int textWidth = mc.font.width(texts.get(i));
+
+            int iconX = Math.round(entryX);
+            int iconY = Math.round(entryY + (ROW_H - ICON_SIZE) * 0.5f);
+
+            int textX = Math.round(entryX + ICON_SIZE + TEXT_GAP + (textColumnWidth - textWidth));
+            int textY = Math.round(entryY + (ROW_H - mc.font.lineHeight) * 0.5f);
+
+            g.renderItem(icons.get(i), iconX, iconY);
+            g.drawString(mc.font, texts.get(i), textX, textY, colors.get(i), true);
+        }
+
+        g.pose().popPose();
     }
 
     private static int pickColor(long amount, long threshold) {

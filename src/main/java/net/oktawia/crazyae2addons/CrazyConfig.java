@@ -1,14 +1,10 @@
 package net.oktawia.crazyae2addons;
 
-import com.electronwill.nightconfig.core.Config;
-import com.electronwill.nightconfig.core.UnmodifiableConfig;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.common.ForgeConfigSpec;
 import org.apache.commons.lang3.tuple.Pair;
 
-import java.util.List;
+public final class CrazyConfig {
 
-public class CrazyConfig {
     public static final ForgeConfigSpec COMMON_SPEC;
     public static final Common COMMON;
 
@@ -18,379 +14,556 @@ public class CrazyConfig {
         COMMON_SPEC = pair.getRight();
     }
 
-    public static class Common {
+    public static final class Common {
 
-        public final ForgeConfigSpec.BooleanValue enablePeacefullSpawner;
-        public final ForgeConfigSpec.BooleanValue enableEntityTicker;
-        public final ForgeConfigSpec.IntValue     EntityTickerCost;
-        public final ForgeConfigSpec.IntValue     EntityTickerMaxSpeedCards;
-        public final ForgeConfigSpec.ConfigValue<List<? extends String>> EntityTickerBlackList;
-        public final ForgeConfigSpec.BooleanValue P2PWormholeNesting;
-        public final ForgeConfigSpec.BooleanValue P2PWormholeTeleportation;
-        public final ForgeConfigSpec.BooleanValue ImmersiveP2PWormhole;
+        // =========================
+        // DISPLAY
+        // =========================
+        public final ForgeConfigSpec.BooleanValue DISPLAY_ENABLED;
+        public final ForgeConfigSpec.BooleanValue DISPLAY_IMAGES_ENABLED;
+        public final ForgeConfigSpec.BooleanValue DISPLAY_STOCK_ENABLED;
+        public final ForgeConfigSpec.BooleanValue DISPLAY_ICONS_ENABLED;
+        public final ForgeConfigSpec.BooleanValue DISPLAY_DELTA_ENABLED;
 
-        public final ForgeConfigSpec.IntValue     AutoEnchanterCost;
-        public final ForgeConfigSpec.BooleanValue GregEnergyExporter;
-        public final ForgeConfigSpec.BooleanValue GregWormholeEUP2P;
-        public final ForgeConfigSpec.BooleanValue GregWormholeGoodEuP2P;
+        // =========================
+        // EMITTER TERMINAL
+        // =========================
+        public final ForgeConfigSpec.BooleanValue EMITTER_TERMINAL_ENABLED;
+        public final ForgeConfigSpec.BooleanValue WIRELESS_EMITTER_TERMINAL_ENABLED;
 
-        public final ForgeConfigSpec.IntValue     AutobuilderCostMult;
-        public final ForgeConfigSpec.IntValue     AutobuilderMineDelay;
-        public final ForgeConfigSpec.IntValue     AutobuilderSpeed;
-        public final ForgeConfigSpec.IntValue     AutobuilderPreviewLimit;
+        // =========================
+        // WIRELESS NOTIFICATION TERMINAL
+        // =========================
+        public final ForgeConfigSpec.BooleanValue WIRELESS_NOTIFICATION_TERMINAL_ENABLED;
+        public final ForgeConfigSpec.IntValue WIRELESS_NOTIFICATION_TERMINAL_CONFIG_SLOT;
 
-        public final ForgeConfigSpec.IntValue     CrazyProviderMaxAddRows;
+        // =========================
+        // MULTI LEVEL EMITTER
+        // =========================
+        public final ForgeConfigSpec.BooleanValue MULTI_LEVEL_EMITTER_ENABLED;
+        public final ForgeConfigSpec.IntValue MULTI_LEVEL_EMITTER_CONFIG_SLOT;
 
-        public final ForgeConfigSpec.IntValue     CradleCapacity;
-        public final ForgeConfigSpec.IntValue     CradleCost;
-        public final ForgeConfigSpec.IntValue     CradleChargingSpeed;
+        // =========================
+        // TAG LEVEL EMITTER
+        // =========================
+        public final ForgeConfigSpec.BooleanValue TAG_LEVEL_EMITTER_ENABLED;
 
-        public final ForgeConfigSpec.BooleanValue PenroseMeltdownExplosionsEnabled;
-        public final ForgeConfigSpec.IntValue     PenroseMeltdownFieldRadius;
+        // =========================
+        // REDSTONE EMITTER / TERMINAL
+        // =========================
+        public final ForgeConfigSpec.BooleanValue REDSTONE_EMITTER_TERMINAL_ENABLED;
+        public final ForgeConfigSpec.BooleanValue WIRELESS_REDSTONE_TERMINAL_ENABLED;
 
-        public final ForgeConfigSpec.BooleanValue PenroseSphereEnabled;
-        public final ForgeConfigSpec.BooleanValue PenroseFEOutputEnabled;
-        public final ForgeConfigSpec.BooleanValue PenroseEUOutputEnabled;
-        public final ForgeConfigSpec.ConfigValue<List<? extends String>> PenroseGtTiers;
+        // =========================
+        // WORMHOLE
+        // =========================
+        public final ForgeConfigSpec.BooleanValue WORMHOLE_ENABLED;
+        public final ForgeConfigSpec.BooleanValue WORMHOLE_TELEPORTATION_ENABLED;
+        public final ForgeConfigSpec.BooleanValue WORMHOLE_NESTED_P2PS_ENABLED;
+        public final ForgeConfigSpec.BooleanValue WORMHOLE_ITEM_PROXY_ENABLED;
+        public final ForgeConfigSpec.BooleanValue WORMHOLE_FLUID_PROXY_ENABLED;
+        public final ForgeConfigSpec.BooleanValue WORMHOLE_FE_PROXY_ENABLED;
+        public final ForgeConfigSpec.BooleanValue WORMHOLE_EU_PROXY_ENABLED;
+        public final ForgeConfigSpec.BooleanValue WORMHOLE_OTHER_CAPABILITY_PROXY_ENABLED;
+        public final ForgeConfigSpec.BooleanValue WORMHOLE_MERGED_CAPABILITY_PROXY_ENABLED;
+        public final ForgeConfigSpec.BooleanValue WORMHOLE_REMOTE_INTERACTIONS_ENABLED;
 
-        public final ForgeConfigSpec.LongValue    PenroseStartupCostSingu;
+        // =========================
+        // ROUND ROBIN P2P
+        // =========================
+        public final ForgeConfigSpec.BooleanValue RR_ITEM_P2P_ENABLED;
+        public final ForgeConfigSpec.BooleanValue RR_FLUID_P2P_ENABLED;
 
-        public final ForgeConfigSpec.LongValue    PenroseInitialMassMu;
-        public final ForgeConfigSpec.LongValue    PenroseMassWindowMu;
-        public final ForgeConfigSpec.DoubleValue  PenroseMassFactorMax;
+        // =========================
+        // CPU PRIORITIES
+        // =========================
+        public final ForgeConfigSpec.BooleanValue CPU_PRIORITIES_ENABLED;
 
-        public final ForgeConfigSpec.DoubleValue  PenroseDutyCompensation;
-        public final ForgeConfigSpec.DoubleValue  PenroseFeBasePerSinguFlow;
-        public final ForgeConfigSpec.DoubleValue  PenroseHeatPerSinguFlow;
+        // =========================
+        // TAG VIEW CELL
+        // =========================
+        public final ForgeConfigSpec.BooleanValue TAG_VIEW_CELL_ENABLED;
 
-        public final ForgeConfigSpec.DoubleValue  PenroseHeatPeakMK;
-        public final ForgeConfigSpec.DoubleValue  PenroseMaxHeatMK;
+        // =========================
+        // PATTERN MULTIPLIER
+        // =========================
+        public final ForgeConfigSpec.BooleanValue PATTERN_MULTIPLIER_ENABLED;
 
-        public final ForgeConfigSpec.IntValue     PenroseMaxFeedPerTick;
+        // =========================
+        // CRAZY PATTERN PROVIDER
+        // =========================
+        public final ForgeConfigSpec.BooleanValue CRAZY_PATTERN_PROVIDER_BLOCK_ENABLED;
+        public final ForgeConfigSpec.BooleanValue CRAZY_PATTERN_PROVIDER_PART_ENABLED;
+        public final ForgeConfigSpec.IntValue CRAZY_PROVIDER_MAX_UPGRADES;
 
-        public final ForgeConfigSpec.BooleanValue ResearchRequired;
+        // =========================
+        // EJECTOR
+        // =========================
+        public final ForgeConfigSpec.BooleanValue EJECTOR_ENABLED;
+        public final ForgeConfigSpec.BooleanValue EJECTOR_CRAFT_MISSING_ENABLED;
 
-        public final ForgeConfigSpec.IntValue     PortableSpatialStorageCostMult;
+        // =========================
+        // PORTABLE SPATIAL STORAGE
+        // =========================
+        public final ForgeConfigSpec.BooleanValue PORTABLE_SPATIAL_STORAGE_ENABLED;
+        public final ForgeConfigSpec.IntValue PORTABLE_SPATIAL_STORAGE_COST;
+        public final ForgeConfigSpec.IntValue PORTABLE_SPATIAL_STORAGE_BASE_INTERNAL_POWER_CAPACITY;
+        public final ForgeConfigSpec.IntValue PORTABLE_SPATIAL_STORAGE_MAX_STRUCTURE_SIZE;
 
-        public final ForgeConfigSpec.BooleanValue EnergyExporterEnabled;
-        public final ForgeConfigSpec.BooleanValue EnergyInterfaceEnabled;
-
-        public final ForgeConfigSpec.BooleanValue FEp2pEnabled;
-        public final ForgeConfigSpec.IntValue     FEp2pSpeed;
-        public final ForgeConfigSpec.BooleanValue Fluidp2pEnabled;
-        public final ForgeConfigSpec.IntValue     Fluidp2pSpeed;
-        public final ForgeConfigSpec.BooleanValue Itemp2pEnabled;
-        public final ForgeConfigSpec.IntValue     Itemp2pSpeed;
-
-        public final ForgeConfigSpec.ConfigValue<UnmodifiableConfig> ResearchUnitExtraQBlocks;
-
+        // =========================
+        // PORTABLE SPATIAL CLONER
+        // =========================
+        public final ForgeConfigSpec.BooleanValue PORTABLE_SPATIAL_CLONER_ENABLED;
+        public final ForgeConfigSpec.IntValue PORTABLE_SPATIAL_CLONER_COST;
+        public final ForgeConfigSpec.IntValue PORTABLE_SPATIAL_CLONER_BASE_INTERNAL_POWER_CAPACITY;
+        public final ForgeConfigSpec.IntValue PORTABLE_SPATIAL_CLONER_MAX_STRUCTURE_SIZE;
 
         public Common(ForgeConfigSpec.Builder builder) {
-            builder.comment("Crazy AE2 Addons - Config").push("general");
+            builder.comment(
+                    "Crazy AE2 Addons - Common Config",
+                    "All feature toggles and feature-specific options are defined here.",
+                    "For every config entry that defines a limit, -1 means no limit."
+            ).push("features");
 
-            builder.push("Features");
-            enablePeacefullSpawner = builder
-                    .comment("Allow Spawner Controller to work in Peaceful mode")
-                    .define("enablePeacefullSpawner", true);
+            // ============================================================
+            // DISPLAY
+            // ============================================================
+            builder.comment(
+                    "Display feature.",
+                    "A part that renders dynamic text, images, and AE2-related data.",
+                    "Supports token-based content, colors, icons, stock/delta rendering, and merged multi-display surfaces."
+            ).push("display");
 
-            enableEntityTicker = builder
-                    .comment("Enable/disable Entity Ticker")
-                    .define("enableEntityTicker", true);
+            DISPLAY_ENABLED = bool(builder,
+                    "enabled", true,
+                    "Enable or disable the entire display feature."
+            );
 
-            EntityTickerCost = builder
-                    .comment("Power cost multiplier for Entity Ticker")
-                    .defineInRange("EntityTickerCost", 512, 0, Integer.MAX_VALUE);
+            DISPLAY_IMAGES_ENABLED = bool(builder,
+                    "imagesEnabled", true,
+                    "Enable or disable uploading and rendering custom images on displays."
+            );
 
-            EntityTickerMaxSpeedCards = builder
-                    .comment("Maximum number of speed cards that can be installed in Entity Ticker")
-                    .defineInRange("entityTickerMaxSpeedCards", 8, 0, 8);
+            DISPLAY_STOCK_ENABLED = bool(builder,
+                    "stockEnabled", true,
+                    "Enable or disable dynamic rendering of resource amounts from the connected network on displays."
+            );
 
-            EntityTickerBlackList = builder
-                    .comment("Blocks on which Entity Ticker should not work")
-                    .defineList("EntityTickerBlackList", List.of(), o -> o instanceof String);
+            DISPLAY_ICONS_ENABLED = bool(builder,
+                    "iconsEnabled", true,
+                    "Enable or disable rendering inline resource icons on displays."
+            );
 
-            P2PWormholeNesting = builder
-                    .comment("Allow routing P2P tunnels through a Wormhole tunnel")
-                    .define("nestedP2Pwormhole", false);
+            DISPLAY_DELTA_ENABLED = bool(builder,
+                    "deltaEnabled", true,
+                    "Enable or disable dynamic rendering of resource amount changes over time on displays."
+            );
 
-            P2PWormholeTeleportation = builder
-                    .comment("Allow teleporting through a Wormhole P2P")
-                    .define("wormholeP2PTeleportation", true);
-
-            ImmersiveP2PWormhole = builder
-                    .comment("Create immersive portals on wormhole p2ps. Expect visual glitches with shaders.\n" +
-                            "You need to install additional library for this feature to work")
-                    .define("immersiveP2PWormhole", false);
             builder.pop();
 
+            // ============================================================
+            // EMITTER TERMINAL
+            // ============================================================
+            builder.comment(
+                    "Emitter terminal feature.",
+                    "The emitter terminal allows the player to access, query, and configure",
+                    "all level emitters in the connected grid from a single terminal."
+            ).push("emitterTerminal");
 
-            builder.push("Machines");
-            AutoEnchanterCost = builder
-                    .comment("XP cost multiplier for Auto Enchanter")
-                    .defineInRange("autoEnchanterCost", 10, 0, 100);
+            EMITTER_TERMINAL_ENABLED = bool(builder,
+                    "enabled", true,
+                    "Enable or disable the emitter terminal feature."
+            );
 
-            GregWormholeEUP2P = builder
-                    .comment("Allow Wormhole P2P to transfer EU")
-                    .define("wormholeEUP2PGT", true);
+            WIRELESS_EMITTER_TERMINAL_ENABLED = bool(builder,
+                    "wirelessEnabled", true,
+                    "Enable or disable the wireless variant."
+            );
 
-            GregWormholeGoodEuP2P = builder
-                    .comment("Allow Wormhole P2P to transfer EU to more than 1 output simultaneously")
-                    .define("wormholeGoodEUP2PGT", false);
             builder.pop();
 
+            // ============================================================
+            // WIRELESS NOTIFICATION TERMINAL
+            // ============================================================
+            builder.comment(
+                    "Wireless notification terminal feature.",
+                    "The wireless notification terminal allows the player to configure",
+                    "tracked resources in the connected grid and display their amounts",
+                    "when they are above or below a given threshold."
+            ).push("wirelessNotificationTerminal");
 
-            builder.push("Autobuilder");
-            AutobuilderCostMult = builder
-                    .comment("FE cost multiplier for Autobuilder")
-                    .defineInRange("autobuilderCost", 5, 0, 100);
+            WIRELESS_NOTIFICATION_TERMINAL_ENABLED = bool(builder,
+                    "enabled", true,
+                    "Enable or disable the wireless notification terminal feature."
+            );
 
-            AutobuilderMineDelay = builder
-                    .comment("Ticks to wait after each broken block")
-                    .defineInRange("autobuilderMineDelay", 2, 0, 10);
+            WIRELESS_NOTIFICATION_TERMINAL_CONFIG_SLOT = nonNegativeInt(builder,
+                    "configSlot", 16,
+                    "Configure how many slots the wireless notification terminal should have."
+            );
 
-            AutobuilderSpeed = builder
-                    .comment("Operations per tick Autobuilder can perform")
-                    .defineInRange("autobuilderSpeed", 128, 0, Integer.MAX_VALUE);
-
-            AutobuilderPreviewLimit = builder
-                    .comment("How many preview blocks Autobuilder can show at once")
-                    .defineInRange("autobuilderPreviewLimit", 8192, 0, Integer.MAX_VALUE);
             builder.pop();
 
+            // ============================================================
+            // MULTI LEVEL EMITTER
+            // ============================================================
+            builder.comment(
+                    "Multi level emitter feature.",
+                    "The multi level emitter tracks and triggers multiple conditions at once."
+            ).push("multiLevelEmitter");
 
-            builder.push("CrazyPatternProvider");
-            CrazyProviderMaxAddRows = builder
-                    .comment("How many times player can upgrade the provider; -1 to disable limit")
-                    .defineInRange("crazyProviderMaxAddRows", -1, -1, Integer.MAX_VALUE);
+            MULTI_LEVEL_EMITTER_ENABLED = bool(builder,
+                    "enabled", true,
+                    "Enable or disable the multi level emitter feature."
+            );
+
+            MULTI_LEVEL_EMITTER_CONFIG_SLOT = nonNegativeInt(builder,
+                    "configSlot", 16,
+                    "Configure how many slots the multi level emitter should have."
+            );
+
             builder.pop();
 
+            // ============================================================
+            // TAG LEVEL EMITTER
+            // ============================================================
+            builder.comment(
+                    "Tag level emitter feature.",
+                    "The tag level emitter tracks resources based on a tag expression",
+                    "and can monitor multiple resources at once."
+            ).push("tagLevelEmitter");
 
-            builder.push("EntropyCradle");
-            CradleCapacity = builder
-                    .comment("How much FE Entropy Cradle can store")
-                    .defineInRange("cradleCapacity", 600_000_000, 0, Integer.MAX_VALUE);
+            TAG_LEVEL_EMITTER_ENABLED = bool(builder,
+                    "enabled", true,
+                    "Enable or disable the tag level emitter feature."
+            );
 
-            CradleCost = builder
-                    .comment("How much FE the cradle uses per operation")
-                    .defineInRange("cradleCost", 600_000_000, 0, Integer.MAX_VALUE);
-
-            CradleChargingSpeed = builder
-                    .comment("How much FE per second the cradle can receive")
-                    .defineInRange("cradleChargingSpeed", 50_000_000, 0, Integer.MAX_VALUE);
             builder.pop();
 
+            // ============================================================
+            // REDSTONE EMITTER / TERMINAL
+            // ============================================================
+            builder.comment(
+                    "Redstone emitter / terminal feature.",
+                    "The redstone terminal allows the player to control the redstone output",
+                    "of connected redstone emitters."
+            ).push("redstoneEmitterTerminal");
 
-            // ===== Penrose Sphere =====
-            builder.push("PenroseSphere");
+            REDSTONE_EMITTER_TERMINAL_ENABLED = bool(builder,
+                    "enabled", true,
+                    "Enable or disable the redstone emitter / terminal feature."
+            );
 
-            PenroseSphereEnabled = builder
-                    .comment("Enable/disable Penrose Sphere entirely.")
-                    .define("penroseSphereEnabled", true);
+            WIRELESS_REDSTONE_TERMINAL_ENABLED = bool(builder,
+                    "wirelessEnabled", true,
+                    "Enable or disable the wireless terminal variant."
+            );
 
-            PenroseFEOutputEnabled = builder
-                    .comment(
-                            "Enable FE output from Penrose Sphere.",
-                            "Set to false to completely disable FE output."
-                    )
-                    .define("penroseFeOutputEnabled", true);
-
-            PenroseEUOutputEnabled = builder
-                    .comment(
-                            "Enable EU output from Penrose Sphere.",
-                            "Set to true if Penrose should give GregTech EU output."
-                    )
-                    .define("penroseEuOutputEnabled", false);
-
-            PenroseGtTiers = builder
-                    .comment(
-                            "GT hatch tiers allowed for the Penrose Sphere.",
-                            "Works only when penroseEuOutputEnabled is set to true.",
-                            "Default: ULV, LV, MV, HV, EV, IV, LuV, ZPM, UV, UHV, UEV, UIV, UXV, OpV, MAX"
-                    )
-                    .defineList(
-                            "penroseGtTiers",
-                            List.of(
-                                    "ULV", "LV", "MV", "HV", "EV", "IV", "LuV", "ZPM",
-                                    "UV", "UHV", "UEV", "UIV", "UXV", "OpV", "MAX"
-                            ),
-                            o -> o instanceof String s && !s.isBlank()
-                    );
-
-            builder.push("Meltdown");
-            PenroseMeltdownExplosionsEnabled = builder
-                    .comment(
-                            "Enable/disable meltdown world effect (explosions + black hole field).",
-                            "Default: true."
-                    )
-                    .define("penroseMeltdownExplosionsEnabled", true);
-            PenroseMeltdownFieldRadius = builder
-                    .comment(
-                            "Radius used by BlackHoleManager.start(...) after meltdown.",
-                            "Set to 0 to disable the field entirely."
-                    )
-                    .defineInRange("penroseMeltdownFieldRadius", 768, 0, 4096);
             builder.pop();
 
-            builder.push("Startup");
-            PenroseStartupCostSingu = builder
-                    .comment(
-                            "How many Super Singularity items are consumed to start the black hole.",
-                            "Units: items. Default: 32512."
-                    )
-                    .defineInRange("penroseStartupCostSingu", 32_512L, 0L, Long.MAX_VALUE);
+            // ============================================================
+            // WORMHOLE
+            // ============================================================
+            builder.comment(
+                    "Wormhole feature.",
+                    "Wormhole is a large feature that acts as a universal capability proxy",
+                    "and also allows remote interactions or teleportation.",
+                    "The tunnel always forwards from any output to the input,",
+                    "or from the input to the closest output. It never splits",
+                    "resources between multiple outputs. But can merge from many",
+                    "outputs to the same input."
+            ).push("wormhole");
+
+            WORMHOLE_ENABLED = bool(builder,
+                    "enabled", true,
+                    "Enable or disable the entire wormhole feature."
+            );
+
+            WORMHOLE_TELEPORTATION_ENABLED = bool(builder,
+                    "teleportationEnabled", true,
+                    "Enable or disable teleportation through wormholes.",
+                    "This controls whether clicking on a wormhole with an ender pearl",
+                    "teleports the player to the other side."
+            );
+
+            WORMHOLE_NESTED_P2PS_ENABLED = bool(builder,
+                    "nestedP2psEnabled", false,
+                    "Allow routing P2P tunnels through a wormhole tunnel."
+            );
+
+            WORMHOLE_ITEM_PROXY_ENABLED = bool(builder,
+                    "itemProxyEnabled", true,
+                    "Allow item proxying through wormholes."
+            );
+
+            WORMHOLE_FLUID_PROXY_ENABLED = bool(builder,
+                    "fluidProxyEnabled", true,
+                    "Allow fluid proxying through wormholes."
+            );
+
+            WORMHOLE_FE_PROXY_ENABLED = bool(builder,
+                    "feProxyEnabled", true,
+                    "Allow FE proxying through wormholes."
+            );
+
+            WORMHOLE_EU_PROXY_ENABLED = bool(builder,
+                    "euProxyEnabled", true,
+                    "Allow GregTech EU proxying through wormholes."
+            );
+
+            WORMHOLE_OTHER_CAPABILITY_PROXY_ENABLED = bool(builder,
+                    "otherCapabilityProxyEnabled", true,
+                    "Allow proxying of other capabilities through wormholes.",
+                    "Example: Mekanism heat pipes."
+            );
+
+            WORMHOLE_MERGED_CAPABILITY_PROXY_ENABLED = bool(builder,
+                    "mergedCapabilityProxyEnabled", true,
+                    "Allow merged capability proxying through wormholes.",
+                    "Allow merging all output handlers that are the same type (e.g. items)",
+                    "so the input sees them all at the same time."
+            );
+
+            WORMHOLE_REMOTE_INTERACTIONS_ENABLED = bool(builder,
+                    "remoteInteractionsEnabled", true,
+                    "Allow remote interactions through wormholes.",
+                    "This controls whether clicking on one side of a wormhole",
+                    "opens the GUI of the machine on the other side."
+            );
+
             builder.pop();
 
-            builder.push("Balance");
-            PenroseInitialMassMu = builder
-                    .comment(
-                            "Initial black hole mass at startup.",
-                            "Units: MU (internal mass unit). Default matches old hardcoded value."
-                    )
-                    .defineInRange("penroseInitialMassMu", 32_768L * 8_192L, 0L, Long.MAX_VALUE);
+            // ============================================================
+            // ROUND ROBIN P2P
+            // ============================================================
+            builder.comment(
+                    "Round robin P2P features.",
+                    "Round robin P2P tunnels always split inputs evenly between all outputs,",
+                    "even across multiple insertions."
+            ).push("roundRobinP2p");
 
-            PenroseMassWindowMu = builder
-                    .comment(
-                            "Allowed mass window above initial mass before meltdown triggers.",
-                            "Max mass = initialMassMu + massWindowMu.",
-                            "Units: MU. Default: 1113600."
-                    )
-                    .defineInRange("penroseMassWindowMu", 1_113_600L, 0L, Long.MAX_VALUE);
+            RR_ITEM_P2P_ENABLED = bool(builder,
+                    "itemEnabled", true,
+                    "Enable or disable round robin item P2P."
+            );
 
-            PenroseMassFactorMax = builder
-                    .comment(
-                            "Max mass factor multiplier at the sweet-spot (peak of the mass curve).",
-                            "massFactorSweet(): 1.0 .. massFactorMax.",
-                            "Default: 2.0 (matches current)."
-                    )
-                    .defineInRange("penroseMassFactorMax", 2.0, 1.0, 64.0);
+            RR_FLUID_P2P_ENABLED = bool(builder,
+                    "fluidEnabled", true,
+                    "Enable or disable round robin fluid P2P."
+            );
 
-            PenroseDutyCompensation = builder
-                    .comment(
-                            "Duty-cycle compensation multiplier used in energy calculations.",
-                            "Default: 4/3 (~1.3333333)."
-                    )
-                    .defineInRange("penroseDutyCompensation", 4.0 / 3.0, 0.0, 1000.0);
-
-            PenroseFeBasePerSinguFlow = builder
-                    .comment(
-                            "Base FE produced per 1.0 singu/t disk flow at heatEff=1 and massFactor=1.",
-                            "Units: FE per tick per (singu/t).",
-                            "Default equals current PenroseControllerBE FE_BASE_PER_SINGU."
-                    )
-                    .defineInRange("penroseFeBasePerSinguFlow", (double) (1L << 27) * 0.5, 0.0, 1.0e18);
-
-            PenroseHeatPerSinguFlow = builder
-                    .comment(
-                            "Heat added per tick per 1.0 singu/t disk flow at massFactor=1.",
-                            "Units: MK per tick per (singu/t)."
-                    )
-                    .defineInRange("penroseHeatPerSinguFlow", 0.5, 0.0, 1.0e12);
-
-            PenroseHeatPeakMK = builder
-                    .comment(
-                            "Heat value where the efficiency curve peaks (heatEff reaches 1.0 at heat=peak).",
-                            "Used by computeHeatEff(): x=heat/peak; eff=2x-x^2 clamped to [0..1].",
-                            "Units: MK. Default: 50000."
-                    )
-                    .defineInRange("penroseHeatPeakMK", 50_000.0, 1.0, 1.0e12);
-
-            PenroseMaxHeatMK = builder
-                    .comment(
-                            "Overheat threshold. If heat >= maxHeat -> meltdown.",
-                            "Units: MK. Default: 100000."
-                    )
-                    .defineInRange("penroseMaxHeatMK", 100_000.0, 0.0, 1.0e12);
-
-            PenroseMaxFeedPerTick = builder
-                    .comment(
-                            "Hard cap on how many singularities per tick can be injected into the disk.",
-                            "Units: items/t. Default: 4096."
-                    )
-                    .defineInRange("penroseMaxFeedPerTick", 4_096, 0, Integer.MAX_VALUE);
             builder.pop();
 
-            builder.pop(); // PenroseSphere
+            // ============================================================
+            // CPU PRIORITIES
+            // ============================================================
+            builder.comment(
+                    "CPU priorities feature.",
+                    "CPU priorities make higher-priority CPUs receive crafting jobs more often,",
+                    "receive crafted results before lower-priority CPUs,",
+                    "and use machines before lower-priority CPUs."
+            ).push("cpuPriorities");
 
+            CPU_PRIORITIES_ENABLED = bool(builder,
+                    "enabled", true,
+                    "Enable or disable CPU priorities."
+            );
 
-            builder.push("Research");
-            ResearchRequired = builder
-                    .comment("Enable research mechanic (if false: Recipe Fabricator works without data drive)")
-                    .define("researchEnabled", true);
-            ResearchUnitExtraQBlocks = builder
-                    .comment(
-                            "Extra blocks allowed in the Research Unit multiblock in 'Q' slots.",
-                            "Format: TOML map of \"namespace:block\" -> integer.",
-                            "The integer is currently used as a multiplier for computation (count * value).",
-                            "Keys with ':' must be quoted, e.g. { \"minecraft:glass\" = 1 }.",
-                            "Default: empty map."
-                    )
-                    .define(
-                            "researchUnitExtraQBlocks",
-                            Config.inMemory(),
-                            o -> {
-                                if (!(o instanceof UnmodifiableConfig c)) return false;
-                                for (var e : c.valueMap().entrySet()) {
-                                    String key = e.getKey();
-                                    Object val = e.getValue();
-
-                                    if (key == null || ResourceLocation.tryParse(key) == null) return false;
-                                    if (!(val instanceof Number)) return false;
-                                }
-                                return true;
-                            }
-                    );
             builder.pop();
 
+            // ============================================================
+            // TAG VIEW CELL
+            // ============================================================
+            builder.comment(
+                    "Tag view cell feature.",
+                    "The tag view cell filters the terminal it is placed in based on a tag expression",
+                    "instead of selected individual resources."
+            ).push("tagViewCell");
 
-            builder.push("Portable Spatial IO");
-            PortableSpatialStorageCostMult = builder
-                    .comment("FE cost multiplier for Portable Spatial IO")
-                    .defineInRange("portableSpatialStorageCost", 5, 0, 100);
+            TAG_VIEW_CELL_ENABLED = bool(builder,
+                    "enabled", true,
+                    "Enable or disable tag view cells."
+            );
+
             builder.pop();
 
+            // ============================================================
+            // PATTERN MULTIPLIER
+            // ============================================================
+            builder.comment(
+                    "Pattern multiplier feature.",
+                    "The pattern multiplier allows the player to multiply patterns, multiply them up to a limit,",
+                    "or clear all patterns inside it. It can also multiply all patterns in any container",
+                    "such as a pattern provider or chest when shift-right-clicked on it."
+            ).push("patternMultiplier");
 
-            builder.push("EnergyParts");
-            EnergyExporterEnabled = builder
-                    .comment("Enable Energy Exporter")
-                    .define("energyExporterEnabled", false);
+            PATTERN_MULTIPLIER_ENABLED = bool(builder,
+                    "enabled", true,
+                    "Enable or disable the pattern multiplier feature."
+            );
 
-            GregEnergyExporter = builder
-                    .comment("Allow Energy Exporter part to export EU if a GregTech battery is inserted")
-                    .define("energyExporterGT", false);
-
-            EnergyInterfaceEnabled = builder
-                    .comment("Enable Energy Interface")
-                    .define("energyInterfaceEnabled", false);
             builder.pop();
 
+            // ============================================================
+            // CRAZY PATTERN PROVIDER
+            // ============================================================
+            builder.comment(
+                    "Crazy pattern provider features.",
+                    "The crazy pattern provider starts with 72 pattern slots",
+                    "and can be upgraded using crazy upgrades.",
+                    "Each upgrade adds 1 row (9 slots) to the pattern inventory."
+            ).push("crazyPatternProvider");
 
-            builder.push("P2PSpeeds");
-            FEp2pEnabled = builder
-                    .comment("Enable/disable Extracting FE P2P tunnel entirely")
-                    .define("fep2pEnabled", true);
+            CRAZY_PATTERN_PROVIDER_BLOCK_ENABLED = bool(builder,
+                    "blockEnabled", true,
+                    "Enable or disable the crazy pattern provider block."
+            );
 
-            FEp2pSpeed = builder
-                    .comment("Extract speed for FE P2P (FE/t)")
-                    .defineInRange("fep2pSpeed", 262144, 0, Integer.MAX_VALUE);
+            CRAZY_PATTERN_PROVIDER_PART_ENABLED = bool(builder,
+                    "partEnabled", true,
+                    "Enable or disable the crazy pattern provider part."
+            );
 
-            Fluidp2pEnabled = builder
-                    .comment("Enable/disable Extracting Fluid P2P tunnel entirely")
-                    .define("fluidp2pEnabled", true);
+            CRAZY_PROVIDER_MAX_UPGRADES = unlimitedInt(builder,
+                    "maxUpgrades", -1,
+                    "Maximum number of upgrades allowed for the crazy pattern provider.",
+                    "-1 means no limit.",
+                    "Note: each upgrade adds 1 row (9 slots)."
+            );
 
-            Fluidp2pSpeed = builder
-                    .comment("Extract speed for Fluid P2P (mB/t)")
-                    .defineInRange("fluidp2pSpeed", 500, 0, Integer.MAX_VALUE);
+            builder.pop();
 
-            Itemp2pEnabled = builder
-                    .comment("Enable/disable Extracting Item P2P tunnel entirely")
-                    .define("itemp2pEnabled", true);
+            // ============================================================
+            // EJECTOR
+            // ============================================================
+            builder.comment(
+                    "Ejector feature.",
+                    "The ejector allows the player to configure its 36-slot config inventory",
+                    "with any amount of any resource. When provided with a redstone signal,",
+                    "it ejects those resources from the connected network storage to",
+                    "the adjacent inventory. It can also craft missing resources",
+                    "if the system has the required patterns and ingredients.",
+                    "Crafting is performed atomically as a single crafting operation",
+                    "using one crafting job / CPU."
+            ).push("ejector");
 
-            Itemp2pSpeed = builder
-                    .comment("Extract speed for Item P2P (items/t)")
-                    .defineInRange("itemp2pSpeed", 16, 0, Integer.MAX_VALUE);
+            EJECTOR_ENABLED = bool(builder,
+                    "enabled", true,
+                    "Enable or disable the ejector feature."
+            );
+
+            EJECTOR_CRAFT_MISSING_ENABLED = bool(builder,
+                    "craftMissingEnabled", true,
+                    "Allow the ejector to craft missing items."
+            );
+
+            builder.pop();
+
+            // ============================================================
+            // PORTABLE SPATIAL STORAGE
+            // ============================================================
+            builder.comment(
+                    "Portable spatial storage feature.",
+                    "Portable spatial storage can cut structures from the world,",
+                    "rotate or flip them, and then paste them back,",
+                    "while preserving block NBT and other metadata."
+            ).push("portableSpatialStorage");
+
+            PORTABLE_SPATIAL_STORAGE_ENABLED = bool(builder,
+                    "enabled", true,
+                    "Enable or disable portable spatial storage."
+            );
+
+            PORTABLE_SPATIAL_STORAGE_COST = nonNegativeInt(builder,
+                    "cost", 1,
+                    "Base AE cost of cutting or pasting one block.",
+                    "The final cost depends on this value and on the distance of the block",
+                    "from the first selected corner."
+            );
+
+            PORTABLE_SPATIAL_STORAGE_BASE_INTERNAL_POWER_CAPACITY = nonNegativeInt(builder,
+                    "baseInternalPowerCapacity", 200000,
+                    "Base internal power capacity for portable spatial storage.",
+                    "Each energy upgrade adds this amount once more to the item's",
+                    "internal energy storage."
+            );
+
+            PORTABLE_SPATIAL_STORAGE_MAX_STRUCTURE_SIZE = unlimitedInt(builder,
+                    "maxStructureSize", -1,
+                    "Maximum allowed structure size for portable spatial storage.",
+                    "-1 means no limit."
+            );
+
+            builder.pop();
+
+            // ============================================================
+            // PORTABLE SPATIAL CLONER
+            // ============================================================
+            builder.comment(
+                    "Portable spatial cloner feature.",
+                    "Portable spatial cloner can copy structures from the world,",
+                    "rotate or flip them, and then paste them back,",
+                    "while preserving machine settings. It works with AE2 cables and parts."
+            ).push("portableSpatialCloner");
+
+            PORTABLE_SPATIAL_CLONER_ENABLED = bool(builder,
+                    "enabled", true,
+                    "Enable or disable portable spatial cloner."
+            );
+
+            PORTABLE_SPATIAL_CLONER_COST = nonNegativeInt(builder,
+                    "cost", 1,
+                    "Base AE cost of copying or pasting one block.",
+                    "The final cost depends on this value and on the distance of the block",
+                    "from the first selected corner."
+            );
+
+            PORTABLE_SPATIAL_CLONER_BASE_INTERNAL_POWER_CAPACITY = nonNegativeInt(builder,
+                    "baseInternalPowerCapacity", 200000,
+                    "Base internal power capacity for portable spatial cloner.",
+                    "Each energy upgrade adds this amount once more to the item's",
+                    "internal energy storage."
+            );
+
+            PORTABLE_SPATIAL_CLONER_MAX_STRUCTURE_SIZE = unlimitedInt(builder,
+                    "maxStructureSize", -1,
+                    "Maximum allowed structure size for portable spatial cloner.",
+                    "-1 means no limit."
+            );
+
             builder.pop();
 
             builder.pop();
         }
+
+        private static ForgeConfigSpec.BooleanValue bool(
+                ForgeConfigSpec.Builder builder,
+                String key,
+                boolean defaultValue,
+                String... comment
+        ) {
+            return builder.comment(comment).define(key, defaultValue);
+        }
+
+        private static ForgeConfigSpec.IntValue nonNegativeInt(
+                ForgeConfigSpec.Builder builder,
+                String key,
+                int defaultValue,
+                String... comment
+        ) {
+            return builder.comment(comment).defineInRange(key, defaultValue, 0, Integer.MAX_VALUE);
+        }
+
+        private static ForgeConfigSpec.IntValue unlimitedInt(
+                ForgeConfigSpec.Builder builder,
+                String key,
+                int defaultValue,
+                String... comment
+        ) {
+            return builder.comment(comment).defineInRange(key, defaultValue, -1, Integer.MAX_VALUE);
+        }
+    }
+
+    private CrazyConfig() {
     }
 }

@@ -149,7 +149,11 @@ public enum LangDefs implements LocalizationEnum {
     MB_AMOUNT("gui.crazyae2addons.mb_amount", "%s mB"),
     EMPTY("gui.crazyae2addons.empty", "Empty"),
     INPUT("gui.crazyae2addons.input", "Input"),
-    OUTPUT("gui.crazyae2addons.output", "Output");
+    OUTPUT("gui.crazyae2addons.output", "Output"),
+    FEATURE_DISABLED("gui.crazyae2addons.feature_disabled", "DISABLED"),
+    FEATURE_DISABLED_CONFIG("gui.crazyae2addons.feature_disabled_config", "in config"),
+    DISPLAY_PREVIEW_SIZE("gui.crazyae2addons.display_preview_size", "Preview %1$s × %2$s"),
+    NOTIFICATION_TERMINAL_HUD_SCALE_TOOLTIP("gui.crazyae2addons.notification_terminal.hud_scale_tooltip", "Hud scale in % (0-100)");
 
 
     private final String key;

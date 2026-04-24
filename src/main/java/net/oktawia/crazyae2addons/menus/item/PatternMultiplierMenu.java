@@ -44,7 +44,7 @@ public class PatternMultiplierMenu extends AEBaseMenu {
     }
 
     public void modifyPatterns(double multiplier) {
-        if (multiplier <= 0) {
+        if (multiplier < 0) {
             return;
         }
 
@@ -53,6 +53,10 @@ public class PatternMultiplierMenu extends AEBaseMenu {
 
         if (isClientSide()) {
             sendClientAction(ACTION_MODIFY_PATTERNS, multiplier);
+            return;
+        }
+
+        if (multiplier == 0) {
             return;
         }
 

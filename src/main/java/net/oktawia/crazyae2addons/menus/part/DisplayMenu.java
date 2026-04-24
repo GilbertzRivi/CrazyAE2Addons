@@ -10,6 +10,7 @@ import lombok.Getter;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.oktawia.crazyae2addons.CrazyAddons;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.logic.display.DisplayGrid;
 import net.oktawia.crazyae2addons.logic.display.DisplayImageEntry;
@@ -114,9 +115,9 @@ public class DisplayMenu extends AEBaseMenu {
         }
 
         try {
-            this.previewImagesJson = GSON.toJson(
-                    host.getDisplayImages() != null ? host.getDisplayImages() : Collections.emptyList()
-            );
+            this.previewImagesJson = CrazyConfig.COMMON.DISPLAY_IMAGES_ENABLED.get()
+                    ? GSON.toJson(host.getDisplayImages() != null ? host.getDisplayImages() : Collections.emptyList())
+                    : "[]";
         } catch (Exception e) {
             CrazyAddons.LOGGER.debug("failed to serialize display preview images to JSON", e);
             this.previewImagesJson = "[]";
@@ -142,6 +143,10 @@ public class DisplayMenu extends AEBaseMenu {
     }
 
     public void requestImages() {
+        if (!CrazyConfig.COMMON.DISPLAY_IMAGES_ENABLED.get()) {
+            return;
+        }
+
         if (isClientSide()) {
             sendClientAction(ACTION_REQUEST_IMAGES);
             return;
@@ -214,6 +219,12 @@ public class DisplayMenu extends AEBaseMenu {
     }
 
     public void openInsert(int cursorPos) {
+        if (!CrazyConfig.COMMON.DISPLAY_ICONS_ENABLED.get()
+                && !CrazyConfig.COMMON.DISPLAY_STOCK_ENABLED.get()
+                && !CrazyConfig.COMMON.DISPLAY_DELTA_ENABLED.get()) {
+            return;
+        }
+
         host.pendingInsertCursor = cursorPos;
 
         if (!isClientSide()) {
@@ -230,6 +241,10 @@ public class DisplayMenu extends AEBaseMenu {
     }
 
     public void openImages() {
+        if (!CrazyConfig.COMMON.DISPLAY_IMAGES_ENABLED.get()) {
+            return;
+        }
+
         if (!isClientSide()) {
             MenuOpener.open(
                     CrazyMenuRegistrar.DISPLAY_IMAGES_SUBMENU.get(),

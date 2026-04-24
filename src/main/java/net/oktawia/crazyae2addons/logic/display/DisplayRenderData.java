@@ -14,6 +14,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fluids.FluidStack;
 import net.oktawia.crazyae2addons.CrazyAddons;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.logic.display.keytypes.DisplayKeyCompatRegistry;
 import net.oktawia.crazyae2addons.util.MathParser;
 import org.jetbrains.annotations.Nullable;
@@ -427,9 +428,13 @@ public final class DisplayRenderData {
 
         appendStyledChunk(raw, plainStart, raw.length(), currentStyle, out);
     }
-
     private static void appendTextAndIcons(String text, Style baseStyle, List<LineSeg> out) {
         if (text == null || text.isEmpty()) {
+            return;
+        }
+
+        if (!CrazyConfig.COMMON.DISPLAY_ICONS_ENABLED.get()) {
+            out.add(new TextSeg(parseMarkdownSegment(text, baseStyle)));
             return;
         }
 

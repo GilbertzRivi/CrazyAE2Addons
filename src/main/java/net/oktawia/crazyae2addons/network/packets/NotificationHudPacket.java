@@ -8,7 +8,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.network.NetworkEvent;
 import net.oktawia.crazyae2addons.client.renderer.overlay.NotificationHudOverlay;
 
-public record NotificationHudPacket(List<Entry> entries, byte hudX, byte hudY) {
+public record NotificationHudPacket(List<Entry> entries, byte hudX, byte hudY, byte hudScale) {
 
     public record Entry(ItemStack icon, long amount, long threshold) {
     }
@@ -16,6 +16,7 @@ public record NotificationHudPacket(List<Entry> entries, byte hudX, byte hudY) {
     public static void encode(NotificationHudPacket msg, FriendlyByteBuf buf) {
         buf.writeByte(msg.hudX);
         buf.writeByte(msg.hudY);
+        buf.writeByte(msg.hudScale);
 
         buf.writeVarInt(msg.entries.size());
         for (Entry entry : msg.entries) {
@@ -28,6 +29,7 @@ public record NotificationHudPacket(List<Entry> entries, byte hudX, byte hudY) {
     public static NotificationHudPacket decode(FriendlyByteBuf buf) {
         byte hudX = buf.readByte();
         byte hudY = buf.readByte();
+        byte hudScale = buf.readByte();
 
         int size = buf.readVarInt();
         List<Entry> entries = new ArrayList<>(size);
@@ -39,12 +41,12 @@ public record NotificationHudPacket(List<Entry> entries, byte hudX, byte hudY) {
             entries.add(new Entry(icon, amount, threshold));
         }
 
-        return new NotificationHudPacket(entries, hudX, hudY);
+        return new NotificationHudPacket(entries, hudX, hudY, hudScale);
     }
 
     public static void handle(NotificationHudPacket msg, Supplier<NetworkEvent.Context> ctxSup) {
         NetworkEvent.Context ctx = ctxSup.get();
-        ctx.enqueueWork(() -> NotificationHudOverlay.update(msg.entries, msg.hudX, msg.hudY));
+        ctx.enqueueWork(() -> NotificationHudOverlay.update(msg.entries, msg.hudX, msg.hudY, msg.hudScale));
         ctx.setPacketHandled(true);
     }
 }

@@ -9,8 +9,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.blocks.*;
-import net.oktawia.crazyae2addons.entities.RecipeFabricatorBE;
-import net.oktawia.crazyae2addons.items.*;
+import net.oktawia.crazyae2addons.items.block.CrazyPatternProviderBlockItem;
 
 import java.util.List;
 

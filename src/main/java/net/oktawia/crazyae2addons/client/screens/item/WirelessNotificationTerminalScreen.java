@@ -1,56 +1,58 @@
 package net.oktawia.crazyae2addons.client.screens.item;
 
-import appeng.api.stacks.AEKey;
-import appeng.client.gui.MathExpressionParser;
 import appeng.client.gui.NumberEntryType;
 import appeng.client.gui.implementations.UpgradeableScreen;
 import appeng.client.gui.style.PaletteColor;
 import appeng.client.gui.style.ScreenStyle;
-import appeng.client.gui.widgets.*;
+import appeng.client.gui.widgets.AECheckbox;
+import appeng.client.gui.widgets.BackgroundPanel;
+import appeng.client.gui.widgets.ConfirmableTextField;
+import appeng.client.gui.widgets.Scrollbar;
 import appeng.menu.SlotSemantics;
 import appeng.menu.slot.AppEngSlot;
 import de.mari_023.ae2wtlib.wut.CycleTerminalButton;
 import de.mari_023.ae2wtlib.wut.IUniversalTerminalCapable;
-import java.math.BigDecimal;
-import java.math.MathContext;
-import java.math.RoundingMode;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.text.ParsePosition;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraft.world.inventory.Slot;
 import net.oktawia.crazyae2addons.defs.LangDefs;
 import net.oktawia.crazyae2addons.logic.interfaces.IMovableSlot;
 import net.oktawia.crazyae2addons.menus.item.WirelessNotificationTerminalMenu;
+import net.oktawia.crazyae2addons.network.packets.WirelessNotificationWindowPacket;
+import net.oktawia.crazyae2addons.util.MathParser;
+
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 public class WirelessNotificationTerminalScreen<C extends WirelessNotificationTerminalMenu>
         extends UpgradeableScreen<C> implements IUniversalTerminalCapable {
 
-    private static final int FILTER_SLOTS = WirelessNotificationTerminalMenu.FILTER_SLOTS;
+    private static final int SLOT_X = 10;
+    private static final int SLOT_Y = 34;
+    private static final int ROW_HEIGHT = 18;
+    private static final int HIDDEN_POS = -10_000;
+
     private static final int VISIBLE_ROWS = WirelessNotificationTerminalMenu.VISIBLE_ROWS;
 
-    private static final int FILTER_SLOT_X = 10;
-    private static final int FILTER_SLOT_Y0 = 34;
-    private static final int ROW_H = 18;
-
     private final Scrollbar scrollbar = new Scrollbar();
-    private int lastOffset = -1;
 
     private final int[] boundSlot = new int[VISIBLE_ROWS];
     private final NumberEntryType[] rowType = new NumberEntryType[VISIBLE_ROWS];
     private final ConfirmableTextField[] limitFields = new ConfirmableTextField[VISIBLE_ROWS];
     private final boolean[] suppressChange = new boolean[VISIBLE_ROWS];
 
-    private final AETextField hudXField;
-    private final AETextField hudYField;
+    private final ConfirmableTextField hudXField;
+    private final ConfirmableTextField hudYField;
+    private final ConfirmableTextField hudScaleField;
     private final AECheckbox hideAboveCb;
     private final AECheckbox hideBelowCb;
 
@@ -59,6 +61,10 @@ public class WirelessNotificationTerminalScreen<C extends WirelessNotificationTe
     private final DecimalFormat decimalFormat;
 
     private boolean initialized = false;
+    private int lastSentOffset = -1;
+    private int lastTotalCount = -1;
+    private int lastAppliedRevision = -1;
+    private boolean needsRefresh = true;
 
     public WirelessNotificationTerminalScreen(C menu, Inventory playerInventory, Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
@@ -68,6 +74,7 @@ public class WirelessNotificationTerminalScreen<C extends WirelessNotificationTe
         if (getMenu().isWUT()) {
             addToLeftToolbar(new CycleTerminalButton(btn -> cycleTerminal()));
         }
+
         this.widgets.add("singularityBackground", new BackgroundPanel(style.getImage("singularityBackground")));
 
         this.errorTextColor = style.getColor(PaletteColor.TEXTFIELD_ERROR).toARGB();
@@ -82,7 +89,7 @@ public class WirelessNotificationTerminalScreen<C extends WirelessNotificationTe
             rowType[i] = NumberEntryType.of(null);
         }
 
-        this.scrollbar.setRange(0, Math.max(0, FILTER_SLOTS - VISIBLE_ROWS), 1);
+        this.scrollbar.setRange(0, 0, 1);
         this.widgets.add("scrollbar", this.scrollbar);
 
         for (int row = 0; row < VISIBLE_ROWS; row++) {
@@ -90,24 +97,20 @@ public class WirelessNotificationTerminalScreen<C extends WirelessNotificationTe
 
             ConfirmableTextField field = new ConfirmableTextField(style, font, 0, 0, 0, font.lineHeight);
             field.setBordered(false);
-            field.setMaxLength(16);
+            field.setMaxLength(32);
+            field.setTextColor(normalTextColor);
             field.setResponder(text -> onLimitChanged(rowIndex));
             field.setOnConfirm(this::onClose);
 
             this.limitFields[row] = field;
             this.widgets.add("limit_" + row, field);
         }
-
         this.hudXField = new ConfirmableTextField(style, font, 0, 0, 0, font.lineHeight);
         this.hudXField.setBordered(false);
-        this.hudXField.setMaxLength(3);
-        this.hudXField.setFilter(text -> text.chars().allMatch(Character::isDigit));
-        this.hudXField.setResponder(text -> {
-            if (text.isEmpty()) {
-                return;
-            }
-            getMenu().setHudX(Math.max(0, Math.min(100, Integer.parseInt(text))));
-        });
+        this.hudXField.setMaxLength(32);
+        this.hudXField.setResponder(text ->
+                parsePercentField(text).ifPresent(getMenu()::setHudX)
+        );
         this.hudXField.setTooltip(Tooltip.create(
                 Component.translatable(LangDefs.NOTIFICATION_TERMINAL_HUD_X_TOOLTIP.getTranslationKey())
         ));
@@ -115,18 +118,25 @@ public class WirelessNotificationTerminalScreen<C extends WirelessNotificationTe
 
         this.hudYField = new ConfirmableTextField(style, font, 0, 0, 0, font.lineHeight);
         this.hudYField.setBordered(false);
-        this.hudYField.setMaxLength(3);
-        this.hudYField.setFilter(text -> text.chars().allMatch(Character::isDigit));
-        this.hudYField.setResponder(text -> {
-            if (text.isEmpty()) {
-                return;
-            }
-            getMenu().setHudY(Math.max(0, Math.min(100, Integer.parseInt(text))));
-        });
+        this.hudYField.setMaxLength(32);
+        this.hudYField.setResponder(text ->
+                parsePercentField(text).ifPresent(getMenu()::setHudY)
+        );
         this.hudYField.setTooltip(Tooltip.create(
                 Component.translatable(LangDefs.NOTIFICATION_TERMINAL_HUD_Y_TOOLTIP.getTranslationKey())
         ));
         this.widgets.add("hud_y", this.hudYField);
+
+        this.hudScaleField = new ConfirmableTextField(style, font, 0, 0, 0, font.lineHeight);
+        this.hudScaleField.setBordered(false);
+        this.hudScaleField.setMaxLength(32);
+        this.hudScaleField.setResponder(text ->
+                parsePercentField(text).ifPresent(getMenu()::setHudScale)
+        );
+        this.hudScaleField.setTooltip(Tooltip.create(
+                Component.translatable(LangDefs.NOTIFICATION_TERMINAL_HUD_SCALE_TOOLTIP.getTranslationKey())
+        ));
+        this.widgets.add("hud_scale", this.hudScaleField);
 
         this.hideAboveCb = new AECheckbox(0, 0, 170, 14, style, Component.empty());
         this.hideAboveCb.setTooltip(Tooltip.create(
@@ -143,99 +153,176 @@ public class WirelessNotificationTerminalScreen<C extends WirelessNotificationTe
         this.widgets.add("hide_below", this.hideBelowCb);
     }
 
+    private void layoutConfigSlots() {
+        var configSlots = getMenu().getSlots(SlotSemantics.CONFIG);
+        int visibleCount = Math.min(VISIBLE_ROWS, Math.max(0, getMenu().totalCount));
+
+        for (int row = 0; row < configSlots.size(); row++) {
+            var slot = configSlots.get(row);
+            boolean visible = row < visibleCount;
+
+            if (!(slot instanceof AppEngSlot aeSlot)) {
+                continue;
+            }
+
+            if (slot instanceof IMovableSlot movable) {
+                if (visible) {
+                    movable.setX(SLOT_X);
+                    movable.setY(SLOT_Y + row * ROW_HEIGHT);
+                    aeSlot.setSlotEnabled(true);
+                    aeSlot.setActive(true);
+                } else {
+                    movable.setX(HIDDEN_POS);
+                    movable.setY(HIDDEN_POS);
+                    aeSlot.setSlotEnabled(false);
+                    aeSlot.setActive(false);
+                }
+            } else {
+                aeSlot.setSlotEnabled(visible);
+                aeSlot.setActive(visible);
+            }
+        }
+    }
+
     @Override
     protected void updateBeforeRender() {
         super.updateBeforeRender();
+        layoutConfigSlots();
 
         if (!initialized) {
             this.hudXField.setValue(String.valueOf(getMenu().getHudX()));
             this.hudYField.setValue(String.valueOf(getMenu().getHudY()));
+            this.hudScaleField.setValue(String.valueOf(getMenu().getHudScale()));
             this.hideAboveCb.setSelected(getMenu().isHideAbove());
             this.hideBelowCb.setSelected(getMenu().isHideBelow());
             this.initialized = true;
+            this.needsRefresh = true;
         }
 
-        this.scrollbar.setRange(0, Math.max(0, FILTER_SLOTS - VISIBLE_ROWS), 1);
-        int offset = this.scrollbar.getCurrentScroll();
-
-        if (offset != this.lastOffset) {
-            repositionConfigSlots(offset);
-            this.lastOffset = offset;
-        }
-
-        updateVisibleRows(offset);
-    }
-
-    private void repositionConfigSlots(int offset) {
-        List<Slot> slots = getMenu().getSlots(SlotSemantics.CONFIG);
-
-        for (int i = 0; i < FILTER_SLOTS && i < slots.size(); i++) {
-            int row = i - offset;
-
-            Slot slotRaw = slots.get(i);
-            if (!(slotRaw instanceof AppEngSlot slot)) {
-                continue;
-            }
-
-            boolean inView = row >= 0 && row < VISIBLE_ROWS;
-
-            if (slot instanceof IMovableSlot movable) {
-                if (inView) {
-                    movable.setX(FILTER_SLOT_X);
-                    movable.setY(FILTER_SLOT_Y0 + row * ROW_H);
-                    slot.setSlotEnabled(true);
-                } else {
-                    movable.setX(-10000);
-                    movable.setY(-10000);
-                    slot.setSlotEnabled(false);
-                }
-            } else {
-                slot.setSlotEnabled(inView);
+        if (!hudXField.isFocused()) {
+            String expected = String.valueOf(getMenu().getHudX());
+            if (!expected.equals(hudXField.getValue())) {
+                hudXField.setValue(expected);
             }
         }
+
+        if (!hudYField.isFocused()) {
+            String expected = String.valueOf(getMenu().getHudY());
+            if (!expected.equals(hudYField.getValue())) {
+                hudYField.setValue(expected);
+            }
+        }
+
+        if (!hudScaleField.isFocused()) {
+            String expected = String.valueOf(getMenu().getHudScale());
+            if (!expected.equals(hudScaleField.getValue())) {
+                hudScaleField.setValue(expected);
+            }
+        }
+
+        if (hideAboveCb.isSelected() != getMenu().isHideAbove()) {
+            hideAboveCb.setSelected(getMenu().isHideAbove());
+        }
+
+        if (hideBelowCb.isSelected() != getMenu().isHideBelow()) {
+            hideBelowCb.setSelected(getMenu().isHideBelow());
+        }
+
+        int totalCount = Math.max(0, getMenu().totalCount);
+        int maxOffset = Math.max(0, totalCount - VISIBLE_ROWS);
+
+        this.scrollbar.setRange(0, maxOffset, 1);
+
+        int offset = Math.min(this.scrollbar.getCurrentScroll(), maxOffset);
+        this.scrollbar.setCurrentScroll(offset);
+
+        if (offset != lastSentOffset) {
+            getMenu().onScroll(offset);
+            lastSentOffset = offset;
+        }
+
+        if (totalCount != lastTotalCount) {
+            lastTotalCount = totalCount;
+            needsRefresh = true;
+        }
+
+        if (getMenu().clientWindowRevision != lastAppliedRevision) {
+            lastAppliedRevision = getMenu().clientWindowRevision;
+            needsRefresh = true;
+        }
+
+        if (needsRefresh) {
+            refreshVisibleRows(getMenu().clientWindowOffset, getMenu().clientWindow, totalCount);
+            needsRefresh = false;
+        }
     }
 
-    private void updateVisibleRows(int offset) {
+    private void refreshVisibleRows(
+            int windowOffset,
+            List<WirelessNotificationTerminalMenu.NotificationSlotInfo> window,
+            int totalCount
+    ) {
         for (int row = 0; row < VISIBLE_ROWS; row++) {
-            int slotIndex = offset + row;
-            boolean valid = slotIndex >= 0 && slotIndex < FILTER_SLOTS;
+            int absoluteSlot = windowOffset + row;
+            boolean valid = row < window.size() && absoluteSlot < totalCount;
 
             if (!valid) {
-                this.boundSlot[row] = -1;
-                this.limitFields[row].setVisible(false);
+                clearRow(row);
                 continue;
             }
 
-            boolean boundChanged = this.boundSlot[row] != slotIndex;
-            this.boundSlot[row] = slotIndex;
+            var entry = window.get(row);
 
-            AEKey key = this.menu.getConfiguredFilter(slotIndex);
-            NumberEntryType newType = NumberEntryType.of(key);
-            boolean typeChanged = this.rowType[row] == null || !this.rowType[row].equals(newType);
+            int oldBoundSlot = boundSlot[row];
+            NumberEntryType oldType = rowType[row];
 
-            if (boundChanged || typeChanged) {
-                this.rowType[row] = newType;
+            boundSlot[row] = absoluteSlot;
+            rowType[row] = NumberEntryType.of(entry.config() != null ? entry.config().what() : null);
 
-                this.suppressChange[row] = true;
+            boolean slotChanged = oldBoundSlot != absoluteSlot;
+            boolean typeChanged = oldType == null || !oldType.equals(rowType[row]);
+
+            if (slotChanged || typeChanged || !limitFields[row].isFocused()) {
+                suppressChange[row] = true;
                 try {
-                    setTextFieldLongValue(row, this.menu.getThresholdClient(slotIndex));
+                    setTextFieldLongValue(row, Math.max(0L, entry.threshold()));
                 } finally {
-                    this.suppressChange[row] = false;
+                    suppressChange[row] = false;
                 }
             }
 
-            this.limitFields[row].setVisible(true);
-            this.limitFields[row].setEditable(true);
+            limitFields[row].setVisible(true);
+            limitFields[row].setEditable(true);
+            limitFields[row].active = true;
+
             validateRow(row);
         }
     }
 
+    private void clearRow(int row) {
+        boundSlot[row] = -1;
+        rowType[row] = NumberEntryType.of(null);
+
+        suppressChange[row] = true;
+        try {
+            limitFields[row].setValue("");
+        } finally {
+            suppressChange[row] = false;
+        }
+
+        limitFields[row].setTooltipMessage(List.of());
+        limitFields[row].setTextColor(normalTextColor);
+        limitFields[row].setVisible(false);
+        limitFields[row].setEditable(false);
+        limitFields[row].active = false;
+    }
+
     private void onLimitChanged(int row) {
-        if (this.suppressChange[row]) {
+        if (suppressChange[row]) {
             return;
         }
 
-        int slotIndex = this.boundSlot[row];
+        int slotIndex = boundSlot[row];
         if (slotIndex < 0) {
             return;
         }
@@ -243,29 +330,77 @@ public class WirelessNotificationTerminalScreen<C extends WirelessNotificationTe
         validateRow(row);
 
         Optional<Long> value = getRowLongValue(row);
-        value.ifPresent(v -> this.menu.setThreshold(slotIndex, v));
+        value.ifPresent(v -> getMenu().setThreshold(slotIndex, v));
     }
 
     private Optional<BigDecimal> getRowValueInternal(int row) {
-        String textValue = this.limitFields[row].getValue().trim();
-        if (textValue.isEmpty()) {
+        String textValue = this.limitFields[row].getValue();
+        if (textValue == null) {
             return Optional.empty();
         }
-        if (textValue.startsWith("=")) {
-            textValue = textValue.substring(1);
+
+        textValue = textValue.trim();
+        if (textValue.isEmpty()) {
+            return Optional.of(BigDecimal.ZERO);
         }
-        return MathExpressionParser.parse(textValue, this.decimalFormat);
+
+        if (textValue.startsWith("=")) {
+            textValue = textValue.substring(1).trim();
+        }
+
+        if (!MathParser.canParse(textValue)) {
+            return Optional.empty();
+        }
+
+        try {
+            return Optional.of(BigDecimal.valueOf(MathParser.parse(textValue)).stripTrailingZeros());
+        } catch (Throwable ignored) {
+            return Optional.empty();
+        }
     }
 
     private boolean isNumberLiteral(int row) {
-        ParsePosition position = new ParsePosition(0);
-        String textValue = this.limitFields[row].getValue().trim();
-        if (textValue.startsWith("=")) {
+        String textValue = this.limitFields[row].getValue();
+        if (textValue == null) {
             return false;
         }
 
-        this.decimalFormat.parse(textValue, position);
-        return position.getErrorIndex() == -1 && position.getIndex() == textValue.length();
+        textValue = textValue.trim();
+        if (textValue.isEmpty() || textValue.startsWith("=")) {
+            return false;
+        }
+
+        return MathParser.isLiteralNumber(textValue);
+    }
+
+    private Optional<Integer> parsePercentField(String text) {
+        if (text == null) {
+            return Optional.empty();
+        }
+
+        text = text.trim();
+        if (text.isEmpty()) {
+            return Optional.empty();
+        }
+
+        if (text.startsWith("=")) {
+            text = text.substring(1).trim();
+        }
+
+        if (!MathParser.canParse(text)) {
+            return Optional.empty();
+        }
+
+        try {
+            double parsed = MathParser.parse(text);
+            if (!Double.isFinite(parsed)) {
+                return Optional.empty();
+            }
+
+            return Optional.of(Math.max(0, Math.min(100, (int) Math.round(parsed))));
+        } catch (Throwable ignored) {
+            return Optional.empty();
+        }
     }
 
     private long convertToExternalValue(NumberEntryType type, BigDecimal internalValue) {
@@ -281,13 +416,9 @@ public class WirelessNotificationTerminalScreen<C extends WirelessNotificationTe
     }
 
     private Optional<Long> getRowLongValue(int row) {
-        String text = this.limitFields[row].getValue().trim();
-        if (text.isEmpty()) {
-            return Optional.of(0L);
-        }
-
         NumberEntryType type = this.rowType[row] != null ? this.rowType[row] : NumberEntryType.of(null);
         Optional<BigDecimal> internal = getRowValueInternal(row);
+
         if (internal.isEmpty()) {
             return Optional.empty();
         }
@@ -307,8 +438,6 @@ public class WirelessNotificationTerminalScreen<C extends WirelessNotificationTe
     private void setTextFieldLongValue(int row, long value) {
         if (value <= 0) {
             this.limitFields[row].setValue("");
-            this.limitFields[row].moveCursorToEnd();
-            this.limitFields[row].setHighlightPos(0);
             return;
         }
 
@@ -316,8 +445,6 @@ public class WirelessNotificationTerminalScreen<C extends WirelessNotificationTe
         BigDecimal internal = convertToInternalValue(type, value);
 
         this.limitFields[row].setValue(this.decimalFormat.format(internal));
-        this.limitFields[row].moveCursorToEnd();
-        this.limitFields[row].setHighlightPos(0);
     }
 
     private void validateRow(int row) {
@@ -327,7 +454,9 @@ public class WirelessNotificationTerminalScreen<C extends WirelessNotificationTe
         List<Component> tooltip = new ArrayList<>();
         tooltip.add(Component.translatable(
                 LangDefs.NOTIFICATION_TERMINAL_UNIT_LINE.getTranslationKey(),
-                type.unit() == null ? "Items" : type.unit()
+                type.unit() == null
+                        ? Component.translatable(LangDefs.ITEMS.getTranslationKey())
+                        : type.unit()
         ));
 
         String text = this.limitFields[row].getValue().trim();
@@ -372,20 +501,80 @@ public class WirelessNotificationTerminalScreen<C extends WirelessNotificationTe
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0) {
+            if (this.hudXField != null && this.hudXField.visible && this.hudXField.active && this.hudXField.mouseClicked(mouseX, mouseY, button)) {
+                this.setFocused(this.hudXField);
+                this.hudXField.setFocused(true);
+                return true;
+            }
+
+            if (this.hudYField != null && this.hudYField.visible && this.hudYField.active && this.hudYField.mouseClicked(mouseX, mouseY, button)) {
+                this.setFocused(this.hudYField);
+                this.hudYField.setFocused(true);
+                return true;
+            }
+
+            if (this.hudScaleField != null && this.hudScaleField.visible && this.hudScaleField.active && this.hudScaleField.mouseClicked(mouseX, mouseY, button)) {
+                this.setFocused(this.hudScaleField);
+                this.hudScaleField.setFocused(true);
+                return true;
+            }
+
+            for (ConfirmableTextField field : this.limitFields) {
+                if (field != null && field.visible && field.active && field.mouseClicked(mouseX, mouseY, button)) {
+                    this.setFocused(field);
+                    field.setFocused(true);
+                    return true;
+                }
+            }
+        }
+
         if (button == 1) {
             if (this.hudXField != null && this.hudXField.isMouseOver(mouseX, mouseY)) {
                 this.hudXField.setValue("");
+                this.setFocused(this.hudXField);
                 this.hudXField.setFocused(true);
                 return true;
             }
 
             if (this.hudYField != null && this.hudYField.isMouseOver(mouseX, mouseY)) {
                 this.hudYField.setValue("");
+                this.setFocused(this.hudYField);
                 this.hudYField.setFocused(true);
                 return true;
+            }
+
+            if (this.hudScaleField != null && this.hudScaleField.isMouseOver(mouseX, mouseY)) {
+                this.hudScaleField.setValue("");
+                this.setFocused(this.hudScaleField);
+                this.hudScaleField.setFocused(true);
+                return true;
+            }
+
+            for (ConfirmableTextField field : this.limitFields) {
+                if (field != null && field.visible && field.isMouseOver(mouseX, mouseY)) {
+                    field.setValue("");
+                    this.setFocused(field);
+                    field.setFocused(true);
+                    return true;
+                }
             }
         }
 
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    public void applyClientWindow(WirelessNotificationWindowPacket pkt) {
+        int currentOffset = this.scrollbar.getCurrentScroll();
+        if (pkt.windowOffset() != currentOffset) {
+            return;
+        }
+        if (pkt.revision() < lastAppliedRevision) {
+            return;
+        }
+
+        getMenu().applyClientWindow(pkt);
+        lastAppliedRevision = pkt.revision();
+        needsRefresh = true;
     }
 }

@@ -1,50 +1,11 @@
 package net.oktawia.crazyae2addons.util;
 
-import net.minecraft.core.Direction;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-
 import java.util.*;
 import java.util.concurrent.*;
 
 public class Utils {
 
     private static final ScheduledExecutorService SCHEDULER = Executors.newSingleThreadScheduledExecutor();
-
-    public static double erf(double x) {
-        int sign = (x < 0) ? -1 : 1;
-        x = Math.abs(x);
-
-        double t = 1.0 / (1.0 + 0.3275911 * x);
-        double a1 = 0.254829592;
-        double a2 = -0.284496736;
-        double a3 = 1.421413741;
-        double a4 = -1.453152027;
-        double a5 = 1.061405429;
-
-        double poly = (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t;
-        double y = 1.0 - poly * Math.exp(-x * x);
-
-        return sign * y;
-    }
-
-    public static final NavigableMap<Long, String> voltagesMap = Collections.unmodifiableNavigableMap(new TreeMap<>(Map.ofEntries(
-            Map.entry((long) Math.pow(2, 3), "ULV"),
-            Map.entry((long) Math.pow(2, 5), "LV"),
-            Map.entry((long) Math.pow(2, 7), "MV"),
-            Map.entry((long) Math.pow(2, 9), "HV"),
-            Map.entry((long) Math.pow(2, 11), "EV"),
-            Map.entry((long) Math.pow(2, 13), "IV"),
-            Map.entry((long) Math.pow(2, 15), "LuV"),
-            Map.entry((long) Math.pow(2, 17), "ZPM"),
-            Map.entry((long) Math.pow(2, 19), "UV"),
-            Map.entry((long) Math.pow(2, 21), "UHV"),
-            Map.entry((long) Math.pow(2, 23), "UEV"),
-            Map.entry((long) Math.pow(2, 25), "UIV"),
-            Map.entry((long) Math.pow(2, 27), "UXV"),
-            Map.entry((long) Math.pow(2, 29), "OpV"),
-            Map.entry((long) Math.pow(2, 31), "MAX")
-    )));
 
     public static void asyncDelay(Runnable function, float delay) {
         long delayInMillis = (long) (delay * 1000);
@@ -63,24 +24,37 @@ public class Utils {
     }
 
     public static String shortenNumber(double number) {
+        return shortenNumber(number, 2);
+    }
+
+    public static String shortenNumber(double number, int decimals) {
+        double abs = Math.abs(number);
+
         for (Map.Entry<Double, String> entry : SHORTEN_THRESHOLDS.entrySet()) {
             double threshold = entry.getKey();
-            String name = entry.getValue();
-            if (number >= threshold) {
-                return String.format("%.2f %s", number / threshold, name);
+            String suffix = entry.getValue();
+
+            if (abs >= threshold) {
+                return formatDecimal(number / threshold, decimals) + " " + suffix;
             }
         }
-        return String.valueOf(number);
+
+        return formatDecimal(number, decimals);
     }
 
-    public static Direction getRightDirection(BlockState state) {
-        Direction facing = state.getValue(BlockStateProperties.HORIZONTAL_FACING);
-        return facing.getClockWise(Direction.Axis.Y);
-    }
+    private static String formatDecimal(double value, int decimals) {
+        String s = String.format(Locale.ROOT, "%." + decimals + "f", value);
 
-    public static Direction getLeftDirection(BlockState state) {
-        Direction facing = state.getValue(BlockStateProperties.HORIZONTAL_FACING);
-        return facing.getCounterClockWise(Direction.Axis.Y);
+        if (s.indexOf('.') >= 0) {
+            while (s.endsWith("0")) {
+                s = s.substring(0, s.length() - 1);
+            }
+            if (s.endsWith(".")) {
+                s = s.substring(0, s.length() - 1);
+            }
+        }
+
+        return s;
     }
 
     public static String toTitle(String id) {

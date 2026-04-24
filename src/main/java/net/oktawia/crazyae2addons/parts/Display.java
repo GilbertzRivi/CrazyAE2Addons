@@ -35,6 +35,7 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import net.oktawia.crazyae2addons.CrazyAddons;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.logic.display.DisplayGrid;
 import net.oktawia.crazyae2addons.logic.display.DisplayImageEntry;
@@ -218,6 +219,9 @@ public class Display extends AEBasePart implements MenuProvider, ISubMenuHost, I
 
     @Override
     public TickRateModulation tickingRequest(IGridNode node, int ticksSinceLastCall) {
+        if (!CrazyConfig.COMMON.DISPLAY_ENABLED.get()) {
+            return TickRateModulation.SLEEP;
+        }
         DisplayTokenResolver.recomputeVariablesAndNotify(this);
         return TickRateModulation.IDLE;
     }
@@ -234,6 +238,9 @@ public class Display extends AEBasePart implements MenuProvider, ISubMenuHost, I
 
     @Override
     public boolean onPartActivate(Player player, InteractionHand hand, Vec3 pos) {
+        if (!CrazyConfig.COMMON.DISPLAY_ENABLED.get()) {
+            return true;
+        }
         if (!player.level().isClientSide()) {
             if (player.isShiftKeyDown()) {
                 MenuOpener.open(CrazyMenuRegistrar.DISPLAY_MENU.get(), player, MenuLocators.forPart(this));

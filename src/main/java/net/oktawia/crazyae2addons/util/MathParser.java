@@ -22,6 +22,93 @@ public final class MathParser {
         return round(result, 10);
     }
 
+    public static boolean canParse(String input) {
+        if (input == null) {
+            return false;
+        }
+
+        String normalized = normalize(input);
+        if (normalized.isEmpty()) {
+            return false;
+        }
+
+        try {
+            new Parser(normalized).parse();
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    public static boolean isLiteralNumber(String input) {
+        if (input == null) {
+            return false;
+        }
+
+        String s = normalize(input);
+        if (s.isEmpty()) {
+            return false;
+        }
+
+        int len = s.length();
+        int i = 0;
+
+        if (s.charAt(i) == '+' || s.charAt(i) == '-') {
+            i++;
+            if (i >= len) {
+                return false;
+            }
+        }
+
+        boolean hasDigits = false;
+
+        while (i < len && s.charAt(i) >= '0' && s.charAt(i) <= '9') {
+            hasDigits = true;
+            i++;
+        }
+
+        if (i < len && s.charAt(i) == '.') {
+            i++;
+            while (i < len && s.charAt(i) >= '0' && s.charAt(i) <= '9') {
+                hasDigits = true;
+                i++;
+            }
+        }
+
+        if (!hasDigits) {
+            return false;
+        }
+
+        if (i < len && (s.charAt(i) == 'e' || s.charAt(i) == 'E')) {
+            i++;
+
+            if (i < len && (s.charAt(i) == '+' || s.charAt(i) == '-')) {
+                i++;
+            }
+
+            int expStart = i;
+            while (i < len && s.charAt(i) >= '0' && s.charAt(i) <= '9') {
+                i++;
+            }
+
+            if (expStart == i) {
+                return false;
+            }
+        }
+
+        if (i < len) {
+            char suffix = s.charAt(i);
+            if (suffix == 'k' || suffix == 'K'
+                    || suffix == 'm' || suffix == 'M'
+                    || suffix == 'g' || suffix == 'G'
+                    || suffix == 't' || suffix == 'T') {
+                i++;
+            }
+        }
+
+        return i == len;
+    }
+
     private static double round(double value, int places) {
         if (places < 0) {
             throw new IllegalArgumentException("places must be >= 0");

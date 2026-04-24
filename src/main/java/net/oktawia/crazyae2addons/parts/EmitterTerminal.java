@@ -15,6 +15,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.logic.interfaces.StorageLevelEmitterUuid;
 import net.oktawia.crazyae2addons.logic.interfaces.IEmitterTerminalHost;
@@ -41,6 +42,10 @@ public class EmitterTerminal extends AbstractDisplayPart implements IUpgradeable
 
     @Override
     public boolean onPartActivate(Player player, InteractionHand hand, Vec3 pos) {
+        if (!CrazyConfig.COMMON.EMITTER_TERMINAL_ENABLED.get()) {
+            return true;
+        }
+
         if (!super.onPartActivate(player, hand, pos) && !this.isClientSide()) {
             MenuOpener.open(CrazyMenuRegistrar.EMITTER_TERMINAL_MENU.get(), player, MenuLocators.forPart(this));
         }

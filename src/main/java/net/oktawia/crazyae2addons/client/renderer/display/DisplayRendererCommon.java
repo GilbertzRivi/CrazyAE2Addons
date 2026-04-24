@@ -20,6 +20,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.client.extensions.common.IClientFluidTypeExtensions;
 import net.minecraftforge.fluids.FluidStack;
 import net.oktawia.crazyae2addons.CrazyAddons;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.logic.display.DisplayGrid;
 import net.oktawia.crazyae2addons.logic.display.DisplayImageEntry;
 import net.oktawia.crazyae2addons.logic.display.DisplayRenderData;
@@ -47,11 +48,12 @@ import java.util.Set;
 
 public final class DisplayRendererCommon {
 
-    private static final float BACKGROUND_LAYER_Z = 0.0005f;
-    private static final float TABLE_LINE_LAYER_Z = 0.0010f;
-    private static final float TEXT_LAYER_Z =  0.0010f;
-    private static final float ICON_LAYER_Z =  0.0010f;
-    private static final float IMAGE_LAYER_Z = 0.0025f;
+    private static final float DISPLAY_OFFSET = 2f;
+    private static final float BACKGROUND_LAYER_Z = 0.0005f - DISPLAY_OFFSET;
+    private static final float TABLE_LINE_LAYER_Z = 0.0010f - DISPLAY_OFFSET;
+    private static final float TEXT_LAYER_Z =  0.0010f - DISPLAY_OFFSET;
+    private static final float ICON_LAYER_Z =  0.0010f - DISPLAY_OFFSET;
+    private static final float IMAGE_LAYER_Z = 0.0025f - DISPLAY_OFFSET;
 
     private DisplayRendererCommon() {}
 
@@ -123,7 +125,7 @@ public final class DisplayRendererCommon {
         List<DrawCommand> out = new ArrayList<>();
         List<ImageCommand> imageCommands = new ArrayList<>();
 
-        if (!powered) {
+        if (!powered || !CrazyConfig.COMMON.DISPLAY_ENABLED.get()) {
             return new PreparedDisplay(pxW, pxH, out);
         }
 
@@ -143,7 +145,7 @@ public final class DisplayRendererCommon {
             ));
         }
 
-        if (images != null && imageData != null) {
+        if (images != null && imageData != null && CrazyConfig.COMMON.DISPLAY_IMAGES_ENABLED.get()) {
             for (DisplayImageEntry image : images) {
                 byte[] pngBytes = imageData.get(image.id());
                 if (pngBytes == null || pngBytes.length == 0) {

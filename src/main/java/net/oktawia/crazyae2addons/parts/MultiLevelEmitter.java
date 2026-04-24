@@ -39,6 +39,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import net.oktawia.crazyae2addons.CrazyAddons;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import org.jetbrains.annotations.Nullable;
 
@@ -50,7 +51,7 @@ import java.util.function.Consumer;
 
 public class MultiLevelEmitter extends AbstractLevelEmitterPart implements IConfigInvHost, ICraftingProvider {
 
-    public static final int FILTER_SLOTS = 16;
+    public static final int FILTER_SLOTS = CrazyConfig.COMMON.MULTI_LEVEL_EMITTER_CONFIG_SLOT.get();
 
     private static final String NBT_STATE = "state";
     private static final String NBT_UPGRADES = "upgrades";
@@ -368,6 +369,10 @@ public class MultiLevelEmitter extends AbstractLevelEmitterPart implements IConf
 
     @Override
     protected boolean isLevelEmitterOn() {
+        if (!CrazyConfig.COMMON.MULTI_LEVEL_EMITTER_ENABLED.get()) {
+            return false;
+        }
+
         if (isClientSide()) {
             return super.isLevelEmitterOn();
         }
@@ -387,11 +392,19 @@ public class MultiLevelEmitter extends AbstractLevelEmitterPart implements IConf
 
     @Override
     protected boolean hasDirectOutput() {
+        if (!CrazyConfig.COMMON.MULTI_LEVEL_EMITTER_ENABLED.get()) {
+            return false;
+        }
+
         return isUpgradedWith(AEItems.CRAFTING_CARD);
     }
 
     @Override
     protected boolean getDirectOutput() {
+        if (!CrazyConfig.COMMON.MULTI_LEVEL_EMITTER_ENABLED.get()) {
+            return false;
+        }
+
         IGrid grid = getMainNode().getGrid();
         return grid != null && computeCraftingOutput(grid);
     }
@@ -413,6 +426,10 @@ public class MultiLevelEmitter extends AbstractLevelEmitterPart implements IConf
 
     @Override
     public Set<AEKey> getEmitableItems() {
+        if (!CrazyConfig.COMMON.MULTI_LEVEL_EMITTER_ENABLED.get()) {
+            return Set.of();
+        }
+
         if (!isUpgradedWith(AEItems.CRAFTING_CARD)
                 || getConfigManager().getSetting(Settings.CRAFT_VIA_REDSTONE) != YesNo.YES) {
             return Set.of();
@@ -438,6 +455,13 @@ public class MultiLevelEmitter extends AbstractLevelEmitterPart implements IConf
         }
 
         ICraftingProvider.requestUpdate(getMainNode());
+
+        if (!CrazyConfig.COMMON.MULTI_LEVEL_EMITTER_ENABLED.get()) {
+            Arrays.fill(lastReportedValues, 0L);
+            lastReportedValue = 0L;
+            updateState();
+            return;
+        }
 
         if (isUpgradedWith(AEItems.CRAFTING_CARD)) {
             configureCraftingWatcher();
@@ -623,6 +647,10 @@ public class MultiLevelEmitter extends AbstractLevelEmitterPart implements IConf
 
     @Override
     public boolean onPartActivate(Player player, InteractionHand hand, Vec3 pos) {
+        if (!CrazyConfig.COMMON.MULTI_LEVEL_EMITTER_ENABLED.get()) {
+            return true;
+        }
+
         if (!isClientSide()) {
             MenuOpener.open(CrazyMenuRegistrar.MULTI_LEVEL_EMITTER_MENU.get(), player, MenuLocators.forPart(this));
         }

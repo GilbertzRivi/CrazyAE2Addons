@@ -7,6 +7,7 @@ import appeng.api.stacks.AEKey;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.oktawia.crazyae2addons.CrazyAddons;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.logic.display.keytypes.DisplayKeyCompatRegistry;
 import net.oktawia.crazyae2addons.network.NetworkHandler;
 import net.oktawia.crazyae2addons.network.packets.DisplaySyncPacket;
@@ -58,29 +59,33 @@ public final class DisplayTokenResolver {
         Set<String> neededIds = new HashSet<>();
         Set<String> liveKeys = new HashSet<>();
 
-        Matcher sm = SERVER_STOCK_TOKEN.matcher(txt);
-        while (sm.find()) {
-            String token = sm.group(1);
-            stockTokens.add(token);
-            liveKeys.add(token);
-            String core = token;
-            int pct = token.indexOf('%');
-            if (pct >= 0) {
-                core = token.substring(0, pct);
-            }
-            if (core.startsWith("s^")) {
-                neededIds.add(core.substring(2));
+        if (CrazyConfig.COMMON.DISPLAY_STOCK_ENABLED.get()) {
+            Matcher sm = SERVER_STOCK_TOKEN.matcher(txt);
+            while (sm.find()) {
+                String token = sm.group(1);
+                stockTokens.add(token);
+                liveKeys.add(token);
+                String core = token;
+                int pct = token.indexOf('%');
+                if (pct >= 0) {
+                    core = token.substring(0, pct);
+                }
+                if (core.startsWith("s^")) {
+                    neededIds.add(core.substring(2));
+                }
             }
         }
 
-        Matcher dm = SERVER_DELTA_TOKEN.matcher(txt);
-        while (dm.find()) {
-            String token = dm.group(1);
-            DeltaSpec spec = parseDeltaSpec(token);
-            if (spec != null) {
-                deltaTokens.add(new DeltaToken(token, spec));
-                liveKeys.add(token);
-                neededIds.add(spec.id());
+        if (CrazyConfig.COMMON.DISPLAY_DELTA_ENABLED.get()) {
+            Matcher dm = SERVER_DELTA_TOKEN.matcher(txt);
+            while (dm.find()) {
+                String token = dm.group(1);
+                DeltaSpec spec = parseDeltaSpec(token);
+                if (spec != null) {
+                    deltaTokens.add(new DeltaToken(token, spec));
+                    liveKeys.add(token);
+                    neededIds.add(spec.id());
+                }
             }
         }
 

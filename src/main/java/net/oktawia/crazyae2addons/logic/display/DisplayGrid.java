@@ -81,7 +81,7 @@ public final class DisplayGrid {
                 continue;
             }
 
-            Set<Display> component = getActiveConnectedComponent(part, side);
+            Set<Display> component = getActiveConnectedComponent(part, side, assigned);
             if (component.isEmpty()) {
                 RenderGroup singleton = buildSingletonRenderGroup(part);
                 CLIENT_RENDER_GROUP_CACHE.put(part, singleton);
@@ -148,6 +148,10 @@ public final class DisplayGrid {
     }
 
     private static Set<Display> getActiveConnectedComponent(Display origin, Direction side) {
+        return getActiveConnectedComponent(origin, side, Collections.emptySet());
+    }
+
+    private static Set<Display> getActiveConnectedComponent(Display origin, Direction side, Set<Display> excluded) {
         Set<Display> all = new LinkedHashSet<>();
         Deque<Display> queue = new ArrayDeque<>();
 
@@ -164,6 +168,7 @@ public final class DisplayGrid {
             for (Direction dir : dirs) {
                 Display nb = getNeighbor(cur, dir);
                 if (nb != null
+                        && !excluded.contains(nb)
                         && nb.getSide() == side
                         && nb.getSpin() == origin.getSpin()
                         && nb.isPowered()
@@ -281,6 +286,8 @@ public final class DisplayGrid {
         }
 
         Direction side = anchor.getSide();
+        boolean floorOrCeiling = side == Direction.UP || side == Direction.DOWN;
+        byte anchorSpin = anchor.getSpin();
 
         Map<Pair<Integer, Integer>, Display> grid = new HashMap<>();
         int minCol = Integer.MAX_VALUE;
@@ -289,6 +296,9 @@ public final class DisplayGrid {
         int maxRow = Integer.MIN_VALUE;
 
         for (Display part : parts) {
+            if (floorOrCeiling && part.getSpin() != anchorSpin) {
+                continue;
+            }
             int col = partCol(part);
             int row = partRow(part);
 

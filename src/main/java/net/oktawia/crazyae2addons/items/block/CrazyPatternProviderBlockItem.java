@@ -1,4 +1,4 @@
-package net.oktawia.crazyae2addons.items;
+package net.oktawia.crazyae2addons.items.block;
 
 import appeng.block.AEBaseBlockItem;
 import net.minecraft.ChatFormatting;

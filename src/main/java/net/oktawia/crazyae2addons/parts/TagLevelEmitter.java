@@ -22,6 +22,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import net.oktawia.crazyae2addons.CrazyAddons;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.util.TagMatcher;
 import org.jetbrains.annotations.Nullable;
@@ -85,6 +86,10 @@ public class TagLevelEmitter extends AbstractLevelEmitterPart {
 
         @Override
         public void onStackChange(AEKey what, long amount) {
+            if (!CrazyConfig.COMMON.TAG_LEVEL_EMITTER_ENABLED.get()) {
+                return;
+            }
+
             long currentTick = appeng.hooks.ticking.TickHandler.instance().getCurrentTick();
             if (currentTick == lastUpdateTick) {
                 return;
@@ -107,6 +112,10 @@ public class TagLevelEmitter extends AbstractLevelEmitterPart {
     }
 
     public void setExpression(String expression) {
+        if (!CrazyConfig.COMMON.TAG_LEVEL_EMITTER_ENABLED.get()) {
+            return;
+        }
+
         String normalized = expression == null ? "" : expression.strip();
         if (this.expression.equals(normalized)) {
             return;
@@ -124,6 +133,16 @@ public class TagLevelEmitter extends AbstractLevelEmitterPart {
 
     @Override
     protected void configureWatchers() {
+        if (!CrazyConfig.COMMON.TAG_LEVEL_EMITTER_ENABLED.get()) {
+            if (storageWatcher != null) {
+                storageWatcher.reset();
+            }
+
+            this.lastReportedValue = 0L;
+            updateState();
+            return;
+        }
+
         if (storageWatcher != null) {
             storageWatcher.reset();
             storageWatcher.setWatchAll(true);
@@ -134,6 +153,12 @@ public class TagLevelEmitter extends AbstractLevelEmitterPart {
     }
 
     private void updateMatchingCount(IGrid grid) {
+        if (!CrazyConfig.COMMON.TAG_LEVEL_EMITTER_ENABLED.get()) {
+            this.lastReportedValue = 0L;
+            updateState();
+            return;
+        }
+
         if (!compiledExpression.isValid() || !compiledExpression.isNeedsTags()) {
             this.lastReportedValue = 0L;
             updateState();
@@ -185,6 +210,9 @@ public class TagLevelEmitter extends AbstractLevelEmitterPart {
 
     @Override
     public boolean onPartActivate(Player player, InteractionHand hand, Vec3 pos) {
+        if (!CrazyConfig.COMMON.TAG_LEVEL_EMITTER_ENABLED.get()) {
+            return true;
+        }
         if (!isClientSide()) {
             MenuOpener.open(CrazyMenuRegistrar.TAG_LEVEL_EMITTER_MENU.get(), player, MenuLocators.forPart(this));
         }
@@ -252,5 +280,10 @@ public class TagLevelEmitter extends AbstractLevelEmitterPart {
         if (getHost() != null) {
             getHost().markForSave();
         }
+    }
+
+    @Override
+    protected boolean isLevelEmitterOn() {
+        return CrazyConfig.COMMON.TAG_LEVEL_EMITTER_ENABLED.get() && super.isLevelEmitterOn();
     }
 }

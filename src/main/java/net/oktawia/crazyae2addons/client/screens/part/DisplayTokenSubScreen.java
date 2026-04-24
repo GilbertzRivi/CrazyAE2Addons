@@ -14,6 +14,7 @@ import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.client.misc.AETextButton;
 import net.oktawia.crazyae2addons.defs.LangDefs;
 import net.oktawia.crazyae2addons.logic.display.keytypes.DisplayKeyCompatRegistry;
@@ -86,6 +87,10 @@ public class DisplayTokenSubScreen extends AEBaseScreen<DisplayTokenSubMenu> {
     private boolean dropdownOpen = false;
     private int dropScrollOff = 0;
 
+    private final AETextButton iconBtn;
+    private final AETextButton stockBtn;
+    private final AETextButton deltaBtn;
+
     public DisplayTokenSubScreen(DisplayTokenSubMenu menu, Inventory inv, Component title, ScreenStyle style) {
         super(menu, inv, title, style);
 
@@ -96,24 +101,32 @@ public class DisplayTokenSubScreen extends AEBaseScreen<DisplayTokenSubMenu> {
                 Component.translatable(LangDefs.BACK.getTranslationKey()),
                 btn -> AESubScreen.goBack()
         ));
-
-        widgets.add("icon", new AETextButton(
+        this.iconBtn = new AETextButton(
                 0, 0, 0, 0,
                 Component.translatable(LangDefs.ICON.getTranslationKey()),
                 btn -> setType(TokenType.ICON)
-        ));
+        );
+        this.iconBtn.visible = CrazyConfig.COMMON.DISPLAY_ICONS_ENABLED.get();
+        this.iconBtn.active = this.iconBtn.visible;
+        widgets.add("icon", this.iconBtn);
 
-        widgets.add("stock", new AETextButton(
+        this.stockBtn = new AETextButton(
                 0, 0, 0, 0,
                 Component.translatable(LangDefs.STOCK.getTranslationKey()),
                 btn -> setType(TokenType.STOCK)
-        ));
+        );
+        this.stockBtn.visible = CrazyConfig.COMMON.DISPLAY_STOCK_ENABLED.get();
+        this.stockBtn.active = this.stockBtn.visible;
+        widgets.add("stock", this.stockBtn);
 
-        widgets.add("delta", new AETextButton(
+        this.deltaBtn = new AETextButton(
                 0, 0, 0, 0,
                 Component.translatable(LangDefs.DELTA.getTranslationKey()),
                 btn -> setType(TokenType.DELTA)
-        ));
+        );
+        this.deltaBtn.visible = CrazyConfig.COMMON.DISPLAY_DELTA_ENABLED.get();
+        this.deltaBtn.active = this.deltaBtn.visible;
+        widgets.add("delta", this.deltaBtn);
 
         itemIdField = new AETextField(style, font, 0, 0, 0, 0);
         itemIdField.setBordered(false);
@@ -200,7 +213,13 @@ public class DisplayTokenSubScreen extends AEBaseScreen<DisplayTokenSubMenu> {
         setInitialFocus(itemIdField);
         addRenderableOnly(new LabelsWidget());
 
-        setType(type);
+        if (CrazyConfig.COMMON.DISPLAY_STOCK_ENABLED.get()) {
+            setType(TokenType.STOCK);
+        } else if (CrazyConfig.COMMON.DISPLAY_ICONS_ENABLED.get()) {
+            setType(TokenType.ICON);
+        } else if (CrazyConfig.COMMON.DISPLAY_DELTA_ENABLED.get()) {
+            setType(TokenType.DELTA);
+        }
     }
 
     @Override
@@ -368,6 +387,16 @@ public class DisplayTokenSubScreen extends AEBaseScreen<DisplayTokenSubMenu> {
     }
 
     private void setType(TokenType t) {
+        if (t == TokenType.ICON && !CrazyConfig.COMMON.DISPLAY_ICONS_ENABLED.get()) {
+            return;
+        }
+        if (t == TokenType.STOCK && !CrazyConfig.COMMON.DISPLAY_STOCK_ENABLED.get()) {
+            return;
+        }
+        if (t == TokenType.DELTA && !CrazyConfig.COMMON.DISPLAY_DELTA_ENABLED.get()) {
+            return;
+        }
+
         this.type = t;
 
         boolean stock = t == TokenType.STOCK;
@@ -477,12 +506,25 @@ public class DisplayTokenSubScreen extends AEBaseScreen<DisplayTokenSubMenu> {
 
     private String buildToken(String id, String prefix) {
         return switch (type) {
-            case ICON -> "&i^" + prefix + id;
+            case ICON -> {
+                if (!CrazyConfig.COMMON.DISPLAY_ICONS_ENABLED.get()) {
+                    yield null;
+                }
+                yield "&i^" + prefix + id;
+            }
             case STOCK -> {
+                if (!CrazyConfig.COMMON.DISPLAY_STOCK_ENABLED.get()) {
+                    yield null;
+                }
+
                 String[] suffixes = {"", "%1", "%2", "%3", "%4", "%5", "%6"};
                 yield "&s^" + prefix + id + suffixes[divisorPow];
             }
             case DELTA -> {
+                if (!CrazyConfig.COMMON.DISPLAY_DELTA_ENABLED.get()) {
+                    yield null;
+                }
+
                 String pN = perNField.getValue().trim();
                 String wN = winNField.getValue().trim();
 

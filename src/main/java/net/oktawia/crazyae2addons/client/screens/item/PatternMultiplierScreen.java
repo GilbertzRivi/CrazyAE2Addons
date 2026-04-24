@@ -111,7 +111,7 @@ public class PatternMultiplierScreen<C extends PatternMultiplierMenu> extends AE
         boolean handled = super.mouseClicked(mouseX, mouseY, button);
 
         if (button == 1 && this.value.isMouseOver(mouseX, mouseY)) {
-            this.value.setValue("");
+            this.value.setValue("0");
             validateValueField();
             return true;
         }
@@ -131,14 +131,14 @@ public class PatternMultiplierScreen<C extends PatternMultiplierMenu> extends AE
         tooltip.add(Component.translatable(LangDefs.PATTERN_MULTIPLIER_VALUE_TOOLTIP.getTranslationKey()));
 
         Optional<BigDecimal> parsed = parseExpression(this.value.getValue());
-        boolean valid = parsed.isPresent() && parsed.get().doubleValue() > 0;
+        boolean valid = parsed.isPresent() && parsed.get().doubleValue() >= 0.0D;
 
         if (parsed.isEmpty()) {
             tooltip.add(Component.translatable(LangDefs.INVALID_NUMBER.getTranslationKey()));
         } else {
             BigDecimal result = parsed.get();
 
-            if (result.doubleValue() <= 0) {
+            if (result.doubleValue() < 0.0D) {
                 tooltip.add(Component.translatable(LangDefs.INVALID_NUMBER.getTranslationKey()));
             } else if (!isPlainNumber(this.value.getValue())) {
                 tooltip.add(Component.literal("= " + formatDecimal(result.doubleValue())));
@@ -182,7 +182,7 @@ public class PatternMultiplierScreen<C extends PatternMultiplierMenu> extends AE
         }
 
         double result = parsed.get().doubleValue();
-        return result > 0 ? Optional.of(result) : Optional.empty();
+        return result >= 0.0D ? Optional.of(result) : Optional.empty();
     }
 
     private Optional<Integer> getParsedLimit() {

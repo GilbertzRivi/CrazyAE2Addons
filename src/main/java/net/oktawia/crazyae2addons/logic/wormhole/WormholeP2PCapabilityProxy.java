@@ -12,6 +12,7 @@ import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.fluids.capability.IFluidHandlerItem;
 import net.minecraftforge.items.IItemHandlerModifiable;
 import net.minecraftforge.items.wrapper.CombinedInvWrapper;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.parts.p2p.WormholeP2PTunnelPart;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -25,6 +26,9 @@ public class WormholeP2PCapabilityProxy {
     private final WormholeP2PTunnelPart part;
 
     public <T> @NotNull LazyOptional<T> getCapability(@NotNull Capability<T> cap, @Nullable Direction side) {
+        if (!CrazyConfig.COMMON.WORMHOLE_ENABLED.get()) {
+            return LazyOptional.empty();
+        }
         if (!part.isActive()) {
             return LazyOptional.empty();
         }
@@ -35,6 +39,7 @@ public class WormholeP2PCapabilityProxy {
         }
 
         if (part.isOutput()) {
+            if (!isCapabilityAllowed(cap)) return LazyOptional.empty();
             RemoteTarget target = getInputTarget();
             if (target == null || target.blockEntity() == null) {
                 return LazyOptional.empty();
@@ -47,7 +52,18 @@ public class WormholeP2PCapabilityProxy {
             return LazyOptional.empty();
         }
 
-        if (cap == ForgeCapabilities.ITEM_HANDLER) {
+        if (!CrazyConfig.COMMON.WORMHOLE_MERGED_CAPABILITY_PROXY_ENABLED.get()) {
+            if (!isCapabilityAllowed(cap)) return LazyOptional.empty();
+            for (var output : outputs) {
+                RemoteTarget target = getOutputTarget(output);
+                if (target == null || target.blockEntity() == null) continue;
+                var result = target.blockEntity().getCapability(cap, target.side());
+                if (result.isPresent()) return result;
+            }
+            return LazyOptional.empty();
+        }
+
+        if (cap == ForgeCapabilities.ITEM_HANDLER && CrazyConfig.COMMON.WORMHOLE_ITEM_PROXY_ENABLED.get()) {
             List<IItemHandlerModifiable> handlers = new ArrayList<>();
             for (var output : outputs) {
                 RemoteTarget target = getOutputTarget(output);
@@ -68,7 +84,7 @@ public class WormholeP2PCapabilityProxy {
             }
         }
 
-        if (cap == ForgeCapabilities.FLUID_HANDLER) {
+        if (cap == ForgeCapabilities.FLUID_HANDLER && CrazyConfig.COMMON.WORMHOLE_FLUID_PROXY_ENABLED.get()) {
             List<IFluidHandler> handlers = new ArrayList<>();
             for (var output : outputs) {
                 RemoteTarget target = getOutputTarget(output);
@@ -85,7 +101,7 @@ public class WormholeP2PCapabilityProxy {
             }
         }
 
-        if (cap == ForgeCapabilities.FLUID_HANDLER_ITEM) {
+        if (cap == ForgeCapabilities.FLUID_HANDLER_ITEM && CrazyConfig.COMMON.WORMHOLE_FLUID_PROXY_ENABLED.get()) {
             List<IFluidHandlerItem> handlers = new ArrayList<>();
             for (var output : outputs) {
                 RemoteTarget target = getOutputTarget(output);
@@ -102,7 +118,7 @@ public class WormholeP2PCapabilityProxy {
             }
         }
 
-        if (cap == ForgeCapabilities.ENERGY) {
+        if (cap == ForgeCapabilities.ENERGY && CrazyConfig.COMMON.WORMHOLE_FE_PROXY_ENABLED.get()) {
             List<IEnergyStorage> storages = new ArrayList<>();
             for (var output : outputs) {
                 RemoteTarget target = getOutputTarget(output);
@@ -119,19 +135,34 @@ public class WormholeP2PCapabilityProxy {
             }
         }
 
-        for (var output : outputs) {
-            RemoteTarget target = getOutputTarget(output);
-            if (target == null || target.blockEntity() == null) {
-                continue;
-            }
+        if (CrazyConfig.COMMON.WORMHOLE_OTHER_CAPABILITY_PROXY_ENABLED.get()) {
+            for (var output : outputs) {
+                RemoteTarget target = getOutputTarget(output);
+                if (target == null || target.blockEntity() == null) {
+                    continue;
+                }
 
-            var result = target.blockEntity().getCapability(cap, target.side());
-            if (result.isPresent()) {
-                return result;
+                var result = target.blockEntity().getCapability(cap, target.side());
+                if (result.isPresent()) {
+                    return result;
+                }
             }
         }
 
         return LazyOptional.empty();
+    }
+
+    private <T> boolean isCapabilityAllowed(Capability<T> cap) {
+        if (cap == ForgeCapabilities.ITEM_HANDLER) {
+            return CrazyConfig.COMMON.WORMHOLE_ITEM_PROXY_ENABLED.get();
+        }
+        if (cap == ForgeCapabilities.FLUID_HANDLER || cap == ForgeCapabilities.FLUID_HANDLER_ITEM) {
+            return CrazyConfig.COMMON.WORMHOLE_FLUID_PROXY_ENABLED.get();
+        }
+        if (cap == ForgeCapabilities.ENERGY) {
+            return CrazyConfig.COMMON.WORMHOLE_FE_PROXY_ENABLED.get();
+        }
+        return CrazyConfig.COMMON.WORMHOLE_OTHER_CAPABILITY_PROXY_ENABLED.get();
     }
 
     private @Nullable RemoteTarget getInputTarget() {

@@ -102,6 +102,12 @@ public final class NetworkHandler {
                 .decoder(CancelAllCraftingPacket::decode)
                 .consumerMainThread(CancelAllCraftingPacket::handle)
                 .add();
+
+        CHANNEL.messageBuilder(WirelessNotificationWindowPacket.class, nextId++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(WirelessNotificationWindowPacket::encode)
+                .decoder(WirelessNotificationWindowPacket::decode)
+                .consumerMainThread(WirelessNotificationWindowPacket::handle)
+                .add();
     }
 
     public static void sendToPlayer(ServerPlayer player, Object packet) {

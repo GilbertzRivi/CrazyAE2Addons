@@ -128,7 +128,7 @@ public class CrazyPatternProviderPart extends PatternProviderPart implements IUp
 
         if (heldItem.getItem() == CrazyItemRegistrar.CRAZY_UPGRADE.get().asItem()) {
             if (!player.level().isClientSide) {
-                int maxAdd = CrazyConfig.COMMON.CrazyProviderMaxAddRows.get();
+                int maxAdd = CrazyConfig.COMMON.CRAZY_PROVIDER_MAX_UPGRADES.get();
                 if (maxAdd != -1 && state.getAdded() >= maxAdd) {
                     player.displayClientMessage(
                             Component.translatable(LangDefs.PROVIDER_MAX.getTranslationKey()),

@@ -4,7 +4,6 @@ import appeng.api.config.FuzzyMode;
 import appeng.api.config.Settings;
 import appeng.api.stacks.AEKey;
 import appeng.client.gui.Icon;
-import appeng.client.gui.MathExpressionParser;
 import appeng.client.gui.NumberEntryType;
 import appeng.client.gui.implementations.UpgradeableScreen;
 import appeng.client.gui.style.PaletteColor;
@@ -19,6 +18,7 @@ import appeng.menu.SlotSemantics;
 import appeng.menu.slot.AppEngSlot;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
@@ -28,19 +28,20 @@ import net.oktawia.crazyae2addons.defs.LangDefs;
 import net.oktawia.crazyae2addons.logic.interfaces.IMovableSlot;
 import net.oktawia.crazyae2addons.menus.part.MultiLevelEmitterMenu;
 import net.oktawia.crazyae2addons.parts.MultiLevelEmitter;
+import net.oktawia.crazyae2addons.util.MathParser;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
-import java.text.ParsePosition;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
 public class MultiLevelEmitterScreen<C extends MultiLevelEmitterMenu> extends UpgradeableScreen<C> {
+
     private static final int FILTER_SLOTS = MultiLevelEmitter.FILTER_SLOTS;
     private static final int VISIBLE_ROWS = 6;
 
@@ -107,8 +108,9 @@ public class MultiLevelEmitterScreen<C extends MultiLevelEmitterMenu> extends Up
     }
 
     private void createLogicButton() {
-        this.logicButton = Button.builder(Component.empty(), button ->
-                getMenu().setLogicAnd(!getMenu().isLogicAndClient())
+        this.logicButton = Button.builder(
+                Component.empty(),
+                button -> getMenu().setLogicAnd(!getMenu().isLogicAndClient())
         ).bounds(0, 0, 52, 16).build();
 
         this.logicButton.setTooltip(Tooltip.create(
@@ -126,7 +128,7 @@ public class MultiLevelEmitterScreen<C extends MultiLevelEmitterMenu> extends Up
 
             ConfirmableTextField textField = new ConfirmableTextField(style, font, 0, 0, 0, font.lineHeight);
             textField.setBordered(false);
-            textField.setMaxLength(16);
+            textField.setMaxLength(32);
             textField.setTextColor(normalTextColor);
             textField.setVisible(true);
             textField.setResponder(text -> onLimitChanged(currentRow));
@@ -186,6 +188,7 @@ public class MultiLevelEmitterScreen<C extends MultiLevelEmitterMenu> extends Up
         for (int i = 0; i < VISIBLE_ROWS; i++) {
             limitFields[i].setVisible(!craftingCardInstalled);
             limitFields[i].setEditable(!craftingCardInstalled);
+            limitFields[i].active = !craftingCardInstalled;
 
             compareButtons[i].visible = true;
             compareButtons[i].active = true;
@@ -209,13 +212,16 @@ public class MultiLevelEmitterScreen<C extends MultiLevelEmitterMenu> extends Up
                     movable.setX(FILTER_SLOT_X);
                     movable.setY(FILTER_SLOT_Y + visibleRow * ROW_HEIGHT);
                     slot.setSlotEnabled(true);
+                    slot.setActive(true);
                 } else {
                     movable.setX(HIDDEN_POS);
                     movable.setY(HIDDEN_POS);
                     slot.setSlotEnabled(false);
+                    slot.setActive(false);
                 }
             } else {
                 slot.setSlotEnabled(inView);
+                slot.setActive(inView);
             }
         }
     }
@@ -240,6 +246,9 @@ public class MultiLevelEmitterScreen<C extends MultiLevelEmitterMenu> extends Up
 
             if (boundChanged || typeChanged) {
                 rowTypes[row] = newType;
+            }
+
+            if ((boundChanged || typeChanged || !limitFields[row].isFocused()) && !craftingCardInstalled) {
                 suppressChange[row] = true;
                 try {
                     setTextFieldLongValue(row, getMenu().getThresholdClient(slotIndex));
@@ -266,6 +275,13 @@ public class MultiLevelEmitterScreen<C extends MultiLevelEmitterMenu> extends Up
                 )));
                 validateRow(row);
             }
+
+            limitFields[row].setVisible(!craftingCardInstalled);
+            limitFields[row].setEditable(!craftingCardInstalled);
+            limitFields[row].active = !craftingCardInstalled;
+
+            compareButtons[row].visible = true;
+            compareButtons[row].active = true;
         }
     }
 
@@ -293,22 +309,49 @@ public class MultiLevelEmitterScreen<C extends MultiLevelEmitterMenu> extends Up
         }
 
         validateRow(row);
-        getRowLongValue(row).ifPresent(value -> getMenu().setThreshold(slotIndex, value));
+
+        Optional<Long> value = getRowLongValue(row);
+        value.ifPresent(v -> getMenu().setThreshold(slotIndex, v));
     }
 
     private Optional<BigDecimal> getRowValueInternal(int row) {
-        String textValue = limitFields[row].getValue();
-        if (textValue.startsWith("=")) {
-            textValue = textValue.substring(1);
+        String textValue = this.limitFields[row].getValue();
+        if (textValue == null) {
+            return Optional.empty();
         }
-        return MathExpressionParser.parse(textValue, decimalFormat);
+
+        textValue = textValue.trim();
+        if (textValue.isEmpty()) {
+            return Optional.of(BigDecimal.ZERO);
+        }
+
+        if (textValue.startsWith("=")) {
+            textValue = textValue.substring(1).trim();
+        }
+
+        if (!MathParser.canParse(textValue)) {
+            return Optional.empty();
+        }
+
+        try {
+            return Optional.of(BigDecimal.valueOf(MathParser.parse(textValue)).stripTrailingZeros());
+        } catch (Throwable ignored) {
+            return Optional.empty();
+        }
     }
 
-    private boolean isPlainNumber(int row) {
-        ParsePosition position = new ParsePosition(0);
-        String textValue = limitFields[row].getValue().trim();
-        decimalFormat.parse(textValue, position);
-        return position.getErrorIndex() == -1 && position.getIndex() == textValue.length();
+    private boolean isNumberLiteral(int row) {
+        String textValue = this.limitFields[row].getValue();
+        if (textValue == null) {
+            return false;
+        }
+
+        textValue = textValue.trim();
+        if (textValue.isEmpty() || textValue.startsWith("=")) {
+            return false;
+        }
+
+        return MathParser.isLiteralNumber(textValue);
     }
 
     private long convertToExternalValue(NumberEntryType type, BigDecimal internalValue) {
@@ -330,6 +373,7 @@ public class MultiLevelEmitterScreen<C extends MultiLevelEmitterMenu> extends Up
         if (internal.isEmpty()) {
             return Optional.empty();
         }
+
         if (type.amountPerUnit() == 1 && internal.get().scale() > 0) {
             return Optional.empty();
         }
@@ -339,12 +383,15 @@ public class MultiLevelEmitterScreen<C extends MultiLevelEmitterMenu> extends Up
     }
 
     private void setTextFieldLongValue(int row, long value) {
+        if (value <= 0) {
+            limitFields[row].setValue("");
+            return;
+        }
+
         NumberEntryType type = rowTypes[row] != null ? rowTypes[row] : NumberEntryType.of(null);
         BigDecimal internal = convertToInternalValue(type, Math.max(0L, value));
 
         limitFields[row].setValue(decimalFormat.format(internal));
-        limitFields[row].moveCursorToEnd();
-        limitFields[row].setHighlightPos(0);
     }
 
     private void validateRow(int row) {
@@ -362,6 +409,12 @@ public class MultiLevelEmitterScreen<C extends MultiLevelEmitterMenu> extends Up
                 unitArg
         ));
 
+        String text = limitFields[row].getValue();
+        if (text == null) {
+            text = "";
+        }
+        text = text.trim();
+
         Optional<BigDecimal> internal = getRowValueInternal(row);
         if (internal.isEmpty()) {
             valid = false;
@@ -375,13 +428,44 @@ public class MultiLevelEmitterScreen<C extends MultiLevelEmitterMenu> extends Up
             if (external < 0) {
                 valid = false;
                 tooltip.add(Component.translatable(LangDefs.INVALID_NUMBER.getTranslationKey()));
-            } else if (!isPlainNumber(row)) {
+            } else if (!text.isEmpty() && !isNumberLiteral(row)) {
                 tooltip.add(Component.literal("= " + decimalFormat.format(internal.get())));
             }
         }
 
         limitFields[row].setTextColor(valid ? normalTextColor : errorTextColor);
         limitFields[row].setTooltipMessage(tooltip);
+    }
+
+    @Override
+    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        super.render(guiGraphics, mouseX, mouseY, partialTick);
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == 0) {
+            for (ConfirmableTextField field : this.limitFields) {
+                if (field != null && field.visible && field.active && field.mouseClicked(mouseX, mouseY, button)) {
+                    this.setFocused(field);
+                    field.setFocused(true);
+                    return true;
+                }
+            }
+        }
+
+        if (button == 1) {
+            for (ConfirmableTextField field : this.limitFields) {
+                if (field != null && field.visible && field.isMouseOver(mouseX, mouseY)) {
+                    field.setValue("");
+                    this.setFocused(field);
+                    field.setFocused(true);
+                    return true;
+                }
+            }
+        }
+
+        return super.mouseClicked(mouseX, mouseY, button);
     }
 
     private static boolean isValidSlot(int slot) {

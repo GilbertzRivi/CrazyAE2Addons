@@ -37,6 +37,9 @@ public class WormholeP2PInteractionLogic {
         if (hand == InteractionHand.OFF_HAND) {
             return false;
         }
+        if (!CrazyConfig.COMMON.WORMHOLE_ENABLED.get()) {
+            return false;
+        }
 
         ItemStack stack = player.getItemInHand(hand);
 
@@ -58,7 +61,7 @@ public class WormholeP2PInteractionLogic {
             return false;
         }
 
-        if (stack.is(Items.ENDER_PEARL) && CrazyConfig.COMMON.P2PWormholeTeleportation.get()) {
+        if (stack.is(Items.ENDER_PEARL) && CrazyConfig.COMMON.WORMHOLE_TELEPORTATION_ENABLED.get()) {
             if (!serverPlayer.isCreative()) {
                 stack.shrink(1);
             }
@@ -72,6 +75,10 @@ public class WormholeP2PInteractionLogic {
                     serverPlayer.getXRot()
             );
             return true;
+        }
+
+        if (!CrazyConfig.COMMON.WORMHOLE_REMOTE_INTERACTIONS_ENABLED.get()) {
+            return false;
         }
 
         BlockState state = target.level().getBlockState(target.pos());

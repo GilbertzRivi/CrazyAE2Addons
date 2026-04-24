@@ -22,6 +22,7 @@ import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.oktawia.crazyae2addons.CrazyAddons;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.client.misc.IconButton;
 import net.oktawia.crazyae2addons.client.misc.LDLibColorSelectorAdapter;
 import net.oktawia.crazyae2addons.client.misc.MultilineTextFieldWidget;
@@ -105,20 +106,47 @@ public class DisplayScreen<C extends DisplayMenu> extends AEBaseScreen<C> {
         this.selectedTextColor.setOnOpen(() -> backgroundColor.closePopup(true));
 
         IconButton imagesBtn = new IconButton(Icon.CRAFT_HAMMER, btn -> {
+            if (!CrazyConfig.COMMON.DISPLAY_IMAGES_ENABLED.get()) {
+                return;
+            }
+
             save();
             getMenu().openImages();
         });
-        imagesBtn.setTooltip(Tooltip.create(Component.translatable(LangDefs.IMAGES.getTranslationKey())));
+
+        imagesBtn.setTooltip(Tooltip.create(
+                Component.translatable(
+                        CrazyConfig.COMMON.DISPLAY_IMAGES_ENABLED.get()
+                                ? LangDefs.IMAGES.getTranslationKey()
+                                : LangDefs.FEATURE_DISABLED.getTranslationKey()
+                )
+        ));
         widgets.add("images", imagesBtn);
 
         IconButton confirm = new IconButton(Icon.COPY_MODE_ON, btn -> save());
         confirm.setTooltip(Tooltip.create(Component.translatable(LangDefs.SAVE.getTranslationKey())));
 
         IconButton insertToken = new IconButton(Icon.CRAFT_HAMMER, btn -> {
+            if (!CrazyConfig.COMMON.DISPLAY_ICONS_ENABLED.get()
+                    && !CrazyConfig.COMMON.DISPLAY_STOCK_ENABLED.get()
+                    && !CrazyConfig.COMMON.DISPLAY_DELTA_ENABLED.get()) {
+                return;
+            }
+
             save();
             getMenu().openInsert(value.getCursorPos());
         });
-        insertToken.setTooltip(Tooltip.create(Component.translatable(LangDefs.INSERT_TOKEN.getTranslationKey())));
+
+        insertToken.setTooltip(Tooltip.create(
+                Component.translatable(
+                        (!CrazyConfig.COMMON.DISPLAY_ICONS_ENABLED.get()
+                                && !CrazyConfig.COMMON.DISPLAY_STOCK_ENABLED.get()
+                                && !CrazyConfig.COMMON.DISPLAY_DELTA_ENABLED.get())
+                                ? LangDefs.FEATURE_DISABLED.getTranslationKey()
+                                : LangDefs.INSERT_TOKEN.getTranslationKey()
+                )
+        ));
+        widgets.add("insertToken", insertToken);
 
         this.mode = new ToggleButton(Icon.ENTER, Icon.CLEAR, this::changeMode);
         this.center = new ToggleButton(Icon.ENTER, Icon.CLEAR, this::changeCenter);
@@ -130,7 +158,6 @@ public class DisplayScreen<C extends DisplayMenu> extends AEBaseScreen<C> {
 
         widgets.add("value", value);
         widgets.add("confirm", confirm);
-        widgets.add("insertToken", insertToken);
         widgets.add("mode", mode);
         widgets.add("center", center);
         widgets.add("margin", margin);
@@ -335,7 +362,9 @@ public class DisplayScreen<C extends DisplayMenu> extends AEBaseScreen<C> {
 
         Pair<Integer, Integer> dims = resolvePreviewGridSize();
         Map<String, String> tokens = decodePreviewTokens();
-        List<DisplayImageEntry> images = getMenu().getPreviewImages();
+        List<DisplayImageEntry> images = CrazyConfig.COMMON.DISPLAY_IMAGES_ENABLED.get()
+                ? getMenu().getPreviewImages()
+                : Collections.emptyList();
 
         DisplayRendererCommon.PreparedDisplay prepared = DisplayGuiRenderer.preparePreview(
                 Minecraft.getInstance().font,
@@ -349,7 +378,11 @@ public class DisplayScreen<C extends DisplayMenu> extends AEBaseScreen<C> {
                 previewImageData
         );
 
-        Component label = Component.literal("Preview " + dims.getFirst() + "x" + dims.getSecond());
+        Component label = Component.translatable(
+                LangDefs.DISPLAY_PREVIEW_SIZE.getTranslationKey(),
+                dims.getFirst(),
+                dims.getSecond()
+        );
         gui.drawString(Minecraft.getInstance().font, label, previewX, Math.max(2, previewY - 10), 0xE0E0E0, false);
 
         DisplayGuiRenderer.renderPreview(gui, previewX, previewY, previewW, previewH, prepared);

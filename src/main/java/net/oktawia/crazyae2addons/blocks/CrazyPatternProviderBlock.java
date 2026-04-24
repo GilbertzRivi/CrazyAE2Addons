@@ -47,7 +47,7 @@ public class CrazyPatternProviderBlock extends PatternProviderBlock {
 
             BlockEntity be = level.getBlockEntity(pos);
             if (be instanceof CrazyPatternProviderBE provider) {
-                int maxAdd = CrazyConfig.COMMON.CrazyProviderMaxAddRows.get();
+                int maxAdd = CrazyConfig.COMMON.CRAZY_PROVIDER_MAX_UPGRADES.get();
                 int cur = provider.getAdded();
 
                 if (maxAdd != -1 && cur >= maxAdd) {

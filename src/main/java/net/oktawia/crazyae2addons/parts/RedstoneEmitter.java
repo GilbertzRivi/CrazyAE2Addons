@@ -9,6 +9,7 @@ import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuLocators;
 import appeng.parts.PartModel;
 import appeng.parts.automation.AbstractLevelEmitterPart;
+import lombok.Getter;
 import lombok.Setter;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -18,6 +19,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.phys.Vec3;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.menus.part.RedstoneEmitterMenu;
 import org.jetbrains.annotations.NotNull;
@@ -71,11 +73,6 @@ public class RedstoneEmitter extends AbstractLevelEmitterPart implements MenuPro
         return name;
     }
 
-    public void setNameId(String name) {
-        this.name = name == null ? "" : name;
-        markForSave();
-    }
-
     @Override
     protected void configureWatchers() {
     }
@@ -120,6 +117,9 @@ public class RedstoneEmitter extends AbstractLevelEmitterPart implements MenuPro
 
     @Override
     public boolean onPartActivate(Player player, InteractionHand hand, Vec3 pos) {
+        if (!CrazyConfig.COMMON.REDSTONE_EMITTER_TERMINAL_ENABLED.get()) {
+            return true;
+        }
         if (!isClientSide()) {
             MenuOpener.open(CrazyMenuRegistrar.REDSTONE_EMITTER_MENU.get(), player, MenuLocators.forPart(this));
         }
@@ -138,12 +138,18 @@ public class RedstoneEmitter extends AbstractLevelEmitterPart implements MenuPro
     }
 
     public void setState(boolean state) {
+        if (!CrazyConfig.COMMON.REDSTONE_EMITTER_TERMINAL_ENABLED.get()) {
+            state = false;
+        }
         setReportingValue(state ? 1 : 0);
         updateState();
         markForSaveAndUpdate();
     }
 
     public boolean getState() {
+        if (!CrazyConfig.COMMON.REDSTONE_EMITTER_TERMINAL_ENABLED.get()) {
+            return false;
+        }
         return getReportingValue() > 0;
     }
 
@@ -157,16 +163,15 @@ public class RedstoneEmitter extends AbstractLevelEmitterPart implements MenuPro
         return Component.literal("Redstone Emitter");
     }
 
-    private void markForSave() {
-        if (getHost() != null) {
-            getHost().markForSave();
-        }
-    }
-
     private void markForSaveAndUpdate() {
         if (getHost() != null) {
             getHost().markForSave();
             getHost().markForUpdate();
         }
+    }
+
+    @Override
+    protected boolean isLevelEmitterOn() {
+        return CrazyConfig.COMMON.REDSTONE_EMITTER_TERMINAL_ENABLED.get() && super.isLevelEmitterOn();
     }
 }

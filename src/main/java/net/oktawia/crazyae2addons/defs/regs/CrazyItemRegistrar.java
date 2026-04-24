@@ -1,7 +1,6 @@
 package net.oktawia.crazyae2addons.defs.regs;
 
 import appeng.api.parts.PartModels;
-import appeng.items.AEBaseItem;
 import appeng.items.parts.PartItem;
 import appeng.items.parts.PartModelsHelper;
 import net.minecraft.world.item.Item;
@@ -13,9 +12,8 @@ import net.oktawia.crazyae2addons.IsModLoaded;
 import net.oktawia.crazyae2addons.compat.gtceu.PortableSpatialClonerGTCEu;
 import net.oktawia.crazyae2addons.compat.gtceu.PortableSpatialStorageGTCEu;
 import net.oktawia.crazyae2addons.items.*;
+import net.oktawia.crazyae2addons.items.part.*;
 import net.oktawia.crazyae2addons.items.wireless.*;
-import net.oktawia.crazyae2addons.parts.Display;
-import net.oktawia.crazyae2addons.parts.EmitterTerminal;
 import net.oktawia.crazyae2addons.parts.MultiLevelEmitter;
 import net.oktawia.crazyae2addons.parts.RedstoneEmitter;
 import net.oktawia.crazyae2addons.parts.RedstoneTerminal;
@@ -59,21 +57,31 @@ public class CrazyItemRegistrar {
         }
     }
 
-    // --- Terminals ---
-    public static final RegistryObject<PartItem<Display>> DISPLAY =
-            ITEMS.register("display",
-                    () -> new PartItem<>(new Item.Properties(), Display.class, Display::new));
+    public static final RegistryObject<DisplayPartItem> DISPLAY =
+            ITEMS.register("display", () -> new DisplayPartItem(new Item.Properties()));
 
-    public static final RegistryObject<PartItem<EmitterTerminal>> EMITTER_TERMINAL =
+    public static final RegistryObject<EmitterTerminalPartItem> EMITTER_TERMINAL =
             ITEMS.register("emitter_terminal",
-                    () -> new PartItem<>(new Item.Properties(), EmitterTerminal.class, EmitterTerminal::new));
+                    () -> new EmitterTerminalPartItem(new Item.Properties()));
+
+    public static final RegistryObject<RedstoneTerminalPartItem> REDSTONE_TERMINAL =
+            ITEMS.register("redstone_terminal",
+                    () -> new RedstoneTerminalPartItem(new Item.Properties()));
+
+    public static final RegistryObject<RedstoneEmitterPartItem> REDSTONE_EMITTER =
+            ITEMS.register("redstone_emitter",
+                    () -> new RedstoneEmitterPartItem(new Item.Properties()));
+
+    public static final RegistryObject<MultiLevelEmitterPartItem> MULTI_LEVEL_EMITTER =
+            ITEMS.register("multi_level_emitter",
+                    () -> new MultiLevelEmitterPartItem(new Item.Properties()));
+
+    public static final RegistryObject<TagLevelEmitterPartItem> TAG_LEVEL_EMITTER =
+            ITEMS.register("tag_level_emitter",
+                    () -> new TagLevelEmitterPartItem(new Item.Properties()));
 
     public static final RegistryObject<WirelessEmitterTerminalItem> WIRELESS_EMITTER_TERMINAL =
             ITEMS.register("wireless_emitter_terminal", WirelessEmitterTerminalItem::new);
-
-    public static final RegistryObject<PartItem<RedstoneTerminal>> REDSTONE_TERMINAL =
-            ITEMS.register("redstone_terminal",
-                    () -> new PartItem<>(new Item.Properties(), RedstoneTerminal.class, RedstoneTerminal::new));
 
     public static final RegistryObject<WirelessRedstoneTerminal> WIRELESS_REDSTONE_TERMINAL =
             ITEMS.register("wireless_redstone_terminal", WirelessRedstoneTerminal::new);
@@ -81,23 +89,8 @@ public class CrazyItemRegistrar {
     public static final RegistryObject<WirelessNotificationTerminalItem> WIRELESS_NOTIFICATION_TERMINAL =
             ITEMS.register("wireless_notification_terminal", WirelessNotificationTerminalItem::new);
 
-    // --- Level Emitters ---
-    public static final RegistryObject<PartItem<MultiLevelEmitter>> MULTI_LEVEL_EMITTER =
-            ITEMS.register("multi_level_emitter",
-                    () -> new PartItem<>(new Item.Properties(), MultiLevelEmitter.class, MultiLevelEmitter::new));
-
-    public static final RegistryObject<PartItem<TagLevelEmitter>> TAG_LEVEL_EMITTER =
-            ITEMS.register("tag_level_emitter",
-                    () -> new PartItem<>(new Item.Properties(), TagLevelEmitter.class, TagLevelEmitter::new));
-
-    public static final RegistryObject<PartItem<RedstoneEmitter>> REDSTONE_EMITTER =
-            ITEMS.register("redstone_emitter",
-                    () -> new PartItem<>(new Item.Properties(), RedstoneEmitter.class, RedstoneEmitter::new));
-
-    // --- P2P Tunnels ---
-    public static final RegistryObject<PartItem<WormholeP2PTunnelPart>> WORMHOLE =
-            ITEMS.register("wormhole",
-                    () -> new PartItem<>(new Item.Properties(), WormholeP2PTunnelPart.class, WormholeP2PTunnelPart::new));
+    public static final RegistryObject<WormholeP2PTunnelPartItem> WORMHOLE =
+            ITEMS.register("wormhole", () -> new WormholeP2PTunnelPartItem(new Item.Properties()));
 
     public static final RegistryObject<PartItem<RRItemP2PTunnelPart>> RR_ITEM_P2P =
             ITEMS.register("round_robin_item_p2p_tunnel",
@@ -107,7 +100,6 @@ public class CrazyItemRegistrar {
             ITEMS.register("round_robin_fluid_p2p_tunnel",
                     () -> new PartItem<>(new Item.Properties(), RRFluidP2PTunnelPart.class, RRFluidP2PTunnelPart::new));
 
-    // --- Spatial ---
     public static final RegistryObject<PortableSpatialStorage> PORTABLE_SPATIAL_STORAGE =
             ITEMS.register("portable_spatial_storage", () ->
                     IsModLoaded.GTCEU ? new PortableSpatialStorageGTCEu(new Item.Properties()) : new PortableSpatialStorage(new Item.Properties()));
@@ -116,7 +108,6 @@ public class CrazyItemRegistrar {
             ITEMS.register("portable_spatial_cloner", () ->
                     IsModLoaded.GTCEU ? new PortableSpatialClonerGTCEu(new Item.Properties()) : new PortableSpatialCloner(new Item.Properties()));
 
-    // --- Tools ---
     public static final RegistryObject<CpuPrioTunerItem> CPU_PRIO_TUNER =
             ITEMS.register("cpu_priority_tuner",
                     () -> new CpuPrioTunerItem(new Item.Properties()));
@@ -125,7 +116,6 @@ public class CrazyItemRegistrar {
             ITEMS.register("tag_view_cell",
                     () -> new TagViewCellItem(new Item.Properties()));
 
-    // --- Crazy Pattern Provider ---
     public static final RegistryObject<PatternMultiplierItem> PATTERN_MULTIPLIER =
             ITEMS.register("pattern_multiplier",
                     () -> new PatternMultiplierItem(new Item.Properties()));

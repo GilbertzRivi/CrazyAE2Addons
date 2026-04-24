@@ -1,5 +1,6 @@
 package net.oktawia.crazyae2addons.parts.p2p;
 
+import appeng.api.config.PowerUnits;
 import appeng.api.networking.GridFlags;
 import appeng.api.networking.GridHelper;
 import appeng.api.networking.IGridNode;
@@ -32,10 +33,24 @@ import net.oktawia.crazyae2addons.logic.wormhole.WormholeP2PInteractionLogic;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.function.Function;
 
 public class WormholeP2PTunnelPart extends P2PTunnelPart<WormholeP2PTunnelPart> implements IGridTickable, ICapabilityProvider {
+
+    public interface WormholeCapabilityExtension {
+        boolean handles(Capability<?> cap);
+        <T> @NotNull LazyOptional<T> getCapability(@NotNull Capability<T> cap, @Nullable Direction side);
+        void onRemoveFromWorld();
+    }
+
+    private static final List<Function<WormholeP2PTunnelPart, WormholeCapabilityExtension>> EXTENSION_FACTORIES = new ArrayList<>();
+
+    public static void registerExtension(Function<WormholeP2PTunnelPart, WormholeCapabilityExtension> factory) {
+        EXTENSION_FACTORIES.add(factory);
+    }
 
     private static final P2PModels MODELS = new P2PModels(CrazyAddons.makeId("part/wormhole"));
 
@@ -53,8 +68,10 @@ public class WormholeP2PTunnelPart extends P2PTunnelPart<WormholeP2PTunnelPart> 
     @Getter
     private final WormholeP2PInteractionLogic interactionLogic = new WormholeP2PInteractionLogic(this);
 
+    private final List<WormholeCapabilityExtension> extensions;
+
     @Getter
-    protected final IManagedGridNode outerNode = CrazyConfig.COMMON.P2PWormholeNesting.get()
+    protected final IManagedGridNode outerNode = CrazyConfig.COMMON.WORMHOLE_NESTED_P2PS_ENABLED.get()
             ? GridHelper.createManagedNode(this, NodeListener.INSTANCE)
                     .setTagName("outer")
                     .setInWorldNode(true)
@@ -66,12 +83,17 @@ public class WormholeP2PTunnelPart extends P2PTunnelPart<WormholeP2PTunnelPart> 
 
     public WormholeP2PTunnelPart(IPartItem<?> partItem) {
         super(partItem);
+        this.extensions = EXTENSION_FACTORIES.stream().map(f -> f.apply(this)).toList();
         this.getMainNode()
                 .setFlags(
                         GridFlags.REQUIRE_CHANNEL,
-                        CrazyConfig.COMMON.P2PWormholeNesting.get() ? GridFlags.DENSE_CAPACITY : GridFlags.COMPRESSED_CHANNEL
+                        CrazyConfig.COMMON.WORMHOLE_NESTED_P2PS_ENABLED.get() ? GridFlags.DENSE_CAPACITY : GridFlags.COMPRESSED_CHANNEL
                 )
                 .addService(IGridTickable.class, this);
+    }
+
+    public void drainPower(double amount, PowerUnits unit) {
+        deductEnergyCost(amount, unit);
     }
 
     @Override
@@ -122,6 +144,9 @@ public class WormholeP2PTunnelPart extends P2PTunnelPart<WormholeP2PTunnelPart> 
         super.removeFromWorld();
         this.outerNode.destroy();
         connectionManager.disconnectAll();
+        for (var ext : extensions) {
+            ext.onRemoveFromWorld();
+        }
     }
 
     @Override
@@ -188,11 +213,21 @@ public class WormholeP2PTunnelPart extends P2PTunnelPart<WormholeP2PTunnelPart> 
 
     @Override
     public @NotNull <T> LazyOptional<T> getCapability(@NotNull Capability<T> cap, @Nullable Direction side) {
+        for (var ext : extensions) {
+            if (ext.handles(cap)) {
+                return ext.getCapability(cap, side);
+            }
+        }
         return capabilityProxy.getCapability(cap, side);
     }
 
     @Override
     public <T> @NotNull LazyOptional<T> getCapability(@NotNull Capability<T> capabilityClass) {
+        for (var ext : extensions) {
+            if (ext.handles(capabilityClass)) {
+                return ext.getCapability(capabilityClass, getSide());
+            }
+        }
         return capabilityProxy.getCapability(capabilityClass, getSide());
     }
 }

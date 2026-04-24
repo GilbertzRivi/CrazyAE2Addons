@@ -1,0 +1,21 @@
+{
+  "type": "crazyae2addons:fabrication",
+  "input": [
+    {
+      "count": 1,
+      "item": "ae2:pattern_provider"
+    },
+    {
+      "count": 1,
+      "item": "minecraft:piston"
+    },
+    {
+      "count": 1,
+      "item": "minecraft:stone_button"
+    }
+  ],
+  "output": {
+    "count": 1,
+    "item": "crazyae2addons:ejector"
+  }
+}

@@ -133,7 +133,23 @@ public enum LangDefs implements LocalizationEnum {
     STATUS_OK("gui.crazyae2addons.status_ok", "Status: OK"),
     STATUS_MISSING("gui.crazyae2addons.status_missing", "Status: Missing"),
     CRAFT_REQUEST_MISSING("gui.crazyae2addons.craft_request_missing", "Craft missing amount."),
-    COPY_PASTE_NO_STRUCTURE("gui.crazyae2addons.copy_paste_no_structure", "No stored structure.");
+    COPY_PASTE_NO_STRUCTURE("gui.crazyae2addons.copy_paste_no_structure", "No stored structure."),
+    APPLY_MULTIPLIER("gui.crazyae2addons.apply_multiplier", "Apply multiplier"),
+    CLEAR_ALL_PATTERNS("gui.crazyae2addons.clear_all_pattern", "Clear ALL patterns"),
+    MULTIPLIER("gui.crazyae2addons.multiplier", "Multiplier"),
+    PATTERN_MULTIPLIER_VALUE_TOOLTIP("gui.crazyae2addons.pattern_multiplier_value_tooltip", "Enter the multiplier value."),
+    OUTPUT_LIMIT("gui.crazyae2addons.output_limit", "Output limit"),
+    CANCEL_ALL_CRAFTING("gui.crazyae2addons.cancel_all_crafting", "Cancel all crafting"),
+    PRIORITY("gui.crazyae2addons.priority", "Priority"),
+    TAG_VIEW_CELL_INPUT("gui.crazyae2addons.tag_view_cell_input", "e.g. forge:ingots/*..."),
+    FABRICATION_CATEGORY("emi.crazyae2addons.category_fabrication", "Recipe Fabricator"),
+    RECIPE_FABRICATOR_PROGRESS("gui.crazyae2addons.recipe_fabricator_progress", "Progress: %s%%"),
+    RECIPE_FABRICATOR_FLUID_IN("gui.crazyae2addons.recipe_fabricator_fluid_in", "Fluid In"),
+    RECIPE_FABRICATOR_FLUID_OUT("gui.crazyae2addons.recipe_fabricator_fluid_out", "Fluid Out"),
+    MB_AMOUNT("gui.crazyae2addons.mb_amount", "%s mB"),
+    EMPTY("gui.crazyae2addons.empty", "Empty"),
+    INPUT("gui.crazyae2addons.input", "Input"),
+    OUTPUT("gui.crazyae2addons.output", "Output");
 
 
     private final String key;

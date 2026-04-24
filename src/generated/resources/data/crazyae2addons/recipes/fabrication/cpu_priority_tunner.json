@@ -1,0 +1,17 @@
+{
+  "type": "crazyae2addons:fabrication",
+  "input": [
+    {
+      "count": 1,
+      "item": "ae2:certus_quartz_wrench"
+    },
+    {
+      "count": 1,
+      "item": "ae2:crafting_monitor"
+    }
+  ],
+  "output": {
+    "count": 1,
+    "item": "crazyae2addons:cpu_priority_tuner"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "crazyae2addons:crazy_pattern_provider"
+    }
+  ],
+  "result": {
+    "item": "crazyae2addons:crazy_pattern_provider_part"
+  }
+}

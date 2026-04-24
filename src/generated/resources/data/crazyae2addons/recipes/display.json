@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "L": {
+      "item": "ae2:advanced_card"
+    },
+    "T": {
+      "item": "ae2:semi_dark_monitor"
+    }
+  },
+  "pattern": [
+    "TL",
+    "L "
+  ],
+  "result": {
+    "item": "crazyae2addons:display"
+  },
+  "show_notification": true
+}

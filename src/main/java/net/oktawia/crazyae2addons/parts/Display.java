@@ -181,7 +181,8 @@ public class Display extends AEBasePart implements MenuProvider, ISubMenuHost, I
                 !wasRegistered
                         || oldMode != state.mergeMode
                         || oldPowered != isPowered()
-                        || oldSide != getSide();
+                        || oldSide != getSide()
+                        || oldSpin != state.spin;
 
         boolean imageStateChanged =
                 oldImageCount != state.displayImages.size()
@@ -250,6 +251,7 @@ public class Display extends AEBasePart implements MenuProvider, ISubMenuHost, I
         byte rotation = (byte) (Mth.floor(player.getYRot() * 4f / 360f + 2.5f) & 3);
         if (getSide() == Direction.UP || getSide() == Direction.DOWN) {
             state.spin = rotation;
+            markDirtyAndSync();
         }
     }
 

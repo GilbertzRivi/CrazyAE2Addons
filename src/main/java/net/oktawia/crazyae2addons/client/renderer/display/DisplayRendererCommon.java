@@ -1,6 +1,5 @@
 package net.oktawia.crazyae2addons.client.renderer.display;
 
-import appeng.parts.CableBusContainer;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -91,7 +90,7 @@ public final class DisplayRendererCommon {
     }
 
     public static PreparedDisplay prepare(Font font, Display renderOrigin, Set<Display> grid) {
-        var dims = DisplayGrid.getGridSize(new ArrayList<>(grid), renderOrigin.getSide());
+        var dims = DisplayGrid.getGridSize(new ArrayList<>(grid));
         return prepare(
                 font,
                 renderOrigin.getTextValue(),

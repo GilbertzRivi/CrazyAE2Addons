@@ -1,0 +1,21 @@
+{
+  "type": "crazyae2addons:fabrication",
+  "input": [
+    {
+      "count": 1,
+      "item": "crazyae2addons:multi_level_emitter"
+    },
+    {
+      "count": 1,
+      "item": "crazyae2addons:tag_view_cell"
+    },
+    {
+      "count": 1,
+      "item": "ae2:logic_processor"
+    }
+  ],
+  "output": {
+    "count": 1,
+    "item": "crazyae2addons:tag_level_emitter"
+  }
+}

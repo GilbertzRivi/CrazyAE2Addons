@@ -1,0 +1,57 @@
+{
+  "$schema": "schema.json",
+  "includes": ["common/common.json", "common/player_inventory.json"],
+  "background": {
+    "texture": "guis/pattern_multiplier_background.png",
+    "srcRect": [0, 0, 176, 245]
+  },
+  "slots": {
+    "ENCODED_PATTERN": {
+      "left": 8,
+      "top": 42,
+      "grid": "BREAK_AFTER_9COLS"
+    }
+  },
+  "text": {
+    "dialog_title": {
+      "text": {
+        "translate": "item.crazyae2addons.pattern_multiplier"
+      },
+      "position": {
+        "left": 8,
+        "top": 6
+      }
+    },
+    "interface_config": {
+      "text": {
+        "translate": "gui.ae2.Patterns"
+      },
+      "position": {
+        "left": 8,
+        "top": 31
+      }
+    }
+  },
+  "widgets": {
+    "limit": {
+      "left": 63,
+      "top": 18,
+      "width": 50,
+      "height": 16
+    },
+    "clear": {
+      "left": 23,
+      "top": 128
+    },
+    "value": {
+      "left": 45,
+      "top": 130,
+      "width": 86,
+      "height": 16
+    },
+    "confirm": {
+      "left": 135,
+      "top": 128
+    }
+  }
+}

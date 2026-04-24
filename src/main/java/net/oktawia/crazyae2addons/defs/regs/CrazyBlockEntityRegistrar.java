@@ -118,5 +118,8 @@ public class CrazyBlockEntityRegistrar {
     public static final RegistryObject<BlockEntityType<EjectorBE>> EJECTOR_BE =
             reg("ejector_be", CrazyBlockRegistrar.EJECTOR_BLOCK, EjectorBE::new, EjectorBE.class);
 
+    public static final RegistryObject<BlockEntityType<RecipeFabricatorBE>> RECIPE_FABRICATOR_BE =
+            reg("recipe_fabricator_be", CrazyBlockRegistrar.RECIPE_FABRICATOR_BLOCK, RecipeFabricatorBE::new, RecipeFabricatorBE.class);
+
     private CrazyBlockEntityRegistrar() {}
 }

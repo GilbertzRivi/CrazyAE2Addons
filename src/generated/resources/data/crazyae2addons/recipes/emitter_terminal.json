@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "A": {
+      "item": "ae2:advanced_card"
+    },
+    "R": {
+      "item": "ae2:level_emitter"
+    },
+    "T": {
+      "item": "ae2:terminal"
+    }
+  },
+  "pattern": [
+    "ATR"
+  ],
+  "result": {
+    "item": "crazyae2addons:emitter_terminal"
+  },
+  "show_notification": true
+}

@@ -1,0 +1,17 @@
+{
+  "type": "crazyae2addons:fabrication",
+  "input": [
+    {
+      "count": 8,
+      "item": "ae2:level_emitter"
+    },
+    {
+      "count": 2,
+      "item": "ae2:engineering_processor"
+    }
+  ],
+  "output": {
+    "count": 1,
+    "item": "crazyae2addons:multi_level_emitter"
+  }
+}

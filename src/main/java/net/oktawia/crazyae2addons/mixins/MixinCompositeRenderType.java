@@ -4,6 +4,8 @@ import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.resources.ResourceLocation;
 import net.oktawia.crazyae2addons.logic.interfaces.RenderTypeTextureAccess;
+import net.oktawia.crazyae2addons.mixins.accessors.CompositeStateAccessor;
+import net.oktawia.crazyae2addons.mixins.accessors.TextureStateShardAccessor;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;

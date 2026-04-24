@@ -1,0 +1,25 @@
+{
+  "type": "crazyae2addons:fabrication",
+  "input": [
+    {
+      "count": 1,
+      "item": "ae2:blank_pattern"
+    },
+    {
+      "count": 2,
+      "item": "ae2:engineering_processor"
+    },
+    {
+      "count": 2,
+      "item": "ae2:logic_processor"
+    },
+    {
+      "count": 1,
+      "item": "minecraft:chest"
+    }
+  ],
+  "output": {
+    "count": 1,
+    "item": "crazyae2addons:pattern_multiplier"
+  }
+}

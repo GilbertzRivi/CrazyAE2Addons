@@ -26,6 +26,8 @@ public final class DisplayGrid {
 
     public record RenderGroup(Set<Display> parts, Display renderOrigin, AABB aabb) {}
 
+    private record PlaneAxes(Direction right, Direction up) {}
+
     private static final Map<Display, RenderGroup> CLIENT_RENDER_GROUP_CACHE = new IdentityHashMap<>();
 
     private DisplayGrid() {
@@ -72,7 +74,7 @@ public final class DisplayGrid {
 
             Direction side = part.getSide();
 
-            if (side == Direction.UP || side == Direction.DOWN || !part.isPowered() || !part.isMergeMode()) {
+            if (!part.isPowered() || !part.isMergeMode()) {
                 RenderGroup singleton = buildSingletonRenderGroup(part);
                 CLIENT_RENDER_GROUP_CACHE.put(part, singleton);
                 assigned.add(part);
@@ -87,7 +89,7 @@ public final class DisplayGrid {
                 continue;
             }
 
-            RenderGroup group = buildRenderGroupForActiveComponent(component, side);
+            RenderGroup group = buildRenderGroupForActiveComponent(component);
             for (Display member : component) {
                 CLIENT_RENDER_GROUP_CACHE.put(member, group);
                 assigned.add(member);
@@ -111,7 +113,7 @@ public final class DisplayGrid {
 
         Direction side = origin.getSide();
 
-        if (side == Direction.UP || side == Direction.DOWN || !origin.isPowered() || !origin.isMergeMode()) {
+        if (!origin.isPowered() || !origin.isMergeMode()) {
             return buildSingletonRenderGroup(origin);
         }
 
@@ -120,7 +122,7 @@ public final class DisplayGrid {
             return buildSingletonRenderGroup(origin);
         }
 
-        return buildRenderGroupForActiveComponent(component, side);
+        return buildRenderGroupForActiveComponent(component);
     }
 
     private static RenderGroup buildSingletonRenderGroup(Display part) {
@@ -128,14 +130,14 @@ public final class DisplayGrid {
         return new RenderGroup(singleton, part, getMatrixAABB(singleton));
     }
 
-    private static RenderGroup buildRenderGroupForActiveComponent(Set<Display> component, Direction side) {
-        Display renderOrigin = getRenderOrigin(component, side);
+    private static RenderGroup buildRenderGroupForActiveComponent(Set<Display> component) {
+        Display renderOrigin = getRenderOrigin(component);
 
         Set<Display> renderParts;
-        if (isStructureComplete(component, side)) {
+        if (isStructureComplete(component)) {
             renderParts = component;
         } else {
-            renderParts = findLargestAnchoredRectangle(component, side, renderOrigin);
+            renderParts = findLargestAnchoredRectangle(component, renderOrigin);
             if (renderParts.isEmpty()) {
                 renderParts = Set.of(renderOrigin);
             }
@@ -152,19 +154,21 @@ public final class DisplayGrid {
         all.add(origin);
         queue.add(origin);
 
-        Direction[] dirs = {
-                Direction.UP,
-                Direction.DOWN,
-                side.getClockWise(),
-                side.getCounterClockWise()
-        };
+        Direction[] dirs = (side == Direction.UP || side == Direction.DOWN)
+                ? new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}
+                : new Direction[]{Direction.UP, Direction.DOWN, side.getClockWise(), side.getCounterClockWise()};
 
         while (!queue.isEmpty()) {
             Display cur = queue.poll();
 
             for (Direction dir : dirs) {
                 Display nb = getNeighbor(cur, dir);
-                if (nb != null && nb.getSide() == side && nb.isPowered() && nb.isMergeMode() && all.add(nb)) {
+                if (nb != null
+                        && nb.getSide() == side
+                        && nb.getSpin() == origin.getSpin()
+                        && nb.isPowered()
+                        && nb.isMergeMode()
+                        && all.add(nb)) {
                     queue.add(nb);
                 }
             }
@@ -173,60 +177,199 @@ public final class DisplayGrid {
         return all;
     }
 
-    public static Display getRenderOrigin(Set<Display> parts, Direction side) {
+    public static Display getRenderOrigin(Set<Display> parts) {
         Display any = parts.iterator().next();
+        Direction side = any.getSide();
+
+        if (side == Direction.UP) {
+            return parts.stream()
+                    .min(Comparator
+                            .comparingInt(DisplayGrid::partRow)
+                            .thenComparingInt(DisplayGrid::partCol))
+                    .orElse(any);
+        }
+
+        if (side == Direction.DOWN) {
+            return parts.stream()
+                    .min(Comparator
+                            .comparingInt(DisplayGrid::partCol)
+                            .thenComparing(Comparator.comparingInt(DisplayGrid::partRow).reversed()))
+                    .orElse(any);
+        }
 
         return parts.stream()
                 .max(Comparator
-                        .comparingInt((Display dp) -> partRow(dp, side))
-                        .thenComparingInt(dp -> partCol(dp, side)))
+                        .comparingInt(DisplayGrid::partRow)
+                        .thenComparingInt(DisplayGrid::partCol))
                 .orElse(any);
     }
 
-    private static int partCol(Display part, Direction side) {
-        BlockPos pos = part.getBlockEntity().getBlockPos();
-        return switch (side) {
-            case NORTH -> pos.getX();
-            case SOUTH -> -pos.getX();
-            case EAST -> pos.getZ();
-            case WEST -> -pos.getZ();
-            default -> pos.getX();
+    private static PlaneAxes axesForWall(Direction side, int spin) {
+        PlaneAxes base = switch (side) {
+            case NORTH -> new PlaneAxes(Direction.EAST, Direction.UP);
+            case SOUTH -> new PlaneAxes(Direction.WEST, Direction.UP);
+            case EAST -> new PlaneAxes(Direction.SOUTH, Direction.UP);
+            case WEST -> new PlaneAxes(Direction.NORTH, Direction.UP);
+            default -> throw new IllegalStateException("Unexpected side for wall axes: " + side);
+        };
+
+        int normalizedSpin = Math.floorMod(spin, 4);
+        PlaneAxes result = base;
+
+        for (int i = 0; i < normalizedSpin; i++) {
+            result = rotateClockwise(result);
+        }
+
+        return result;
+    }
+
+    private static PlaneAxes rotateClockwise(PlaneAxes axes) {
+        return new PlaneAxes(
+                axes.up(),
+                axes.right().getOpposite()
+        );
+    }
+
+    private static int project(BlockPos pos, Direction dir) {
+        return switch (dir) {
+            case EAST -> pos.getX();
+            case WEST -> -pos.getX();
+            case UP -> pos.getY();
+            case DOWN -> -pos.getY();
+            case SOUTH -> pos.getZ();
+            case NORTH -> -pos.getZ();
         };
     }
 
-    private static int partRow(Display part, Direction side) {
+    private static int partCol(Display part) {
         BlockPos pos = part.getBlockEntity().getBlockPos();
-        return switch (side) {
-            case NORTH, SOUTH, EAST, WEST -> pos.getY();
-            default -> pos.getZ();
-        };
+        Direction side = part.getSide();
+
+        if (side == Direction.UP || side == Direction.DOWN) {
+            return switch (Math.floorMod(part.getSpin(), 4)) {
+                case 0 -> pos.getX();   // right = east
+                case 1 -> pos.getZ();   // right = south
+                case 2 -> -pos.getX();  // right = west
+                default -> -pos.getZ(); // right = north
+            };
+        }
+
+        PlaneAxes axes = axesForWall(side, part.getSpin());
+        return project(pos, axes.right());
     }
 
-    private static Set<Display> findLargestAnchoredRectangle(Set<Display> parts,
-                                                             Direction side,
-                                                             Display anchor) {
+    private static int partRow(Display part) {
+        BlockPos pos = part.getBlockEntity().getBlockPos();
+        Direction side = part.getSide();
+
+        if (side == Direction.UP || side == Direction.DOWN) {
+            return switch (Math.floorMod(part.getSpin(), 4)) {
+                case 0 -> pos.getZ();   // down = south
+                case 1 -> -pos.getX();  // down = west
+                case 2 -> -pos.getZ();  // down = north
+                default -> pos.getX();  // down = east
+            };
+        }
+
+        PlaneAxes axes = axesForWall(side, part.getSpin());
+        return project(pos, axes.up());
+    }
+
+    private static Set<Display> findLargestAnchoredRectangle(Set<Display> parts, Display anchor) {
         if (parts.isEmpty()) {
             return Collections.emptySet();
         }
 
+        Direction side = anchor.getSide();
+
         Map<Pair<Integer, Integer>, Display> grid = new HashMap<>();
         int minCol = Integer.MAX_VALUE;
         int minRow = Integer.MAX_VALUE;
+        int maxCol = Integer.MIN_VALUE;
+        int maxRow = Integer.MIN_VALUE;
 
-        for (Display p : parts) {
-            int col = partCol(p, side);
-            int row = partRow(p, side);
+        for (Display part : parts) {
+            int col = partCol(part);
+            int row = partRow(part);
 
-            grid.put(Pair.of(col, row), p);
+            grid.put(Pair.of(col, row), part);
             minCol = Math.min(minCol, col);
             minRow = Math.min(minRow, row);
+            maxCol = Math.max(maxCol, col);
+            maxRow = Math.max(maxRow, row);
         }
 
-        int anchorCol = partCol(anchor, side);
-        int anchorRow = partRow(anchor, side);
+        int anchorCol = partCol(anchor);
+        int anchorRow = partRow(anchor);
 
         int bestArea = 0;
         Set<Display> best = Collections.emptySet();
+
+        if (side == Direction.UP) {
+            for (int r1 = anchorRow; r1 <= maxRow; r1++) {
+                for (int c1 = anchorCol; c1 <= maxCol; c1++) {
+                    int area = (c1 - anchorCol + 1) * (r1 - anchorRow + 1);
+                    if (area <= bestArea) {
+                        continue;
+                    }
+
+                    Set<Display> candidate = new LinkedHashSet<>();
+                    boolean valid = true;
+
+                    outer:
+                    for (int r = anchorRow; r <= r1; r++) {
+                        for (int c = anchorCol; c <= c1; c++) {
+                            Display p = grid.get(Pair.of(c, r));
+                            if (p == null) {
+                                valid = false;
+                                break outer;
+                            }
+                            candidate.add(p);
+                        }
+                    }
+
+                    if (valid) {
+                        bestArea = area;
+                        best = candidate;
+                    }
+                }
+            }
+
+            return best;
+        }
+
+        if (side == Direction.DOWN) {
+            for (int r0 = anchorRow; r0 >= minRow; r0--) {
+                for (int c1 = anchorCol; c1 <= maxCol; c1++) {
+                    int area = (c1 - anchorCol + 1) * (anchorRow - r0 + 1);
+                    if (area <= bestArea) {
+                        continue;
+                    }
+
+                    Set<Display> candidate = new LinkedHashSet<>();
+                    boolean valid = true;
+
+                    outer:
+                    for (int r = r0; r <= anchorRow; r++) {
+                        for (int c = anchorCol; c <= c1; c++) {
+                            Display p = grid.get(Pair.of(c, r));
+                            if (p == null) {
+                                valid = false;
+                                break outer;
+                            }
+                            candidate.add(p);
+                        }
+                    }
+
+                    if (valid) {
+                        bestArea = area;
+                        best = candidate;
+                    }
+                }
+            }
+
+            return best;
+        }
 
         for (int r0 = anchorRow; r0 >= minRow; r0--) {
             for (int c0 = anchorCol; c0 >= minCol; c0--) {
@@ -276,7 +419,7 @@ public final class DisplayGrid {
         return null;
     }
 
-    public static boolean isStructureComplete(Set<Display> group, Direction side) {
+    public static boolean isStructureComplete(Set<Display> group) {
         if (group == null || group.isEmpty()) {
             return false;
         }
@@ -288,8 +431,8 @@ public final class DisplayGrid {
         int maxCol = Integer.MIN_VALUE;
 
         for (Display part : group) {
-            int col = partCol(part, side);
-            int row = partRow(part, side);
+            int col = partCol(part);
+            int row = partRow(part);
 
             coords.add(Pair.of(col, row));
             minCol = Math.min(minCol, col);
@@ -309,15 +452,15 @@ public final class DisplayGrid {
         return true;
     }
 
-    public static Pair<Integer, Integer> getGridSize(List<Display> sorted, Direction side) {
+    public static Pair<Integer, Integer> getGridSize(List<Display> sorted) {
         int minCol = Integer.MAX_VALUE;
         int maxCol = Integer.MIN_VALUE;
         int minRow = Integer.MAX_VALUE;
         int maxRow = Integer.MIN_VALUE;
 
         for (Display part : sorted) {
-            int col = partCol(part, side);
-            int row = partRow(part, side);
+            int col = partCol(part);
+            int row = partRow(part);
 
             minCol = Math.min(minCol, col);
             maxCol = Math.max(maxCol, col);
@@ -355,21 +498,17 @@ public final class DisplayGrid {
         }
 
         Direction side = origin.getSide();
-        if (side == Direction.UP || side == Direction.DOWN) {
-            return Pair.of(1, 1);
-        }
-
         Set<Display> component = getActiveConnectedComponent(origin, side);
         if (component.isEmpty()) {
             return Pair.of(1, 1);
         }
 
-        RenderGroup group = buildRenderGroupForActiveComponent(component, side);
+        RenderGroup group = buildRenderGroupForActiveComponent(component);
         if (group.parts().isEmpty()) {
             return Pair.of(1, 1);
         }
 
-        Pair<Integer, Integer> dims = getGridSize(new ArrayList<>(group.parts()), group.renderOrigin().getSide());
+        Pair<Integer, Integer> dims = getGridSize(new ArrayList<>(group.parts()));
         return Pair.of(Math.max(1, dims.getFirst()), Math.max(1, dims.getSecond()));
     }
 

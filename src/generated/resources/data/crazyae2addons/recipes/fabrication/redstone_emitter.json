@@ -1,0 +1,21 @@
+{
+  "type": "crazyae2addons:fabrication",
+  "input": [
+    {
+      "count": 1,
+      "item": "ae2:level_emitter"
+    },
+    {
+      "count": 4,
+      "item": "minecraft:redstone"
+    },
+    {
+      "count": 1,
+      "item": "ae2:logic_processor"
+    }
+  ],
+  "output": {
+    "count": 1,
+    "item": "crazyae2addons:redstone_emitter"
+  }
+}

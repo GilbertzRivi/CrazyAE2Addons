@@ -1,4 +1,4 @@
-package net.oktawia.crazyae2addons.mixins;
+package net.oktawia.crazyae2addons.mixins.accessors;
 
 import appeng.client.gui.ICompositeWidget;
 import appeng.client.gui.WidgetContainer;

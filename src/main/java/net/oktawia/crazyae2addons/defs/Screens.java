@@ -3,6 +3,7 @@ package net.oktawia.crazyae2addons.defs;
 import appeng.init.client.InitScreens;
 import net.oktawia.crazyae2addons.client.screens.CrazyPatternProviderScreen;
 import net.oktawia.crazyae2addons.client.screens.block.EjectorScreen;
+import net.oktawia.crazyae2addons.client.screens.block.RecipeFabricatorScreen;
 import net.oktawia.crazyae2addons.client.screens.item.*;
 import net.oktawia.crazyae2addons.client.screens.part.DisplayImagesSubScreen;
 import net.oktawia.crazyae2addons.client.screens.part.DisplayScreen;
@@ -14,7 +15,9 @@ import net.oktawia.crazyae2addons.client.screens.part.RedstoneTerminalScreen;
 import net.oktawia.crazyae2addons.client.screens.part.TagLevelEmitterScreen;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.menus.CrazyPatternProviderMenu;
+import net.oktawia.crazyae2addons.menus.PatternMultiplierMenu;
 import net.oktawia.crazyae2addons.menus.block.EjectorMenu;
+import net.oktawia.crazyae2addons.menus.block.RecipeFabricatorMenu;
 import net.oktawia.crazyae2addons.menus.item.*;
 import net.oktawia.crazyae2addons.menus.part.DisplayMenu;
 import net.oktawia.crazyae2addons.menus.part.EmitterTerminalMenu;
@@ -100,6 +103,26 @@ public final class Screens {
                 CrazyMenuRegistrar.PORTABLE_SPATIAL_CLONER_MENU.get(),
                 PortableSpatialClonerScreen<PortableSpatialClonerMenu>::new,
                 "/screens/portable_spatial_cloner.json"
+        );
+        InitScreens.register(
+                CrazyMenuRegistrar.PATTERN_MULTIPLIER_MENU.get(),
+                PatternMultiplierScreen<PatternMultiplierMenu>::new,
+                "/screens/pattern_multiplier.json"
+        );
+        InitScreens.register(
+                CrazyMenuRegistrar.CPU_PRIO_MENU.get(),
+                CpuPrioScreen<CpuPrioMenu>::new,
+                "/screens/cpu_prio.json"
+        );
+        InitScreens.register(
+                CrazyMenuRegistrar.TAG_VIEW_CELL_MENU.get(),
+                TagViewCellScreen<TagViewCellMenu>::new,
+                "/screens/tag_view_cell.json"
+        );
+        InitScreens.register(
+                CrazyMenuRegistrar.RECIPE_FABRICATOR_MENU.get(),
+                RecipeFabricatorScreen<RecipeFabricatorMenu>::new,
+                "/screens/recipe_fabricator.json"
         );
     }
 

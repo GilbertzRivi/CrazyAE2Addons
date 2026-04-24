@@ -1,0 +1,33 @@
+{
+  "type": "crazyae2addons:fabrication",
+  "input": [
+    {
+      "count": 1,
+      "item": "ae2:me_p2p_tunnel"
+    },
+    {
+      "count": 1,
+      "item": "ae2:item_p2p_tunnel"
+    },
+    {
+      "count": 1,
+      "item": "ae2:fluid_p2p_tunnel"
+    },
+    {
+      "count": 1,
+      "item": "ae2:fe_p2p_tunnel"
+    },
+    {
+      "count": 1,
+      "item": "minecraft:nether_star"
+    },
+    {
+      "count": 4,
+      "item": "minecraft:diamond"
+    }
+  ],
+  "output": {
+    "count": 1,
+    "item": "crazyae2addons:wormhole"
+  }
+}

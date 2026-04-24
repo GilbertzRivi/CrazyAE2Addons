@@ -1,0 +1,33 @@
+{
+  "type": "crazyae2addons:fabrication",
+  "input": [
+    {
+      "count": 1,
+      "item": "ae2:spatial_io_port"
+    },
+    {
+      "count": 1,
+      "item": "ae2:dense_energy_cell"
+    },
+    {
+      "count": 16,
+      "item": "ae2:spatial_pylon"
+    },
+    {
+      "count": 4,
+      "item": "ae2:import_bus"
+    },
+    {
+      "count": 4,
+      "item": "ae2:export_bus"
+    },
+    {
+      "count": 1,
+      "item": "ae2:wireless_terminal"
+    }
+  ],
+  "output": {
+    "count": 1,
+    "item": "crazyae2addons:portable_spatial_storage"
+  }
+}

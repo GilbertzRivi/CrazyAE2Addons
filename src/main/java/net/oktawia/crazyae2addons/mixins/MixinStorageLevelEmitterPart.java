@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.UUID;
 
 @Mixin(value = StorageLevelEmitterPart.class, remap = false)
-public abstract class StorageLevelEmitterPartMixin implements StorageLevelEmitterUuid {
+public abstract class MixinStorageLevelEmitterPart implements StorageLevelEmitterUuid {
 
     @Unique
     private static final String UUID_TAG = "crazy_addons_emitter_uuid";
@@ -29,24 +29,25 @@ public abstract class StorageLevelEmitterPartMixin implements StorageLevelEmitte
     private boolean uuidValidationInProgress = false;
 
     @Inject(method = "<init>", at = @At("TAIL"))
-    private void init(IPartItem<?> partItem, CallbackInfo ci) {
+    private void crazyAE2Addons$init(IPartItem<?> partItem, CallbackInfo ci) {
         ensureUuid();
         this.uuidNeedsValidation = true;
     }
 
     @Inject(method = "readFromNBT", at = @At("TAIL"))
-    private void afterReadFromNBT(CompoundTag data, CallbackInfo ci) {
+    private void crazyAE2Addons$afterReadFromNBT(CompoundTag data, CallbackInfo ci) {
         if (data.hasUUID(UUID_TAG)) {
             this.persistentUuid = data.getUUID(UUID_TAG);
         } else {
             this.persistentUuid = UUID.randomUUID();
         }
+
         this.uuidNeedsValidation = true;
     }
 
     @Inject(method = "writeToNBT", at = @At("TAIL"))
-    private void afterWriteToNBT(CompoundTag data, CallbackInfo ci) {
-        data.putUUID(UUID_TAG, getPersistentUuid());
+    private void crazyAE2Addons$afterWriteToNBT(CompoundTag data, CallbackInfo ci) {
+        data.putUUID(UUID_TAG, ensureUuid());
     }
 
     @Unique
@@ -57,22 +58,32 @@ public abstract class StorageLevelEmitterPartMixin implements StorageLevelEmitte
         return this.persistentUuid;
     }
 
-    @Unique
-    private UUID validateUuidAgainstGridIfPossible() {
+    @Override
+    public UUID getPersistentUuid() {
+        return ensureUuid();
+    }
+
+    @Override
+    public UUID getRawPersistentUuid() {
+        return ensureUuid();
+    }
+
+    @Override
+    public void validatePersistentUuidIfPossible() {
         UUID current = ensureUuid();
 
         if (!this.uuidNeedsValidation || this.uuidValidationInProgress) {
-            return current;
+            return;
         }
 
         StorageLevelEmitterPart self = (StorageLevelEmitterPart) (Object) this;
         if (self.getMainNode() == null || !self.getMainNode().hasGridBooted()) {
-            return current;
+            return;
         }
 
         IGrid grid = self.getMainNode().getGrid();
         if (grid == null) {
-            return current;
+            return;
         }
 
         this.uuidValidationInProgress = true;
@@ -82,7 +93,7 @@ public abstract class StorageLevelEmitterPartMixin implements StorageLevelEmitte
             var emitters = grid.getMachines(StorageLevelEmitterPart.class);
             if (emitters == null || emitters.isEmpty()) {
                 this.uuidNeedsValidation = false;
-                return current;
+                return;
             }
 
             int safety = 0;
@@ -90,9 +101,15 @@ public abstract class StorageLevelEmitterPartMixin implements StorageLevelEmitte
                 boolean duplicateFound = false;
 
                 for (var emitter : emitters) {
-                    if (emitter == self) continue;
+                    if (emitter == self) {
+                        continue;
+                    }
 
-                    UUID otherUuid = ((StorageLevelEmitterUuid) emitter).getPersistentUuid();
+                    if (!(emitter instanceof StorageLevelEmitterUuid other)) {
+                        continue;
+                    }
+
+                    UUID otherUuid = other.getRawPersistentUuid();
                     if (current.equals(otherUuid)) {
                         this.persistentUuid = UUID.randomUUID();
                         current = this.persistentUuid;
@@ -102,7 +119,9 @@ public abstract class StorageLevelEmitterPartMixin implements StorageLevelEmitte
                     }
                 }
 
-                if (!duplicateFound) break;
+                if (!duplicateFound) {
+                    break;
+                }
             }
 
             this.uuidNeedsValidation = false;
@@ -111,15 +130,8 @@ public abstract class StorageLevelEmitterPartMixin implements StorageLevelEmitte
                 self.getHost().markForSave();
                 self.getHost().markForUpdate();
             }
-
-            return current;
         } finally {
             this.uuidValidationInProgress = false;
         }
-    }
-
-    @Override
-    public UUID getPersistentUuid() {
-        return validateUuidAgainstGridIfPossible();
     }
 }

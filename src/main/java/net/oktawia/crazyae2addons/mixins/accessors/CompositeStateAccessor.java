@@ -1,4 +1,4 @@
-package net.oktawia.crazyae2addons.mixins;
+package net.oktawia.crazyae2addons.mixins.accessors;
 
 import net.minecraft.client.renderer.RenderStateShard;
 import net.minecraft.client.renderer.RenderType;

@@ -1,8 +1,10 @@
 package net.oktawia.crazyae2addons.logic.structuretool;
 
 import appeng.api.config.Actionable;
+import appeng.api.implementations.blockentities.IWirelessAccessPoint;
 import appeng.api.implementations.menuobjects.IMenuItem;
 import appeng.api.implementations.menuobjects.ItemMenuHost;
+import appeng.api.networking.IGrid;
 import appeng.api.upgrades.IUpgradeInventory;
 import appeng.api.upgrades.IUpgradeableObject;
 import appeng.api.upgrades.Upgrades;
@@ -13,6 +15,7 @@ import appeng.core.localization.Tooltips;
 import appeng.items.tools.powered.WirelessTerminalItem;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuLocators;
+import appeng.util.Platform;
 import appeng.util.SettingsFrom;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -670,5 +673,30 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
     @Override
     public ItemMenuHost getMenuHost(Player player, int inventorySlot, ItemStack stack, @Nullable BlockPos pos) {
         return new StructureToolHost(player, inventorySlot, stack);
+    }
+
+    @Nullable
+    @Override
+    public IGrid getLinkedGrid(ItemStack item, Level level, @Nullable Player sendMessagesTo) {
+        if (!(level instanceof ServerLevel serverLevel)) {
+            return null;
+        }
+
+        var linkedPos = getLinkedPosition(item);
+        if (linkedPos == null) {
+            return null;
+        }
+
+        var linkedLevel = serverLevel.getServer().getLevel(linkedPos.dimension());
+        if (linkedLevel == null) {
+            return null;
+        }
+
+        var be = Platform.getTickingBlockEntity(linkedLevel, linkedPos.pos());
+        if (!(be instanceof IWirelessAccessPoint accessPoint)) {
+            return null;
+        }
+
+        return accessPoint.getGrid();
     }
 }

@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "C": {
+      "item": "ae2:equal_distribution_card"
+    },
+    "P": {
+      "item": "ae2:fluid_p2p_tunnel"
+    }
+  },
+  "pattern": [
+    "PC"
+  ],
+  "result": {
+    "item": "crazyae2addons:round_robin_fluid_p2p_tunnel"
+  },
+  "show_notification": true
+}

@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "A": {
+      "item": "ae2:advanced_card"
+    },
+    "C": {
+      "item": "ae2:controller"
+    },
+    "T": {
+      "item": "crazyae2addons:wireless_redstone_terminal"
+    }
+  },
+  "pattern": [
+    "ATC"
+  ],
+  "result": {
+    "item": "crazyae2addons:wireless_notification_terminal"
+  },
+  "show_notification": true
+}

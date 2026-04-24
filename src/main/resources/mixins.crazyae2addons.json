@@ -6,14 +6,32 @@
   "plugin": "net.oktawia.crazyae2addons.mixins.Plugin",
   "refmap": "mixins.crazyae2addons.refmap.json",
   "mixins": [
-    "MixinPatternProviderLogic",
-    "MixinSlot",
-    "StorageLevelEmitterPartMixin",
-    "WidgetContainerAccessor",
+    "MixinAbstractLevelEmitterPart",
     "MixinCompositeRenderType",
-    "CompositeStateAccessor",
-    "TextureStateShardAccessor"
+    "MixinEntity",
+    "MixinPatternProviderLogic",
+    "MixinRestrictedInputSlot",
+    "MixinServerPlayer",
+    "MixinSlot",
+    "MixinStorageLevelEmitterPart",
+    "MixinViewCellItem",
+    "accessors.CompositeStateAccessor",
+    "accessors.CraftingCPURecordAccessor",
+    "accessors.P2PTunnelPartAccessor",
+    "accessors.TextureStateShardAccessor",
+    "accessors.WidgetContainerAccessor",
+    "cancelallcrafting.MixinCraftingCPUMenu",
+    "compat.MixinAdvancedAECraftingServiceCompat",
+    "compat.MixinCraftingServiceCLCompat",
+    "cpupriority.MixinCPUSelectionList",
+    "cpupriority.MixinCraftConfirmMenuAutoCpuPriority",
+    "cpupriority.MixinCraftingCpuCluster",
+    "cpupriority.MixinCraftingCPUCycler",
+    "cpupriority.MixinCraftingCpuListEntryPrio",
+    "cpupriority.MixinCraftingService",
+    "cpupriority.MixinCraftingStatusMenu"
   ],
   "client": [
+    "cancelallcrafting.MixinCraftingCPUScreen"
   ]
 }

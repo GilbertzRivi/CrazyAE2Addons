@@ -1,0 +1,29 @@
+{
+  "type": "crazyae2addons:fabrication",
+  "input": [
+    {
+      "count": 8,
+      "item": "ae2:pattern_provider"
+    },
+    {
+      "count": 1,
+      "item": "minecraft:diamond"
+    },
+    {
+      "count": 2,
+      "item": "ae2:engineering_processor"
+    },
+    {
+      "count": 2,
+      "item": "ae2:logic_processor"
+    },
+    {
+      "count": 2,
+      "item": "ae2:calculation_processor"
+    }
+  ],
+  "output": {
+    "count": 1,
+    "item": "crazyae2addons:crazy_pattern_provider"
+  }
+}

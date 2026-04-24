@@ -96,6 +96,12 @@ public final class NetworkHandler {
                 .decoder(SyncClonerRequirementStatusPacket::decode)
                 .consumerMainThread(SyncClonerRequirementStatusPacket::handle)
                 .add();
+
+        CHANNEL.messageBuilder(CancelAllCraftingPacket.class, nextId++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(CancelAllCraftingPacket::encode)
+                .decoder(CancelAllCraftingPacket::decode)
+                .consumerMainThread(CancelAllCraftingPacket::handle)
+                .add();
     }
 
     public static void sendToPlayer(ServerPlayer player, Object packet) {

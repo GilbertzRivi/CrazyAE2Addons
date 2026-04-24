@@ -29,6 +29,7 @@ import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyCreativeTabRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
+import net.oktawia.crazyae2addons.defs.regs.CrazyRecipes;
 import net.oktawia.crazyae2addons.items.PortableSpatialCloner;
 import net.oktawia.crazyae2addons.ldlib.CrazyLDLibPlugin;
 import net.oktawia.crazyae2addons.logic.wireless.WirelessEmitterTerminalItemLogicHost;
@@ -60,6 +61,8 @@ public class CrazyAddons {
         CrazyBlockRegistrar.BLOCK_ITEMS.register(modEventBus);
         CrazyBlockEntityRegistrar.BLOCK_ENTITIES.register(modEventBus);
         CrazyMenuRegistrar.MENU_TYPES.register(modEventBus);
+        CrazyRecipes.RECIPE_SERIALIZERS.register(modEventBus);
+        CrazyRecipes.RECIPE_TYPES.register(modEventBus);
         CrazyLDLibPlugin.init();
 
         modEventBus.addListener(this::registerCreativeTab);

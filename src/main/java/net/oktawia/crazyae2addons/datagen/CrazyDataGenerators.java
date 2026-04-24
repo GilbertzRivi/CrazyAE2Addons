@@ -21,6 +21,7 @@ public class CrazyDataGenerators {
         CompletableFuture<HolderLookup.Provider> lookupProvider = event.getLookupProvider();
 
         generator.addProvider(event.includeServer(), new CrazyRecipeProvider(packOutput));
+        generator.addProvider(event.includeServer(), new FabricationRecipeProvider(packOutput));
         generator.addProvider(event.includeServer(), CrazyLootTableProvider.create(packOutput));
 
         generator.addProvider(event.includeClient(), new CrazyBlockStateProvider(packOutput, existingFileHelper));

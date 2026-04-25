@@ -9,6 +9,7 @@ import appeng.client.gui.style.ScreenStyle;
 import appeng.client.gui.widgets.ConfirmableTextField;
 import appeng.client.gui.widgets.ServerSettingToggleButton;
 import appeng.client.gui.widgets.SettingToggleButton;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
@@ -16,6 +17,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.oktawia.crazyae2addons.client.misc.IconButton;
 import net.oktawia.crazyae2addons.client.misc.MultilineTextFieldWidget;
 import net.oktawia.crazyae2addons.defs.LangDefs;
+import net.oktawia.crazyae2addons.logic.interfaces.IAnalogLevelEmitterMenu;
 import net.oktawia.crazyae2addons.menus.part.TagLevelEmitterMenu;
 import net.oktawia.crazyae2addons.util.MathParser;
 
@@ -30,6 +32,7 @@ public class TagLevelEmitterScreen<C extends TagLevelEmitterMenu> extends Upgrad
     private final MultilineTextFieldWidget expressionField;
     private final ConfirmableTextField thresholdField;
     private final SettingToggleButton<RedstoneMode> redstoneModeButton;
+    private final IconButton analogModeButton;
 
     private final DecimalFormat decimalFormat;
     private final int normalTextColor;
@@ -88,9 +91,16 @@ public class TagLevelEmitterScreen<C extends TagLevelEmitterMenu> extends Upgrad
 
         this.redstoneModeButton = new ServerSettingToggleButton<>(Settings.REDSTONE_EMITTER, RedstoneMode.HIGH_SIGNAL);
 
+        this.analogModeButton = new IconButton(Icon.REDSTONE_LOW, button -> {
+                getMenu().crazyAE2Addons$toggleAnalogLogarithmicMode();
+                syncAnalogModeButton(getMenu());
+        });
+        this.analogModeButton.setVisibility(false);
+
         this.widgets.add("input", this.expressionField);
         this.widgets.add("threshold", this.thresholdField);
         this.widgets.add("cmp", this.redstoneModeButton);
+        this.widgets.add("analogMode", this.analogModeButton);
         this.widgets.add("confirm", confirmButton);
     }
 
@@ -99,6 +109,14 @@ public class TagLevelEmitterScreen<C extends TagLevelEmitterMenu> extends Upgrad
         super.updateBeforeRender();
 
         this.redstoneModeButton.set(menu.rsMode);
+
+        boolean visible = getMenu().crazyAE2Addons$hasAnalogCard();
+        this.analogModeButton.setVisibility(visible);
+
+        if (visible) {
+            syncAnalogModeButton(getMenu());
+        }
+
 
         if (!initialized) {
             this.expressionField.setValue(menu.expression);
@@ -127,6 +145,23 @@ public class TagLevelEmitterScreen<C extends TagLevelEmitterMenu> extends Upgrad
                 validateThreshold();
             }
         }
+    }
+
+    private void syncAnalogModeButton(IAnalogLevelEmitterMenu analogMenu) {
+        boolean logarithmic = analogMenu.crazyAE2Addons$isAnalogLogarithmicMode();
+
+        this.analogModeButton.setIcon(logarithmic ? Icon.REDSTONE_HIGH : Icon.REDSTONE_LOW);
+
+        Component message = Component.empty()
+                .append(Component.translatable(LangDefs.ANALOG_OUTPUT_MODE.getTranslationKey()))
+                .append("\n")
+                .append(Component.translatable(
+                        logarithmic
+                                ? LangDefs.ANALOG_OUTPUT_LOGARITHMIC_DESC.getTranslationKey()
+                                : LangDefs.ANALOG_OUTPUT_LINEAR_DESC.getTranslationKey()
+                ).withStyle(ChatFormatting.GRAY));
+
+        this.analogModeButton.setTooltip(Tooltip.create(message));
     }
 
     private void onThresholdChanged() {

@@ -16,7 +16,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraftforge.registries.ForgeRegistries;
-import net.oktawia.crazyae2addons.compat.gtceu.GTCEuKeys;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.ByteArrayInputStream;
@@ -380,6 +379,18 @@ public final class TemplateUtil {
         FLIP_V
     }
 
+    private enum FramedPropertyTransform {
+        FLIP_V,
+        ROTATE_CW,
+        ROTATE_180,
+        ROTATE_CCW
+    }
+
+    private enum FramedTypeTransform {
+        FLIP_H,
+        FLIP_V
+    }
+
     private static CompoundTag applyTransform(
             CompoundTag tag,
             Transform positionTransform,
@@ -605,10 +616,15 @@ public final class TemplateUtil {
     private static void transformCloneMetadata(
             CompoundTag tag,
             Transform positionTransform,
-            int minX, int maxX,
-            int minY, int maxY,
-            int minZ, int maxZ,
-            int newMinX, int newMinY, int newMinZ,
+            int minX,
+            int maxX,
+            int minY,
+            int maxY,
+            int minZ,
+            int maxZ,
+            int newMinX,
+            int newMinY,
+            int newMinZ,
             CableBusTransform cableBusTransform
     ) {
         if (!tag.contains(StructureToolKeys.CLONE_METADATA_KEY, Tag.TAG_COMPOUND)) {
@@ -634,10 +650,15 @@ public final class TemplateUtil {
                 int oldZ = posTag.getInt("z");
 
                 int[] transformed = positionTransform.apply(
-                        oldX, oldY, oldZ,
-                        minX, maxX,
-                        minY, maxY,
-                        minZ, maxZ
+                        oldX,
+                        oldY,
+                        oldZ,
+                        minX,
+                        maxX,
+                        minY,
+                        maxY,
+                        minZ,
+                        maxZ
                 );
 
                 CompoundTag newPos = new CompoundTag();
@@ -650,32 +671,44 @@ public final class TemplateUtil {
             if (blockEntry.contains(StructureToolKeys.CLONE_KEY_PARTS, Tag.TAG_COMPOUND)) {
                 blockEntry.put(
                         StructureToolKeys.CLONE_KEY_PARTS,
-                        transformDirectionalMetadataTag(blockEntry.getCompound(StructureToolKeys.CLONE_KEY_PARTS), cableBusTransform)
+                        transformDirectionalMetadataTag(
+                                blockEntry.getCompound(StructureToolKeys.CLONE_KEY_PARTS),
+                                cableBusTransform
+                        )
                 );
             }
 
-            if (blockEntry.contains(GTCEuKeys.CLONE_KEY_GREG, Tag.TAG_COMPOUND)) {
-                CompoundTag gregTag = blockEntry.getCompound(GTCEuKeys.CLONE_KEY_GREG).copy();
+            if (blockEntry.contains(StructureToolKeys.CLONE_KEY_GREG, Tag.TAG_COMPOUND)) {
+                CompoundTag gregTag = blockEntry.getCompound(StructureToolKeys.CLONE_KEY_GREG).copy();
 
                 if (gregTag.contains(KEY_COVER, Tag.TAG_COMPOUND)) {
-                    gregTag.put(KEY_COVER, transformGregPipeCoverTag(gregTag.getCompound(KEY_COVER), cableBusTransform));
+                    gregTag.put(
+                            KEY_COVER,
+                            transformGregPipeCoverTag(gregTag.getCompound(KEY_COVER), cableBusTransform)
+                    );
                 }
 
-                if (gregTag.contains(GTCEuKeys.CLONE_KEY_GREG_PIPE, Tag.TAG_COMPOUND)) {
-                    CompoundTag pipeTag = gregTag.getCompound(GTCEuKeys.CLONE_KEY_GREG_PIPE).copy();
+                if (gregTag.contains(StructureToolKeys.CLONE_KEY_GREG_PIPE, Tag.TAG_COMPOUND)) {
+                    CompoundTag pipeTag = gregTag.getCompound(StructureToolKeys.CLONE_KEY_GREG_PIPE).copy();
 
                     if (pipeTag.contains("connections", Tag.TAG_INT)) {
-                        pipeTag.putInt("connections", remapGregConnectionMask(pipeTag.getInt("connections"), cableBusTransform));
+                        pipeTag.putInt(
+                                "connections",
+                                remapGregConnectionMask(pipeTag.getInt("connections"), cableBusTransform)
+                        );
                     }
 
                     if (pipeTag.contains("blockedConnections", Tag.TAG_INT)) {
-                        pipeTag.putInt("blockedConnections", remapGregConnectionMask(pipeTag.getInt("blockedConnections"), cableBusTransform));
+                        pipeTag.putInt(
+                                "blockedConnections",
+                                remapGregConnectionMask(pipeTag.getInt("blockedConnections"), cableBusTransform)
+                        );
                     }
 
-                    gregTag.put(GTCEuKeys.CLONE_KEY_GREG_PIPE, pipeTag);
+                    gregTag.put(StructureToolKeys.CLONE_KEY_GREG_PIPE, pipeTag);
                 }
 
-                blockEntry.put(GTCEuKeys.CLONE_KEY_GREG, gregTag);
+                blockEntry.put(StructureToolKeys.CLONE_KEY_GREG, gregTag);
             }
 
             newBlocks.add(blockEntry);
@@ -718,7 +751,7 @@ public final class TemplateUtil {
             return transformCableBusTag(tag, transform);
         }
 
-        if (!id.isBlank() && id.startsWith(GTCEuKeys.GTCEU_ID_PREFIX)) {
+        if (!id.isBlank() && id.startsWith(StructureToolKeys.GTCEU_ID_PREFIX)) {
             return transformGregBlockEntityTag(tag, transform);
         }
 
@@ -947,7 +980,12 @@ public final class TemplateUtil {
         return result;
     }
 
-    private static void putMovedSide(CompoundTag target, CableBusTransform transform, Direction fromSide, @Nullable Tag sideTag) {
+    private static void putMovedSide(
+            CompoundTag target,
+            CableBusTransform transform,
+            Direction fromSide,
+            @Nullable Tag sideTag
+    ) {
         if (sideTag == null) {
             return;
         }
@@ -1020,9 +1058,14 @@ public final class TemplateUtil {
 
         if (!state.getValues().isEmpty()) {
             CompoundTag properties = new CompoundTag();
+
             for (Map.Entry<Property<?>, Comparable<?>> entry : state.getValues().entrySet()) {
-                properties.putString(entry.getKey().getName(), entry.getValue().toString());
+                properties.putString(
+                        entry.getKey().getName(),
+                        getPropertyValueName(entry.getKey(), entry.getValue())
+                );
             }
+
             tag.put("Properties", properties);
         }
 
@@ -1063,10 +1106,6 @@ public final class TemplateUtil {
         return state;
     }
 
-    private static BlockState setUnchecked(BlockState state, Property property, Comparable value) {
-        return state.setValue(property, value);
-    }
-
     private static BlockState flipHorizontalState(BlockState state, Direction sourceFacing) {
         Mirror mirror = sourceFacing.getAxis() == Direction.Axis.Z
                 ? Mirror.FRONT_BACK
@@ -1074,11 +1113,11 @@ public final class TemplateUtil {
 
         BlockState mirrored = state.mirror(mirror);
 
-        if (hasHorizontalDirectionPropertyChange(state, mirrored)) {
-            return mirrored;
-        }
+        BlockState result = hasHorizontalDirectionPropertyChange(state, mirrored)
+                ? mirrored
+                : remapHorizontalDirectionProperties(mirrored, sourceFacing.getAxis());
 
-        return remapHorizontalDirectionProperties(mirrored, sourceFacing.getAxis());
+        return remapFramedTypePropertyIfUnchanged(state, result, FramedTypeTransform.FLIP_H);
     }
 
     private static boolean hasHorizontalDirectionPropertyChange(BlockState before, BlockState after) {
@@ -1139,7 +1178,10 @@ public final class TemplateUtil {
             };
 
             if (flipped != direction) {
-                result = setUnchecked(result, property, flipped);
+                Direction allowed = coerceDirectionForProperty(property, flipped);
+                if (allowed != null && allowed != direction) {
+                    result = setUnchecked(result, property, allowed);
+                }
             }
         }
 
@@ -1167,6 +1209,8 @@ public final class TemplateUtil {
         ));
 
         result = flipVerticalDirectionProperties(result);
+        result = remapFramedProperties(result, FramedPropertyTransform.FLIP_V);
+        result = remapFramedTypePropertyIfUnchanged(state, result, FramedTypeTransform.FLIP_V);
 
         return result;
     }
@@ -1178,30 +1222,41 @@ public final class TemplateUtil {
             return rotated;
         }
 
-        if (hasDirectionPropertyChange(state, rotated)) {
-            return rotated;
-        }
+        BlockState result = hasDirectionPropertyChange(state, rotated)
+                ? rotated
+                : rotateFacingProperty(rotated, rotation);
 
-        return rotateFacingProperty(rotated, rotation);
+        FramedPropertyTransform framedTransform = switch (rotation) {
+            case CLOCKWISE_90 -> FramedPropertyTransform.ROTATE_CW;
+            case CLOCKWISE_180 -> FramedPropertyTransform.ROTATE_180;
+            case COUNTERCLOCKWISE_90 -> FramedPropertyTransform.ROTATE_CCW;
+            case NONE -> null;
+        };
+
+        return framedTransform == null
+                ? result
+                : remapFramedProperties(result, framedTransform);
     }
 
     private static BlockState rotateFacingProperty(BlockState state, Rotation rotation) {
-        Property property = state.getBlock().getStateDefinition().getProperty("facing");
+        Property<?> property = state.getBlock().getStateDefinition().getProperty("facing");
         if (property == null) {
             return state;
         }
 
-        Object currentValue = state.getValue(property);
+        Object currentValue = getPropertyValue(state, property);
         if (!(currentValue instanceof Direction direction)) {
             return state;
         }
 
         Direction rotated = rotateDirection(direction, rotation);
-        if (rotated == direction) {
+        Direction allowed = coerceDirectionForProperty(property, rotated);
+
+        if (allowed == null || allowed == direction) {
             return state;
         }
 
-        return setUnchecked(state, property, rotated);
+        return setUnchecked(state, property, allowed);
     }
 
     private static Direction rotateDirection(Direction direction, Rotation rotation) {
@@ -1235,17 +1290,18 @@ public final class TemplateUtil {
     }
 
     private static BlockState remapPropertyValues(BlockState state, String propertyName, Map<String, String> mapping) {
-        Property property = state.getBlock().getStateDefinition().getProperty(propertyName);
+        Property<?> property = state.getBlock().getStateDefinition().getProperty(propertyName);
         if (property == null) {
             return state;
         }
 
-        Object currentValue = state.getValue(property);
+        Object currentValue = getPropertyValue(state, property);
         if (currentValue == null) {
             return state;
         }
 
-        String targetValueName = mapping.get(currentValue.toString());
+        String currentValueName = getPropertyValueName(property, currentValue);
+        String targetValueName = mapping.get(currentValueName);
         if (targetValueName == null) {
             return state;
         }
@@ -1267,10 +1323,255 @@ public final class TemplateUtil {
 
             if (value instanceof Direction direction && direction.getAxis() == Direction.Axis.Y) {
                 Direction flipped = direction == Direction.UP ? Direction.DOWN : Direction.UP;
-                result = setUnchecked(result, property, flipped);
+                Direction allowed = coerceDirectionForProperty(property, flipped);
+
+                if (allowed != null && allowed != direction) {
+                    result = setUnchecked(result, property, allowed);
+                }
             }
         }
 
         return result;
+    }
+
+    private static BlockState remapFramedProperties(BlockState state, FramedPropertyTransform transform) {
+        if (!isFramedBlocksState(state)) {
+            return state;
+        }
+
+        return switch (transform) {
+            case FLIP_V -> toggleBooleanProperty(state, "top");
+            case ROTATE_CW, ROTATE_CCW -> swapBooleanProperties(state, "x_axis", "z_axis");
+            case ROTATE_180 -> state;
+        };
+    }
+
+    private static BlockState toggleBooleanProperty(BlockState state, String propertyName) {
+        Property<?> property = state.getBlock().getStateDefinition().getProperty(propertyName);
+        if (property == null) {
+            return state;
+        }
+
+        Object value = getPropertyValue(state, property);
+        if (!(value instanceof Boolean bool)) {
+            return state;
+        }
+
+        return setUnchecked(state, property, !bool);
+    }
+
+    private static BlockState swapBooleanProperties(BlockState state, String firstName, String secondName) {
+        Property<?> first = state.getBlock().getStateDefinition().getProperty(firstName);
+        Property<?> second = state.getBlock().getStateDefinition().getProperty(secondName);
+
+        if (first == null || second == null) {
+            return state;
+        }
+
+        Object firstValue = getPropertyValue(state, first);
+        Object secondValue = getPropertyValue(state, second);
+
+        if (!(firstValue instanceof Boolean firstBool) || !(secondValue instanceof Boolean secondBool)) {
+            return state;
+        }
+
+        if (firstBool == secondBool) {
+            return state;
+        }
+
+        BlockState result = setUnchecked(state, first, secondBool);
+        return setUnchecked(result, second, firstBool);
+    }
+
+    private static @Nullable Direction coerceDirectionForProperty(Property<?> property, Direction wanted) {
+        if (propertyContainsValue(property, wanted)) {
+            return wanted;
+        }
+
+        Direction opposite = wanted.getOpposite();
+        if (propertyContainsValue(property, opposite)) {
+            return opposite;
+        }
+
+        return null;
+    }
+
+    private static boolean propertyContainsValue(Property<?> property, Object wanted) {
+        for (Object possible : property.getPossibleValues()) {
+            if (possible == wanted || possible.equals(wanted)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static boolean isFramedBlocksState(BlockState state) {
+        ResourceLocation key = ForgeRegistries.BLOCKS.getKey(state.getBlock());
+        return key != null && "framedblocks".equals(key.getNamespace());
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private static BlockState setUnchecked(BlockState state, Property<?> property, Comparable value) {
+        return state.setValue((Property) property, value);
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private static Object getPropertyValue(BlockState state, Property<?> property) {
+        return state.getValue((Property) property);
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private static String getPropertyValueName(Property<?> property, Object value) {
+        return ((Property) property).getName((Comparable) value);
+    }
+
+    private static BlockState remapFramedTypePropertyIfUnchanged(
+            BlockState original,
+            BlockState transformed,
+            FramedTypeTransform transform
+    ) {
+        if (!isFramedBlocksState(original)) {
+            return transformed;
+        }
+
+        if (original.getBlock() != transformed.getBlock()) {
+            return transformed;
+        }
+
+        Property<?> property = original.getBlock().getStateDefinition().getProperty("type");
+        if (property == null) {
+            return transformed;
+        }
+
+        Object beforeValue = getPropertyValue(original, property);
+        Object afterValue = getPropertyValue(transformed, property);
+
+        if (beforeValue == null || afterValue == null) {
+            return transformed;
+        }
+
+        String beforeName = getPropertyValueName(property, beforeValue);
+        String afterName = getPropertyValueName(property, afterValue);
+
+        if (!beforeName.equals(afterName)) {
+            return transformed;
+        }
+
+        Comparable mappedValue = findMappedFramedTypeValue(property, beforeName, transform);
+        if (mappedValue == null) {
+            return transformed;
+        }
+
+        return setUnchecked(transformed, property, mappedValue);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private static @Nullable Comparable findMappedFramedTypeValue(
+            Property<?> property,
+            String currentName,
+            FramedTypeTransform transform
+    ) {
+        FramedTypeParts currentParts = parseFramedTypeParts(currentName);
+        if (currentParts.directionalTokens().isEmpty()) {
+            return null;
+        }
+
+        List<String> wantedDirectionalTokens = new ArrayList<>();
+
+        for (String token : currentParts.directionalTokens()) {
+            String mapped = transformFramedTypeToken(token, transform);
+            if (!wantedDirectionalTokens.contains(mapped)) {
+                wantedDirectionalTokens.add(mapped);
+            }
+        }
+
+        Object foundValue = null;
+        int foundCount = 0;
+
+        for (Object candidateValue : property.getPossibleValues()) {
+            String candidateName = getPropertyValueName(property, candidateValue);
+            FramedTypeParts candidateParts = parseFramedTypeParts(candidateName);
+
+            if (!candidateParts.otherTokens().equals(currentParts.otherTokens())) {
+                continue;
+            }
+
+            if (!sameStringSet(candidateParts.directionalTokens(), wantedDirectionalTokens)) {
+                continue;
+            }
+
+            foundValue = candidateValue;
+            foundCount++;
+        }
+
+        if (foundCount != 1 || !(foundValue instanceof Comparable comparable)) {
+            return null;
+        }
+
+        return comparable;
+    }
+
+    private static FramedTypeParts parseFramedTypeParts(String value) {
+        List<String> otherTokens = new ArrayList<>();
+        List<String> directionalTokens = new ArrayList<>();
+
+        if (value == null || value.isBlank()) {
+            return new FramedTypeParts(otherTokens, directionalTokens);
+        }
+
+        for (String token : value.split("_")) {
+            if (isFramedTypeDirectionalToken(token)) {
+                if (!directionalTokens.contains(token)) {
+                    directionalTokens.add(token);
+                }
+            } else {
+                otherTokens.add(token);
+            }
+        }
+
+        return new FramedTypeParts(otherTokens, directionalTokens);
+    }
+
+    private static boolean isFramedTypeDirectionalToken(String token) {
+        return "top".equals(token)
+                || "bottom".equals(token)
+                || "left".equals(token)
+                || "right".equals(token);
+    }
+
+    private static String transformFramedTypeToken(String token, FramedTypeTransform transform) {
+        return switch (transform) {
+            case FLIP_H -> switch (token) {
+                case "left" -> "right";
+                case "right" -> "left";
+                default -> token;
+            };
+            case FLIP_V -> switch (token) {
+                case "top" -> "bottom";
+                case "bottom" -> "top";
+                default -> token;
+            };
+        };
+    }
+
+    private static boolean sameStringSet(List<String> a, List<String> b) {
+        if (a.size() != b.size()) {
+            return false;
+        }
+
+        for (String value : a) {
+            if (!b.contains(value)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private record FramedTypeParts(
+            List<String> otherTokens,
+            List<String> directionalTokens
+    ) {
     }
 }

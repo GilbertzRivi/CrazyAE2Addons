@@ -28,6 +28,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.IsModLoaded;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
@@ -44,22 +45,12 @@ public class CrazyPatternProviderBE extends PatternProviderBlockEntity
 
     private static final int BASE_SIZE = 8 * 9;
     private static final int ROW_SIZE = 9;
-    private static final String NBT_STATE = "crazy_state";
-    private static final String NBT_ADDED = "added";
     private static final String NBT_PATTERNS = "crazy_patterns";
 
     protected static final ManagedFieldHolder MANAGED_FIELD_HOLDER =
             new ManagedFieldHolder(CrazyPatternProviderBE.class);
 
     private final FieldManagedStorage syncStorage = new FieldManagedStorage(this);
-
-    @Persisted
-    @LazyManaged
-    private final IUpgradeInventory upgrades = UpgradeInventories.forMachine(
-            CrazyBlockRegistrar.CRAZY_PATTERN_PROVIDER_BLOCK.get(),
-            IsModLoaded.APP_FLUX ? 2 : 1,
-            this::onUpgradesChanged
-    );
 
     @Persisted
     @DescSynced
@@ -69,6 +60,9 @@ public class CrazyPatternProviderBE extends PatternProviderBlockEntity
     public CrazyPatternProviderBE(BlockPos pos, BlockState blockState) {
         super(CrazyBlockEntityRegistrar.CRAZY_PATTERN_PROVIDER_BE.get(), pos, blockState);
         this.getMainNode().setVisualRepresentation(CrazyBlockRegistrar.CRAZY_PATTERN_PROVIDER_BLOCK.get().asItem());
+        if (!CrazyConfig.COMMON.CRAZY_PATTERN_PROVIDER_BLOCK_ENABLED.get()) {
+            this.getMainNode().destroy();
+        }
     }
 
     @Override
@@ -159,36 +153,22 @@ public class CrazyPatternProviderBE extends PatternProviderBlockEntity
     public void addAdditionalDrops(Level level, BlockPos pos, List<ItemStack> drops) {}
 
     @Override
-    public void clearContent() {
-        super.clearContent();
-
-        for (int i = 0; i < upgrades.size(); i++) {
-            upgrades.setItemDirect(i, ItemStack.EMPTY);
-        }
-    }
-
-    @Nullable
-    @Override
-    public InternalInventory getSubInventory(ResourceLocation id) {
-        if (ISegmentedInventory.UPGRADES.equals(id)) {
-            return upgrades;
-        }
-        return super.getSubInventory(id);
-    }
-
-    @Override
     protected PatternProviderLogic createLogic() {
         return new PatternProviderLogic(this.getMainNode(), this, BASE_SIZE);
     }
 
     @Override
     public void openMenu(Player player, MenuLocator locator) {
-        MenuOpener.open(CrazyMenuRegistrar.CRAZY_PATTERN_PROVIDER_MENU.get(), player, locator);
+        if (CrazyConfig.COMMON.CRAZY_PATTERN_PROVIDER_BLOCK_ENABLED.get()) {
+            MenuOpener.open(CrazyMenuRegistrar.CRAZY_PATTERN_PROVIDER_MENU.get(), player, locator);
+        }
     }
 
     @Override
     public void returnToMainMenu(Player player, ISubMenu subMenu) {
-        MenuOpener.returnTo(CrazyMenuRegistrar.CRAZY_PATTERN_PROVIDER_MENU.get(), player, subMenu.getLocator());
+        if (CrazyConfig.COMMON.CRAZY_PATTERN_PROVIDER_BLOCK_ENABLED.get()) {
+            MenuOpener.returnTo(CrazyMenuRegistrar.CRAZY_PATTERN_PROVIDER_MENU.get(), player, subMenu.getLocator());
+        }
     }
 
     @Override

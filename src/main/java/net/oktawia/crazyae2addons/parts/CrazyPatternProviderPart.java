@@ -56,7 +56,6 @@ public class CrazyPatternProviderPart extends PatternProviderPart implements IUp
 
     private static final String NBT_STATE = "crazy_state";
     private static final String NBT_PATTERNS = "crazy_patterns";
-    private static final String NBT_ADDED = "added";
 
     @PartModels
     public static final PartModel MODELS_OFF = new PartModel(
@@ -80,15 +79,13 @@ public class CrazyPatternProviderPart extends PatternProviderPart implements IUp
 
     public CrazyPatternProviderPart(IPartItem<?> partItem) {
         super(partItem);
+        if (!CrazyConfig.COMMON.CRAZY_PATTERN_PROVIDER_PART_ENABLED.get()) {
+            getMainNode().destroy();
+        }
     }
 
     public int getAdded() {
         return state.getAdded();
-    }
-
-    @Override
-    public IUpgradeInventory getUpgrades() {
-        return state.getUpgrades();
     }
 
     @Override
@@ -124,6 +121,9 @@ public class CrazyPatternProviderPart extends PatternProviderPart implements IUp
 
     @Override
     public boolean onPartActivate(Player player, InteractionHand hand, Vec3 pos) {
+        if (!CrazyConfig.COMMON.CRAZY_PATTERN_PROVIDER_PART_ENABLED.get()) {
+            return true;
+        }
         ItemStack heldItem = player.getItemInHand(hand);
 
         if (heldItem.getItem() == CrazyItemRegistrar.CRAZY_UPGRADE.get().asItem()) {
@@ -225,31 +225,17 @@ public class CrazyPatternProviderPart extends PatternProviderPart implements IUp
     public void addAdditionalDrops(List<ItemStack> drops, boolean wrenched) {}
 
     @Override
-    public void clearContent() {
-        super.clearContent();
-
-        for (int i = 0; i < state.getUpgrades().size(); i++) {
-            state.getUpgrades().setItemDirect(i, ItemStack.EMPTY);
-        }
-    }
-
-    @Override
-    @Nullable
-    public InternalInventory getSubInventory(ResourceLocation id) {
-        if (ISegmentedInventory.UPGRADES.equals(id)) {
-            return state.getUpgrades();
-        }
-        return super.getSubInventory(id);
-    }
-
-    @Override
     public void openMenu(Player player, MenuLocator locator) {
-        MenuOpener.open(CrazyMenuRegistrar.CRAZY_PATTERN_PROVIDER_MENU.get(), player, locator);
+        if (CrazyConfig.COMMON.CRAZY_PATTERN_PROVIDER_PART_ENABLED.get()) {
+            MenuOpener.open(CrazyMenuRegistrar.CRAZY_PATTERN_PROVIDER_MENU.get(), player, locator);
+        }
     }
 
     @Override
     public void returnToMainMenu(Player player, ISubMenu subMenu) {
-        MenuOpener.returnTo(CrazyMenuRegistrar.CRAZY_PATTERN_PROVIDER_MENU.get(), player, subMenu.getLocator());
+        if (CrazyConfig.COMMON.CRAZY_PATTERN_PROVIDER_PART_ENABLED.get()) {
+            MenuOpener.returnTo(CrazyMenuRegistrar.CRAZY_PATTERN_PROVIDER_MENU.get(), player, subMenu.getLocator());
+        }
     }
 
     @Override
@@ -284,18 +270,8 @@ public class CrazyPatternProviderPart extends PatternProviderPart implements IUp
         @DescSynced
         private int added = 0;
 
-        @Getter
-        @Persisted
-        @LazyManaged
-        private final IUpgradeInventory upgrades;
-
         private PartState(CrazyPatternProviderPart owner) {
             this.owner = owner;
-            this.upgrades = UpgradeInventories.forMachine(
-                    owner.getPartItem(),
-                    IsModLoaded.APP_FLUX ? 2 : 1,
-                    this::onUpgradesChanged
-            );
         }
 
         public void setAdded(int added) {

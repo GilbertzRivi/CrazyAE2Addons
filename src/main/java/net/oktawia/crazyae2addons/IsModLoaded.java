@@ -8,4 +8,5 @@ public class IsModLoaded {
     public static final boolean APP_MEK = ModList.get().isLoaded("appmek");
     public static final boolean ARS_ENG = ModList.get().isLoaded("arseng");
     public static final boolean APP_BOT = ModList.get().isLoaded("appbot");
+    public static final boolean FRAMED_BLOCKS = ModList.get().isLoaded("framedblocks");
 }

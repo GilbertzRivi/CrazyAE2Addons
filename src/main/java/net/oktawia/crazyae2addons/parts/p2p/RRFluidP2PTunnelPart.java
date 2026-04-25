@@ -19,6 +19,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.capability.IFluidHandler;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.mixins.accessors.P2PTunnelPartAccessor;
 import org.jetbrains.annotations.Nullable;
 
@@ -174,6 +175,10 @@ public class RRFluidP2PTunnelPart extends CapabilityP2PTunnelPart<RRFluidP2PTunn
 
         @Override
         public int fill(FluidStack resource, FluidAction action) {
+            if (!CrazyConfig.COMMON.RR_FLUID_P2P_ENABLED.get()) {
+                return 0;
+            }
+
             int amount = resource.getAmount();
             if (amount <= 0) {
                 return 0;

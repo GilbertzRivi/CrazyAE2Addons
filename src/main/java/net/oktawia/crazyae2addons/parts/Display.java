@@ -228,7 +228,7 @@ public class Display extends AEBasePart implements MenuProvider, ISubMenuHost, I
 
     @Override
     public void getBoxes(IPartCollisionHelper bch) {
-        bch.addBox(0, 0, 15.5, 16, 16, 16);
+        bch.addBox(0, 0, 15, 16, 16, 15.5);
     }
 
     @Override

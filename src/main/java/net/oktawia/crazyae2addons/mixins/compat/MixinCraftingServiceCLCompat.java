@@ -2,6 +2,7 @@ package net.oktawia.crazyae2addons.mixins.compat;
 
 import appeng.me.cluster.implementations.CraftingCPUCluster;
 import appeng.me.service.CraftingService;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.logic.cpupriority.CpuPriorityHelper;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -28,6 +29,10 @@ public abstract class MixinCraftingServiceCLCompat {
 
     @Inject(method = "<clinit>", at = @At("TAIL"))
     private static void crazyae2addons$extendCpuComparators(CallbackInfo ci) {
+        if (!CrazyConfig.COMMON.CPU_PRIORITIES_ENABLED.get()) {
+            return;
+        }
+
         final Comparator<CraftingCPUCluster> baseFastFirst = FAST_FIRST_COMPARATOR;
         final Comparator<CraftingCPUCluster> baseFastLast = FAST_LAST_COMPARATOR;
 

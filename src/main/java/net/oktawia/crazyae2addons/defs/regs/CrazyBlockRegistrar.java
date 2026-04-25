@@ -10,6 +10,7 @@ import net.minecraftforge.registries.RegistryObject;
 import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.blocks.*;
 import net.oktawia.crazyae2addons.items.block.CrazyPatternProviderBlockItem;
+import net.oktawia.crazyae2addons.items.block.EjectorBlockItem;
 
 import java.util.List;
 
@@ -40,7 +41,7 @@ public class CrazyBlockRegistrar {
 
     public static final RegistryObject<BlockItem> EJECTOR_BLOCK_ITEM =
             BLOCK_ITEMS.register("ejector",
-                    () -> new AEBaseBlockItem(EJECTOR_BLOCK.get(), new Item.Properties()));
+                    () -> new EjectorBlockItem(EJECTOR_BLOCK.get(), new Item.Properties()));
 
     public static final RegistryObject<RecipeFabricatorBlock> RECIPE_FABRICATOR_BLOCK =
             BLOCKS.register("recipe_fabricator", RecipeFabricatorBlock::new);

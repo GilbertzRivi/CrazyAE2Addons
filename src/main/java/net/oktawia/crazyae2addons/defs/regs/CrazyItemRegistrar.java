@@ -1,6 +1,7 @@
 package net.oktawia.crazyae2addons.defs.regs;
 
 import appeng.api.parts.PartModels;
+import appeng.items.materials.UpgradeCardItem;
 import appeng.items.parts.PartItem;
 import appeng.items.parts.PartModelsHelper;
 import net.minecraft.world.item.Item;
@@ -8,19 +9,10 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import net.oktawia.crazyae2addons.CrazyAddons;
-import net.oktawia.crazyae2addons.IsModLoaded;
-import net.oktawia.crazyae2addons.compat.gtceu.PortableSpatialClonerGTCEu;
-import net.oktawia.crazyae2addons.compat.gtceu.PortableSpatialStorageGTCEu;
 import net.oktawia.crazyae2addons.items.*;
 import net.oktawia.crazyae2addons.items.part.*;
 import net.oktawia.crazyae2addons.items.wireless.*;
-import net.oktawia.crazyae2addons.parts.MultiLevelEmitter;
-import net.oktawia.crazyae2addons.parts.RedstoneEmitter;
-import net.oktawia.crazyae2addons.parts.RedstoneTerminal;
-import net.oktawia.crazyae2addons.parts.TagLevelEmitter;
-import net.oktawia.crazyae2addons.parts.p2p.RRFluidP2PTunnelPart;
-import net.oktawia.crazyae2addons.parts.p2p.RRItemP2PTunnelPart;
-import net.oktawia.crazyae2addons.parts.p2p.WormholeP2PTunnelPart;
+import net.oktawia.crazyae2addons.parts.p2p.*;
 
 import java.util.List;
 
@@ -57,6 +49,9 @@ public class CrazyItemRegistrar {
         }
     }
 
+    public static final RegistryObject<Item> ANALOG_CARD =
+            ITEMS.register("analog_card", () -> new UpgradeCardItem(new Item.Properties()));
+
     public static final RegistryObject<DisplayPartItem> DISPLAY =
             ITEMS.register("display", () -> new DisplayPartItem(new Item.Properties()));
 
@@ -92,21 +87,21 @@ public class CrazyItemRegistrar {
     public static final RegistryObject<WormholeP2PTunnelPartItem> WORMHOLE =
             ITEMS.register("wormhole", () -> new WormholeP2PTunnelPartItem(new Item.Properties()));
 
-    public static final RegistryObject<PartItem<RRItemP2PTunnelPart>> RR_ITEM_P2P =
+    public static final RegistryObject<RRItemP2PTunnelPartItem> RR_ITEM_P2P =
             ITEMS.register("round_robin_item_p2p_tunnel",
-                    () -> new PartItem<>(new Item.Properties(), RRItemP2PTunnelPart.class, RRItemP2PTunnelPart::new));
+                    () -> new RRItemP2PTunnelPartItem(new Item.Properties()));
 
-    public static final RegistryObject<PartItem<RRFluidP2PTunnelPart>> RR_FLUID_P2P =
+    public static final RegistryObject<RRFluidP2PTunnelPartItem> RR_FLUID_P2P =
             ITEMS.register("round_robin_fluid_p2p_tunnel",
-                    () -> new PartItem<>(new Item.Properties(), RRFluidP2PTunnelPart.class, RRFluidP2PTunnelPart::new));
+                    () -> new RRFluidP2PTunnelPartItem(new Item.Properties()));
 
     public static final RegistryObject<PortableSpatialStorage> PORTABLE_SPATIAL_STORAGE =
-            ITEMS.register("portable_spatial_storage", () ->
-                    IsModLoaded.GTCEU ? new PortableSpatialStorageGTCEu(new Item.Properties()) : new PortableSpatialStorage(new Item.Properties()));
+            ITEMS.register("portable_spatial_storage",
+                    () -> new PortableSpatialStorage(new Item.Properties()));
 
     public static final RegistryObject<PortableSpatialCloner> PORTABLE_SPATIAL_CLONER =
-            ITEMS.register("portable_spatial_cloner", () ->
-                    IsModLoaded.GTCEU ? new PortableSpatialClonerGTCEu(new Item.Properties()) : new PortableSpatialCloner(new Item.Properties()));
+            ITEMS.register("portable_spatial_cloner",
+                    () -> new PortableSpatialCloner(new Item.Properties()));
 
     public static final RegistryObject<CpuPrioTunerItem> CPU_PRIO_TUNER =
             ITEMS.register("cpu_priority_tuner",

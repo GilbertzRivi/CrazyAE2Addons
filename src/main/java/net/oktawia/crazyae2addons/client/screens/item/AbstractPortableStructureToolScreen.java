@@ -19,12 +19,11 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.oktawia.crazyae2addons.IsModLoaded;
 import net.oktawia.crazyae2addons.client.misc.IconButton;
-import net.oktawia.crazyae2addons.client.misc.PortableSpatialStorageDummyWorld;
-import net.oktawia.crazyae2addons.client.misc.PortableSpatialStorageSceneWidget;
+import net.oktawia.crazyae2addons.client.renderer.preview.PortableSpatialStorageDummyWorld;
+import net.oktawia.crazyae2addons.client.renderer.preview.PortableSpatialStorageSceneWidget;
 import net.oktawia.crazyae2addons.client.renderer.preview.PortableSpatialStoragePreviewSync;
 import net.oktawia.crazyae2addons.client.renderer.preview.PreviewBlock;
 import net.oktawia.crazyae2addons.client.renderer.preview.PreviewStructure;
-import net.oktawia.crazyae2addons.compat.gtceu.PortableSpatialStorageSceneWidgetGTCEu;
 import net.oktawia.crazyae2addons.defs.LangDefs;
 import net.oktawia.crazyae2addons.logic.structuretool.StructureToolStackState;
 import net.oktawia.crazyae2addons.menus.item.AbstractPortableStructureToolMenu;
@@ -450,9 +449,7 @@ public abstract class AbstractPortableStructureToolScreen<M extends AbstractPort
         this.world.loadPreviewStructure(newStructure);
 
         if (this.scene == null) {
-            this.scene = IsModLoaded.GTCEU
-                    ? new PortableSpatialStorageSceneWidgetGTCEu(0, 0, 32, 32, world)
-                    : new PortableSpatialStorageSceneWidget(0, 0, 32, 32, world);
+            this.scene = new PortableSpatialStorageSceneWidget(0, 0, 32, 32, world);
             this.root.clearAllWidgets();
             this.root.addWidget(scene);
         }

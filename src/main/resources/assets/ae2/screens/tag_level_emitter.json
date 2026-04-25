@@ -56,10 +56,16 @@
       "width": 16,
       "height": 16
     },
+    "analogMode": {
+      "left": 234,
+      "top": 26,
+      "width": 16,
+      "height": 16
+    },
     "input": {
       "left": 8,
       "top": 26,
-      "width": 240,
+      "width": 220,
       "height": 135
     }
   }

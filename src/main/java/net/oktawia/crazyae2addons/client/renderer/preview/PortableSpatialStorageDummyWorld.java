@@ -1,4 +1,4 @@
-package net.oktawia.crazyae2addons.client.misc;
+package net.oktawia.crazyae2addons.client.renderer.preview;
 
 import com.lowdragmc.lowdraglib.utils.TrackedDummyWorld;
 import net.minecraft.client.Minecraft;
@@ -6,8 +6,6 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-import net.oktawia.crazyae2addons.client.renderer.preview.PreviewBlock;
-import net.oktawia.crazyae2addons.client.renderer.preview.PreviewStructure;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;

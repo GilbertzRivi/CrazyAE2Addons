@@ -21,10 +21,17 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegisterEvent;
+import net.oktawia.crazyae2addons.client.renderer.preview.BlockRenderExtensions;
+import net.oktawia.crazyae2addons.client.renderer.preview.extensions.AE2BlockRenderExtension;
+import net.oktawia.crazyae2addons.client.renderer.preview.extensions.FramedBlocksRenderExtension;
+import net.oktawia.crazyae2addons.client.renderer.preview.extensions.GTCEuBlockRenderExtension;
 import net.oktawia.crazyae2addons.client.screens.CrazyConfigScreen;
 import net.oktawia.crazyae2addons.client.renderer.preview.PortableSpatialStoragePreviewRenderer;
-import net.oktawia.crazyae2addons.compat.gtceu.GTWormholeCapabilityExtension;
-import net.oktawia.crazyae2addons.compat.gtceu.PortableSpatialStoragePreviewRendererGTCEu;
+import net.oktawia.crazyae2addons.logic.structuretool.StructureToolExtensions;
+import net.oktawia.crazyae2addons.logic.structuretool.extensions.FramedBlocksClonerExtension;
+import net.oktawia.crazyae2addons.logic.wormhole.extensions.GTWormholeCapabilityExtension;
+import net.oktawia.crazyae2addons.logic.structuretool.extensions.AE2ClonerExtension;
+import net.oktawia.crazyae2addons.logic.structuretool.extensions.GTCEuStructureExtension;
 import net.oktawia.crazyae2addons.parts.p2p.WormholeP2PTunnelPart;
 import net.oktawia.crazyae2addons.defs.Screens;
 import net.oktawia.crazyae2addons.defs.UpgradeCards;
@@ -128,12 +135,19 @@ public class CrazyAddons {
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
-        if (IsModLoaded.GTCEU) {
-            WormholeP2PTunnelPart.registerExtension(GTWormholeCapabilityExtension::new);
-        }
         event.enqueueWork(() -> {
             new UpgradeCards(event);
             CrazyBlockEntityRegistrar.setupBlockEntityTypes();
+            StructureToolExtensions.registerClonerExtension(new AE2ClonerExtension());
+            if (IsModLoaded.GTCEU) {
+                GTCEuStructureExtension gtceuExtension = new GTCEuStructureExtension();
+                StructureToolExtensions.registerClonerExtension(gtceuExtension);
+                StructureToolExtensions.registerPasteExtension(gtceuExtension);
+                WormholeP2PTunnelPart.registerExtension(GTWormholeCapabilityExtension::new);
+            }
+            if (IsModLoaded.FRAMED_BLOCKS) {
+                StructureToolExtensions.registerClonerExtension(new FramedBlocksClonerExtension());
+            }
             GridLinkables.register(CrazyItemRegistrar.PORTABLE_SPATIAL_CLONER.get(), PortableSpatialCloner.LINKABLE_HANDLER);
             NetworkHandler.registerMessages();
         });
@@ -153,12 +167,14 @@ public class CrazyAddons {
             );
             Screens.register();
             event.enqueueWork(() -> {
-                PortableSpatialStoragePreviewRenderer renderer =
-                        IsModLoaded.GTCEU
-                                ? new PortableSpatialStoragePreviewRendererGTCEu()
-                                : new PortableSpatialStoragePreviewRenderer();
-
-                MinecraftForge.EVENT_BUS.register(renderer);
+                BlockRenderExtensions.register(new AE2BlockRenderExtension());
+                if (IsModLoaded.GTCEU) {
+                    BlockRenderExtensions.register(new GTCEuBlockRenderExtension());
+                }
+                if (IsModLoaded.FRAMED_BLOCKS) {
+                    BlockRenderExtensions.register(new FramedBlocksRenderExtension());
+                }
+                MinecraftForge.EVENT_BUS.register(new PortableSpatialStoragePreviewRenderer());
             });
         }
 

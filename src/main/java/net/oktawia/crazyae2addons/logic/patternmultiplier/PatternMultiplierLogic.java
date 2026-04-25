@@ -14,11 +14,16 @@ import lombok.experimental.UtilityClass;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.oktawia.crazyae2addons.CrazyConfig;
 
 @UtilityClass
 public class PatternMultiplierLogic {
 
     public boolean applyToInterface(InterfaceLogicHost host, double multiplier, int limit) {
+        if (!CrazyConfig.COMMON.PATTERN_MULTIPLIER_ENABLED.get()) {
+            return false;
+        }
+
         var storage = host.getStorage();
         boolean changed = false;
 
@@ -45,6 +50,10 @@ public class PatternMultiplierLogic {
     }
 
     public boolean applyToPatternProvider(PatternProviderLogicHost host, double multiplier, int limit) {
+        if (!CrazyConfig.COMMON.PATTERN_MULTIPLIER_ENABLED.get()) {
+            return false;
+        }
+
         var inv = host.getTerminalPatternInventory();
         boolean changed = false;
 
@@ -67,6 +76,10 @@ public class PatternMultiplierLogic {
     }
 
     public boolean applyToContainer(Container container, double multiplier, int limit, Level level) {
+        if (!CrazyConfig.COMMON.PATTERN_MULTIPLIER_ENABLED.get()) {
+            return false;
+        }
+
         boolean changed = false;
 
         for (int i = 0; i < container.getContainerSize(); i++) {
@@ -87,6 +100,10 @@ public class PatternMultiplierLogic {
     }
 
     public boolean applyToInventory(AppEngInternalInventory inv, double multiplier, int limit, Level level) {
+        if (!CrazyConfig.COMMON.PATTERN_MULTIPLIER_ENABLED.get()) {
+            return false;
+        }
+
         boolean changed = false;
 
         for (int i = 0; i < inv.size(); i++) {
@@ -103,6 +120,10 @@ public class PatternMultiplierLogic {
     }
 
     public ItemStack modify(ItemStack stack, double multiplier, int limit, Level level) {
+        if (!CrazyConfig.COMMON.PATTERN_MULTIPLIER_ENABLED.get()) {
+            return stack;
+        }
+
         if (!(stack.getItem() instanceof EncodedPatternItem patternItem)) {
             return stack;
         }

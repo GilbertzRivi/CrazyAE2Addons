@@ -50,6 +50,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.blocks.EjectorBlock;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockEntityRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyBlockRegistrar;
@@ -244,6 +245,9 @@ public class EjectorBE extends AENetworkBlockEntity implements
     }
 
     public void doWork() {
+        if (!CrazyConfig.COMMON.EJECTOR_ENABLED.get()) {
+            return;
+        }
         if (getMainNode() == null
                 || getMainNode().getGrid() == null
                 || !getMainNode().isActive()
@@ -265,8 +269,7 @@ public class EjectorBE extends AENetworkBlockEntity implements
         if (required.isEmpty()) {
             return;
         }
-
-        if (buffer.request(required.toArray(new GenericStack[0]))) {
+        if (buffer.request(required.toArray(new GenericStack[0]), CrazyConfig.COMMON.EJECTOR_CRAFT_MISSING_ENABLED.get())) {
             setCraftingState(true);
         }
     }
@@ -439,10 +442,12 @@ public class EjectorBE extends AENetworkBlockEntity implements
 
     @Override
     public void openMenu(Player player, MenuLocator locator) {
-        if (!player.level().isClientSide) {
-            forceSyncManaged();
+        if (CrazyConfig.COMMON.EJECTOR_ENABLED.get()) {
+            if (!player.level().isClientSide) {
+                forceSyncManaged();
+            }
+            MenuOpener.open(CrazyMenuRegistrar.EJECTOR_MENU.get(), player, locator);
         }
-        MenuOpener.open(CrazyMenuRegistrar.EJECTOR_MENU.get(), player, locator);
     }
 
     @Override

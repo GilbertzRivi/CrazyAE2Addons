@@ -10,6 +10,7 @@ import appeng.menu.me.crafting.CraftingStatusMenu.CraftingCpuListEntry;
 import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.logic.cpupriority.CpuPriorityHelper;
 import net.oktawia.crazyae2addons.logic.interfaces.ICpuPrio;
 import org.spongepowered.asm.mixin.Final;
@@ -61,6 +62,10 @@ public abstract class MixinCPUSelectionList {
             int from,
             int to
     ) {
+        if (!CrazyConfig.COMMON.CPU_PRIORITIES_ENABLED.get()) {
+            return list.subList(from, to);
+        }
+
         var sorted = CpuPriorityHelper.sortEntries(list);
 
         int safeFrom = Mth.clamp(from, 0, sorted.size());
@@ -71,6 +76,10 @@ public abstract class MixinCPUSelectionList {
 
     @Inject(method = "hitTestCpu", at = @At("HEAD"), cancellable = true)
     private void crazyae2addons$hitTestOnSorted(Point mousePos, CallbackInfoReturnable<CraftingCpuListEntry> cir) {
+        if (!CrazyConfig.COMMON.CPU_PRIORITIES_ENABLED.get()) {
+            return;
+        }
+
         int relX = mousePos.getX() - bounds.getX() - 9;
         int relY = mousePos.getY() - bounds.getY() - 19;
 
@@ -125,6 +134,10 @@ public abstract class MixinCPUSelectionList {
             index = 0
     )
     private List<Component> crazyae2addons$appendCpuInfo(List<Component> lines) {
+        if (!CrazyConfig.COMMON.CPU_PRIORITIES_ENABLED.get()) {
+            return lines;
+        }
+
         var result = new ArrayList<>(lines);
         var cpu = this.crazyae2addons$lastHitCpu;
 

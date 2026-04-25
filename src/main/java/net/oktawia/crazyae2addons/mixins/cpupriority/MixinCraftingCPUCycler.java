@@ -1,12 +1,14 @@
 package net.oktawia.crazyae2addons.mixins.cpupriority;
 
 import appeng.api.networking.crafting.ICraftingCPU;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.logic.cpupriority.CpuPriorityHelper;
 import net.oktawia.crazyae2addons.mixins.accessors.CraftingCPURecordAccessor;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -21,6 +23,11 @@ public abstract class MixinCraftingCPUCycler {
             )
     )
     private void crazyae2addons$sortCpuRecordsByPrio(List<?> list) {
+        if (!CrazyConfig.COMMON.CPU_PRIORITIES_ENABLED.get()) {
+            Collections.sort((List<Comparable>) (List<?>) list);
+            return;
+        }
+
         Comparator<Object> comparator = (a, b) -> {
             int pa = getPriorityFromRecord(a);
             int pb = getPriorityFromRecord(b);

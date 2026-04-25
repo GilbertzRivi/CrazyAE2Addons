@@ -1,5 +1,7 @@
 package net.oktawia.crazyae2addons.parts;
 
+import appeng.api.config.RedstoneMode;
+import appeng.api.config.Settings;
 import appeng.api.networking.IGrid;
 import appeng.api.networking.IStackWatcher;
 import appeng.api.networking.storage.IStorageWatcherNode;
@@ -23,13 +25,16 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.CrazyConfig;
+import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
+import net.oktawia.crazyae2addons.logic.interfaces.IAnalogLevelEmitterOutput;
 import net.oktawia.crazyae2addons.util.TagMatcher;
 import org.jetbrains.annotations.Nullable;
 
-public class TagLevelEmitter extends AbstractLevelEmitterPart {
+public class TagLevelEmitter extends AbstractLevelEmitterPart implements IAnalogLevelEmitterOutput {
 
     private static final String NBT_EXPRESSION = "expression";
+    private static final String NBT_ANALOG_LOGARITHMIC_MODE = "analog_logarithmic_mode";
 
     @PartModels
     public static final PartModel MODEL_OFF_OFF = new PartModel(
@@ -71,6 +76,8 @@ public class TagLevelEmitter extends AbstractLevelEmitterPart {
     private String expression = "";
 
     private TagMatcher.Compiled compiledExpression = TagMatcher.Compiled.EMPTY;
+
+    private boolean analogLogarithmicMode = false;
 
     @Nullable
     private IStackWatcher storageWatcher;
@@ -159,14 +166,28 @@ public class TagLevelEmitter extends AbstractLevelEmitterPart {
             return;
         }
 
+        var stacks = grid.getStorageService().getCachedInventory();
+        long total = 0L;
+
+        if (this.expression == null || this.expression.isBlank()) {
+            for (var entry : stacks) {
+                AEKey key = entry.getKey();
+
+                if (key instanceof AEItemKey) {
+                    total += entry.getLongValue();
+                }
+            }
+
+            this.lastReportedValue = total;
+            updateState();
+            return;
+        }
+
         if (!compiledExpression.isValid() || !compiledExpression.isNeedsTags()) {
             this.lastReportedValue = 0L;
             updateState();
             return;
         }
-
-        var stacks = grid.getStorageService().getCachedInventory();
-        long total = 0L;
 
         try {
             for (var entry : stacks) {
@@ -205,7 +226,14 @@ public class TagLevelEmitter extends AbstractLevelEmitterPart {
 
     @Override
     protected int getUpgradeSlots() {
-        return 0;
+        return 1;
+    }
+
+    @Override
+    public void upgradesChanged() {
+        configureWatchers();
+        updateState();
+        markForSave();
     }
 
     @Override
@@ -213,9 +241,11 @@ public class TagLevelEmitter extends AbstractLevelEmitterPart {
         if (!CrazyConfig.COMMON.TAG_LEVEL_EMITTER_ENABLED.get()) {
             return true;
         }
+
         if (!isClientSide()) {
             MenuOpener.open(CrazyMenuRegistrar.TAG_LEVEL_EMITTER_MENU.get(), player, MenuLocators.forPart(this));
         }
+
         return true;
     }
 
@@ -229,6 +259,8 @@ public class TagLevelEmitter extends AbstractLevelEmitterPart {
             this.expression = "";
         }
 
+        this.analogLogarithmicMode = data.getBoolean(NBT_ANALOG_LOGARITHMIC_MODE);
+
         refreshCompiledExpression();
         configureWatchers();
     }
@@ -237,6 +269,7 @@ public class TagLevelEmitter extends AbstractLevelEmitterPart {
     public void writeToNBT(CompoundTag data) {
         super.writeToNBT(data);
         data.putString(NBT_EXPRESSION, this.expression);
+        data.putBoolean(NBT_ANALOG_LOGARITHMIC_MODE, this.analogLogarithmicMode);
     }
 
     @Override
@@ -245,6 +278,7 @@ public class TagLevelEmitter extends AbstractLevelEmitterPart {
 
         if (mode == SettingsFrom.MEMORY_CARD) {
             output.putString(NBT_EXPRESSION, this.expression);
+            output.putBoolean(NBT_ANALOG_LOGARITHMIC_MODE, this.analogLogarithmicMode);
         }
     }
 
@@ -256,6 +290,8 @@ public class TagLevelEmitter extends AbstractLevelEmitterPart {
             this.expression = input.contains(NBT_EXPRESSION, Tag.TAG_STRING)
                     ? input.getString(NBT_EXPRESSION)
                     : "";
+
+            this.analogLogarithmicMode = input.getBoolean(NBT_ANALOG_LOGARITHMIC_MODE);
 
             refreshCompiledExpression();
             configureWatchers();
@@ -276,14 +312,71 @@ public class TagLevelEmitter extends AbstractLevelEmitterPart {
         return emitterOn ? MODEL_ON_OFF : MODEL_OFF_OFF;
     }
 
+    @Override
+    protected boolean isLevelEmitterOn() {
+        return CrazyConfig.COMMON.TAG_LEVEL_EMITTER_ENABLED.get() && super.isLevelEmitterOn();
+    }
+
+    @Override
+    public boolean crazyAE2Addons$usesAnalogOutput() {
+        return CrazyConfig.COMMON.TAG_LEVEL_EMITTER_ENABLED.get()
+                && crazyAE2Addons$hasAnalogCard();
+    }
+
+    @Override
+    public int crazyAE2Addons$getAnalogOutputSignal() {
+        if (!crazyAE2Addons$usesAnalogOutput()) {
+            return isLevelEmitterOn() ? 15 : 0;
+        }
+
+        long threshold = getReportingValue();
+        long amount = this.lastReportedValue;
+
+        int signal;
+
+        if (threshold <= 0L) {
+            signal = 15;
+        } else if (amount <= 0L) {
+            signal = 0;
+        } else if (this.analogLogarithmicMode) {
+            double scaled = ((double) amount * (16384.0D / (double) threshold)) + 1.0D;
+            signal = (int) Math.ceil(Math.log(scaled) / Math.log(2.0D));
+        } else {
+            signal = (int) Math.floor((double) amount * 15.0D / (double) threshold);
+        }
+
+        signal = Math.max(0, Math.min(15, signal));
+
+        if (getConfigManager().getSetting(Settings.REDSTONE_EMITTER) == RedstoneMode.LOW_SIGNAL) {
+            signal = 15 - signal;
+        }
+
+        return signal;
+    }
+
+    public boolean crazyAE2Addons$hasAnalogCard() {
+        return isUpgradedWith(CrazyItemRegistrar.ANALOG_CARD.get());
+    }
+
+    @Override
+    public boolean crazyAE2Addons$isAnalogLogarithmicMode() {
+        return this.analogLogarithmicMode;
+    }
+
+    @Override
+    public void crazyAE2Addons$setAnalogLogarithmicMode(boolean value) {
+        if (this.analogLogarithmicMode == value) {
+            return;
+        }
+
+        this.analogLogarithmicMode = value;
+        updateState();
+        markForSave();
+    }
+
     private void markForSave() {
         if (getHost() != null) {
             getHost().markForSave();
         }
-    }
-
-    @Override
-    protected boolean isLevelEmitterOn() {
-        return CrazyConfig.COMMON.TAG_LEVEL_EMITTER_ENABLED.get() && super.isLevelEmitterOn();
     }
 }

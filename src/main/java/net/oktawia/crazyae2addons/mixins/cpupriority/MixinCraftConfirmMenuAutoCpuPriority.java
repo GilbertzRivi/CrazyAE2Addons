@@ -7,6 +7,7 @@ import appeng.api.networking.crafting.ICraftingService;
 import appeng.api.networking.crafting.ICraftingSubmitResult;
 import appeng.api.networking.security.IActionSource;
 import appeng.menu.me.crafting.CraftConfirmMenu;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.logic.cpupriority.CpuPriorityHelper;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
@@ -32,6 +33,10 @@ public abstract class MixinCraftConfirmMenuAutoCpuPriority {
             @Nullable ICraftingCPU selectedCpu,
             boolean prioritizePower,
             IActionSource actionSource) {
+
+        if (!CrazyConfig.COMMON.CPU_PRIORITIES_ENABLED.get()) {
+            return craftingService.submitJob(plan, requester, selectedCpu, prioritizePower, actionSource);
+        }
 
         ICraftingCPU cpuToUse = selectedCpu;
 

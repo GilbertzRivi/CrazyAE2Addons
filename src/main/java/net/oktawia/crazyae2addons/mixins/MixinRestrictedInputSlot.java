@@ -4,6 +4,7 @@ import appeng.core.definitions.AEItems;
 import appeng.core.definitions.ItemDefinition;
 import appeng.items.storage.ViewCellItem;
 import net.minecraft.world.item.ItemStack;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -19,7 +20,7 @@ public abstract class MixinRestrictedInputSlot {
             )
     )
     private boolean crazyae2addons$acceptAnyViewCell(ItemDefinition instance, ItemStack stack) {
-        if (instance == AEItems.VIEW_CELL) {
+        if (instance == AEItems.VIEW_CELL && CrazyConfig.COMMON.TAG_VIEW_CELL_ENABLED.get()) {
             return instance.isSameAs(stack) || stack.getItem() instanceof ViewCellItem;
         }
 

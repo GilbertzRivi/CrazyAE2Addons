@@ -20,6 +20,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.ItemHandlerHelper;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.mixins.accessors.P2PTunnelPartAccessor;
 import org.jetbrains.annotations.Nullable;
 
@@ -165,6 +166,10 @@ public class RRItemP2PTunnelPart extends CapabilityP2PTunnelPart<RRItemP2PTunnel
 
         @Override
         public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
+            if (!CrazyConfig.COMMON.RR_ITEM_P2P_ENABLED.get()) {
+                return stack;
+            }
+
             int amount = stack.getCount();
             if (amount <= 0) {
                 return stack;

@@ -8,12 +8,8 @@ import appeng.api.networking.security.IActionSource;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.storage.MEStorage;
 import appeng.api.storage.StorageHelper;
-import appeng.api.upgrades.IUpgradeableObject;
-import appeng.blockentity.AEBaseBlockEntity;
-import appeng.blockentity.networking.CableBusBlockEntity;
-import appeng.util.SettingsFrom;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -25,33 +21,43 @@ import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.HitResult;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.defs.LangDefs;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.logic.structuretool.AbstractStructureCaptureToolItem;
+import net.oktawia.crazyae2addons.logic.structuretool.ClonerPasteContext;
+import net.oktawia.crazyae2addons.logic.structuretool.PlacementPlan;
 import net.oktawia.crazyae2addons.logic.structuretool.PortableSpatialClonerHost;
+import net.oktawia.crazyae2addons.logic.structuretool.StructureCloneExtension;
+import net.oktawia.crazyae2addons.logic.structuretool.StructureToolExtensions;
 import net.oktawia.crazyae2addons.logic.structuretool.StructureToolPreviewDispatcher;
 import net.oktawia.crazyae2addons.logic.structuretool.StructureToolStackState;
 import net.oktawia.crazyae2addons.logic.structuretool.StructureToolStructureStore;
 import net.oktawia.crazyae2addons.logic.structuretool.StructureToolUtil;
-import net.oktawia.crazyae2addons.util.NbtUtil;
 import net.oktawia.crazyae2addons.util.StructureToolKeys;
 import net.oktawia.crazyae2addons.util.TemplateUtil;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class PortableSpatialCloner extends AbstractStructureCaptureToolItem {
 
     public PortableSpatialCloner(Item.Properties properties) {
-        super(DEFAULT_BASE_POWER, DEFAULT_UPGRADE_SLOTS + 1, properties);
+        super(
+                () -> CrazyConfig.COMMON.PORTABLE_SPATIAL_CLONER_BASE_INTERNAL_POWER_CAPACITY.get(),
+                DEFAULT_UPGRADE_SLOTS + 1,
+                properties
+        );
     }
 
     public static ItemStack findHeld(@Nullable Player player) {
@@ -85,6 +91,26 @@ public class PortableSpatialCloner extends AbstractStructureCaptureToolItem {
     @Override
     protected Component getStoredStructureActionNotImplementedMessage() {
         return Component.translatable(LangDefs.STRUCTURE_PASTED.getTranslationKey());
+    }
+
+    @Override
+    protected boolean isToolEnabled() {
+        return CrazyConfig.COMMON.PORTABLE_SPATIAL_CLONER_ENABLED.get();
+    }
+
+    @Override
+    protected double getPowerPerBlockCapture() {
+        return CrazyConfig.COMMON.PORTABLE_SPATIAL_CLONER_COST.get();
+    }
+
+    @Override
+    protected double getPowerPerBlockPaste() {
+        return CrazyConfig.COMMON.PORTABLE_SPATIAL_CLONER_COST.get();
+    }
+
+    @Override
+    protected int getMaxStructureSize() {
+        return CrazyConfig.COMMON.PORTABLE_SPATIAL_CLONER_MAX_STRUCTURE_SIZE.get();
     }
 
     @Override
@@ -133,11 +159,15 @@ public class PortableSpatialCloner extends AbstractStructureCaptureToolItem {
             return;
         }
 
+        if (!checkStructureSizeLimit(player, savedTag)) {
+            return;
+        }
+
         BlockPos energyOrigin = TemplateUtil.getEnergyOrigin(savedTag);
         double requiredPower = StructureToolUtil.calculatePreviewStructurePower(
                 savedTag,
                 energyOrigin,
-                POWER_PER_BLOCK_PASTE
+                getPowerPerBlockPaste()
         );
 
         if (!tryUsePower(player, toolStack, requiredPower)) {
@@ -148,6 +178,7 @@ public class PortableSpatialCloner extends AbstractStructureCaptureToolItem {
         BlockPos templateOffset = TemplateUtil.getTemplateOffset(savedTag);
         List<TemplateUtil.BlockInfo> rawBlocks = TemplateUtil.parseRawBlocksFromTag(savedTag);
         Map<BlockPos, CompoundTag> metadataByPos = parseMetadataByPos(savedTag);
+        ClonerPasteContext pasteContext = createPasteContext(level, player, toolStack);
 
         int placed = 0;
         int skipped = 0;
@@ -163,20 +194,42 @@ public class PortableSpatialCloner extends AbstractStructureCaptureToolItem {
             CompoundTag rawBeTag = blockInfo.blockEntityTag();
             CompoundTag blockMetadata = metadataByPos.get(localPos);
 
-            BlockState existing = level.getBlockState(worldPos);
-            if (hasCollision(existing, stateToPlace)) {
-                skipped++;
-                continue;
+            Optional<PlacementPlan> extensionPlan = Optional.empty();
+
+            for (StructureCloneExtension extension : StructureToolExtensions.clonerExtensions()) {
+                extensionPlan = extension.buildPlacementPlan(
+                        level,
+                        player,
+                        stateToPlace,
+                        rawBeTag,
+                        blockMetadata,
+                        pasteContext
+                );
+
+                if (extensionPlan.isPresent()) {
+                    break;
+                }
             }
 
-            boolean success;
-            if (isAe2CableBusTag(rawBeTag)) {
-                success = placeCableBusBestEffort(level, worldPos, stateToPlace, rawBeTag, blockMetadata, player, toolStack);
-            } else {
-                success = placeRegularBlockBestEffort(level, worldPos, stateToPlace, rawBeTag, blockMetadata, player, toolStack);
-            }
+            boolean success = extensionPlan
+                    .map(plan -> placePlannedBlockBestEffort(level, worldPos, plan, player, toolStack))
+                    .orElseGet(() -> placeRegularBlockBestEffort(
+                            level,
+                            worldPos,
+                            stateToPlace,
+                            rawBeTag,
+                            blockMetadata,
+                            player,
+                            toolStack
+                    ));
 
             if (success) {
+                BlockEntity placedBlockEntity = level.getBlockEntity(worldPos);
+
+                for (StructureCloneExtension extension : StructureToolExtensions.clonerExtensions()) {
+                    extension.onBlockPlaced(level, worldPos, placedBlockEntity, blockMetadata);
+                }
+
                 placed++;
             } else {
                 skipped++;
@@ -210,6 +263,11 @@ public class PortableSpatialCloner extends AbstractStructureCaptureToolItem {
             Player player,
             ItemStack toolStack
     ) {
+        BlockState existing = level.getBlockState(worldPos);
+        if (hasCollision(existing, stateToPlace)) {
+            return false;
+        }
+
         if (!player.isCreative()) {
             ItemStack required = getRequiredBlockItem(stateToPlace);
             if (required.isEmpty()) {
@@ -225,8 +283,6 @@ public class PortableSpatialCloner extends AbstractStructureCaptureToolItem {
             return false;
         }
 
-        applyAe2BlockMetadataAfterPlacement(level, worldPos, blockMetadata);
-
         if (!player.isCreative()) {
             ItemStack required = getRequiredBlockItem(stateToPlace);
             if (!consumeForPaste(level, player, toolStack, required, 1)) {
@@ -237,80 +293,40 @@ public class PortableSpatialCloner extends AbstractStructureCaptureToolItem {
         return true;
     }
 
-    protected boolean placeCableBusBestEffort(
+    protected boolean placePlannedBlockBestEffort(
             ServerLevel level,
             BlockPos worldPos,
-            BlockState stateToPlace,
-            CompoundTag rawBeTag,
-            @Nullable CompoundTag blockMetadata,
+            PlacementPlan plan,
             Player player,
             ItemStack toolStack
     ) {
-        CableBusPlacementPlan plan = buildCableBusPlacementPlan(level, player, toolStack, rawBeTag);
         if (!plan.shouldPlace()) {
             return false;
         }
 
-        if (!placeBlockAndLoadTag(level, worldPos, stateToPlace, plan.filteredTag())) {
+        BlockState stateToPlace = plan.stateToPlace();
+        if (stateToPlace == null) {
             return false;
         }
 
-        applyAe2CableBusMetadataAfterPlacement(level, worldPos, blockMetadata);
+        BlockState existing = level.getBlockState(worldPos);
+        if (hasCollision(existing, stateToPlace)) {
+            return false;
+        }
+
+        if (!placeBlockAndLoadTag(level, worldPos, stateToPlace, plan.blockEntityTag())) {
+            return false;
+        }
 
         if (!player.isCreative()) {
             for (ItemStack cost : plan.consumedStacks()) {
-                if (!consumeForPaste(level, player, toolStack, cost, 1)) {
+                if (!consumeForPaste(level, player, toolStack, cost, cost.getCount())) {
                     return false;
                 }
             }
         }
 
         return true;
-    }
-
-    protected CableBusPlacementPlan buildCableBusPlacementPlan(
-            ServerLevel level,
-            Player player,
-            ItemStack toolStack,
-            CompoundTag rawBeTag
-    ) {
-        CompoundTag filtered = createMinimalAeCableBusBaseTag(rawBeTag);
-        List<ItemStack> toConsume = new ArrayList<>();
-        Map<Item, Integer> reserved = new HashMap<>();
-        boolean keptAnything = false;
-
-        for (String key : StructureToolKeys.AE2_CABLE_BUS_KEYS) {
-            if (!rawBeTag.contains(key, Tag.TAG_COMPOUND)) {
-                continue;
-            }
-
-            CompoundTag rawSection = rawBeTag.getCompound(key);
-            CompoundTag minimalSection = createMinimalAePartTag(rawSection);
-            if (minimalSection.isEmpty()) {
-                continue;
-            }
-
-            ItemStack representative = NbtUtil.tryReadSavedItemStack(minimalSection);
-            boolean keepSection = player.isCreative()
-                    || (!representative.isEmpty()
-                    && canReserveForPaste(level, player, toolStack, reserved, representative, 1));
-
-            if (keepSection) {
-                filtered.put(key, minimalSection);
-                keptAnything = true;
-
-                if (!player.isCreative() && !representative.isEmpty()) {
-                    ItemStack normalized = representative.copy();
-                    normalized.setCount(1);
-                    normalized.setTag(null);
-                    toConsume.add(normalized);
-                }
-            }
-        }
-
-        return keptAnything
-                ? new CableBusPlacementPlan(true, filtered, toConsume)
-                : new CableBusPlacementPlan(false, filtered, List.of());
     }
 
     protected boolean placeBlockAndLoadTag(
@@ -355,20 +371,6 @@ public class PortableSpatialCloner extends AbstractStructureCaptureToolItem {
 
     protected boolean hasCollision(BlockState existing, BlockState target) {
         return !(existing.isAir() || existing.canBeReplaced() || existing.equals(target));
-    }
-
-    protected boolean isAe2CableBusTag(@Nullable CompoundTag rawBeTag) {
-        if (rawBeTag == null) {
-            return false;
-        }
-
-        for (String key : StructureToolKeys.AE2_CABLE_BUS_KEYS) {
-            if (rawBeTag.contains(key)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     protected ItemStack getRequiredBlockItem(BlockState state) {
@@ -618,119 +620,87 @@ public class PortableSpatialCloner extends AbstractStructureCaptureToolItem {
         return out;
     }
 
-    protected CompoundTag createMinimalAeCableBusBaseTag(@Nullable CompoundTag rawBeTag) {
-        if (rawBeTag == null) {
-            return new CompoundTag();
-        }
-
-        CompoundTag out = new CompoundTag();
-        NbtUtil.copyStringIfPresent(rawBeTag, out, "id");
-        return out;
+    private ClonerPasteContext createPasteContext(ServerLevel level, Player player, ItemStack toolStack) {
+        return new PasteContext(level, player, toolStack);
     }
 
-    protected CompoundTag createMinimalAePartTag(@Nullable CompoundTag rawPartTag) {
-        if (rawPartTag == null) {
-            return new CompoundTag();
+    private final class PasteContext implements ClonerPasteContext {
+        private final ServerLevel level;
+        private final Player player;
+        private final ItemStack toolStack;
+
+        private PasteContext(ServerLevel level, Player player, ItemStack toolStack) {
+            this.level = level;
+            this.player = player;
+            this.toolStack = toolStack;
         }
 
-        CompoundTag out = new CompoundTag();
-        NbtUtil.copyStringIfPresent(rawPartTag, out, "id");
-        NbtUtil.copyByteIfPresent(rawPartTag, out, "output");
-        return out;
+        @Override
+        public long countAvailableForPaste(ItemStack wanted) {
+            return PortableSpatialCloner.this.countAvailableForPaste(level, player, toolStack, wanted);
+        }
+
+        @Override
+        public boolean canReserveForPaste(
+                Map<Item, Integer> reserved,
+                ItemStack wanted,
+                int amount
+        ) {
+            return PortableSpatialCloner.this.canReserveForPaste(
+                    level,
+                    player,
+                    toolStack,
+                    reserved,
+                    wanted,
+                    amount
+            );
+        }
+
+        @Override
+        public boolean consumeForPaste(ItemStack wanted, int amount) {
+            return PortableSpatialCloner.this.consumeForPaste(
+                    level,
+                    player,
+                    toolStack,
+                    wanted,
+                    amount
+            );
+        }
+
+        @Override
+        public boolean placeBlockAndLoadTag(
+                BlockPos pos,
+                BlockState state,
+                @Nullable CompoundTag rawBeTag
+        ) {
+            return PortableSpatialCloner.this.placeBlockAndLoadTag(
+                    level,
+                    pos,
+                    state,
+                    rawBeTag
+            );
+        }
+
+        @Override
+        public boolean hasCollision(BlockState existing, BlockState target) {
+            return PortableSpatialCloner.this.hasCollision(existing, target);
+        }
+
+        @Override
+        public ItemStack getRequiredBlockItem(BlockState state) {
+            return PortableSpatialCloner.this.getRequiredBlockItem(state);
+        }
     }
 
-    protected void applyAe2BlockMetadataAfterPlacement(
-            ServerLevel level,
-            BlockPos worldPos,
-            @Nullable CompoundTag blockMetadata
-    ) {
-        if (blockMetadata == null) {
-            return;
+    @Override
+    public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag advancedTooltips) {
+        super.appendHoverText(stack, level, tooltip, advancedTooltips);
+
+        if (!CrazyConfig.COMMON.PORTABLE_SPATIAL_CLONER_ENABLED.get()) {
+            tooltip.add(Component.translatable(LangDefs.FEATURE_DISABLED.getTranslationKey())
+                    .withStyle(ChatFormatting.RED));
+            tooltip.add(Component.translatable(LangDefs.FEATURE_DISABLED_CONFIG.getTranslationKey())
+                    .withStyle(ChatFormatting.GRAY));
         }
-
-        BlockEntity be = level.getBlockEntity(worldPos);
-        if (be == null) {
-            return;
-        }
-
-        if (be instanceof AEBaseBlockEntity abbe && blockMetadata.contains(StructureToolKeys.CLONE_KEY_SETTINGS, Tag.TAG_COMPOUND)) {
-            try {
-                abbe.importSettings(SettingsFrom.MEMORY_CARD, blockMetadata.getCompound(StructureToolKeys.CLONE_KEY_SETTINGS), null);
-            } catch (Throwable ignored) {
-            }
-        }
-
-        if (be instanceof IUpgradeableObject upgradable && blockMetadata.contains(StructureToolKeys.CLONE_KEY_UPGRADES)) {
-            try {
-                upgradable.getUpgrades().readFromNBT(blockMetadata, StructureToolKeys.CLONE_KEY_UPGRADES);
-            } catch (Throwable ignored) {
-            }
-        }
-
-        be.setChanged();
-        BlockState state = level.getBlockState(worldPos);
-        level.sendBlockUpdated(worldPos, state, state, 3);
-    }
-
-    protected void applyAe2CableBusMetadataAfterPlacement(
-            ServerLevel level,
-            BlockPos worldPos,
-            @Nullable CompoundTag blockMetadata
-    ) {
-        if (blockMetadata == null) {
-            return;
-        }
-
-        BlockEntity be = level.getBlockEntity(worldPos);
-        if (!(be instanceof CableBusBlockEntity cbbe)) {
-            return;
-        }
-
-        if (!blockMetadata.contains(StructureToolKeys.CLONE_KEY_PARTS, Tag.TAG_COMPOUND)) {
-            cbbe.setChanged();
-            BlockState state = level.getBlockState(worldPos);
-            level.sendBlockUpdated(worldPos, state, state, 3);
-            return;
-        }
-
-        CompoundTag partsTag = blockMetadata.getCompound(StructureToolKeys.CLONE_KEY_PARTS);
-
-        for (Direction dir : Direction.values()) {
-            String key = TemplateUtil.directionKey(dir);
-            if (!partsTag.contains(key, Tag.TAG_COMPOUND)) {
-                continue;
-            }
-
-            CompoundTag partEntry = partsTag.getCompound(key);
-            var part = cbbe.getPart(dir);
-            if (part == null) {
-                continue;
-            }
-
-            if (partEntry.contains(StructureToolKeys.CLONE_KEY_SETTINGS, Tag.TAG_COMPOUND)) {
-                try {
-                    part.importSettings(SettingsFrom.MEMORY_CARD, partEntry.getCompound(StructureToolKeys.CLONE_KEY_SETTINGS), null);
-                } catch (Throwable ignored) {
-                }
-            }
-
-            if (part instanceof IUpgradeableObject partUpgradable && partEntry.contains(StructureToolKeys.CLONE_KEY_UPGRADES)) {
-                try {
-                    partUpgradable.getUpgrades().readFromNBT(partEntry, StructureToolKeys.CLONE_KEY_UPGRADES);
-                } catch (Throwable ignored) {
-                }
-            }
-        }
-
-        cbbe.setChanged();
-        BlockState state = level.getBlockState(worldPos);
-        level.sendBlockUpdated(worldPos, state, state, 3);
-    }
-
-    protected record CableBusPlacementPlan(
-            boolean shouldPlace,
-            CompoundTag filteredTag,
-            List<ItemStack> consumedStacks
-    ) {
     }
 }

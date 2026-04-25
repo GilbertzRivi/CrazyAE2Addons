@@ -6,6 +6,7 @@ import appeng.api.stacks.AEKey;
 import appeng.me.cluster.implementations.CraftingCPUCluster;
 import appeng.me.service.CraftingService;
 import com.google.common.collect.ImmutableSet;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.logic.cpupriority.CpuPriorityHelper;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -32,6 +33,10 @@ public abstract class MixinCraftingService {
             Actionable type,
             CallbackInfoReturnable<Long> cir
     ) {
+        if (!CrazyConfig.COMMON.CPU_PRIORITIES_ENABLED.get()) {
+            return;
+        }
+
         if (amount <= 0) {
             cir.setReturnValue(0L);
             return;
@@ -59,11 +64,18 @@ public abstract class MixinCraftingService {
             )
     )
     private Iterator<CraftingCPUCluster> crazyae2addons$sortedCpuIterator(Set<CraftingCPUCluster> self) {
+        if (!CrazyConfig.COMMON.CPU_PRIORITIES_ENABLED.get()) {
+            return self.iterator();
+        }
         return self.stream().sorted(CpuPriorityHelper.clusterComparator()).iterator();
     }
 
     @Inject(method = "getCpus", at = @At("HEAD"), cancellable = true)
     private void crazyae2addons$getCpusSortedByPriority(CallbackInfoReturnable<ImmutableSet<ICraftingCPU>> cir) {
+        if (!CrazyConfig.COMMON.CPU_PRIORITIES_ENABLED.get()) {
+            return;
+        }
+
         var builder = ImmutableSet.<ICraftingCPU>builder();
 
         this.craftingCPUClusters.stream()

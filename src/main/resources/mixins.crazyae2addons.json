@@ -20,6 +20,9 @@
     "accessors.P2PTunnelPartAccessor",
     "accessors.TextureStateShardAccessor",
     "accessors.WidgetContainerAccessor",
+    "analogemitter.MixinAbstractLevelEmitterAnalog",
+    "analogemitter.MixinStorageLevelEmitterAnalog",
+    "analogemitter.MixinStorageLevelEmitterMenuAnalog",
     "cancelallcrafting.MixinCraftingCPUMenu",
     "compat.MixinAdvancedAECraftingServiceCompat",
     "compat.MixinCraftingServiceCLCompat",
@@ -32,6 +35,7 @@
     "cpupriority.MixinCraftingStatusMenu"
   ],
   "client": [
+    "analogemitter.MixinStorageLevelEmitterScreenAnalog",
     "cancelallcrafting.MixinCraftingCPUScreen"
   ]
 }

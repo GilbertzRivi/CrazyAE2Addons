@@ -148,7 +148,7 @@ public class ManagedBuffer {
         return trimmed;
     }
 
-    public boolean request(GenericStack[] required) {
+    public boolean request(GenericStack[] required, boolean allowedToCraft) {
         if (flushPending) return false;
         if (!flushUnneeded(required)) return false;
 
@@ -158,9 +158,11 @@ public class ManagedBuffer {
             fireReady();
             return true;
         }
-
-        requestCrafting(missing);
-        return hasActiveCrafting();
+        if (allowedToCraft) {
+            requestCrafting(missing);
+            return hasActiveCrafting();
+        }
+        return false;
     }
 
     private boolean flushUnneeded(GenericStack[] required) {

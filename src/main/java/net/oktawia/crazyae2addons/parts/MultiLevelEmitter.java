@@ -122,11 +122,13 @@ public class MultiLevelEmitter extends AbstractLevelEmitterPart implements IConf
                 return;
             }
 
-            if (isUpgradedWith(AEItems.FUZZY_CARD) || !hasAnyConfiguredKey()) {
+            if (shouldWatchAllStorage()) {
                 long currentTick = TickHandler.instance().getCurrentTick();
                 if (currentTick != lastUpdateTick) {
                     lastUpdateTick = currentTick;
-                    IGrid grid = getGridNode().getGrid();
+
+                    var gridNode = getGridNode();
+                    IGrid grid = gridNode != null ? gridNode.getGrid() : null;
                     if (grid != null) {
                         updateReportingValues(grid);
                     }
@@ -243,15 +245,26 @@ public class MultiLevelEmitter extends AbstractLevelEmitterPart implements IConf
         }
 
         long clamped = Math.max(0L, value);
-        if (state.thresholds[slot] != clamped) {
-            state.thresholds[slot] = clamped;
-            onStateChanged();
+        if (state.thresholds[slot] == clamped) {
+            return;
+        }
 
-            if (isUpgradedWith(AEItems.FUZZY_CARD) || !hasAnyConfiguredKey()) {
-                getMainNode().ifPresent(this::updateReportingValues);
-            } else {
-                updateState();
-            }
+        boolean hadGlobalThreshold = hasAnyGlobalThresholdSlot();
+
+        state.thresholds[slot] = clamped;
+        markForSave();
+
+        boolean hasGlobalThreshold = hasAnyGlobalThresholdSlot();
+
+        if (hadGlobalThreshold != hasGlobalThreshold) {
+            configureWatchers();
+            return;
+        }
+
+        if (shouldWatchAllStorage()) {
+            getMainNode().ifPresent(this::updateReportingValues);
+        } else {
+            updateState();
         }
     }
 
@@ -281,7 +294,7 @@ public class MultiLevelEmitter extends AbstractLevelEmitterPart implements IConf
 
     private long pickLegacyDisplayValue() {
         for (int i = 0; i < FILTER_SLOTS; i++) {
-            if (getConfig().getKey(i) != null) {
+            if (getConfig().getKey(i) != null || isGlobalThresholdSlot(i)) {
                 return lastReportedValues[i];
             }
         }
@@ -300,7 +313,7 @@ public class MultiLevelEmitter extends AbstractLevelEmitterPart implements IConf
         if (state.logicAnd) {
             for (int i = 0; i < FILTER_SLOTS; i++) {
                 AEKey key = getConfig().getKey(i);
-                if (key == null) {
+                if (key == null && !isGlobalThresholdSlot(i)) {
                     continue;
                 }
 
@@ -315,7 +328,7 @@ public class MultiLevelEmitter extends AbstractLevelEmitterPart implements IConf
 
         for (int i = 0; i < FILTER_SLOTS; i++) {
             AEKey key = getConfig().getKey(i);
-            if (key == null) {
+            if (key == null && !isGlobalThresholdSlot(i)) {
                 continue;
             }
 
@@ -497,7 +510,7 @@ public class MultiLevelEmitter extends AbstractLevelEmitterPart implements IConf
             return;
         }
 
-        if (isUpgradedWith(AEItems.FUZZY_CARD) || !hasAnyConfiguredKey()) {
+        if (shouldWatchAllStorage()) {
             storageWatcher.setWatchAll(true);
             return;
         }
@@ -514,19 +527,29 @@ public class MultiLevelEmitter extends AbstractLevelEmitterPart implements IConf
         var stacks = grid.getStorageService().getCachedInventory();
         Arrays.fill(lastReportedValues, 0L);
 
-        if (!hasAnyConfiguredKey()) {
-            long limit = state.thresholds[0];
-            lastReportedValue = 0L;
+        boolean hasConfiguredKey = hasAnyConfiguredKey();
+        boolean hasGlobalThreshold = hasAnyGlobalThresholdSlot();
+
+        if (!hasConfiguredKey || hasGlobalThreshold) {
+            long total = 0L;
 
             for (var stack : stacks) {
-                lastReportedValue += stack.getLongValue();
-                if (lastReportedValue >= limit) {
-                    break;
+                total += stack.getLongValue();
+            }
+
+            lastReportedValue = total;
+
+            for (int i = 0; i < FILTER_SLOTS; i++) {
+                if (isGlobalThresholdSlot(i)) {
+                    lastReportedValues[i] = total;
                 }
             }
 
-            updateState();
-            return;
+            if (!hasConfiguredKey) {
+                lastReportedValue = pickLegacyDisplayValue();
+                updateState();
+                return;
+            }
         }
 
         boolean fuzzy = isUpgradedWith(AEItems.FUZZY_CARD);
@@ -545,12 +568,15 @@ public class MultiLevelEmitter extends AbstractLevelEmitterPart implements IConf
 
             long sum = 0L;
             long limit = state.thresholds[i];
+
             for (var stack : stacks.findFuzzy(key, fuzzyMode)) {
                 sum += stack.getLongValue();
-                if (sum >= limit) {
+
+                if (limit > 0L && sum >= limit) {
                     break;
                 }
             }
+
             lastReportedValues[i] = sum;
         }
 
@@ -758,5 +784,26 @@ public class MultiLevelEmitter extends AbstractLevelEmitterPart implements IConf
     private void onConfigChanged() {
         markForSave();
         configureWatchers();
+    }
+
+    private boolean isGlobalThresholdSlot(int slot) {
+        return isValidSlot(slot)
+                && getConfig().getKey(slot) == null
+                && state.thresholds[slot] > 0L;
+    }
+
+    private boolean hasAnyGlobalThresholdSlot() {
+        for (int i = 0; i < FILTER_SLOTS; i++) {
+            if (isGlobalThresholdSlot(i)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean shouldWatchAllStorage() {
+        return isUpgradedWith(AEItems.FUZZY_CARD)
+                || !hasAnyConfiguredKey()
+                || hasAnyGlobalThresholdSlot();
     }
 }

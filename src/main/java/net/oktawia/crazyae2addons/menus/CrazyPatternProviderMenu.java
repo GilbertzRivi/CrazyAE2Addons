@@ -1,5 +1,6 @@
 package net.oktawia.crazyae2addons.menus;
 
+import appeng.api.upgrades.IUpgradeInventory;
 import appeng.helpers.patternprovider.PatternProviderLogicHost;
 import appeng.menu.SlotSemantics;
 import appeng.menu.guisync.GuiSync;
@@ -28,7 +29,7 @@ public class CrazyPatternProviderMenu extends PatternProviderMenu {
         this.slotNum = host.getLogic().getPatternInv().size();
 
         if (!IsModLoaded.APP_FLUX) {
-            appeng.api.upgrades.IUpgradeInventory upgradeInv = null;
+            IUpgradeInventory upgradeInv = null;
             if (host.getBlockEntity() instanceof CrazyPatternProviderBE crazyBE) {
                 upgradeInv = crazyBE.getUpgrades();
             } else if (host instanceof CrazyPatternProviderPart crazyPart) {

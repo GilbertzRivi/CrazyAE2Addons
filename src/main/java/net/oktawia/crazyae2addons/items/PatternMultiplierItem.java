@@ -11,21 +11,28 @@ import appeng.helpers.patternprovider.PatternProviderLogicHost;
 import appeng.items.AEBaseItem;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuLocators;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.Container;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
+import net.oktawia.crazyae2addons.CrazyConfig;
+import net.oktawia.crazyae2addons.defs.LangDefs;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.logic.patternmultiplier.PatternMultiplierHost;
 import net.oktawia.crazyae2addons.logic.patternmultiplier.PatternMultiplierLogic;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
 
 public class PatternMultiplierItem extends AEBaseItem implements IMenuItem {
 
@@ -43,14 +50,15 @@ public class PatternMultiplierItem extends AEBaseItem implements IMenuItem {
             @NotNull Player player,
             @NotNull InteractionHand hand
     ) {
-        if (!level.isClientSide() && !player.isSecondaryUseActive()) {
-            MenuOpener.open(
-                    CrazyMenuRegistrar.PATTERN_MULTIPLIER_MENU.get(),
-                    player,
-                    MenuLocators.forHand(player, hand)
-            );
+        if (CrazyConfig.COMMON.PATTERN_MULTIPLIER_ENABLED.get()) {
+            if (!level.isClientSide() && !player.isSecondaryUseActive()) {
+                MenuOpener.open(
+                        CrazyMenuRegistrar.PATTERN_MULTIPLIER_MENU.get(),
+                        player,
+                        MenuLocators.forHand(player, hand)
+                );
+            }
         }
-
         return new InteractionResultHolder<>(
                 InteractionResult.sidedSuccess(level.isClientSide()),
                 player.getItemInHand(hand)
@@ -64,6 +72,9 @@ public class PatternMultiplierItem extends AEBaseItem implements IMenuItem {
 
     @Override
     public @NotNull InteractionResult useOn(UseOnContext context) {
+        if (!CrazyConfig.COMMON.PATTERN_MULTIPLIER_ENABLED.get()) {
+            return InteractionResult.PASS;
+        }
         if (!context.isSecondaryUseActive() || context.getLevel().isClientSide) {
             return InteractionResult.PASS;
         }
@@ -155,5 +166,17 @@ public class PatternMultiplierItem extends AEBaseItem implements IMenuItem {
         IPartHost host = PartHelper.getPartHost(context.getLevel(), context.getClickedPos());
         SelectedPart selected = host == null ? null : host.selectPartLocal(hit);
         return selected == null ? null : selected.part;
+    }
+
+    @Override
+    public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag advancedTooltips) {
+        super.appendHoverText(stack, level, tooltip, advancedTooltips);
+
+        if (!CrazyConfig.COMMON.PATTERN_MULTIPLIER_ENABLED.get()) {
+            tooltip.add(Component.translatable(LangDefs.FEATURE_DISABLED.getTranslationKey())
+                    .withStyle(ChatFormatting.RED));
+            tooltip.add(Component.translatable(LangDefs.FEATURE_DISABLED_CONFIG.getTranslationKey())
+                    .withStyle(ChatFormatting.GRAY));
+        }
     }
 }

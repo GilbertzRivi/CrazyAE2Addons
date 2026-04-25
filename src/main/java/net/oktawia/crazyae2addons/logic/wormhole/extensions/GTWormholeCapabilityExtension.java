@@ -1,4 +1,4 @@
-package net.oktawia.crazyae2addons.compat.gtceu;
+package net.oktawia.crazyae2addons.logic.wormhole.extensions;
 
 import appeng.api.config.PowerUnits;
 import com.gregtechceu.gtceu.api.capability.IEnergyContainer;

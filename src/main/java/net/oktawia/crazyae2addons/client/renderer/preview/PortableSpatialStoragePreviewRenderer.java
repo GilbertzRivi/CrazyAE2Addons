@@ -41,7 +41,9 @@ import org.joml.Matrix4f;
 
 import java.util.Arrays;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class PortableSpatialStoragePreviewRenderer {
 
@@ -145,6 +147,30 @@ public class PortableSpatialStoragePreviewRenderer {
             long seed,
             ModelData modelData
     ) {
+        CompoundTag rawBeTag = previewBlock.blockEntityTag();
+
+        for (BlockRenderExtension extension : BlockRenderExtensions.all()) {
+            if (!extension.canRender(state, rawBeTag)) {
+                continue;
+            }
+
+            Iterable<RenderType> renderTypes = extension.getPreviewRenderTypes(
+                    previewBlock,
+                    sideMap,
+                    dispatcher,
+                    localLevel,
+                    model,
+                    state,
+                    localPos,
+                    seed,
+                    modelData
+            );
+
+            if (renderTypes != null) {
+                return renderTypes;
+            }
+        }
+
         return model.getRenderTypes(state, RandomSource.create(seed), modelData);
     }
 
@@ -163,6 +189,32 @@ public class PortableSpatialStoragePreviewRenderer {
             long seed,
             ModelData modelData
     ) {
+        CompoundTag rawBeTag = previewBlock.blockEntityTag();
+
+        for (BlockRenderExtension extension : BlockRenderExtensions.all()) {
+            if (!extension.canRender(state, rawBeTag)) {
+                continue;
+            }
+
+            if (extension.renderForPreview(
+                    previewBlock,
+                    sideMap,
+                    dispatcher,
+                    modelRenderer,
+                    localLevel,
+                    model,
+                    state,
+                    localPos,
+                    poseStack,
+                    bufferBuilder,
+                    renderType,
+                    seed,
+                    modelData
+            )) {
+                return;
+            }
+        }
+
         modelRenderer.tesselateBlock(
                 localLevel,
                 model,

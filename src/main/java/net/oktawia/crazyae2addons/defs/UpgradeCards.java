@@ -2,6 +2,7 @@ package net.oktawia.crazyae2addons.defs;
 
 import appeng.api.upgrades.Upgrades;
 import appeng.core.definitions.AEItems;
+import appeng.core.definitions.AEParts;
 import com.glodblock.github.appflux.common.AFItemAndBlock;
 import de.mari_023.ae2wtlib.AE2wtlib;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -23,6 +24,8 @@ public class UpgradeCards {
             Upgrades.add(AEItems.ENERGY_CARD, CrazyItemRegistrar.PORTABLE_SPATIAL_STORAGE.get(), 4);
             Upgrades.add(AEItems.ENERGY_CARD, CrazyItemRegistrar.PORTABLE_SPATIAL_CLONER.get(), 4);
             Upgrades.add(AEItems.CRAFTING_CARD, CrazyItemRegistrar.PORTABLE_SPATIAL_CLONER.get(), 1);
+            Upgrades.add(CrazyItemRegistrar.ANALOG_CARD.get(), AEParts.LEVEL_EMITTER, 1);
+            Upgrades.add(CrazyItemRegistrar.ANALOG_CARD.get(), CrazyItemRegistrar.TAG_LEVEL_EMITTER.get(), 1);
             if (IsModLoaded.APP_FLUX){
                 Upgrades.add(AFItemAndBlock.INDUCTION_CARD, CrazyBlockRegistrar.CRAZY_PATTERN_PROVIDER_BLOCK.get(), 1);
                 Upgrades.add(AFItemAndBlock.INDUCTION_CARD, CrazyItemRegistrar.CRAZY_PATTERN_PROVIDER_PART.get(), 1);

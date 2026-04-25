@@ -5,6 +5,7 @@ import appeng.api.networking.IGrid;
 import appeng.api.stacks.AEKey;
 import appeng.me.cluster.implementations.CraftingCPUCluster;
 import appeng.me.service.CraftingService;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.logic.cpupriority.CpuPriorityHelper;
 import net.pedroksl.advanced_ae.common.cluster.AdvCraftingCPU;
 import net.pedroksl.advanced_ae.common.cluster.AdvCraftingCPUCluster;
@@ -40,9 +41,9 @@ public abstract class MixinAdvancedAECraftingServiceCompat {
     public long insertIntoCpus(AEKey what, long amount, Actionable type) {
         long inserted = 0L;
 
-        var sortedVanilla = this.craftingCPUClusters.stream()
-                .sorted(CpuPriorityHelper.clusterComparator())
-                .toList();
+        var sortedVanilla = CrazyConfig.COMMON.CPU_PRIORITIES_ENABLED.get()
+                ? this.craftingCPUClusters.stream().sorted(CpuPriorityHelper.clusterComparator()).toList()
+                : this.craftingCPUClusters.stream().toList();
 
         for (var cpu : sortedVanilla) {
             if (inserted >= amount) {
@@ -53,10 +54,10 @@ public abstract class MixinAdvancedAECraftingServiceCompat {
         }
 
         Set<AdvCraftingCPUCluster> seen = new HashSet<>();
-        Comparator<AdvCraftingCPU> advCpuComparator = Comparator
-                .comparingInt((AdvCraftingCPU cpu) -> CpuPriorityHelper.getCpuPriority(cpu))
-                .reversed()
-                .thenComparingInt(System::identityHashCode);
+        Comparator<AdvCraftingCPU> advCpuComparator = CrazyConfig.COMMON.CPU_PRIORITIES_ENABLED.get()
+                ? Comparator.comparingInt((AdvCraftingCPU cpu) -> CpuPriorityHelper.getCpuPriority(cpu))
+                        .reversed().thenComparingInt(System::identityHashCode)
+                : Comparator.comparingInt(System::identityHashCode);
 
         for (AdvCraftingBlockEntity be : this.grid.getMachines(AdvCraftingBlockEntity.class)) {
             AdvCraftingCPUCluster cluster = be.getCluster();
@@ -88,9 +89,10 @@ public abstract class MixinAdvancedAECraftingServiceCompat {
             )
     )
     private Iterator<CraftingCPUCluster> crazyae2addons$sortedIteratorOnTick(Set<CraftingCPUCluster> self) {
-        return self.stream()
-                .sorted(CpuPriorityHelper.clusterComparator())
-                .iterator();
+        if (!CrazyConfig.COMMON.CPU_PRIORITIES_ENABLED.get()) {
+            return self.iterator();
+        }
+        return self.stream().sorted(CpuPriorityHelper.clusterComparator()).iterator();
     }
 
     @Redirect(
@@ -101,8 +103,9 @@ public abstract class MixinAdvancedAECraftingServiceCompat {
             )
     )
     private Iterator<CraftingCPUCluster> crazyae2addons$sortedIteratorGetCpus(Set<CraftingCPUCluster> self) {
-        return self.stream()
-                .sorted(CpuPriorityHelper.clusterComparator())
-                .iterator();
+        if (!CrazyConfig.COMMON.CPU_PRIORITIES_ENABLED.get()) {
+            return self.iterator();
+        }
+        return self.stream().sorted(CpuPriorityHelper.clusterComparator()).iterator();
     }
 }

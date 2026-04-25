@@ -7,21 +7,17 @@ import appeng.api.implementations.menuobjects.ItemMenuHost;
 import appeng.api.networking.IGrid;
 import appeng.api.upgrades.IUpgradeInventory;
 import appeng.api.upgrades.IUpgradeableObject;
-import appeng.api.upgrades.Upgrades;
 import appeng.api.upgrades.UpgradeInventories;
-import appeng.blockentity.AEBaseBlockEntity;
-import appeng.blockentity.networking.CableBusBlockEntity;
+import appeng.api.upgrades.Upgrades;
 import appeng.core.localization.Tooltips;
 import appeng.items.tools.powered.WirelessTerminalItem;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuLocators;
 import appeng.util.Platform;
-import appeng.util.SettingsFrom;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -39,6 +35,7 @@ import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -46,7 +43,6 @@ import net.minecraft.world.phys.Vec3;
 import net.oktawia.crazyae2addons.defs.LangDefs;
 import net.oktawia.crazyae2addons.network.NetworkHandler;
 import net.oktawia.crazyae2addons.network.packets.ShowHudMessagePacket;
-import net.oktawia.crazyae2addons.util.NbtUtil;
 import net.oktawia.crazyae2addons.util.StructureToolKeys;
 import net.oktawia.crazyae2addons.util.TemplateUtil;
 import org.jetbrains.annotations.Nullable;
@@ -56,6 +52,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.DoubleSupplier;
 
 public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalItem implements IMenuItem, IUpgradeableObject {
 
@@ -72,9 +69,17 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
 
     private final int upgradeSlots;
 
-    protected AbstractStructureCaptureToolItem(int basePower, int upgradeSlots, Item.Properties properties) {
-        super(() -> basePower, properties.stacksTo(1));
+    protected AbstractStructureCaptureToolItem(
+            DoubleSupplier basePowerSupplier,
+            int upgradeSlots,
+            Item.Properties properties
+    ) {
+        super(basePowerSupplier, properties.stacksTo(1));
         this.upgradeSlots = upgradeSlots;
+    }
+
+    protected AbstractStructureCaptureToolItem(int basePower, int upgradeSlots, Item.Properties properties) {
+        this(() -> basePower, upgradeSlots, properties);
     }
 
     @FunctionalInterface
@@ -90,18 +95,20 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
 
     protected abstract Component getStoredStructureActionNotImplementedMessage();
 
+    protected boolean isToolEnabled() {
+        return true;
+    }
+
+    protected int getMaxStructureSize() {
+        return -1;
+    }
+
     protected double getPowerPerBlockCapture() {
         return 1.0D;
     }
 
-    protected boolean collectAdditionalBlockMetadata(
-            @Nullable CompoundTag rawBeTag,
-            BlockEntity be,
-            Player player,
-            RequirementSink requirements,
-            CompoundTag blockEntry
-    ) {
-        return false;
+    protected double getPowerPerBlockPaste() {
+        return POWER_PER_BLOCK_PASTE;
     }
 
     @Override
@@ -200,9 +207,35 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
         );
     }
 
+    protected boolean checkStructureSizeLimit(Player player, CompoundTag templateTag) {
+        int maxSize = getMaxStructureSize();
+        if (maxSize < 0) {
+            return true;
+        }
+
+        int blockCount = TemplateUtil.parseRawBlocksFromTag(templateTag).size();
+        if (blockCount <= maxSize) {
+            return true;
+        }
+
+        showHud(
+                player,
+                HUD_TIME_MEDIUM,
+                red(Component.translatable(LangDefs.STRUCTURE_TOO_LARGE.getTranslationKey())),
+                cyan(Component.translatable(LangDefs.STRUCTURE_SIZE.getTranslationKey(), blockCount)),
+                cyan(Component.translatable(LangDefs.STRUCTURE_SIZE_LIMIT.getTranslationKey(), maxSize))
+        );
+
+        return false;
+    }
+
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
+
+        if (!isToolEnabled()) {
+            return InteractionResultHolder.success(stack);
+        }
 
         if (!level.isClientSide()) {
             boolean hasStructure = StructureToolStackState.hasStructure(stack);
@@ -231,6 +264,11 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
     @Override
     public InteractionResult useOn(UseOnContext context) {
         Level level = context.getLevel();
+
+        if (!isToolEnabled()) {
+            return InteractionResult.sidedSuccess(level.isClientSide());
+        }
+
         Player player = context.getPlayer();
         if (player == null) {
             return InteractionResult.PASS;
@@ -352,6 +390,10 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
         CompoundTag savedTag = TemplateUtil.stripAirFromTag(template.save(new CompoundTag()));
         TemplateUtil.setTemplateOffset(savedTag, BlockPos.ZERO);
 
+        if (!checkStructureSizeLimit(player, savedTag)) {
+            return;
+        }
+
         CompoundTag metadata = getMetadata(level, player, min, max, savedTag);
         if (!metadata.isEmpty()) {
             savedTag.put(StructureToolKeys.CLONE_METADATA_KEY, metadata);
@@ -420,12 +462,20 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
                 for (int x = min.getX(); x <= max.getX(); x++) {
                     BlockPos worldPos = new BlockPos(x, y, z);
                     BlockPos localPos = worldPos.subtract(min);
+
+                    BlockState state = level.getBlockState(worldPos);
                     BlockEntity be = level.getBlockEntity(worldPos);
                     CompoundTag rawBeTag = rawBeTags.get(localPos);
 
-                    if (be instanceof CableBusBlockEntity) {
-                        collectCableBusRequirements(rawBeTag, requirements);
-                    } else {
+                    boolean requirementsHandled = false;
+                    for (StructureCloneExtension extension : StructureToolExtensions.clonerExtensions()) {
+                        if (extension.handlesRequirements(state, rawBeTag)) {
+                            requirementsHandled = true;
+                            break;
+                        }
+                    }
+
+                    if (!requirementsHandled) {
                         addBaseBlockRequirement(level, worldPos, requirements);
                     }
 
@@ -438,83 +488,17 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
 
                     boolean hasAnyData = false;
 
-                    if (be instanceof AEBaseBlockEntity abbe) {
-                        CompoundTag settings = new CompoundTag();
-                        try {
-                            abbe.exportSettings(SettingsFrom.MEMORY_CARD, settings, null);
-                        } catch (Throwable ignored) {
-                        }
-
-                        if (!settings.isEmpty()) {
-                            blockEntry.put(StructureToolKeys.CLONE_KEY_SETTINGS, settings);
+                    for (StructureCloneExtension extension : StructureToolExtensions.clonerExtensions()) {
+                        if (extension.collectMetadata(
+                                level,
+                                worldPos,
+                                be,
+                                rawBeTag,
+                                requirements::add,
+                                blockEntry
+                        )) {
                             hasAnyData = true;
                         }
-                    }
-
-                    if (be instanceof IUpgradeableObject uo) {
-                        IUpgradeInventory upgrades = uo.getUpgrades();
-                        if (!upgrades.isEmpty()) {
-                            for (ItemStack upgrade : upgrades) {
-                                if (!upgrade.isEmpty()) {
-                                    requirements.addDefault(upgrade);
-                                }
-                            }
-
-                            upgrades.writeToNBT(blockEntry, StructureToolKeys.CLONE_KEY_UPGRADES);
-                            hasAnyData = true;
-                        }
-                    }
-
-                    if (be instanceof CableBusBlockEntity cbbe) {
-                        CompoundTag partsTag = new CompoundTag();
-
-                        for (Direction dir : Direction.values()) {
-                            var part = cbbe.getPart(dir);
-                            if (part == null) {
-                                continue;
-                            }
-
-                            CompoundTag partEntry = new CompoundTag();
-                            boolean hasPartData = false;
-
-                            CompoundTag partSettings = new CompoundTag();
-                            try {
-                                part.exportSettings(SettingsFrom.MEMORY_CARD, partSettings);
-                            } catch (Throwable ignored) {
-                            }
-
-                            if (!partSettings.isEmpty()) {
-                                partEntry.put(StructureToolKeys.CLONE_KEY_SETTINGS, partSettings);
-                                hasPartData = true;
-                            }
-
-                            if (part instanceof IUpgradeableObject partUpgradable) {
-                                IUpgradeInventory upgrades = partUpgradable.getUpgrades();
-                                if (!upgrades.isEmpty()) {
-                                    for (ItemStack upgrade : upgrades) {
-                                        if (!upgrade.isEmpty()) {
-                                            requirements.addDefault(upgrade);
-                                        }
-                                    }
-
-                                    upgrades.writeToNBT(partEntry, StructureToolKeys.CLONE_KEY_UPGRADES);
-                                    hasPartData = true;
-                                }
-                            }
-
-                            if (hasPartData) {
-                                partsTag.put(TemplateUtil.directionKey(dir), partEntry);
-                            }
-                        }
-
-                        if (!partsTag.isEmpty()) {
-                            blockEntry.put(StructureToolKeys.CLONE_KEY_PARTS, partsTag);
-                            hasAnyData = true;
-                        }
-                    }
-
-                    if (collectAdditionalBlockMetadata(rawBeTag, be, player, requirements::add, blockEntry)) {
-                        hasAnyData = true;
                     }
 
                     if (hasAnyData) {
@@ -534,45 +518,6 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
         }
 
         return data;
-    }
-
-    private static void collectCableBusRequirements(@Nullable CompoundTag rawBeTag, RequirementAccumulator requirements) {
-        if (rawBeTag == null) {
-            return;
-        }
-
-        for (String key : StructureToolKeys.AE2_CABLE_BUS_KEYS) {
-            if (!rawBeTag.contains(key)) {
-                continue;
-            }
-
-            collectNestedSavedItemStacks(rawBeTag.get(key), requirements);
-        }
-    }
-
-    private static void collectNestedSavedItemStacks(@Nullable Tag tag, RequirementAccumulator requirements) {
-        if (tag == null) {
-            return;
-        }
-
-        if (tag instanceof CompoundTag compoundTag) {
-            ItemStack stack = NbtUtil.tryReadSavedItemStack(compoundTag);
-            if (!stack.isEmpty()) {
-                requirements.addDefault(stack);
-                return;
-            }
-
-            for (String key : compoundTag.getAllKeys()) {
-                collectNestedSavedItemStacks(compoundTag.get(key), requirements);
-            }
-            return;
-        }
-
-        if (tag instanceof ListTag listTag) {
-            for (int i = 0; i < listTag.size(); i++) {
-                collectNestedSavedItemStacks(listTag.get(i), requirements);
-            }
-        }
     }
 
     private static void addBaseBlockRequirement(ServerLevel level, BlockPos pos, RequirementAccumulator requirements) {

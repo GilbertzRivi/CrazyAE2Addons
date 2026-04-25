@@ -10,6 +10,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.defs.LangDefs;
 
 import java.util.List;
@@ -23,6 +24,10 @@ public class CrazyPatternProviderBlockItem extends AEBaseBlockItem {
     public void addCheckedInformation(ItemStack stack, Level level, List<Component> tooltip,
                                       TooltipFlag advancedTooltips) {
         super.addCheckedInformation(stack, level, tooltip, advancedTooltips);
+        if (!CrazyConfig.COMMON.CRAZY_PATTERN_PROVIDER_BLOCK_ENABLED.get()) {
+            tooltip.add(Component.translatable(LangDefs.FEATURE_DISABLED.getTranslationKey()).withStyle(ChatFormatting.RED));
+            tooltip.add(Component.translatable(LangDefs.FEATURE_DISABLED_CONFIG.getTranslationKey()).withStyle(ChatFormatting.GRAY));
+        }
 
         CompoundTag tag = stack.getTag();
 

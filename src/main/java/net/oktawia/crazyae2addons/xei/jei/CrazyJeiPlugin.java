@@ -99,6 +99,79 @@ public class CrazyJeiPlugin implements IModPlugin {
                     List.of(new ItemStack(CrazyItemRegistrar.WORMHOLE.get()))
             );
         }
+        if (!CrazyConfig.COMMON.CPU_PRIORITIES_ENABLED.get()) {
+            registration.getIngredientManager().removeIngredientsAtRuntime(
+                    VanillaTypes.ITEM_STACK,
+                    List.of(new ItemStack(CrazyItemRegistrar.CPU_PRIO_TUNER.get()))
+            );
+        }
+        if (!CrazyConfig.COMMON.RR_ITEM_P2P_ENABLED.get()) {
+            registration.getIngredientManager().removeIngredientsAtRuntime(
+                    VanillaTypes.ITEM_STACK,
+                    List.of(new ItemStack(CrazyItemRegistrar.RR_ITEM_P2P.get()))
+            );
+        }
+        if (!CrazyConfig.COMMON.RR_FLUID_P2P_ENABLED.get()) {
+            registration.getIngredientManager().removeIngredientsAtRuntime(
+                    VanillaTypes.ITEM_STACK,
+                    List.of(new ItemStack(CrazyItemRegistrar.RR_FLUID_P2P.get()))
+            );
+        }
+        if (!CrazyConfig.COMMON.CPU_PRIORITIES_ENABLED.get()) {
+            registration.getIngredientManager().removeIngredientsAtRuntime(
+                    VanillaTypes.ITEM_STACK,
+                    List.of(new ItemStack(CrazyItemRegistrar.CPU_PRIO_TUNER.get()))
+            );
+        }
+        if (!CrazyConfig.COMMON.TAG_VIEW_CELL_ENABLED.get()) {
+            registration.getIngredientManager().removeIngredientsAtRuntime(
+                    VanillaTypes.ITEM_STACK,
+                    List.of(new ItemStack(CrazyItemRegistrar.TAG_VIEW_CELL.get()))
+            );
+        }
+        if (!CrazyConfig.COMMON.PATTERN_MULTIPLIER_ENABLED.get()) {
+            registration.getIngredientManager().removeIngredientsAtRuntime(
+                    VanillaTypes.ITEM_STACK,
+                    List.of(new ItemStack(CrazyItemRegistrar.PATTERN_MULTIPLIER.get()))
+            );
+        }
+        if (!CrazyConfig.COMMON.CRAZY_PATTERN_PROVIDER_PART_ENABLED.get()) {
+            registration.getIngredientManager().removeIngredientsAtRuntime(
+                    VanillaTypes.ITEM_STACK,
+                    List.of(new ItemStack(CrazyItemRegistrar.CRAZY_PATTERN_PROVIDER_PART.get()))
+            );
+        }
+        if (!CrazyConfig.COMMON.CRAZY_PATTERN_PROVIDER_BLOCK_ENABLED.get()) {
+            registration.getIngredientManager().removeIngredientsAtRuntime(
+                    VanillaTypes.ITEM_STACK,
+                    List.of(new ItemStack(CrazyBlockRegistrar.CRAZY_PATTERN_PROVIDER_BLOCK.get()))
+            );
+        }
+        if (!CrazyConfig.COMMON.CRAZY_PATTERN_PROVIDER_BLOCK_ENABLED.get()
+                && !CrazyConfig.COMMON.CRAZY_PATTERN_PROVIDER_PART_ENABLED.get()) {
+            registration.getIngredientManager().removeIngredientsAtRuntime(
+                    VanillaTypes.ITEM_STACK,
+                    List.of(new ItemStack(CrazyItemRegistrar.CRAZY_UPGRADE.get()))
+            );
+        }
+        if (!CrazyConfig.COMMON.EJECTOR_ENABLED.get()) {
+            registration.getIngredientManager().removeIngredientsAtRuntime(
+                    VanillaTypes.ITEM_STACK,
+                    List.of(new ItemStack(CrazyBlockRegistrar.EJECTOR_BLOCK.get()))
+            );
+        }
+        if (!CrazyConfig.COMMON.PORTABLE_SPATIAL_STORAGE_ENABLED.get()) {
+            registration.getIngredientManager().removeIngredientsAtRuntime(
+                    VanillaTypes.ITEM_STACK,
+                    List.of(new ItemStack(CrazyItemRegistrar.PORTABLE_SPATIAL_STORAGE.get()))
+            );
+        }
+        if (!CrazyConfig.COMMON.PORTABLE_SPATIAL_CLONER_ENABLED.get()) {
+            registration.getIngredientManager().removeIngredientsAtRuntime(
+                    VanillaTypes.ITEM_STACK,
+                    List.of(new ItemStack(CrazyItemRegistrar.PORTABLE_SPATIAL_CLONER.get()))
+            );
+        }
     }
 
     @Override

@@ -1,13 +1,16 @@
 package net.oktawia.crazyae2addons.mixins;
 
+import com.mojang.logging.LogUtils;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.loading.LoadingModList;
 import net.minecraftforge.fml.loading.moddiscovery.ModInfo;
+import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.IsModLoaded;
 import net.oktawia.crazyae2addons.util.Ae2clOpenCraftingMenu;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
+import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
@@ -17,6 +20,7 @@ import java.util.Set;
 
 public class Plugin implements IMixinConfigPlugin {
 
+    public static final Logger LOGGER = LogUtils.getLogger();
     private boolean hasTrySubmitJobBoolean;
     private boolean advancedAeLoaded;
 
@@ -77,18 +81,20 @@ public class Plugin implements IMixinConfigPlugin {
 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
-        return switch (mixinClassName) {
+        boolean doload = true;
+        switch (mixinClassName) {
             case "net.oktawia.crazyae2addons.mixins.cpupriority.MixinCraftingService" ->
-                    !advancedAeLoaded;
-
+                    doload = !advancedAeLoaded;
             case "net.oktawia.crazyae2addons.mixins.compat.MixinAdvancedAECraftingServiceCompat" ->
-                    advancedAeLoaded;
-
-            case "net.oktawia.crazyae2addons.mixins.compat.MixinCraftingServiceCLCompat" ->
-                    hasTrySubmitJobBoolean;
-
-            default -> true;
+                    doload = advancedAeLoaded;
+            case "net.oktawia.crazyae2addons.mixins.compat.MixinCraftingServiceCLCompat",
+                 "net.oktawia.crazyae2addons.mixins.cancelallcrafting.MixinCraftingCPUScreenCL" ->
+                    doload = hasTrySubmitJobBoolean;
+            case "net.oktawia.crazyae2addons.mixins.cancelallcrafting.MixinCraftingCPUScreen" ->
+                    doload = !hasTrySubmitJobBoolean;
         };
+        LOGGER.info("{} load status: {}", mixinClassName, doload);
+        return doload;
     }
 
     @Override

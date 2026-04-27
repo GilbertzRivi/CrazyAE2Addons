@@ -33,6 +33,7 @@
   ],
   "client": [
     "analogemitter.MixinStorageLevelEmitterScreenAnalog",
-    "cancelallcrafting.MixinCraftingCPUScreen"
+    "cancelallcrafting.MixinCraftingCPUScreen",
+    "cancelallcrafting.MixinCraftingCPUScreenCL"
   ]
 }

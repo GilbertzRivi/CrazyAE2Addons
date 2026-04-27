@@ -1,21 +1,19 @@
 package net.oktawia.crazyae2addons.client.screens.item;
 
 import appeng.api.upgrades.Upgrades;
-import appeng.client.gui.Icon;
 import appeng.client.gui.style.ScreenStyle;
 import appeng.core.definitions.AEItems;
 import appeng.core.localization.GuiText;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraftforge.registries.ForgeRegistries;
+import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.client.misc.ClonerMaterialListWidget;
-import net.oktawia.crazyae2addons.client.misc.IconButton;
 import net.oktawia.crazyae2addons.client.misc.PortableSpatialClonerRequirementSync;
 import net.oktawia.crazyae2addons.client.misc.SearchableClonerStructureDropdownWidget;
 import net.oktawia.crazyae2addons.defs.LangDefs;
@@ -116,6 +114,11 @@ public class PortableSpatialClonerScreen<C extends PortableSpatialClonerMenu>
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (this.materialList.mouseClicked(mouseX, mouseY, button)) {
+            this.setFocused(this.materialList);
+            return true;
+        }
+
         if (this.structureSelector.mouseClicked(mouseX, mouseY, button)) {
             this.setFocused(this.structureSelector);
             return true;

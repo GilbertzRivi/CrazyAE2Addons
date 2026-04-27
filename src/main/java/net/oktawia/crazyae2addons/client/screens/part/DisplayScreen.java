@@ -320,7 +320,7 @@ public class DisplayScreen<C extends DisplayMenu> extends AEBaseScreen<C> {
             }
         }
 
-        return super.keyPressed(key, sc, mod);
+        return true;
     }
 
     @Override

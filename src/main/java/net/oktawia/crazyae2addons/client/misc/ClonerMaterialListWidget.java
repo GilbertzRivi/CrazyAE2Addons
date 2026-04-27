@@ -7,11 +7,11 @@ import lombok.Setter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
-import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
+import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.defs.LangDefs;
 
 import java.util.ArrayList;
@@ -61,9 +61,12 @@ public class ClonerMaterialListWidget extends AbstractWidget implements IResizab
 
     private List<MaterialEntry> entries = List.of();
     private final List<IconButton> craftButtons = new ArrayList<>();
+
     private int scrollOffset = 0;
+
     @Setter
     private boolean craftButtonsEnabled = false;
+
     private CraftRequestHandler craftRequestHandler = entry -> {};
 
     public ClonerMaterialListWidget(int x, int y, int width, int height) {
@@ -77,55 +80,56 @@ public class ClonerMaterialListWidget extends AbstractWidget implements IResizab
 
     public void setEntries(List<MaterialEntry> entries) {
         if (entries == null || entries.isEmpty()) {
-            this.entries = List.of();
+            if (!this.entries.isEmpty() || !this.craftButtons.isEmpty()) {
+                this.entries = List.of();
+                this.craftButtons.clear();
+            }
+
             this.scrollOffset = 0;
-            rebuildButtons();
             return;
         }
 
         ArrayList<MaterialEntry> sorted = new ArrayList<>(entries);
         sorted.sort(ENTRY_SORTER);
 
-        this.entries = List.copyOf(sorted);
+        List<MaterialEntry> newEntries = List.copyOf(sorted);
+
+        if (!sameEntries(this.entries, newEntries) || this.craftButtons.size() != newEntries.size()) {
+            this.entries = newEntries;
+            this.scrollOffset = Mth.clamp(this.scrollOffset, 0, getMaxScroll());
+            rebuildButtons();
+            return;
+        }
+
         this.scrollOffset = Mth.clamp(this.scrollOffset, 0, getMaxScroll());
-        rebuildButtons();
     }
 
     public MaterialEntry getHoveredEntry(double mouseX, double mouseY) {
-        if (!this.visible || !this.active || !this.isMouseOver(mouseX, mouseY) || entries.isEmpty()) {
+        int index = getEntryIndexAt(mouseX, mouseY);
+
+        if (index < 0 || isCraftButtonAt(index, mouseX, mouseY)) {
             return null;
         }
 
-        if (isHoveringCraftButton(mouseX, mouseY)) {
-            return null;
-        }
-
-        int contentLeft = getX() + PADDING;
-        int contentTop = getY() + PADDING;
-        int contentRight = getX() + width - PADDING - SCROLLBAR_WIDTH - 1;
-        int contentBottom = getY() + height - PADDING;
-
-        if (mouseX < contentLeft || mouseX >= contentRight || mouseY < contentTop || mouseY >= contentBottom) {
-            return null;
-        }
-
-        int localY = (int) mouseY - contentTop + scrollOffset;
-        int index = localY / ROW_HEIGHT;
-
-        if (index < 0 || index >= entries.size()) {
-            return null;
-        }
-
-        return entries.get(index);
+        return this.entries.get(index);
     }
 
     public boolean isHoveringCraftButton(double mouseX, double mouseY) {
-        for (IconButton craftButton : this.craftButtons) {
-            if (craftButton.visible && craftButton.active && craftButton.isMouseOver(mouseX, mouseY)) {
-                return true;
-            }
+        int index = getEntryIndexAt(mouseX, mouseY);
+
+        if (index < 0) {
+            return false;
         }
-        return false;
+
+        return isCraftButtonAt(index, mouseX, mouseY);
+    }
+
+    public Component getHoveredCraftButtonTooltip(double mouseX, double mouseY) {
+        if (!isHoveringCraftButton(mouseX, mouseY)) {
+            return null;
+        }
+
+        return Component.translatable(LangDefs.CRAFT_REQUEST_MISSING.getTranslationKey());
     }
 
     @Override
@@ -143,54 +147,39 @@ public class ClonerMaterialListWidget extends AbstractWidget implements IResizab
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
-        if (!this.visible || !this.active || !this.isMouseOver(mouseX, mouseY)) {
+        if (!this.visible || !this.isMouseOver(mouseX, mouseY)) {
             return false;
         }
 
-        int step = ROW_HEIGHT;
         this.scrollOffset = Mth.clamp(
-                this.scrollOffset - (int) Math.signum(delta) * step,
+                this.scrollOffset - (int) Math.signum(delta) * ROW_HEIGHT,
                 0,
                 getMaxScroll()
         );
+
         return true;
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (!this.visible || !this.active) {
+        if (!this.visible || button != 0) {
             return false;
         }
 
-        for (IconButton craftButton : this.craftButtons) {
-            if (craftButton.visible && craftButton.active && craftButton.mouseClicked(mouseX, mouseY, button)) {
-                return true;
-            }
+        int index = getEntryIndexAt(mouseX, mouseY);
+
+        if (index < 0 || !isCraftButtonAt(index, mouseX, mouseY)) {
+            return false;
         }
 
-        return super.mouseClicked(mouseX, mouseY, button);
-    }
+        MaterialEntry entry = this.entries.get(index);
 
-    @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
-        for (IconButton craftButton : this.craftButtons) {
-            if (craftButton.visible && craftButton.mouseReleased(mouseX, mouseY, button)) {
-                return true;
-            }
+        if (!this.craftButtonsEnabled || !entry.canRequestCraft()) {
+            return false;
         }
 
-        return super.mouseReleased(mouseX, mouseY, button);
-    }
-
-    @Override
-    public void mouseMoved(double mouseX, double mouseY) {
-        for (IconButton craftButton : this.craftButtons) {
-            if (craftButton.visible) {
-                craftButton.mouseMoved(mouseX, mouseY);
-            }
-        }
-
-        super.mouseMoved(mouseX, mouseY);
+        this.craftRequestHandler.requestCraft(entry);
+        return true;
     }
 
     @Override
@@ -212,7 +201,7 @@ public class ClonerMaterialListWidget extends AbstractWidget implements IResizab
 
         hideAllButtons();
 
-        if (entries.isEmpty()) {
+        if (this.entries.isEmpty()) {
             return;
         }
 
@@ -225,23 +214,25 @@ public class ClonerMaterialListWidget extends AbstractWidget implements IResizab
 
         int startIndex = scrollOffset / ROW_HEIGHT;
         int startOffsetY = -(scrollOffset % ROW_HEIGHT);
-        int visibleRows = (height / ROW_HEIGHT) + 2;
+        int visibleRows = ((contentBottom - contentTop) / ROW_HEIGHT) + 2;
+
         MaterialEntry hoveredEntry = getHoveredEntry(mouseX, mouseY);
 
         for (int i = 0; i < visibleRows; i++) {
             int index = startIndex + i;
-            if (index >= entries.size()) {
+
+            if (index >= this.entries.size() || index >= this.craftButtons.size()) {
                 break;
             }
 
             int rowTop = contentTop + startOffsetY + i * ROW_HEIGHT;
             int rowBottom = rowTop + ROW_HEIGHT - 1;
 
-            if (rowBottom < contentTop || rowTop > contentBottom) {
+            if (rowBottom < contentTop || rowTop >= contentBottom) {
                 continue;
             }
 
-            MaterialEntry entry = entries.get(index);
+            MaterialEntry entry = this.entries.get(index);
             boolean hovered = hoveredEntry == entry;
 
             int rowColor = hovered
@@ -290,6 +281,53 @@ public class ClonerMaterialListWidget extends AbstractWidget implements IResizab
         renderScrollbar(guiGraphics, left, top, right, bottom);
     }
 
+    private int getEntryIndexAt(double mouseX, double mouseY) {
+        if (!this.visible || this.entries.isEmpty()) {
+            return -1;
+        }
+
+        int contentLeft = getX() + PADDING;
+        int contentTop = getY() + PADDING;
+        int contentRight = getX() + width - PADDING - SCROLLBAR_WIDTH - 1;
+        int contentBottom = getY() + height - PADDING;
+
+        if (mouseX < contentLeft || mouseX >= contentRight || mouseY < contentTop || mouseY >= contentBottom) {
+            return -1;
+        }
+
+        int localY = (int) mouseY - contentTop + scrollOffset;
+        int index = localY / ROW_HEIGHT;
+
+        if (index < 0 || index >= this.entries.size()) {
+            return -1;
+        }
+
+        return index;
+    }
+
+    private boolean isCraftButtonAt(int index, double mouseX, double mouseY) {
+        if (!this.craftButtonsEnabled || index < 0 || index >= this.entries.size()) {
+            return false;
+        }
+
+        MaterialEntry entry = this.entries.get(index);
+
+        if (!entry.canRequestCraft()) {
+            return false;
+        }
+
+        int contentRight = getX() + width - PADDING - SCROLLBAR_WIDTH - 1;
+        int contentTop = getY() + PADDING;
+
+        int buttonX = contentRight - BUTTON_SIZE - 1;
+        int buttonY = contentTop - scrollOffset + index * ROW_HEIGHT + 1;
+
+        return mouseX >= buttonX
+                && mouseX < buttonX + BUTTON_SIZE
+                && mouseY >= buttonY
+                && mouseY < buttonY + BUTTON_SIZE;
+    }
+
     private void rebuildButtons() {
         this.craftButtons.clear();
 
@@ -300,9 +338,6 @@ public class ClonerMaterialListWidget extends AbstractWidget implements IResizab
                 }
             });
 
-            button.setTooltip(Tooltip.create(
-                    Component.translatable(LangDefs.CRAFT_REQUEST_MISSING.getTranslationKey())
-            ));
             button.visible = false;
             button.active = false;
 
@@ -326,13 +361,14 @@ public class ClonerMaterialListWidget extends AbstractWidget implements IResizab
         guiGraphics.fill(trackLeft, trackTop, trackRight, trackBottom, 0x60202020);
 
         int maxScroll = getMaxScroll();
+
         if (maxScroll <= 0) {
             guiGraphics.fill(trackLeft, trackTop, trackRight, trackBottom, 0x80505050);
             return;
         }
 
         int trackHeight = trackBottom - trackTop;
-        int contentHeight = entries.size() * ROW_HEIGHT;
+        int contentHeight = this.entries.size() * ROW_HEIGHT;
         int thumbHeight = Math.max(10, (int) ((trackHeight * (double) height) / contentHeight));
         int thumbTravel = trackHeight - thumbHeight;
         int thumbTop = trackTop + (int) ((scrollOffset / (double) maxScroll) * thumbTravel);
@@ -341,7 +377,36 @@ public class ClonerMaterialListWidget extends AbstractWidget implements IResizab
     }
 
     private int getMaxScroll() {
-        return Math.max(0, entries.size() * ROW_HEIGHT - (height - PADDING * 2));
+        return Math.max(0, this.entries.size() * ROW_HEIGHT - (height - PADDING * 2));
+    }
+
+    private boolean sameEntries(List<MaterialEntry> oldEntries, List<MaterialEntry> newEntries) {
+        if (oldEntries.size() != newEntries.size()) {
+            return false;
+        }
+
+        for (int i = 0; i < oldEntries.size(); i++) {
+            MaterialEntry oldEntry = oldEntries.get(i);
+            MaterialEntry newEntry = newEntries.get(i);
+
+            if (!ItemStack.matches(oldEntry.stack(), newEntry.stack())) {
+                return false;
+            }
+
+            if (oldEntry.available() != newEntry.available()) {
+                return false;
+            }
+
+            if (oldEntry.required() != newEntry.required()) {
+                return false;
+            }
+
+            if (oldEntry.craftable() != newEntry.craftable()) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     @Override

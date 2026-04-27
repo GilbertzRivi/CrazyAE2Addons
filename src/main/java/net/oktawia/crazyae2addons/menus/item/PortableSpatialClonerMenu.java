@@ -17,6 +17,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.ForgeRegistries;
+import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.logic.structuretool.ClonerStructureLibraryStore;
 import net.oktawia.crazyae2addons.logic.structuretool.StructureToolHost;
@@ -24,6 +25,7 @@ import net.oktawia.crazyae2addons.logic.structuretool.StructureToolStackState;
 import net.oktawia.crazyae2addons.network.NetworkHandler;
 import net.oktawia.crazyae2addons.network.packets.structures.SyncClonerRequirementStatusPacket;
 import net.oktawia.crazyae2addons.network.packets.structures.SyncClonerLibraryPacket;
+import net.oktawia.crazyae2addons.util.Ae2clOpenCraftingMenu;
 import net.oktawia.crazyae2addons.util.StructureToolKeys;
 import net.oktawia.crazyae2addons.util.TemplateUtil;
 import org.jetbrains.annotations.Nullable;
@@ -87,15 +89,18 @@ public class PortableSpatialClonerMenu extends AbstractPortableStructureToolMenu
 
     public void craftRequest(String format) {
         if (isClientSide()) {
+            CrazyAddons.LOGGER.info("sending client action");
             sendClientAction(ACTION_CRAFT_REQUEST, format);
         } else {
             var item = ForgeRegistries.ITEMS.getValue(ResourceLocation.parse(format.split("\\|")[0]));
             if (item != null) {
-                CraftAmountMenu.open(
+                String[] parts = format.split("\\|");
+
+                Ae2clOpenCraftingMenu.open(
                         (ServerPlayer) getPlayer(),
                         MenuLocators.forHand(getPlayer(), getPlayer().swingingArm),
                         AEItemKey.of(item),
-                        Integer.parseInt(format.split("\\|")[1])
+                        Long.parseLong(parts[1])
                 );
             }
         }

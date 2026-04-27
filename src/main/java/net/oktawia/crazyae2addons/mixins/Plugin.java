@@ -3,6 +3,8 @@ package net.oktawia.crazyae2addons.mixins;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.loading.LoadingModList;
 import net.minecraftforge.fml.loading.moddiscovery.ModInfo;
+import net.oktawia.crazyae2addons.IsModLoaded;
+import net.oktawia.crazyae2addons.util.Ae2clOpenCraftingMenu;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -65,6 +67,7 @@ public class Plugin implements IMixinConfigPlugin {
     public void onLoad(String mixinPackage) {
         this.advancedAeLoaded = isModLoaded("advanced_ae");
         this.hasTrySubmitJobBoolean = detectTrySubmitJobBooleanByBytecode() || isModLoaded("ae2cl");
+        Ae2clOpenCraftingMenu.IS_AE2_CL = this.hasTrySubmitJobBoolean;
     }
 
     @Override

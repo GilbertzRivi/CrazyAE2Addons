@@ -7,7 +7,6 @@
   "refmap": "mixins.crazyae2addons.refmap.json",
   "mixins": [
     "MixinAbstractLevelEmitterPart",
-    "MixinCompositeRenderType",
     "MixinEntity",
     "MixinPatternProviderLogic",
     "MixinRestrictedInputSlot",
@@ -15,10 +14,8 @@
     "MixinSlot",
     "MixinStorageLevelEmitterPart",
     "MixinViewCellItem",
-    "accessors.CompositeStateAccessor",
     "accessors.CraftingCPURecordAccessor",
     "accessors.P2PTunnelPartAccessor",
-    "accessors.TextureStateShardAccessor",
     "accessors.WidgetContainerAccessor",
     "analogemitter.MixinAbstractLevelEmitterAnalog",
     "analogemitter.MixinStorageLevelEmitterAnalog",

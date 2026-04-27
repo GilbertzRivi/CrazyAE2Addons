@@ -1,21 +1,16 @@
 package net.oktawia.crazyae2addons.ldlib;
 
+import com.lowdragmc.lowdraglib.plugin.ILDLibPlugin;
+import com.lowdragmc.lowdraglib.plugin.LDLibPlugin;
 import com.lowdragmc.lowdraglib.syncdata.TypedPayloadRegistries;
 import com.lowdragmc.lowdraglib.syncdata.payload.NbtTagPayload;
 import net.oktawia.crazyae2addons.ldlib.accessors.*;
 
-public final class CrazyLDLibPlugin {
-    private static boolean initialized = false;
+@LDLibPlugin
+public final class CrazyLDLibPlugin implements ILDLibPlugin {
 
-    private CrazyLDLibPlugin() {
-    }
-
-    public static void init() {
-        if (initialized) {
-            return;
-        }
-        initialized = true;
-
+    @Override
+    public void onLoad() {
         TypedPayloadRegistries.register(NbtTagPayload.class, NbtTagPayload::new, new InventoryAccessor(), 1500);
         TypedPayloadRegistries.register(NbtTagPayload.class, NbtTagPayload::new, new UpgradeInventoryAccessor(), 1500);
         TypedPayloadRegistries.register(NbtTagPayload.class, NbtTagPayload::new, new ManagedBufferAccessor(), 1500);

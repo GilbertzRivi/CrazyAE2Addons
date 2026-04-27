@@ -702,3 +702,28 @@ Wariant Portable Spatial Storage który **kopiuje** strukturę zamiast wycinać 
 - Przyciski "Craft" przy brakujących itemach
 - Przycisk "Forget" — czyści zapisaną strukturę bez wklejania
 - Dodatkowy slot upgrade'u względem PSS
+
+# Analog card
+
+daje 2 nowe tryby do me level emittera i do tag level emittera, outputuje analogowy sygnal na podstawie tego ile jest itemow w me
+albo logarytmicznie albo liniowo na podstawie ustawionego progu, jak jest limit 64 a masz 32, liniowo da signal str 7/15 logarytmicznie 14/15
+
+
+1. Display — Part montowany na ścianie, wyświetlający tekst, obrazy i dane AE2 z obsługą tokenów, kolorowania i merge mode do tworzenia dużych ekranów.
+2. Emitter Terminal + Wireless — Terminal zarządzający wszystkimi ME Level Emitters w sieci z jednego miejsca, z edycją threshold i wersją bezprzewodową.
+3. Wireless Notification Terminal — Bezprzewodowy terminal monitorujący 16 itemów i wyświetlający kolorowe alerty na HUD gdy poziom spadnie poniżej threshold.
+4. Multi Level Emitter — Storage Level Emitter obsługujący 16 itemów jednocześnie z logiką AND/OR i monitorowaniem statusu craftingu.
+5. Tag Level Emitter — Storage Level Emitter używający wyrażeń tagowych z logiką booleanowską zamiast konkretnych itemów.
+6. Redstone Terminal + Wireless — Terminal do przełączania stanów wszystkich Redstone Emitters w sieci jednym kliknięciem, z wersją bezprzewodową.
+7. Redstone Emitter — Prosty part emitujący sygnał redstone, zdalnie sterowany przez Redstone Terminal z unikalną nazwą identyfikacyjną.
+8. Wormhole — Universalny P2P Tunnel przekazujący wszystkie capabilities, interakcje z blokami i teleportację (nawet między wymiarami) przez tunel.
+9. RR Item/Fluid P2P — Round Robin P2P Tunnel równomiernie rozdzielający itemy lub fluidy między wszystkie wyjścia.
+10. CPU Priority Tuner — Przedmiot ustawiający priorytet Crafting CPU, determinujący kolejność przydzielania zadań craftingu.
+11. Tag View Cell — View Cell filtrujący ME Terminal według wyrażeń tagowych z logiką booleanowską.
+12. Pattern Multiplier — Przedmiot mnożący ilości inputów i outputów w encoded patternach przez zadany współczynnik.
+13. Crazy Pattern Provider Block/Part — Rozszerzalny Pattern Provider z 72 slotami (do 8×9) i dynamicznym zwiększaniem przez upgrade.
+14. Ejector — Block automatycznie craftujący skonfigurowane itemy i wyrzucający je do sąsiedniego inventory lub pattern providera.
+15. Recipe Fabricator — Block przetwarzający surowce według własnego typu receptury fabrication z opcjonalnym fluid I/O i auto-ejectem produktu.
+16. Portable Spatial Storage — Przedmiot wycinający prostokątny obszar bloków ze świata, zapisujący go i wklejający w innym miejscu z obsługą transformacji i ghost preview.
+17. Portable Spatial Cloner — Wariant PSS kopiujący strukturę (bez usuwania oryginału) z listą wymaganych materiałów i możliwością craftowania brakujących z GUI.
+18. Analog Card — Upgrade do ME Level Emitter i Tag Level Emitter, outputujący analogowy sygnał redstone proporcjonalny do ilości itemów (liniowo lub logarytmicznie).    

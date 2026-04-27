@@ -117,11 +117,18 @@
       "width": 36,
       "height": 12
     },
-    "materials": {
+
+    "structureSelector": {
       "left": 8,
       "top": 26,
       "width": 92,
-      "height": 135
+      "height": 31
+    },
+    "materials": {
+      "left": 8,
+      "top": 60,
+      "width": 92,
+      "height": 101
     },
     "preview": {
       "left": 104,

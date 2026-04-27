@@ -1,4 +1,4 @@
-package net.oktawia.crazyae2addons.network.packets;
+package net.oktawia.crazyae2addons.network.packets.structures;
 
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.item.ItemStack;

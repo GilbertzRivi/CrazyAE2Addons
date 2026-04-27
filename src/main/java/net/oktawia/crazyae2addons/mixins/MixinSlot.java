@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import net.minecraft.world.inventory.Slot;
 
 @Setter
-@Mixin(value = Slot.class, remap = false)
+@Mixin(value = Slot.class)
 public abstract class MixinSlot implements IMovableSlot {
     @Final
     @Shadow

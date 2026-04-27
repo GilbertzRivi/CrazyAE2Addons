@@ -2,6 +2,7 @@ package net.oktawia.crazyae2addons.logic.structuretool;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
 import net.oktawia.crazyae2addons.network.NetworkHandler;
 import net.oktawia.crazyae2addons.network.packets.SendLongStringToClientPacket;
 import net.oktawia.crazyae2addons.util.TemplateUtil;
@@ -53,6 +54,29 @@ public final class StructureToolPreviewDispatcher {
 
         try {
             CompoundTag tag = StructureToolStructureStore.load(player.server, structureId);
+            sendPreviewToPlayer(player, tag);
+        } catch (Exception ignored) {
+            sendPreviewToPlayer(player, null);
+        }
+    }
+
+    public static void sendClonerPreviewForSelectedStructure(ServerPlayer player, ItemStack stack) {
+        if (stack == null || stack.isEmpty()) {
+            sendPreviewToPlayer(player, null);
+            return;
+        }
+
+        try {
+            CompoundTag tag = ClonerStructureLibraryStore.loadSelectedOrMigrateLegacy(
+                    player.server,
+                    player.getUUID(),
+                    stack
+            );
+
+            if (tag != null) {
+                TemplateUtil.copyPreviewTransformState(tag, stack.getOrCreateTag());
+            }
+
             sendPreviewToPlayer(player, tag);
         } catch (Exception ignored) {
             sendPreviewToPlayer(player, null);

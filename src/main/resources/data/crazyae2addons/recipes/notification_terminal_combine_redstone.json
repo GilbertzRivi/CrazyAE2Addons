@@ -1,0 +1,11 @@
+{
+  "type": "ae2wtlib:combine",
+  "terminalA": {
+    "item": "crazyae2addons:wireless_notification_terminal"
+  },
+  "terminalB": {
+    "item": "crazyae2addons:wireless_redstone_terminal"
+  },
+  "terminalAName": "wireless_notification_terminal",
+  "terminalBName": "wireless_redstone_terminal"
+}

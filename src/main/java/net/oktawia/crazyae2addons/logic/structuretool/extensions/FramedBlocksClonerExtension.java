@@ -16,7 +16,10 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.registries.ForgeRegistries;
-import net.oktawia.crazyae2addons.logic.structuretool.*;
+import net.oktawia.crazyae2addons.logic.structuretool.AbstractStructureCaptureToolItem;
+import net.oktawia.crazyae2addons.logic.structuretool.ClonerPasteContext;
+import net.oktawia.crazyae2addons.logic.structuretool.PlacementPlan;
+import net.oktawia.crazyae2addons.logic.structuretool.StructureCloneExtension;
 import net.oktawia.crazyae2addons.util.NbtUtil;
 import org.jetbrains.annotations.Nullable;
 
@@ -62,6 +65,7 @@ public final class FramedBlocksClonerExtension implements StructureCloneExtensio
 
         if (rawBeTag != null && rawBeTag.contains(NBT_CAMO, Tag.TAG_COMPOUND)) {
             CompoundTag camoTag = rawBeTag.getCompound(NBT_CAMO).copy();
+
             framedData.put(CLONE_KEY_CAMO, camoTag);
             addCamoRequirement(camoTag, requirements);
         }
@@ -94,29 +98,32 @@ public final class FramedBlocksClonerExtension implements StructureCloneExtensio
         CompoundTag framedData = getFramedMetadata(blockMetadata);
         CompoundTag filteredTag = createWhitelistedFramedTag(rawBeTag, framedData);
 
-        if (player.isCreative()) {
-            return Optional.of(new PlacementPlan(true, state, filteredTag, List.of()));
-        }
-
         Map<Item, Integer> reserved = new LinkedHashMap<>();
         List<ItemStack> costs = new ArrayList<>();
 
         ItemStack baseItem = normalizeSingle(ctx.getRequiredBlockItem(state));
-        if (baseItem.isEmpty() || !ctx.canReserveForPaste(reserved, baseItem, 1)) {
-            return Optional.of(PlacementPlan.none());
-        }
 
-        costs.add(baseItem);
-
-        if (framedData.contains(CLONE_KEY_CAMO, Tag.TAG_COMPOUND)) {
-            CompoundTag camoTag = framedData.getCompound(CLONE_KEY_CAMO);
-            ItemStack camoItem = getCamoRequirement(camoTag);
-
-            if (camoItem.isEmpty() || !ctx.canReserveForPaste(reserved, camoItem, 1)) {
+        if (!baseItem.isEmpty()) {
+            if (!player.isCreative() && !ctx.canReserveForPaste(reserved, baseItem, 1)) {
                 return Optional.of(PlacementPlan.none());
             }
 
-            costs.add(camoItem);
+            costs.add(baseItem);
+        } else if (!player.isCreative()) {
+            return Optional.of(PlacementPlan.none());
+        }
+
+        if (framedData.contains(CLONE_KEY_CAMO, Tag.TAG_COMPOUND)) {
+            CompoundTag camoTag = framedData.getCompound(CLONE_KEY_CAMO);
+            ItemStack camoItem = normalizeSingle(getCamoRequirement(camoTag));
+
+            if (!camoItem.isEmpty()) {
+                if (!player.isCreative() && !ctx.canReserveForPaste(reserved, camoItem, 1)) {
+                    return Optional.of(PlacementPlan.none());
+                }
+
+                costs.add(camoItem);
+            }
         }
 
         return Optional.of(new PlacementPlan(true, state, filteredTag, costs));
@@ -134,6 +141,7 @@ public final class FramedBlocksClonerExtension implements StructureCloneExtensio
         }
 
         be.setChanged();
+
         BlockState state = level.getBlockState(pos);
         level.sendBlockUpdated(pos, state, state, 3);
     }
@@ -170,6 +178,7 @@ public final class FramedBlocksClonerExtension implements StructureCloneExtensio
             AbstractStructureCaptureToolItem.RequirementSink requirements
     ) {
         ItemStack camoItem = getCamoRequirement(camoTag);
+
         if (!camoItem.isEmpty()) {
             requirements.add(camoItem);
         }
@@ -181,21 +190,25 @@ public final class FramedBlocksClonerExtension implements StructureCloneExtensio
         }
 
         CompoundTag stateTag = camoTag.getCompound(NBT_STATE);
+
         if (!stateTag.contains(NBT_NAME, Tag.TAG_STRING)) {
             return ItemStack.EMPTY;
         }
 
         ResourceLocation blockId = ResourceLocation.tryParse(stateTag.getString(NBT_NAME));
+
         if (blockId == null) {
             return ItemStack.EMPTY;
         }
 
         Block block = ForgeRegistries.BLOCKS.getValue(blockId);
+
         if (block == null) {
             return ItemStack.EMPTY;
         }
 
         Item item = block.asItem();
+
         if (item == Items.AIR) {
             return ItemStack.EMPTY;
         }
@@ -205,6 +218,7 @@ public final class FramedBlocksClonerExtension implements StructureCloneExtensio
 
     private static boolean isFramedBlock(BlockState state, @Nullable CompoundTag rawBeTag) {
         ResourceLocation blockId = ForgeRegistries.BLOCKS.getKey(state.getBlock());
+
         if (blockId != null && MOD_ID.equals(blockId.getNamespace())) {
             return true;
         }
@@ -214,11 +228,13 @@ public final class FramedBlocksClonerExtension implements StructureCloneExtensio
         }
 
         String id = rawBeTag.getString(NBT_ID);
+
         if (id.isBlank()) {
             return false;
         }
 
         ResourceLocation beId = ResourceLocation.tryParse(id);
+
         return beId != null && MOD_ID.equals(beId.getNamespace());
     }
 
@@ -242,6 +258,7 @@ public final class FramedBlocksClonerExtension implements StructureCloneExtensio
         }
 
         Item item = level.getBlockState(pos).getBlock().asItem();
+
         if (item != Items.AIR) {
             requirements.add(new ItemStack(item));
         }
@@ -253,8 +270,10 @@ public final class FramedBlocksClonerExtension implements StructureCloneExtensio
         }
 
         ItemStack copy = stack.copy();
+
         copy.setCount(1);
         copy.setTag(null);
+
         return copy;
     }
 }

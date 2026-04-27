@@ -18,10 +18,12 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
+import net.oktawia.crazyae2addons.logic.structuretool.ClonerStructureLibraryStore;
 import net.oktawia.crazyae2addons.logic.structuretool.StructureToolHost;
 import net.oktawia.crazyae2addons.logic.structuretool.StructureToolStackState;
 import net.oktawia.crazyae2addons.network.NetworkHandler;
-import net.oktawia.crazyae2addons.network.packets.SyncClonerRequirementStatusPacket;
+import net.oktawia.crazyae2addons.network.packets.structures.SyncClonerRequirementStatusPacket;
+import net.oktawia.crazyae2addons.network.packets.structures.SyncClonerLibraryPacket;
 import net.oktawia.crazyae2addons.util.StructureToolKeys;
 import net.oktawia.crazyae2addons.util.TemplateUtil;
 import org.jetbrains.annotations.Nullable;
@@ -31,7 +33,6 @@ import java.util.List;
 
 public class PortableSpatialClonerMenu extends AbstractPortableStructureToolMenu {
 
-    private static final String ACTION_FORGET_STRUCTURE = "forget_structure";
     private static final String ACTION_CRAFT_REQUEST = "craft_request";
 
     private int requirementSyncTick = 0;
@@ -39,11 +40,11 @@ public class PortableSpatialClonerMenu extends AbstractPortableStructureToolMenu
     public PortableSpatialClonerMenu(int id, Inventory playerInventory, StructureToolHost host) {
         super(CrazyMenuRegistrar.PORTABLE_SPATIAL_CLONER_MENU.get(), id, playerInventory, host);
 
-        registerClientAction(ACTION_FORGET_STRUCTURE, this::forgetStructure);
         registerClientAction(ACTION_CRAFT_REQUEST, String.class, this::craftRequest);
 
         if (!isClientSide()) {
             syncRequirementsToClient();
+            syncLibraryToClient();
         }
     }
 
@@ -60,24 +61,28 @@ public class PortableSpatialClonerMenu extends AbstractPortableStructureToolMenu
         }
     }
 
-    public void forgetStructure() {
-        if (isClientSide()) {
-            sendClientAction(ACTION_FORGET_STRUCTURE);
+    private void syncLibraryToClient() {
+        if (!(getPlayer() instanceof ServerPlayer serverPlayer)) {
             return;
         }
 
-        var stack = host.getItemStack();
-        StructureToolStackState.clearStructure(stack);
-        StructureToolStackState.clearSelection(stack);
-        StructureToolStackState.resetPreviewSideMap(stack);
-
-        CompoundTag stackTag = stack.getOrCreateTag();
-        TemplateUtil.setTemplateOffset(stackTag, BlockPos.ZERO);
-        TemplateUtil.setEnergyOrigin(stackTag, BlockPos.ZERO);
-
-        syncRequirementsToClient();
-        requestPreview();
-        this.setValidMenu(false);
+        try {
+            NetworkHandler.sendToPlayer(
+                    serverPlayer,
+                    SyncClonerLibraryPacket.fromStoreEntries(
+                            ClonerStructureLibraryStore.list(serverPlayer.server, serverPlayer.getUUID()),
+                            StructureToolStackState.getStructureId(host.getItemStack())
+                    )
+            );
+        } catch (Exception ignored) {
+            NetworkHandler.sendToPlayer(
+                    serverPlayer,
+                    SyncClonerLibraryPacket.fromStoreEntries(
+                            List.of(),
+                            StructureToolStackState.getStructureId(host.getItemStack())
+                    )
+            );
+        }
     }
 
     public void craftRequest(String format) {

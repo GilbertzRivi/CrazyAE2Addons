@@ -1,7 +1,7 @@
 package net.oktawia.crazyae2addons.client.renderer.preview;
 
-import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
@@ -27,7 +27,7 @@ public interface BlockRenderExtension {
             BlockState state,
             BlockPos localPos,
             PoseStack poseStack,
-            BufferBuilder bufferBuilder,
+            VertexConsumer vertexConsumer,
             RenderType renderType,
             long seed,
             ModelData modelData

@@ -1,10 +1,10 @@
 package net.oktawia.crazyae2addons.client.renderer.preview;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.*;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -18,7 +18,6 @@ import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -32,23 +31,20 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.items.PortableSpatialCloner;
 import net.oktawia.crazyae2addons.items.PortableSpatialStorage;
-import net.oktawia.crazyae2addons.logic.interfaces.RenderTypeTextureAccess;
 import net.oktawia.crazyae2addons.logic.structuretool.StructureToolStackState;
 import net.oktawia.crazyae2addons.logic.structuretool.StructureToolUtil;
 import net.oktawia.crazyae2addons.util.TemplateUtil;
-import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.IdentityHashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Set;
 
 public class PortableSpatialStoragePreviewRenderer {
 
     private static final double MAX_DISTANCE = 50.0D;
-    private static final float PREVIEW_ALPHA = 0.75f;
 
     private enum PreviewPass {
         SOLID,
@@ -56,8 +52,6 @@ public class PortableSpatialStoragePreviewRenderer {
         CUTOUT_MIPPED,
         TRANSLUCENT
     }
-
-    private static final Map<RenderType, RenderType> translucentTypeCache = new IdentityHashMap<>();
 
     public PortableSpatialStoragePreviewRenderer() {
     }
@@ -69,16 +63,15 @@ public class PortableSpatialStoragePreviewRenderer {
         }
 
         Minecraft minecraft = Minecraft.getInstance();
+
         if (minecraft.player == null || minecraft.level == null) {
             return;
         }
 
-        ItemStack stack = StructureToolUtil.findHeld(
-                minecraft.player,
-                PortableSpatialStorage.class,
-                PortableSpatialCloner.class
-        );
-        if (stack.isEmpty()) {
+        ItemStack stack = minecraft.player.getMainHandItem();
+
+        if (!(stack.getItem() instanceof PortableSpatialStorage)
+                && !(stack.getItem() instanceof PortableSpatialCloner)) {
             return;
         }
 
@@ -93,10 +86,17 @@ public class PortableSpatialStoragePreviewRenderer {
 
         if (StructureToolStackState.hasStructure(stack)) {
             String structureId = StructureToolStackState.getStructureId(stack);
+
             if (!structureId.isBlank()) {
                 PreviewStructure structure = PortableSpatialStoragePreviewSync.cacheGet(structureId);
+
                 if (structure != null && !structure.blocks().isEmpty()) {
-                    BlockHitResult hit = StructureToolUtil.rayTrace(minecraft.level, minecraft.player, MAX_DISTANCE);
+                    BlockHitResult hit = StructureToolUtil.rayTrace(
+                            minecraft.level,
+                            minecraft.player,
+                            MAX_DISTANCE
+                    );
+
                     if (hit.getType() == HitResult.Type.BLOCK) {
                         BlockPos anchor = hit.getBlockPos().relative(hit.getDirection());
 
@@ -105,9 +105,30 @@ public class PortableSpatialStoragePreviewRenderer {
 
                         BlockPos placementOrigin = anchor.subtract(energyOrigin);
 
-                        renderGhostModels(minecraft, poseStack, structure, placementOrigin, sideMap, sideMapKey);
-                        renderBlockEntityRenderers(minecraft, poseStack, structure, placementOrigin, event.getPartialTick());
-                        renderLineBoxes(minecraft, poseStack, structure, placementOrigin);
+                        renderGhostModels(
+                                minecraft,
+                                poseStack,
+                                structure,
+                                placementOrigin,
+                                sideMap,
+                                sideMapKey
+                        );
+
+                        renderBlockEntityRenderers(
+                                minecraft,
+                                poseStack,
+                                structure,
+                                placementOrigin,
+                                event.getPartialTick()
+                        );
+
+                        renderLineBoxes(
+                                minecraft,
+                                poseStack,
+                                structure,
+                                placementOrigin,
+                                stack.getItem() instanceof PortableSpatialCloner
+                        );
                     }
                 }
             }
@@ -121,15 +142,21 @@ public class PortableSpatialStoragePreviewRenderer {
 
         if (selectionA != null) {
             BlockPos previewB = selectionB;
+
             if (previewB == null) {
-                BlockHitResult hit = StructureToolUtil.rayTrace(minecraft.level, minecraft.player, MAX_DISTANCE);
+                BlockHitResult hit = StructureToolUtil.rayTrace(
+                        minecraft.level,
+                        minecraft.player,
+                        MAX_DISTANCE
+                );
+
                 if (hit.getType() == HitResult.Type.BLOCK) {
                     previewB = hit.getBlockPos();
                 }
             }
 
             if (previewB != null) {
-                renderSelectionPreview(poseStack, selectionA, previewB);
+                renderSelectionPreview(minecraft, poseStack, selectionA, previewB);
             }
         }
 
@@ -184,7 +211,7 @@ public class PortableSpatialStoragePreviewRenderer {
             BlockState state,
             BlockPos localPos,
             PoseStack poseStack,
-            BufferBuilder bufferBuilder,
+            VertexConsumer vertexConsumer,
             RenderType renderType,
             long seed,
             ModelData modelData
@@ -206,7 +233,7 @@ public class PortableSpatialStoragePreviewRenderer {
                     state,
                     localPos,
                     poseStack,
-                    bufferBuilder,
+                    vertexConsumer,
                     renderType,
                     seed,
                     modelData
@@ -221,7 +248,7 @@ public class PortableSpatialStoragePreviewRenderer {
                 state,
                 localPos,
                 poseStack,
-                bufferBuilder,
+                vertexConsumer,
                 false,
                 RandomSource.create(seed),
                 seed,
@@ -244,11 +271,11 @@ public class PortableSpatialStoragePreviewRenderer {
         String cutoutMippedKey = sideMapKey + ":cutout_mipped";
         String translucentKey = sideMapKey + ":translucent";
 
-        if (!structure.hasVertexBuffer(solidKey)
-                || !structure.hasVertexBuffer(cutoutKey)
-                || !structure.hasVertexBuffer(cutoutMippedKey)
-                || !structure.hasVertexBuffer(translucentKey)) {
-            buildAndStoreVertexBuffers(
+        if (!structure.hasPreviewGeometry(solidKey)
+                || !structure.hasPreviewGeometry(cutoutKey)
+                || !structure.hasPreviewGeometry(cutoutMippedKey)
+                || !structure.hasPreviewGeometry(translucentKey)) {
+            buildAndStorePreviewGeometry(
                     minecraft,
                     structure,
                     sideMap,
@@ -260,59 +287,68 @@ public class PortableSpatialStoragePreviewRenderer {
             );
         }
 
-        Matrix4f modelView = new Matrix4f(poseStack.last().pose());
-        modelView.translate(origin.getX(), origin.getY(), origin.getZ());
-
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
         RenderSystem.enableDepthTest();
-        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, PREVIEW_ALPHA);
-        RenderSystem.setShaderTexture(0, TextureAtlas.LOCATION_BLOCKS);
-        minecraft.gameRenderer.lightTexture().turnOnLightLayer();
-
-        VertexBuffer solidVb = structure.getVertexBuffer(solidKey);
-        if (solidVb != null) {
-            RenderSystem.setShader(GameRenderer::getRendertypeSolidShader);
-            RenderSystem.depthMask(true);
-            solidVb.bind();
-            solidVb.drawWithShader(modelView, RenderSystem.getProjectionMatrix(), RenderSystem.getShader());
-            VertexBuffer.unbind();
-        }
-
-        VertexBuffer cutoutVb = structure.getVertexBuffer(cutoutKey);
-        if (cutoutVb != null) {
-            RenderSystem.setShader(GameRenderer::getRendertypeCutoutShader);
-            RenderSystem.depthMask(true);
-            cutoutVb.bind();
-            cutoutVb.drawWithShader(modelView, RenderSystem.getProjectionMatrix(), RenderSystem.getShader());
-            VertexBuffer.unbind();
-        }
-
-        VertexBuffer cutoutMippedVb = structure.getVertexBuffer(cutoutMippedKey);
-        if (cutoutMippedVb != null) {
-            RenderSystem.setShader(GameRenderer::getRendertypeCutoutMippedShader);
-            RenderSystem.depthMask(true);
-            cutoutMippedVb.bind();
-            cutoutMippedVb.drawWithShader(modelView, RenderSystem.getProjectionMatrix(), RenderSystem.getShader());
-            VertexBuffer.unbind();
-        }
-
-        VertexBuffer translucentVb = structure.getVertexBuffer(translucentKey);
-        if (translucentVb != null) {
-            RenderSystem.setShader(GameRenderer::getRendertypeTranslucentShader);
-            RenderSystem.depthMask(false);
-            translucentVb.bind();
-            translucentVb.drawWithShader(modelView, RenderSystem.getProjectionMatrix(), RenderSystem.getShader());
-            VertexBuffer.unbind();
-        }
-
-        minecraft.gameRenderer.lightTexture().turnOffLightLayer();
         RenderSystem.depthMask(true);
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-        RenderSystem.disableBlend();
+        RenderSystem.setShaderTexture(0, TextureAtlas.LOCATION_BLOCKS);
+
+        minecraft.gameRenderer.lightTexture().turnOnLightLayer();
+
+        poseStack.pushPose();
+        poseStack.translate(origin.getX(), origin.getY(), origin.getZ());
+
+        MultiBufferSource.BufferSource bufferSource = minecraft.renderBuffers().bufferSource();
+
+        emitPreviewGeometry(
+                structure.getPreviewGeometry(solidKey),
+                poseStack,
+                bufferSource.getBuffer(RenderType.solid())
+        );
+
+        emitPreviewGeometry(
+                structure.getPreviewGeometry(cutoutMippedKey),
+                poseStack,
+                bufferSource.getBuffer(RenderType.cutoutMipped())
+        );
+
+        emitPreviewGeometry(
+                structure.getPreviewGeometry(cutoutKey),
+                poseStack,
+                bufferSource.getBuffer(RenderType.cutout())
+        );
+
+        emitPreviewGeometry(
+                structure.getPreviewGeometry(translucentKey),
+                poseStack,
+                bufferSource.getBuffer(RenderType.translucent())
+        );
+
+        bufferSource.endBatch(RenderType.solid());
+        bufferSource.endBatch(RenderType.cutoutMipped());
+        bufferSource.endBatch(RenderType.cutout());
+        bufferSource.endBatch(RenderType.translucent());
+
+        poseStack.popPose();
+
+        minecraft.gameRenderer.lightTexture().turnOffLightLayer();
+
+        RenderSystem.depthMask(true);
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
     }
 
-    private void buildAndStoreVertexBuffers(
+    private static void emitPreviewGeometry(
+            CachedPreviewBuffer buffer,
+            PoseStack poseStack,
+            VertexConsumer consumer
+    ) {
+        if (buffer == null || buffer.isEmpty()) {
+            return;
+        }
+
+        buffer.emitBlock(poseStack.last(), consumer);
+    }
+
+    private void buildAndStorePreviewGeometry(
             Minecraft minecraft,
             PreviewStructure structure,
             int[] sideMap,
@@ -325,19 +361,17 @@ public class PortableSpatialStoragePreviewRenderer {
         ClientLevel level = minecraft.level;
         var dispatcher = minecraft.getBlockRenderer();
         var modelRenderer = dispatcher.getModelRenderer();
-        PreviewBlockAndTintGetter localLevel = new PreviewBlockAndTintGetter(level, structure, BlockPos.ZERO);
 
-        BufferBuilder solidBB = new BufferBuilder(1048576);
-        solidBB.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
+        PreviewBlockAndTintGetter localLevel = new PreviewBlockAndTintGetter(
+                level,
+                structure,
+                BlockPos.ZERO
+        );
 
-        BufferBuilder cutoutBB = new BufferBuilder(1048576);
-        cutoutBB.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
-
-        BufferBuilder cutoutMippedBB = new BufferBuilder(1048576);
-        cutoutMippedBB.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
-
-        BufferBuilder translucentBB = new BufferBuilder(1048576);
-        translucentBB.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.BLOCK);
+        CachedPreviewBuffer solidBuffer = new CachedPreviewBuffer();
+        CachedPreviewBuffer cutoutBuffer = new CachedPreviewBuffer();
+        CachedPreviewBuffer cutoutMippedBuffer = new CachedPreviewBuffer();
+        CachedPreviewBuffer translucentBuffer = new CachedPreviewBuffer();
 
         PoseStack ps = new PoseStack();
 
@@ -372,11 +406,11 @@ public class PortableSpatialStoragePreviewRenderer {
                         seed,
                         modelData
                 )) {
-                    BufferBuilder target = switch (classifyRenderType(renderType)) {
-                        case SOLID -> solidBB;
-                        case CUTOUT -> cutoutBB;
-                        case CUTOUT_MIPPED -> cutoutMippedBB;
-                        case TRANSLUCENT -> translucentBB;
+                    CachedPreviewBuffer target = switch (classifyRenderType(renderType)) {
+                        case SOLID -> solidBuffer;
+                        case CUTOUT -> cutoutBuffer;
+                        case CUTOUT_MIPPED -> cutoutMippedBuffer;
+                        case TRANSLUCENT -> translucentBuffer;
                     };
 
                     tesselatePreviewBlockForRenderType(
@@ -396,24 +430,21 @@ public class PortableSpatialStoragePreviewRenderer {
                     );
                 }
             } catch (Throwable t) {
-                CrazyAddons.LOGGER.debug("Preview tesselation failed for {} at {}: {}", state, localPos, t.getMessage());
+                CrazyAddons.LOGGER.debug(
+                        "Preview tesselation failed for {} at {}: {}",
+                        state,
+                        localPos,
+                        t.getMessage()
+                );
             }
 
             ps.popPose();
         }
 
-        structure.storeVertexBuffer(solidKey, uploadBuffer(solidBB));
-        structure.storeVertexBuffer(cutoutKey, uploadBuffer(cutoutBB));
-        structure.storeVertexBuffer(cutoutMippedKey, uploadBuffer(cutoutMippedBB));
-        structure.storeVertexBuffer(translucentKey, uploadBuffer(translucentBB));
-    }
-
-    private static VertexBuffer uploadBuffer(BufferBuilder bb) {
-        VertexBuffer vb = new VertexBuffer(VertexBuffer.Usage.STATIC);
-        vb.bind();
-        vb.upload(bb.end());
-        VertexBuffer.unbind();
-        return vb;
+        structure.storePreviewGeometry(solidKey, solidBuffer);
+        structure.storePreviewGeometry(cutoutKey, cutoutBuffer);
+        structure.storePreviewGeometry(cutoutMippedKey, cutoutMippedBuffer);
+        structure.storePreviewGeometry(translucentKey, translucentBuffer);
     }
 
     private static PreviewPass classifyRenderType(RenderType rt) {
@@ -452,7 +483,6 @@ public class PortableSpatialStoragePreviewRenderer {
         return PreviewPass.SOLID;
     }
 
-    @SuppressWarnings("unchecked")
     private void renderBlockEntityRenderers(
             Minecraft minecraft,
             PoseStack poseStack,
@@ -461,129 +491,86 @@ public class PortableSpatialStoragePreviewRenderer {
             float partialTick
     ) {
         Map<BlockPos, BlockEntity> blockEntities = structure.blockEntities(minecraft.level);
-        if (blockEntities.isEmpty()) return;
+
+        if (blockEntities.isEmpty()) {
+            return;
+        }
 
         BlockEntityRenderDispatcher beDispatcher = minecraft.getBlockEntityRenderDispatcher();
         MultiBufferSource.BufferSource bufferSource = minecraft.renderBuffers().bufferSource();
-        MultiBufferSource ghostSource = renderType ->
-                new AlphaScaledVertexConsumer(bufferSource.getBuffer(toTranslucentRenderType(renderType)), PREVIEW_ALPHA);
+
+        Set<RenderType> usedRenderTypes = Collections.newSetFromMap(new IdentityHashMap<>());
+
+        MultiBufferSource previewSource = renderType -> {
+            usedRenderTypes.add(renderType);
+            return bufferSource.getBuffer(renderType);
+        };
 
         minecraft.gameRenderer.lightTexture().turnOnLightLayer();
 
+        RenderSystem.enableDepthTest();
+        RenderSystem.depthMask(true);
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        RenderSystem.setShaderTexture(0, TextureAtlas.LOCATION_BLOCKS);
+
         for (PreviewBlock previewBlock : structure.surfaceBlocks()) {
             BlockEntity be = blockEntities.get(previewBlock.pos());
-            if (be == null) continue;
+
+            if (be == null) {
+                continue;
+            }
 
             BlockEntityRenderer<BlockEntity> renderer = beDispatcher.getRenderer(be);
-            if (renderer == null) continue;
+
+            if (renderer == null) {
+                continue;
+            }
 
             BlockPos worldPos = origin.offset(previewBlock.pos());
+
             poseStack.pushPose();
             poseStack.translate(worldPos.getX(), worldPos.getY(), worldPos.getZ());
+
             try {
-                renderer.render(be, partialTick, poseStack, ghostSource, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);
+                renderer.render(
+                        be,
+                        partialTick,
+                        poseStack,
+                        previewSource,
+                        LightTexture.FULL_BRIGHT,
+                        OverlayTexture.NO_OVERLAY
+                );
             } catch (Throwable t) {
                 CrazyAddons.LOGGER.debug(t.getLocalizedMessage());
             }
+
             poseStack.popPose();
         }
 
-        bufferSource.endBatch();
+        for (RenderType renderType : usedRenderTypes) {
+            bufferSource.endBatch(renderType);
+        }
+
+        RenderSystem.depthMask(true);
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+
         minecraft.gameRenderer.lightTexture().turnOffLightLayer();
-    }
-
-    private static RenderType toTranslucentRenderType(RenderType renderType) {
-        return translucentTypeCache.computeIfAbsent(renderType, rt -> {
-            ResourceLocation texture = extractRenderTypeTexture(rt);
-            if (texture == null) return rt;
-            return rt.toString().contains("no_cull")
-                    ? RenderType.entityTranslucent(texture)
-                    : RenderType.entityTranslucentCull(texture);
-        });
-    }
-
-    private static ResourceLocation extractRenderTypeTexture(RenderType renderType) {
-        if (renderType instanceof RenderTypeTextureAccess access) {
-            return access.crazyae2addons$getTextureLocation();
-        }
-        return null;
-    }
-
-    private record AlphaScaledVertexConsumer(VertexConsumer delegate, float alpha) implements VertexConsumer {
-
-        @Override
-        public VertexConsumer vertex(double x, double y, double z) {
-            delegate.vertex(x, y, z);
-            return this;
-        }
-
-        @Override
-        public VertexConsumer color(int r, int g, int b, int a) {
-            delegate.color(r, g, b, Math.round(a * alpha));
-            return this;
-        }
-
-        @Override
-        public VertexConsumer uv(float u, float v) {
-            delegate.uv(u, v);
-            return this;
-        }
-
-        @Override
-        public VertexConsumer overlayCoords(int u, int v) {
-            delegate.overlayCoords(u, v);
-            return this;
-        }
-
-        @Override
-        public VertexConsumer uv2(int u, int v) {
-            delegate.uv2(u, v);
-            return this;
-        }
-
-        @Override
-        public VertexConsumer normal(float x, float y, float z) {
-            delegate.normal(x, y, z);
-            return this;
-        }
-
-        @Override
-        public void endVertex() {
-            delegate.endVertex();
-        }
-
-        @Override
-        public void defaultColor(int r, int g, int b, int a) {
-            delegate.defaultColor(r, g, b, Math.round(a * alpha));
-        }
-
-        @Override
-        public void unsetDefaultColor() {
-            delegate.unsetDefaultColor();
-        }
     }
 
     private static void renderLineBoxes(
             Minecraft minecraft,
             PoseStack poseStack,
             PreviewStructure structure,
-            BlockPos origin
+            BlockPos origin,
+            boolean markSameBlocksAsBlue
     ) {
         RenderSystem.disableDepthTest();
         RenderSystem.depthMask(false);
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        RenderSystem.lineWidth(5.0F);
-        RenderSystem.setShader(GameRenderer::getRendertypeLinesShader);
 
-        Tesselator tesselator = Tesselator.getInstance();
-        BufferBuilder buffer = tesselator.getBuilder();
-
-        PoseStack.Pose pose = poseStack.last();
-        Matrix4f poseMatrix = pose.pose();
-        Matrix3f normalMatrix = pose.normal();
-
-        buffer.begin(VertexFormat.Mode.LINES, DefaultVertexFormat.POSITION_COLOR_NORMAL);
+        MultiBufferSource.BufferSource bufferSource = minecraft.renderBuffers().bufferSource();
+        VertexConsumer lines = bufferSource.getBuffer(RenderType.lines());
 
         for (PreviewBlock previewBlock : structure.blocks()) {
             BlockPos worldPos = origin.offset(previewBlock.pos());
@@ -593,29 +580,44 @@ public class PortableSpatialStoragePreviewRenderer {
                 continue;
             }
 
-            addLineBox(
-                    buffer,
-                    poseMatrix,
-                    normalMatrix,
+            BlockState previewState = previewBlock.state();
+
+            boolean sameBlock = currentState.equals(previewState);
+            boolean blueInfoBox = markSameBlocksAsBlue && sameBlock;
+
+            float red = blueInfoBox ? 0.20f : 1.00f;
+            float green = blueInfoBox ? 0.85f : 0.00f;
+            float blue = blueInfoBox ? 1.00f : 0.00f;
+
+            LevelRenderer.renderLineBox(
+                    poseStack,
+                    lines,
                     worldPos.getX(),
                     worldPos.getY(),
                     worldPos.getZ(),
                     worldPos.getX() + 1.0f,
                     worldPos.getY() + 1.0f,
                     worldPos.getZ() + 1.0f,
-                    1.0f, 0.0f, 0.0f, 1.0f
+                    red,
+                    green,
+                    blue,
+                    1.0f
             );
         }
 
-        BufferUploader.drawWithShader(buffer.end());
+        bufferSource.endBatch(RenderType.lines());
 
-        RenderSystem.lineWidth(1.0F);
         RenderSystem.depthMask(true);
         RenderSystem.enableDepthTest();
         RenderSystem.disableBlend();
     }
 
-    private static void renderSelectionPreview(PoseStack poseStack, BlockPos a, BlockPos b) {
+    private static void renderSelectionPreview(
+            Minecraft minecraft,
+            PoseStack poseStack,
+            BlockPos a,
+            BlockPos b
+    ) {
         int minX = Math.min(a.getX(), b.getX());
         int minY = Math.min(a.getY(), b.getY());
         int minZ = Math.min(a.getZ(), b.getZ());
@@ -627,6 +629,7 @@ public class PortableSpatialStoragePreviewRenderer {
         float x1 = minX;
         float y1 = minY;
         float z1 = minZ;
+
         float x2 = maxX + 1.0f;
         float y2 = maxY + 1.0f;
         float z2 = maxZ + 1.0f;
@@ -637,11 +640,65 @@ public class PortableSpatialStoragePreviewRenderer {
         RenderSystem.disableDepthTest();
         RenderSystem.depthMask(false);
 
-        renderFilledSelectionCuboid(poseStack, x1, y1, z1, x2, y2, z2, 0.20f, 0.85f, 1.00f, 0.12f);
-        renderSelectionOutline(poseStack, x1, y1, z1, x2, y2, z2, 0.20f, 0.85f, 1.00f, 0.95f);
+        MultiBufferSource.BufferSource bufferSource = minecraft.renderBuffers().bufferSource();
 
-        renderCornerMarker(poseStack, a, 1.00f, 0.90f, 0.20f, 1.00f);
-        renderCornerMarker(poseStack, b, 0.20f, 1.00f, 0.85f, 1.00f);
+        VertexConsumer fill = bufferSource.getBuffer(PreviewRenderTypes.SELECTION_FILL);
+
+        addVisibleSelectionFillBox(
+                minecraft,
+                poseStack,
+                fill,
+                x1,
+                y1,
+                z1,
+                x2,
+                y2,
+                z2,
+                0.20f,
+                0.85f,
+                1.00f,
+                0.075f
+        );
+
+        VertexConsumer lines = bufferSource.getBuffer(RenderType.lines());
+
+        LevelRenderer.renderLineBox(
+                poseStack,
+                lines,
+                x1,
+                y1,
+                z1,
+                x2,
+                y2,
+                z2,
+                0.20f,
+                0.85f,
+                1.00f,
+                0.95f
+        );
+
+        renderCornerMarker(
+                lines,
+                poseStack,
+                a,
+                1.00f,
+                0.90f,
+                0.20f,
+                1.00f
+        );
+
+        renderCornerMarker(
+                lines,
+                poseStack,
+                b,
+                0.20f,
+                1.00f,
+                0.85f,
+                1.00f
+        );
+
+        bufferSource.endBatch(PreviewRenderTypes.SELECTION_FILL);
+        bufferSource.endBatch(RenderType.lines());
 
         RenderSystem.depthMask(true);
         RenderSystem.enableDepthTest();
@@ -649,156 +706,149 @@ public class PortableSpatialStoragePreviewRenderer {
         RenderSystem.disableBlend();
     }
 
-    private static void renderFilledSelectionCuboid(
+    private static void addVisibleSelectionFillBox(
+            Minecraft minecraft,
             PoseStack poseStack,
-            float minX, float minY, float minZ,
-            float maxX, float maxY, float maxZ,
-            float red, float green, float blue, float alpha
+            VertexConsumer consumer,
+            float minX,
+            float minY,
+            float minZ,
+            float maxX,
+            float maxY,
+            float maxZ,
+            float red,
+            float green,
+            float blue,
+            float alpha
     ) {
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        Vec3 camera = minecraft.gameRenderer.getMainCamera().getPosition();
+        Matrix4f matrix = poseStack.last().pose();
 
-        Tesselator tesselator = Tesselator.getInstance();
-        BufferBuilder buffer = tesselator.getBuilder();
+        if (camera.x < minX) {
+            quad(
+                    consumer,
+                    matrix,
+                    minX, minY, minZ,
+                    minX, maxY, minZ,
+                    minX, maxY, maxZ,
+                    minX, minY, maxZ,
+                    red, green, blue, alpha
+            );
+        } else if (camera.x > maxX) {
+            quad(
+                    consumer,
+                    matrix,
+                    maxX, minY, maxZ,
+                    maxX, maxY, maxZ,
+                    maxX, maxY, minZ,
+                    maxX, minY, minZ,
+                    red, green, blue, alpha
+            );
+        }
 
-        PoseStack.Pose pose = poseStack.last();
-        Matrix4f poseMatrix = pose.pose();
+        if (camera.y < minY) {
+            quad(
+                    consumer,
+                    matrix,
+                    minX, minY, maxZ,
+                    maxX, minY, maxZ,
+                    maxX, minY, minZ,
+                    minX, minY, minZ,
+                    red, green, blue, alpha
+            );
+        } else if (camera.y > maxY) {
+            quad(
+                    consumer,
+                    matrix,
+                    minX, maxY, minZ,
+                    maxX, maxY, minZ,
+                    maxX, maxY, maxZ,
+                    minX, maxY, maxZ,
+                    red, green, blue, alpha
+            );
+        }
 
-        buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-
-        addFilledBox(buffer, poseMatrix, minX, minY, minZ, maxX, maxY, maxZ, red, green, blue, alpha);
-
-        BufferUploader.drawWithShader(buffer.end());
+        if (camera.z < minZ) {
+            quad(
+                    consumer,
+                    matrix,
+                    maxX, minY, minZ,
+                    maxX, maxY, minZ,
+                    minX, maxY, minZ,
+                    minX, minY, minZ,
+                    red, green, blue, alpha
+            );
+        } else if (camera.z > maxZ) {
+            quad(
+                    consumer,
+                    matrix,
+                    minX, minY, maxZ,
+                    minX, maxY, maxZ,
+                    maxX, maxY, maxZ,
+                    maxX, minY, maxZ,
+                    red, green, blue, alpha
+            );
+        }
     }
 
-    private static void renderSelectionOutline(
-            PoseStack poseStack,
-            float minX, float minY, float minZ,
-            float maxX, float maxY, float maxZ,
-            float red, float green, float blue, float alpha
+    private static void quad(
+            VertexConsumer consumer,
+            Matrix4f matrix,
+            float x1,
+            float y1,
+            float z1,
+            float x2,
+            float y2,
+            float z2,
+            float x3,
+            float y3,
+            float z3,
+            float x4,
+            float y4,
+            float z4,
+            float red,
+            float green,
+            float blue,
+            float alpha
     ) {
-        RenderSystem.lineWidth(2.0F);
-        RenderSystem.setShader(GameRenderer::getRendertypeLinesShader);
-
-        Tesselator tesselator = Tesselator.getInstance();
-        BufferBuilder buffer = tesselator.getBuilder();
-
-        PoseStack.Pose pose = poseStack.last();
-        Matrix4f poseMatrix = pose.pose();
-        Matrix3f normalMatrix = pose.normal();
-
-        buffer.begin(VertexFormat.Mode.LINES, DefaultVertexFormat.POSITION_COLOR_NORMAL);
-
-        addLineBox(buffer, poseMatrix, normalMatrix, minX, minY, minZ, maxX, maxY, maxZ, red, green, blue, alpha);
-
-        BufferUploader.drawWithShader(buffer.end());
-        RenderSystem.lineWidth(1.0F);
+        consumer.vertex(matrix, x1, y1, z1).color(red, green, blue, alpha).endVertex();
+        consumer.vertex(matrix, x2, y2, z2).color(red, green, blue, alpha).endVertex();
+        consumer.vertex(matrix, x3, y3, z3).color(red, green, blue, alpha).endVertex();
+        consumer.vertex(matrix, x4, y4, z4).color(red, green, blue, alpha).endVertex();
     }
 
     private static void renderCornerMarker(
+            VertexConsumer lines,
             PoseStack poseStack,
             BlockPos pos,
-            float red, float green, float blue, float alpha
+            float red,
+            float green,
+            float blue,
+            float alpha
     ) {
         float expand = 0.05f;
 
         float minX = pos.getX() - expand;
         float minY = pos.getY() - expand;
         float minZ = pos.getZ() - expand;
+
         float maxX = pos.getX() + 1.0f + expand;
         float maxY = pos.getY() + 1.0f + expand;
         float maxZ = pos.getZ() + 1.0f + expand;
 
-        renderSelectionOutline(poseStack, minX, minY, minZ, maxX, maxY, maxZ, red, green, blue, alpha);
-    }
-
-    private static void addFilledBox(
-            BufferBuilder buffer,
-            Matrix4f poseMatrix,
-            float minX, float minY, float minZ,
-            float maxX, float maxY, float maxZ,
-            float red, float green, float blue, float alpha
-    ) {
-        quad(buffer, poseMatrix, minX, minY, minZ, maxX, minY, minZ, maxX, minY, maxZ, minX, minY, maxZ, red, green, blue, alpha);
-        quad(buffer, poseMatrix, minX, maxY, minZ, minX, maxY, maxZ, maxX, maxY, maxZ, maxX, maxY, minZ, red, green, blue, alpha);
-
-        quad(buffer, poseMatrix, minX, minY, minZ, minX, maxY, minZ, maxX, maxY, minZ, maxX, minY, minZ, red, green, blue, alpha);
-        quad(buffer, poseMatrix, minX, minY, maxZ, maxX, minY, maxZ, maxX, maxY, maxZ, minX, maxY, maxZ, red, green, blue, alpha);
-
-        quad(buffer, poseMatrix, minX, minY, minZ, minX, minY, maxZ, minX, maxY, maxZ, minX, maxY, minZ, red, green, blue, alpha);
-        quad(buffer, poseMatrix, maxX, minY, minZ, maxX, maxY, minZ, maxX, maxY, maxZ, maxX, minY, maxZ, red, green, blue, alpha);
-    }
-
-    private static void quad(
-            BufferBuilder buffer,
-            Matrix4f poseMatrix,
-            float x1, float y1, float z1,
-            float x2, float y2, float z2,
-            float x3, float y3, float z3,
-            float x4, float y4, float z4,
-            float red, float green, float blue, float alpha
-    ) {
-        buffer.vertex(poseMatrix, x1, y1, z1).color(red, green, blue, alpha).endVertex();
-        buffer.vertex(poseMatrix, x2, y2, z2).color(red, green, blue, alpha).endVertex();
-        buffer.vertex(poseMatrix, x3, y3, z3).color(red, green, blue, alpha).endVertex();
-        buffer.vertex(poseMatrix, x4, y4, z4).color(red, green, blue, alpha).endVertex();
-    }
-
-    private static void addLineBox(
-            BufferBuilder buffer,
-            Matrix4f poseMatrix,
-            Matrix3f normalMatrix,
-            float minX, float minY, float minZ,
-            float maxX, float maxY, float maxZ,
-            float red, float green, float blue, float alpha
-    ) {
         LevelRenderer.renderLineBox(
-                new VertexConsumer() {
-                    @Override
-                    public VertexConsumer vertex(double x, double y, double z) {
-                        return buffer.vertex(poseMatrix, (float) x, (float) y, (float) z);
-                    }
-
-                    @Override
-                    public VertexConsumer color(int r, int g, int b, int a) {
-                        return buffer.color(r, g, b, a);
-                    }
-
-                    @Override
-                    public VertexConsumer uv(float u, float v) {
-                        return this;
-                    }
-
-                    @Override
-                    public VertexConsumer overlayCoords(int u, int v) {
-                        return this;
-                    }
-
-                    @Override
-                    public VertexConsumer uv2(int u, int v) {
-                        return this;
-                    }
-
-                    @Override
-                    public VertexConsumer normal(float x, float y, float z) {
-                        return buffer.normal(normalMatrix, x, y, z);
-                    }
-
-                    @Override
-                    public void endVertex() {
-                        buffer.endVertex();
-                    }
-
-                    @Override
-                    public void defaultColor(int r, int g, int b, int a) {
-                    }
-
-                    @Override
-                    public void unsetDefaultColor() {
-                    }
-                },
-                minX, minY, minZ,
-                maxX, maxY, maxZ,
-                red, green, blue, alpha
+                poseStack,
+                lines,
+                minX,
+                minY,
+                minZ,
+                maxX,
+                maxY,
+                maxZ,
+                red,
+                green,
+                blue,
+                alpha
         );
     }
 }

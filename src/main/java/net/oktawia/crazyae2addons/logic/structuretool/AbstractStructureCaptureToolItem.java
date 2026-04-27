@@ -18,6 +18,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -33,6 +34,7 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -48,24 +50,30 @@ import net.oktawia.crazyae2addons.util.TemplateUtil;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.DoubleSupplier;
 
 public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalItem implements IMenuItem, IUpgradeableObject {
 
-    protected static final int DEFAULT_BASE_POWER = 200_000;
     protected static final int DEFAULT_UPGRADE_SLOTS = 4;
     protected static final double POWER_PER_BLOCK_PASTE = 1.0D;
     protected static final String CURRENT_POWER_NBT_KEY = "internalCurrentPower";
+
     private static final String WAS_HELD_IN_HAND_NBT_KEY = "wasHeldInHand";
+    private static final String SELECTION_DIMENSION_NBT_KEY = "selectionDimension";
 
     private static final int HUD_COLOR_CYAN = 0x55FFFF;
     private static final int HUD_COLOR_RED = 0xFF4040;
     private static final int HUD_TIME_SHORT = 60;
-    private static final int HUD_TIME_MEDIUM = 80;
+    protected static final int HUD_TIME_MEDIUM = 100;
+
+    private static final int CUT_CLEAR_FLAGS =
+            Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE | Block.UPDATE_SUPPRESS_DROPS;
 
     private final int upgradeSlots;
 
@@ -85,6 +93,16 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
     @FunctionalInterface
     public interface RequirementSink {
         void add(ItemStack stack);
+    }
+
+    protected record CapturedStructureResult(
+            String structureId,
+            CompoundTag savedTag,
+            BlockPos min,
+            BlockPos max,
+            BlockPos origin,
+            double usedPower
+    ) {
     }
 
     protected abstract MenuType<?> getToolMenuType();
@@ -109,6 +127,14 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
 
     protected double getPowerPerBlockPaste() {
         return POWER_PER_BLOCK_PASTE;
+    }
+
+    protected void afterStructureCaptured(
+            ServerLevel level,
+            Player player,
+            ItemStack stack,
+            CapturedStructureResult result
+    ) {
     }
 
     @Override
@@ -155,6 +181,10 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
         }
 
         tag.putBoolean(WAS_HELD_IN_HAND_NBT_KEY, isHeldNow);
+
+        if (isHeldNow) {
+            ensureSelectionDimensionOrClear(level, player, stack, true);
+        }
     }
 
     protected boolean isHeldInHand(Player player, ItemStack stack) {
@@ -165,12 +195,15 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
         if (player.isCreative()) {
             return true;
         }
+
         if (amount <= 0) {
             return true;
         }
+
         if (getAECurrentPower(stack) + 0.0001D < amount) {
             return false;
         }
+
         return extractAEPower(stack, amount, Actionable.MODULATE) >= amount - 0.0001D;
     }
 
@@ -209,11 +242,13 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
 
     protected boolean checkStructureSizeLimit(Player player, CompoundTag templateTag) {
         int maxSize = getMaxStructureSize();
+
         if (maxSize < 0) {
             return true;
         }
 
         int blockCount = TemplateUtil.parseRawBlocksFromTag(templateTag).size();
+
         if (blockCount <= maxSize) {
             return true;
         }
@@ -229,6 +264,230 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
         return false;
     }
 
+    protected static boolean isTemplateEmpty(CompoundTag templateTag) {
+        return TemplateUtil.parseRawBlocksFromTag(templateTag).isEmpty();
+    }
+
+    private boolean ensureSelectionDimensionOrClear(
+            Level level,
+            Player player,
+            ItemStack stack,
+            boolean notify
+    ) {
+        if (StructureToolStackState.hasStructure(stack)) {
+            clearSelectionDimension(stack);
+            return true;
+        }
+
+        BlockPos selectionA = StructureToolStackState.getSelectionA(stack);
+
+        if (selectionA == null) {
+            clearSelectionDimension(stack);
+            return true;
+        }
+
+        String currentDimension = level.dimension().location().toString();
+        CompoundTag tag = stack.getOrCreateTag();
+
+        if (!tag.contains(SELECTION_DIMENSION_NBT_KEY, Tag.TAG_STRING)) {
+            tag.putString(SELECTION_DIMENSION_NBT_KEY, currentDimension);
+            return true;
+        }
+
+        String selectionDimension = tag.getString(SELECTION_DIMENSION_NBT_KEY);
+
+        if (currentDimension.equals(selectionDimension)) {
+            return true;
+        }
+
+        clearSelectionState(stack);
+
+        if (player instanceof ServerPlayer serverPlayer) {
+            StructureToolPreviewDispatcher.sendPreviewToPlayer(serverPlayer, null);
+        }
+
+        if (notify) {
+            showHud(
+                    player,
+                    HUD_TIME_MEDIUM,
+                    red(Component.translatable(LangDefs.STRUCTURE_GADGET_SELECTION_CLEARED.getTranslationKey())),
+                    cyan(Component.translatable(LangDefs.STRUCTURE_GADGET_DIMENSION_CHANGED.getTranslationKey()))
+            );
+        }
+
+        return false;
+    }
+
+    private static void rememberSelectionDimension(ItemStack stack, Level level) {
+        stack.getOrCreateTag().putString(
+                SELECTION_DIMENSION_NBT_KEY,
+                level.dimension().location().toString()
+        );
+    }
+
+    private static void clearSelectionDimension(ItemStack stack) {
+        CompoundTag tag = stack.getTag();
+
+        if (tag != null) {
+            tag.remove(SELECTION_DIMENSION_NBT_KEY);
+        }
+    }
+
+    protected static void clearSelectionState(ItemStack stack) {
+        StructureToolStackState.clearSelection(stack);
+        StructureToolStackState.resetPreviewSideMap(stack);
+        clearSelectionDimension(stack);
+    }
+
+    protected static boolean shouldSkipStructureToolBlock(
+            Level level,
+            BlockPos pos,
+            BlockState state
+    ) {
+        if (state.isAir()) {
+            return false;
+        }
+
+        if (state.is(Blocks.BEDROCK)
+                || state.is(Blocks.NETHER_PORTAL)
+                || state.is(Blocks.END_PORTAL)
+                || state.is(Blocks.END_GATEWAY)
+                || state.is(Blocks.BARRIER)
+                || state.is(Blocks.COMMAND_BLOCK)
+                || state.is(Blocks.CHAIN_COMMAND_BLOCK)
+                || state.is(Blocks.REPEATING_COMMAND_BLOCK)
+                || state.is(Blocks.STRUCTURE_BLOCK)
+                || state.is(Blocks.STRUCTURE_VOID)
+                || state.is(Blocks.JIGSAW)) {
+            return true;
+        }
+
+        try {
+            return state.getDestroySpeed(level, pos) < 0.0F;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    protected static CompoundTag filterUncapturableBlocksFromTemplate(
+            Level level,
+            BlockPos worldOrigin,
+            CompoundTag templateTag
+    ) {
+        CompoundTag filtered = templateTag.copy();
+        List<TemplateUtil.BlockInfo> parsedBlocks = TemplateUtil.parseRawBlocksFromTag(filtered);
+
+        if (parsedBlocks.isEmpty()) {
+            return filtered;
+        }
+
+        Set<BlockPos> skippedLocalPositions = new HashSet<>();
+
+        for (TemplateUtil.BlockInfo info : parsedBlocks) {
+            BlockPos localPos = info.pos();
+            BlockPos worldPos = worldOrigin.offset(localPos);
+
+            if (shouldSkipStructureToolBlock(level, worldPos, info.state())) {
+                skippedLocalPositions.add(localPos);
+            }
+        }
+
+        if (skippedLocalPositions.isEmpty()) {
+            return filtered;
+        }
+
+        removeTemplateBlockEntriesAt(filtered, skippedLocalPositions);
+        removeCloneMetadataEntriesAt(filtered, skippedLocalPositions);
+
+        return filtered;
+    }
+
+    private static void removeTemplateBlockEntriesAt(
+            CompoundTag templateTag,
+            Set<BlockPos> skippedLocalPositions
+    ) {
+        if (!templateTag.contains("blocks", Tag.TAG_LIST)) {
+            return;
+        }
+
+        ListTag oldBlocks = templateTag.getList("blocks", Tag.TAG_COMPOUND);
+        ListTag newBlocks = new ListTag();
+
+        for (int i = 0; i < oldBlocks.size(); i++) {
+            CompoundTag blockEntry = oldBlocks.getCompound(i);
+            BlockPos localPos = readTemplateBlockPos(blockEntry);
+
+            if (localPos == null || !skippedLocalPositions.contains(localPos)) {
+                newBlocks.add(blockEntry.copy());
+            }
+        }
+
+        templateTag.put("blocks", newBlocks);
+    }
+
+    private static void removeCloneMetadataEntriesAt(
+            CompoundTag templateTag,
+            Set<BlockPos> skippedLocalPositions
+    ) {
+        if (!templateTag.contains(StructureToolKeys.CLONE_METADATA_KEY, Tag.TAG_COMPOUND)) {
+            return;
+        }
+
+        CompoundTag cloneMetadata = templateTag.getCompound(StructureToolKeys.CLONE_METADATA_KEY).copy();
+
+        if (!cloneMetadata.contains(StructureToolKeys.CLONE_METADATA_BLOCKS_KEY, Tag.TAG_LIST)) {
+            templateTag.put(StructureToolKeys.CLONE_METADATA_KEY, cloneMetadata);
+            return;
+        }
+
+        ListTag oldBlocks = cloneMetadata.getList(StructureToolKeys.CLONE_METADATA_BLOCKS_KEY, Tag.TAG_COMPOUND);
+        ListTag newBlocks = new ListTag();
+
+        for (int i = 0; i < oldBlocks.size(); i++) {
+            CompoundTag blockEntry = oldBlocks.getCompound(i);
+            BlockPos localPos = readCloneMetadataBlockPos(blockEntry);
+
+            if (localPos == null || !skippedLocalPositions.contains(localPos)) {
+                newBlocks.add(blockEntry.copy());
+            }
+        }
+
+        cloneMetadata.put(StructureToolKeys.CLONE_METADATA_BLOCKS_KEY, newBlocks);
+        templateTag.put(StructureToolKeys.CLONE_METADATA_KEY, cloneMetadata);
+    }
+
+    private static @Nullable BlockPos readTemplateBlockPos(CompoundTag blockEntry) {
+        if (!blockEntry.contains("pos", Tag.TAG_LIST)) {
+            return null;
+        }
+
+        ListTag posTag = blockEntry.getList("pos", Tag.TAG_INT);
+
+        if (posTag.size() < 3) {
+            return null;
+        }
+
+        return new BlockPos(
+                posTag.getInt(0),
+                posTag.getInt(1),
+                posTag.getInt(2)
+        );
+    }
+
+    private static @Nullable BlockPos readCloneMetadataBlockPos(CompoundTag blockEntry) {
+        if (!blockEntry.contains(StructureToolKeys.CLONE_KEY_POS, Tag.TAG_COMPOUND)) {
+            return null;
+        }
+
+        CompoundTag posTag = blockEntry.getCompound(StructureToolKeys.CLONE_KEY_POS);
+
+        return new BlockPos(
+                posTag.getInt("x"),
+                posTag.getInt("y"),
+                posTag.getInt("z")
+        );
+    }
+
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
@@ -238,6 +497,10 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
         }
 
         if (!level.isClientSide()) {
+            if (!ensureSelectionDimensionOrClear(level, player, stack, true)) {
+                return InteractionResultHolder.success(stack);
+            }
+
             boolean hasStructure = StructureToolStackState.hasStructure(stack);
 
             if (player.isShiftKeyDown()) {
@@ -270,6 +533,7 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
         }
 
         Player player = context.getPlayer();
+
         if (player == null) {
             return InteractionResult.PASS;
         }
@@ -278,11 +542,16 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
         BlockPos clickedPos = context.getClickedPos();
         boolean hasStructure = StructureToolStackState.hasStructure(stack);
 
+        if (!level.isClientSide() && !ensureSelectionDimensionOrClear(level, player, stack, true)) {
+            return InteractionResult.sidedSuccess(level.isClientSide());
+        }
+
         if (player.isShiftKeyDown()) {
             if (hasStructure) {
                 if (!level.isClientSide()) {
                     openMenu(player, context.getHand());
                 }
+
                 return InteractionResult.sidedSuccess(level.isClientSide());
             }
 
@@ -293,6 +562,7 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
                 StructureToolStackState.setSelectionA(stack, clickedPos.immutable());
 
                 if (!level.isClientSide()) {
+                    rememberSelectionDimension(stack, level);
                     showHud(player, Component.translatable(LangDefs.CORNER_A_SELECTED.getTranslationKey()));
                 }
             } else if (selectionB == null) {
@@ -303,7 +573,7 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
                     showHud(player, Component.translatable(LangDefs.CORNER_B_SELECTED.getTranslationKey()));
                 }
             } else {
-                StructureToolStackState.clearSelection(stack);
+                clearSelectionState(stack);
 
                 if (!level.isClientSide()) {
                     showHud(player, Component.translatable(LangDefs.SELECTION_RESTARTED.getTranslationKey()));
@@ -315,8 +585,14 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
 
         if (hasStructure) {
             if (!level.isClientSide()) {
-                onUseOnWithStoredStructure((ServerLevel) level, player, stack, clickedPos.relative(context.getClickedFace()));
+                onUseOnWithStoredStructure(
+                        (ServerLevel) level,
+                        player,
+                        stack,
+                        clickedPos.relative(context.getClickedFace())
+                );
             }
+
             return InteractionResult.sidedSuccess(level.isClientSide());
         }
 
@@ -346,6 +622,10 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
     }
 
     protected void selectSecondCorner(ServerLevel level, Player player, ItemStack stack) {
+        if (!ensureSelectionDimensionOrClear(level, player, stack, true)) {
+            return;
+        }
+
         BlockHitResult hit = StructureToolUtil.rayTrace(level, player, 50.0D);
 
         if (hit.getType() != HitResult.Type.BLOCK) {
@@ -368,33 +648,88 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
             return;
         }
 
-        BlockPos origin = b;
-        StructureToolStackState.setOrigin(stack, origin);
+        if (!ensureSelectionDimensionOrClear(level, player, stack, true)) {
+            return;
+        }
 
         BlockPos min = new BlockPos(
                 Math.min(a.getX(), b.getX()),
                 Math.min(a.getY(), b.getY()),
                 Math.min(a.getZ(), b.getZ())
         );
+
         BlockPos max = new BlockPos(
                 Math.max(a.getX(), b.getX()),
                 Math.max(a.getY(), b.getY()),
                 Math.max(a.getZ(), b.getZ())
         );
 
+        captureStructureFromBounds(
+                level,
+                player,
+                stack,
+                min,
+                max,
+                b,
+                true,
+                removeCapturedBlocks(),
+                !player.isCreative(),
+                true
+        );
+    }
+
+    protected @Nullable CapturedStructureResult captureStructureFromBounds(
+            ServerLevel level,
+            Player player,
+            ItemStack stack,
+            BlockPos min,
+            BlockPos max,
+            BlockPos origin,
+            boolean consumePower,
+            boolean removeBlocks,
+            boolean filterUncapturable,
+            boolean showSuccess
+    ) {
         BlockPos size = max.subtract(min).offset(1, 1, 1);
 
         StructureTemplate template = new StructureTemplate();
         template.fillFromWorld(level, min, size, false, Blocks.STRUCTURE_VOID);
 
-        CompoundTag savedTag = TemplateUtil.stripAirFromTag(template.save(new CompoundTag()));
+        CompoundTag savedTag = template.save(new CompoundTag());
+
+        if (filterUncapturable) {
+            savedTag = filterUncapturableBlocksFromTemplate(level, min, savedTag);
+        }
+
+        savedTag = TemplateUtil.stripAirFromTag(savedTag);
         TemplateUtil.setTemplateOffset(savedTag, BlockPos.ZERO);
 
+        if (isTemplateEmpty(savedTag)) {
+            clearSelectionState(stack);
+
+            TemplateUtil.setTemplateOffset(stack.getOrCreateTag(), BlockPos.ZERO);
+            TemplateUtil.setEnergyOrigin(stack.getOrCreateTag(), BlockPos.ZERO);
+
+            if (player instanceof ServerPlayer serverPlayer) {
+                StructureToolPreviewDispatcher.sendPreviewToPlayer(serverPlayer, null);
+            }
+
+            showHud(
+                    player,
+                    HUD_TIME_MEDIUM,
+                    red(Component.translatable(LangDefs.STRUCTURE_GADGET_SELECTION_EMPTY_OR_SKIPPED.getTranslationKey())),
+                    cyan(Component.translatable(LangDefs.STRUCTURE_GADGET_NOTHING_CAPTURED.getTranslationKey()))
+            );
+
+            return null;
+        }
+
         if (!checkStructureSizeLimit(player, savedTag)) {
-            return;
+            return null;
         }
 
         CompoundTag metadata = getMetadata(level, player, min, max, savedTag);
+
         if (!metadata.isEmpty()) {
             savedTag.put(StructureToolKeys.CLONE_METADATA_KEY, metadata);
         }
@@ -409,40 +744,106 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
                 getPowerPerBlockCapture()
         );
 
-        if (!tryUsePower(player, stack, requiredPower)) {
-            showNotEnoughPower(player, stack, requiredPower);
-            return;
+        double usedPower = 0.0D;
+
+        if (consumePower && !player.isCreative()) {
+            if (!tryUsePower(player, stack, requiredPower)) {
+                showNotEnoughPower(player, stack, requiredPower);
+                return null;
+            }
+
+            usedPower = requiredPower;
         }
 
-        String id = UUID.randomUUID().toString();
+        String id;
 
         try {
-            StructureToolStructureStore.save(level.getServer(), id, savedTag);
+            id = saveCapturedStructure(level, player, stack, savedTag);
             StructureToolStackState.setStructureId(stack, id);
-            StructureToolStackState.clearSelection(stack);
-            StructureToolStackState.resetPreviewSideMap(stack);
+            clearSelectionState(stack);
         } catch (IOException exception) {
             showHud(player, Component.translatable(LangDefs.FAILED_TO_SAVE_STRUCTURE.getTranslationKey()));
-            return;
+            return null;
         }
 
-        if (removeCapturedBlocks()) {
-            for (int y = min.getY(); y <= max.getY(); y++) {
-                for (int z = min.getZ(); z <= max.getZ(); z++) {
-                    for (int x = min.getX(); x <= max.getX(); x++) {
-                        BlockPos worldPos = new BlockPos(x, y, z);
-                        level.removeBlockEntity(worldPos);
-                        level.setBlock(worldPos, Blocks.AIR.defaultBlockState(), 3);
-                    }
-                }
-            }
+        CapturedStructureResult result = new CapturedStructureResult(
+                id,
+                savedTag,
+                min,
+                max,
+                origin,
+                usedPower
+        );
+
+        afterStructureCaptured(level, player, stack, result);
+
+        if (removeBlocks) {
+            removeCapturedBlocksWithoutDrops(
+                    level,
+                    min,
+                    savedTag,
+                    filterUncapturable
+            );
         }
 
         if (player instanceof ServerPlayer serverPlayer) {
             StructureToolPreviewDispatcher.sendPreviewToPlayer(serverPlayer, savedTag);
         }
 
-        showHud(player, getCaptureSuccessMessage());
+        if (showSuccess) {
+            if (removeCapturedBlocks()) {
+                showHud(
+                        player,
+                        HUD_TIME_MEDIUM,
+                        cyan(getCaptureSuccessMessage()),
+                        cyan(Component.translatable(LangDefs.STRUCTURE_GADGET_UNDO_HINT.getTranslationKey()))
+                );
+            } else {
+                showHud(player, getCaptureSuccessMessage());
+            }
+        }
+
+        return result;
+    }
+
+    private static void removeCapturedBlocksWithoutDrops(
+            ServerLevel level,
+            BlockPos min,
+            CompoundTag savedTag,
+            boolean skipUncapturable
+    ) {
+        BlockState air = Blocks.AIR.defaultBlockState();
+        List<TemplateUtil.BlockInfo> blocksToRemove = TemplateUtil.parseRawBlocksFromTag(savedTag);
+
+        for (TemplateUtil.BlockInfo info : blocksToRemove) {
+            BlockPos worldPos = min.offset(info.pos());
+
+            if (skipUncapturable && shouldSkipStructureToolBlock(level, worldPos, level.getBlockState(worldPos))) {
+                continue;
+            }
+
+            level.removeBlockEntity(worldPos);
+        }
+
+        for (TemplateUtil.BlockInfo info : blocksToRemove) {
+            BlockPos worldPos = min.offset(info.pos());
+            BlockState currentState = level.getBlockState(worldPos);
+
+            if (currentState.isAir()) {
+                continue;
+            }
+
+            if (skipUncapturable && shouldSkipStructureToolBlock(level, worldPos, currentState)) {
+                continue;
+            }
+
+            level.setBlock(
+                    worldPos,
+                    air,
+                    CUT_CLEAR_FLAGS,
+                    0
+            );
+        }
     }
 
     private CompoundTag getMetadata(ServerLevel level, Player player, BlockPos min, BlockPos max, CompoundTag savedTag) {
@@ -451,6 +852,7 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
         RequirementAccumulator requirements = new RequirementAccumulator();
 
         Map<BlockPos, CompoundTag> rawBeTags = new LinkedHashMap<>();
+
         for (TemplateUtil.BlockInfo info : TemplateUtil.parseRawBlocksFromTag(savedTag)) {
             if (info.blockEntityTag() != null) {
                 rawBeTags.put(info.pos(), info.blockEntityTag());
@@ -464,10 +866,16 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
                     BlockPos localPos = worldPos.subtract(min);
 
                     BlockState state = level.getBlockState(worldPos);
+
+                    if (!player.isCreative() && shouldSkipStructureToolBlock(level, worldPos, state)) {
+                        continue;
+                    }
+
                     BlockEntity be = level.getBlockEntity(worldPos);
                     CompoundTag rawBeTag = rawBeTags.get(localPos);
 
                     boolean requirementsHandled = false;
+
                     for (StructureCloneExtension extension : StructureToolExtensions.clonerExtensions()) {
                         if (extension.handlesRequirements(state, rawBeTag)) {
                             requirementsHandled = true;
@@ -513,6 +921,7 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
         }
 
         ListTag requirementList = requirements.toListTag();
+
         if (!requirementList.isEmpty()) {
             data.put(StructureToolKeys.CLONE_REQUIREMENTS_KEY, requirementList);
         }
@@ -536,6 +945,7 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
         }
 
         Item item = level.getBlockState(pos).getBlock().asItem();
+
         if (item != Items.AIR) {
             requirements.addDefault(new ItemStack(item));
         }
@@ -543,9 +953,11 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
 
     private static CompoundTag writeBlockPos(BlockPos pos) {
         CompoundTag tag = new CompoundTag();
+
         tag.putInt("x", pos.getX());
         tag.putInt("y", pos.getY());
         tag.putInt("z", pos.getZ());
+
         return tag;
     }
 
@@ -558,6 +970,7 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
 
         private void add(ItemStack stack, RequirementKind kind) {
             ItemStack normalized = normalize(stack);
+
             if (normalized.isEmpty()) {
                 return;
             }
@@ -585,8 +998,10 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
 
             for (RequirementEntry entry : entries.values()) {
                 CompoundTag row = new CompoundTag();
+
                 row.put(StructureToolKeys.CLONE_KEY_STACK, entry.stack.save(new CompoundTag()));
                 row.putInt(StructureToolKeys.CLONE_KEY_COUNT, entry.count);
+
                 list.add(row);
             }
 
@@ -599,8 +1014,10 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
             }
 
             ItemStack copy = stack.copy();
+
             copy.setCount(1);
             copy.setTag(null);
+
             return copy;
         }
     }
@@ -628,20 +1045,34 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
         }
 
         var linkedPos = getLinkedPosition(item);
+
         if (linkedPos == null) {
             return null;
         }
 
         var linkedLevel = serverLevel.getServer().getLevel(linkedPos.dimension());
+
         if (linkedLevel == null) {
             return null;
         }
 
         var be = Platform.getTickingBlockEntity(linkedLevel, linkedPos.pos());
+
         if (!(be instanceof IWirelessAccessPoint accessPoint)) {
             return null;
         }
 
         return accessPoint.getGrid();
+    }
+
+    protected String saveCapturedStructure(
+            ServerLevel level,
+            Player player,
+            ItemStack stack,
+            CompoundTag savedTag
+    ) throws IOException {
+        String id = UUID.randomUUID().toString();
+        StructureToolStructureStore.save(level.getServer(), id, savedTag);
+        return id;
     }
 }

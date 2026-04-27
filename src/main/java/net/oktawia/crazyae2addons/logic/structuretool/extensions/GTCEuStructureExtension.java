@@ -30,7 +30,11 @@ import net.minecraftforge.common.util.FakePlayerFactory;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.registries.ForgeRegistries;
-import net.oktawia.crazyae2addons.logic.structuretool.*;
+import net.oktawia.crazyae2addons.logic.structuretool.AbstractStructureCaptureToolItem;
+import net.oktawia.crazyae2addons.logic.structuretool.ClonerPasteContext;
+import net.oktawia.crazyae2addons.logic.structuretool.PlacementPlan;
+import net.oktawia.crazyae2addons.logic.structuretool.StructureCloneExtension;
+import net.oktawia.crazyae2addons.logic.structuretool.StructurePasteExtension;
 import net.oktawia.crazyae2addons.util.NbtUtil;
 import net.oktawia.crazyae2addons.util.StructureToolKeys;
 import net.oktawia.crazyae2addons.util.TemplateUtil;
@@ -71,6 +75,7 @@ public final class GTCEuStructureExtension implements StructureCloneExtension, S
         }
 
         CompoundTag gregData = collectGregMetadata(rawBeTag, be, requirements);
+
         if (gregData.isEmpty()) {
             return false;
         }
@@ -93,6 +98,7 @@ public final class GTCEuStructureExtension implements StructureCloneExtension, S
         }
 
         CompoundTag gregMeta = getGregMetadata(blockMetadata);
+
         PlacementPlan plan = isGregPipeTag(rawBeTag)
                 ? buildGregPipePlacementPlan(player, state, rawBeTag, gregMeta, ctx)
                 : buildGenericGregPlacementPlan(player, state, rawBeTag, gregMeta, ctx);
@@ -108,11 +114,13 @@ public final class GTCEuStructureExtension implements StructureCloneExtension, S
             @Nullable CompoundTag blockMetadata
     ) {
         CompoundTag gregMeta = getGregMetadata(blockMetadata);
+
         if (gregMeta.isEmpty()) {
             return;
         }
 
         CompoundTag postPlacementTag = createPostPlacementTag(be, gregMeta);
+
         if (postPlacementTag.isEmpty()) {
             return;
         }
@@ -137,9 +145,26 @@ public final class GTCEuStructureExtension implements StructureCloneExtension, S
         BlockState frameState = getGregFrameState(frameMaterial);
 
         if (player.isCreative()) {
-            CompoundTag filteredCover = filterGregCoverForPlacement(coverData, null, true);
+            List<ItemStack> costs = new ArrayList<>();
+
+            if (!pipeItem.isEmpty()) {
+                costs.add(pipeItem);
+            }
+
+            if (!frameItem.isEmpty()) {
+                costs.add(frameItem);
+            }
+
+            CompoundTag filteredCover = filterGregCoverForPlacement(
+                    coverData,
+                    null,
+                    true,
+                    costs,
+                    null
+            );
+
             CompoundTag beTag = createWhitelistedGregPipeTag(rawBeTag, pipeData, filteredCover);
-            return new PlacementPlan(true, pipeState, beTag, List.of());
+            return new PlacementPlan(true, pipeState, beTag, costs);
         }
 
         Map<Item, Integer> reserved = new LinkedHashMap<>();
@@ -163,7 +188,14 @@ public final class GTCEuStructureExtension implements StructureCloneExtension, S
                 effectivePipeData.remove("frameMaterial");
             }
 
-            CompoundTag filteredCover = filterGregCoverForPlacement(coverData, reserved, false, costs, ctx);
+            CompoundTag filteredCover = filterGregCoverForPlacement(
+                    coverData,
+                    reserved,
+                    false,
+                    costs,
+                    ctx
+            );
+
             CompoundTag beTag = createWhitelistedGregPipeTag(rawBeTag, effectivePipeData, filteredCover);
 
             return new PlacementPlan(true, pipeState, beTag, costs);
@@ -187,17 +219,33 @@ public final class GTCEuStructureExtension implements StructureCloneExtension, S
         CompoundTag coverData = gregMeta.getCompound(StructureToolKeys.CLONE_KEY_GREG_COVER);
 
         ItemStack baseItem = normalizeSingle(ctx.getRequiredBlockItem(stateToPlace));
+
         if (baseItem.isEmpty() && !player.isCreative()) {
             return PlacementPlan.none();
         }
 
         if (player.isCreative()) {
-            CompoundTag filteredCover = filterGregCoverForPlacement(coverData, null, true);
+            List<ItemStack> costs = new ArrayList<>();
+
+            if (!baseItem.isEmpty()) {
+                costs.add(baseItem);
+            }
+
+            CompoundTag filteredCover = filterGregCoverForPlacement(
+                    coverData,
+                    null,
+                    true,
+                    costs,
+                    null
+            );
+
             CompoundTag beTag = createWhitelistedGregMachineTag(rawBeTag, machineData, filteredCover);
-            return new PlacementPlan(true, stateToPlace, beTag, List.of());
+
+            return new PlacementPlan(true, stateToPlace, beTag, costs);
         }
 
         Map<Item, Integer> reserved = new LinkedHashMap<>();
+
         if (!ctx.canReserveForPaste(reserved, baseItem, 1)) {
             return PlacementPlan.none();
         }
@@ -205,7 +253,14 @@ public final class GTCEuStructureExtension implements StructureCloneExtension, S
         List<ItemStack> costs = new ArrayList<>();
         costs.add(baseItem);
 
-        CompoundTag filteredCover = filterGregCoverForPlacement(coverData, reserved, false, costs, ctx);
+        CompoundTag filteredCover = filterGregCoverForPlacement(
+                coverData,
+                reserved,
+                false,
+                costs,
+                ctx
+        );
+
         CompoundTag beTag = createWhitelistedGregMachineTag(rawBeTag, machineData, filteredCover);
 
         return new PlacementPlan(true, stateToPlace, beTag, costs);
@@ -234,6 +289,7 @@ public final class GTCEuStructureExtension implements StructureCloneExtension, S
 
         for (String sideKey : coverTag.getAllKeys()) {
             Tag sideTag = coverTag.get(sideKey);
+
             if (sideTag == null) {
                 continue;
             }
@@ -259,7 +315,7 @@ public final class GTCEuStructureExtension implements StructureCloneExtension, S
             if (keepSide) {
                 filteredCover.put(sideKey, sideTag.copy());
 
-                if (!creative && costs != null) {
+                if (costs != null) {
                     costs.addAll(attachItems);
                 }
             }
@@ -283,6 +339,7 @@ public final class GTCEuStructureExtension implements StructureCloneExtension, S
 
         if (rawBeTag.contains(NBT_COVER, Tag.TAG_COMPOUND)) {
             CompoundTag coverTag = rawBeTag.getCompound(NBT_COVER).copy();
+
             out.put(StructureToolKeys.CLONE_KEY_GREG_COVER, coverTag);
             collectGregCoverRequirements(coverTag, requirements);
         }
@@ -296,6 +353,7 @@ public final class GTCEuStructureExtension implements StructureCloneExtension, S
 
             if (rawBeTag.contains("frameMaterial", Tag.TAG_STRING)) {
                 String frameMaterial = rawBeTag.getString("frameMaterial");
+
                 pipeTag.putString("frameMaterial", frameMaterial);
                 collectGregPipeFrameRequirement(frameMaterial, requirements);
             }
@@ -322,12 +380,14 @@ public final class GTCEuStructureExtension implements StructureCloneExtension, S
 
             if (rawBeTag.contains("recipeLogic", Tag.TAG_COMPOUND)) {
                 CompoundTag recipeLogic = sanitizeGregRecipeLogic(rawBeTag.getCompound("recipeLogic"));
+
                 if (!recipeLogic.isEmpty()) {
                     machineTag.put("recipeLogic", recipeLogic);
                 }
             }
 
             CompoundTag dataStick = collectGregDataStick(be);
+
             if (!dataStick.isEmpty()) {
                 machineTag.put("dataStick", dataStick);
             }
@@ -344,9 +404,11 @@ public final class GTCEuStructureExtension implements StructureCloneExtension, S
         if (!(be instanceof MetaMachineBlockEntity mmbe)) {
             return new CompoundTag();
         }
+
         if (!(mmbe.getMetaMachine() instanceof IDataStickInteractable interactable)) {
             return new CompoundTag();
         }
+
         if (!(be.getLevel() instanceof ServerLevel serverLevel)) {
             return new CompoundTag();
         }
@@ -378,6 +440,7 @@ public final class GTCEuStructureExtension implements StructureCloneExtension, S
 
         String materialPath = frameMaterial;
         int namespaceSeparator = materialPath.indexOf(':');
+
         if (namespaceSeparator >= 0 && namespaceSeparator + 1 < materialPath.length()) {
             materialPath = materialPath.substring(namespaceSeparator + 1);
         }
@@ -520,6 +583,7 @@ public final class GTCEuStructureExtension implements StructureCloneExtension, S
         }
 
         String id = tag.getString(NBT_ID);
+
         if (!id.isBlank() && id.startsWith(StructureToolKeys.GTCEU_ID_PREFIX)) {
             return true;
         }
@@ -552,6 +616,7 @@ public final class GTCEuStructureExtension implements StructureCloneExtension, S
         }
 
         String id = tag.getString(NBT_ID);
+
         return !id.isBlank()
                 && id.startsWith(StructureToolKeys.GTCEU_ID_PREFIX)
                 && !isGregPipeId(id);
@@ -563,8 +628,10 @@ public final class GTCEuStructureExtension implements StructureCloneExtension, S
         }
 
         ItemStack copy = stack.copy();
+
         copy.setCount(1);
         copy.setTag(null);
+
         return copy;
     }
 
@@ -588,6 +655,7 @@ public final class GTCEuStructureExtension implements StructureCloneExtension, S
         }
 
         Item item = level.getBlockState(pos).getBlock().asItem();
+
         if (item != Items.AIR) {
             requirements.add(new ItemStack(item));
         }
@@ -624,6 +692,7 @@ public final class GTCEuStructureExtension implements StructureCloneExtension, S
         }
 
         Iterator<PendingInit> iterator = PENDING.iterator();
+
         while (iterator.hasNext()) {
             PendingInit pending = iterator.next();
 
@@ -651,6 +720,7 @@ public final class GTCEuStructureExtension implements StructureCloneExtension, S
             }
 
             BlockEntity blockEntity = level.getBlockEntity(worldPos);
+
             if (blockEntity == null) {
                 continue;
             }
@@ -670,6 +740,7 @@ public final class GTCEuStructureExtension implements StructureCloneExtension, S
             CompoundTag originalTag
     ) {
         CompoundTag tag = originalTag.copy();
+
         tag.putInt("x", pos.getX());
         tag.putInt("y", pos.getY());
         tag.putInt("z", pos.getZ());
@@ -678,10 +749,12 @@ public final class GTCEuStructureExtension implements StructureCloneExtension, S
         pipe.clearRemoved();
 
         PipeCoverContainer coverContainer = pipe.getCoverContainer();
+
         coverContainer.onLoad();
 
         for (Direction side : Direction.values()) {
             CoverBehavior cover = coverContainer.getCoverAtSide(side);
+
             if (cover == null) {
                 continue;
             }
@@ -712,10 +785,12 @@ public final class GTCEuStructureExtension implements StructureCloneExtension, S
         for (Direction side : Direction.values()) {
             BlockPos neighborPos = pos.relative(side);
             BlockState neighborState = level.getBlockState(neighborPos);
+
             level.sendBlockUpdated(neighborPos, neighborState, neighborState, Block.UPDATE_ALL);
         }
 
         ClientboundBlockEntityDataPacket packet = ClientboundBlockEntityDataPacket.create(pipe);
+
         for (ServerPlayer player : level.players()) {
             player.connection.send(packet);
         }
@@ -728,6 +803,7 @@ public final class GTCEuStructureExtension implements StructureCloneExtension, S
             CompoundTag originalTag
     ) {
         CompoundTag tag = originalTag.copy();
+
         tag.putInt("x", pos.getX());
         tag.putInt("y", pos.getY());
         tag.putInt("z", pos.getZ());
@@ -755,10 +831,12 @@ public final class GTCEuStructureExtension implements StructureCloneExtension, S
         }
 
         BlockState state = level.getBlockState(pos);
+
         level.sendBlockUpdated(pos, state, state, Block.UPDATE_ALL);
         level.getChunkSource().blockChanged(pos);
 
         ClientboundBlockEntityDataPacket packet = ClientboundBlockEntityDataPacket.create(blockEntity);
+
         for (ServerPlayer player : level.players()) {
             player.connection.send(packet);
         }
@@ -782,6 +860,7 @@ public final class GTCEuStructureExtension implements StructureCloneExtension, S
         }
 
         CompoundTag dataStickTag = originalTag.getCompound("dataStick").copy();
+
         if (dataStickTag.isEmpty()) {
             return;
         }
@@ -808,6 +887,7 @@ public final class GTCEuStructureExtension implements StructureCloneExtension, S
 
         for (TemplateUtil.BlockInfo info : TemplateUtil.parseRawBlocksFromTag(templateTag)) {
             CompoundTag blockEntityTag = info.blockEntityTag();
+
             if (!isGregBlockEntityTag(blockEntityTag)) {
                 continue;
             }
@@ -834,6 +914,7 @@ public final class GTCEuStructureExtension implements StructureCloneExtension, S
 
         String materialPath = frameMaterial;
         int sep = materialPath.indexOf(':');
+
         if (sep >= 0 && sep + 1 < materialPath.length()) {
             materialPath = materialPath.substring(sep + 1);
         }
@@ -855,6 +936,7 @@ public final class GTCEuStructureExtension implements StructureCloneExtension, S
 
         String materialPath = frameMaterial;
         int sep = materialPath.indexOf(':');
+
         if (sep >= 0 && sep + 1 < materialPath.length()) {
             materialPath = materialPath.substring(sep + 1);
         }
@@ -877,6 +959,7 @@ public final class GTCEuStructureExtension implements StructureCloneExtension, S
         if (tag instanceof CompoundTag compoundTag) {
             if (compoundTag.contains("attachItem", Tag.TAG_COMPOUND)) {
                 ItemStack stack = NbtUtil.tryReadSavedItemStack(compoundTag.getCompound("attachItem"));
+
                 if (!stack.isEmpty()) {
                     sink.accept(stack);
                 }
@@ -885,6 +968,7 @@ public final class GTCEuStructureExtension implements StructureCloneExtension, S
             for (String key : compoundTag.getAllKeys()) {
                 collectGregAttachItems(compoundTag.get(key), sink);
             }
+
             return;
         }
 

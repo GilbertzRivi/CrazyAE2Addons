@@ -17,10 +17,14 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.oktawia.crazyae2addons.client.misc.ClonerMaterialListWidget;
 import net.oktawia.crazyae2addons.client.misc.IconButton;
 import net.oktawia.crazyae2addons.client.misc.PortableSpatialClonerRequirementSync;
+import net.oktawia.crazyae2addons.client.misc.SearchableClonerStructureDropdownWidget;
 import net.oktawia.crazyae2addons.defs.LangDefs;
 import net.oktawia.crazyae2addons.defs.regs.CrazyItemRegistrar;
 import net.oktawia.crazyae2addons.items.PortableSpatialCloner;
 import net.oktawia.crazyae2addons.menus.item.PortableSpatialClonerMenu;
+import net.oktawia.crazyae2addons.network.NetworkHandler;
+import net.oktawia.crazyae2addons.network.packets.structures.RequestClonerLibraryPacket;
+import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,19 +38,14 @@ public class PortableSpatialClonerScreen<C extends PortableSpatialClonerMenu>
     private static final int PREVIEW_HEIGHT = 135;
 
     private final ClonerMaterialListWidget materialList;
+    private final SearchableClonerStructureDropdownWidget structureSelector;
 
     public PortableSpatialClonerScreen(C menu, Inventory playerInventory, Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
 
         initCommonWidgets(style, getCompatibleUpgrades());
 
-        IconButton forgetButton = new IconButton(Icon.CLEAR, button -> getMenu().forgetStructure());
-        forgetButton.setTooltip(Tooltip.create(
-                Component.translatable(LangDefs.FORGET_STRUCTURE.getTranslationKey())
-        ));
-        this.widgets.add("forget", forgetButton);
-
-        this.materialList = new ClonerMaterialListWidget(0, 0, 72, 135);
+        this.materialList = new ClonerMaterialListWidget(0, 0, 92, 101);
         this.materialList.setCraftRequestHandler(entry -> {
             ResourceLocation itemId = ForgeRegistries.ITEMS.getKey(entry.stack().getItem());
             if (itemId == null) {
@@ -63,7 +62,12 @@ public class PortableSpatialClonerScreen<C extends PortableSpatialClonerMenu>
 
         this.widgets.add("materials", this.materialList);
 
+        this.structureSelector = new SearchableClonerStructureDropdownWidget(0, 0,92, 31, () -> getMenu().containerId);
+        this.widgets.add("structureSelector", this.structureSelector);
+
         finishInit();
+
+        NetworkHandler.sendToServer(new RequestClonerLibraryPacket(getMenu().containerId));
     }
 
     @Override
@@ -105,11 +109,27 @@ public class PortableSpatialClonerScreen<C extends PortableSpatialClonerMenu>
     @Override
     public void containerTick() {
         super.containerTick();
+
+        this.structureSelector.refreshFromClientCache();
         syncRequirementEntries();
     }
 
     @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (this.structureSelector.mouseClicked(mouseX, mouseY, button)) {
+            this.setFocused(this.structureSelector);
+            return true;
+        }
+
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+        if (this.structureSelector.mouseScrolled(mouseX, mouseY, delta)) {
+            return true;
+        }
+
         if (this.materialList.mouseScrolled(mouseX, mouseY, delta)) {
             return true;
         }
@@ -118,8 +138,46 @@ public class PortableSpatialClonerScreen<C extends PortableSpatialClonerMenu>
     }
 
     @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (this.structureSelector.wantsKeyboardCapture()) {
+            this.structureSelector.keyPressed(keyCode, scanCode, modifiers);
+            return true;
+        }
+
+        if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+            this.onClose();
+            return true;
+        }
+
+        return true;
+    }
+
+    @Override
+    public boolean charTyped(char codePoint, int modifiers) {
+        if (this.structureSelector.wantsKeyboardCapture()) {
+            this.structureSelector.charTyped(codePoint, modifiers);
+        }
+
+        return true;
+    }
+
+    @Override
     protected void renderExtraOverlays(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderMaterialTooltip(graphics, mouseX, mouseY);
+        if (!this.structureSelector.isExpandedMouseOver(mouseX, mouseY)) {
+            renderMaterialTooltip(graphics, mouseX, mouseY);
+        }
+
+        this.structureSelector.renderDropdownOverlay(graphics, mouseX, mouseY, partialTick);
+
+        Component tooltip = this.structureSelector.getHoveredTooltip(mouseX, mouseY);
+        if (tooltip != null) {
+            graphics.renderTooltip(
+                    Minecraft.getInstance().font,
+                    tooltip,
+                    mouseX,
+                    mouseY
+            );
+        }
     }
 
     private void syncRequirementEntries() {

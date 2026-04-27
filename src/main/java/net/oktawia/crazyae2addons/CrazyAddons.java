@@ -74,7 +74,6 @@ public class CrazyAddons {
         CrazyMenuRegistrar.MENU_TYPES.register(modEventBus);
         CrazyRecipes.RECIPE_SERIALIZERS.register(modEventBus);
         CrazyRecipes.RECIPE_TYPES.register(modEventBus);
-        CrazyLDLibPlugin.init();
 
         modEventBus.addListener(this::registerCreativeTab);
 

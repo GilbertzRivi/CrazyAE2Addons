@@ -34,7 +34,7 @@ public final class DisplayWorldRenderer {
 
     @SubscribeEvent
     public static void onRender(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) {
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_BLOCK_ENTITIES) {
             return;
         }
 
@@ -121,7 +121,6 @@ public final class DisplayWorldRenderer {
         DisplayRendererCommon.renderPrepared(prepared, ps, buf, font, 0xF000F0);
 
         ps.popPose();
-        buf.endBatch();
     }
 
     private record Transformation(float tx, float ty, float tz, float yRot, float xRot) {

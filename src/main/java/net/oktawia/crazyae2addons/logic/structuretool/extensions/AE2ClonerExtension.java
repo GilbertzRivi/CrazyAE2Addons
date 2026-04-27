@@ -17,9 +17,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.oktawia.crazyae2addons.logic.structuretool.AbstractStructureCaptureToolItem;
-import net.oktawia.crazyae2addons.logic.structuretool.StructureCloneExtension;
 import net.oktawia.crazyae2addons.logic.structuretool.ClonerPasteContext;
 import net.oktawia.crazyae2addons.logic.structuretool.PlacementPlan;
+import net.oktawia.crazyae2addons.logic.structuretool.StructureCloneExtension;
 import net.oktawia.crazyae2addons.util.NbtUtil;
 import net.oktawia.crazyae2addons.util.StructureToolKeys;
 import net.oktawia.crazyae2addons.util.TemplateUtil;
@@ -84,6 +84,7 @@ public final class AE2ClonerExtension implements StructureCloneExtension {
 
             for (Direction dir : Direction.values()) {
                 var part = cableBus.getPart(dir);
+
                 if (part == null) {
                     continue;
                 }
@@ -92,6 +93,7 @@ public final class AE2ClonerExtension implements StructureCloneExtension {
                 boolean hasPartData = false;
 
                 CompoundTag partSettings = new CompoundTag();
+
                 try {
                     part.exportSettings(SettingsFrom.MEMORY_CARD, partSettings);
                 } catch (Throwable ignored) {
@@ -145,15 +147,36 @@ public final class AE2ClonerExtension implements StructureCloneExtension {
             @Nullable CompoundTag blockMetadata,
             ClonerPasteContext ctx
     ) {
-        if (!isAe2CableBusTag(rawBeTag)) {
+        if (isAe2CableBusTag(rawBeTag)) {
+            if (rawBeTag == null) {
+                return Optional.of(PlacementPlan.none());
+            }
+
+            return Optional.of(buildCableBusPlacementPlan(
+                    player,
+                    state,
+                    rawBeTag,
+                    blockMetadata,
+                    ctx
+            ));
+        }
+
+        if (blockMetadata == null) {
             return Optional.empty();
         }
 
-        if (rawBeTag == null) {
-            return Optional.of(PlacementPlan.none());
+        if (!blockMetadata.contains(StructureToolKeys.CLONE_KEY_SETTINGS, Tag.TAG_COMPOUND)
+                && !blockMetadata.contains(StructureToolKeys.CLONE_KEY_UPGRADES)
+                && !blockMetadata.contains(StructureToolKeys.CLONE_KEY_PARTS, Tag.TAG_COMPOUND)) {
+            return Optional.empty();
         }
 
-        return Optional.of(buildCableBusPlacementPlan(player, state, rawBeTag, ctx));
+        return Optional.of(buildAe2BlockPlacementPlan(
+                player,
+                state,
+                blockMetadata,
+                ctx
+        ));
     }
 
     @Override
@@ -179,10 +202,11 @@ public final class AE2ClonerExtension implements StructureCloneExtension {
             Player player,
             BlockState stateToPlace,
             CompoundTag rawBeTag,
+            @Nullable CompoundTag blockMetadata,
             ClonerPasteContext ctx
     ) {
         CompoundTag filtered = createMinimalAeCableBusBaseTag(rawBeTag);
-        List<ItemStack> toConsume = new ArrayList<>();
+        List<ItemStack> costs = new ArrayList<>();
         Map<Item, Integer> reserved = new HashMap<>();
         boolean keptAnything = false;
 
@@ -193,29 +217,162 @@ public final class AE2ClonerExtension implements StructureCloneExtension {
 
             CompoundTag rawSection = rawBeTag.getCompound(key);
             CompoundTag minimalSection = createMinimalAePartTag(rawSection);
+
             if (minimalSection.isEmpty()) {
                 continue;
             }
 
-            ItemStack representative = NbtUtil.tryReadSavedItemStack(minimalSection);
-            boolean keepSection = player.isCreative()
-                    || (!representative.isEmpty()
-                    && ctx.canReserveForPaste(reserved, representative, 1));
+            ItemStack representative = NbtUtil.tryReadSavedItemStack(rawSection);
 
-            if (keepSection) {
-                filtered.put(key, minimalSection);
-                keptAnything = true;
-
-                if (!player.isCreative() && !representative.isEmpty()) {
-                    ItemStack normalized = normalizeSingle(representative);
-                    toConsume.add(normalized);
-                }
+            if (representative.isEmpty()) {
+                representative = NbtUtil.tryReadSavedItemStack(minimalSection);
             }
+
+            Map<Item, Integer> trialReserved = new HashMap<>(reserved);
+            List<ItemStack> sectionCosts = new ArrayList<>();
+
+            if (!representative.isEmpty()) {
+                ItemStack representativeCost = normalizeSingle(representative);
+
+                if (!player.isCreative()
+                        && !ctx.canReserveForPaste(trialReserved, representativeCost, 1)) {
+                    continue;
+                }
+
+                sectionCosts.add(representativeCost);
+            } else if (!player.isCreative()) {
+                continue;
+            }
+
+            if (!addAe2PartUpgradeCosts(
+                    blockMetadata,
+                    key,
+                    player,
+                    ctx,
+                    trialReserved,
+                    sectionCosts
+            )) {
+                continue;
+            }
+
+            reserved.clear();
+            reserved.putAll(trialReserved);
+
+            filtered.put(key, minimalSection);
+            costs.addAll(sectionCosts);
+            keptAnything = true;
         }
 
         return keptAnything
-                ? new PlacementPlan(true, stateToPlace, filtered, toConsume)
+                ? new PlacementPlan(true, stateToPlace, filtered, costs)
                 : PlacementPlan.none();
+    }
+
+    private static PlacementPlan buildAe2BlockPlacementPlan(
+            Player player,
+            BlockState stateToPlace,
+            CompoundTag blockMetadata,
+            ClonerPasteContext ctx
+    ) {
+        List<ItemStack> costs = new ArrayList<>();
+        Map<Item, Integer> reserved = new HashMap<>();
+
+        ItemStack baseItem = normalizeSingle(ctx.getRequiredBlockItem(stateToPlace));
+
+        if (!baseItem.isEmpty()) {
+            if (!player.isCreative() && !ctx.canReserveForPaste(reserved, baseItem, 1)) {
+                return PlacementPlan.none();
+            }
+
+            costs.add(baseItem);
+        } else if (!player.isCreative()) {
+            return PlacementPlan.none();
+        }
+
+        if (blockMetadata.contains(StructureToolKeys.CLONE_KEY_UPGRADES)) {
+            if (!addNestedSavedStackCosts(
+                    blockMetadata.get(StructureToolKeys.CLONE_KEY_UPGRADES),
+                    player,
+                    ctx,
+                    reserved,
+                    costs
+            )) {
+                return PlacementPlan.none();
+            }
+        }
+
+        return new PlacementPlan(true, stateToPlace, null, costs);
+    }
+
+    private static boolean addAe2PartUpgradeCosts(
+            @Nullable CompoundTag blockMetadata,
+            String sideKey,
+            Player player,
+            ClonerPasteContext ctx,
+            Map<Item, Integer> reserved,
+            List<ItemStack> costs
+    ) {
+        if (blockMetadata == null) {
+            return true;
+        }
+
+        if (!blockMetadata.contains(StructureToolKeys.CLONE_KEY_PARTS, Tag.TAG_COMPOUND)) {
+            return true;
+        }
+
+        CompoundTag partsTag = blockMetadata.getCompound(StructureToolKeys.CLONE_KEY_PARTS);
+
+        if (!partsTag.contains(sideKey, Tag.TAG_COMPOUND)) {
+            return true;
+        }
+
+        CompoundTag partEntry = partsTag.getCompound(sideKey);
+
+        if (!partEntry.contains(StructureToolKeys.CLONE_KEY_UPGRADES)) {
+            return true;
+        }
+
+        return addNestedSavedStackCosts(
+                partEntry.get(StructureToolKeys.CLONE_KEY_UPGRADES),
+                player,
+                ctx,
+                reserved,
+                costs
+        );
+    }
+
+    private static boolean addNestedSavedStackCosts(
+            @Nullable Tag tag,
+            Player player,
+            ClonerPasteContext ctx,
+            Map<Item, Integer> reserved,
+            List<ItemStack> costs
+    ) {
+        if (tag == null) {
+            return true;
+        }
+
+        List<ItemStack> found = new ArrayList<>();
+        collectNestedSavedItemStacks(tag, found::add);
+
+        for (ItemStack stack : found) {
+            ItemStack normalized = normalizeCountPreserving(stack);
+
+            if (normalized.isEmpty()) {
+                continue;
+            }
+
+            int amount = Math.max(1, normalized.getCount());
+
+            if (!player.isCreative()
+                    && !ctx.canReserveForPaste(reserved, normalized, amount)) {
+                return false;
+            }
+
+            costs.add(normalized);
+        }
+
+        return true;
     }
 
     private static void applyAe2BlockMetadataAfterPlacement(
@@ -253,6 +410,7 @@ public final class AE2ClonerExtension implements StructureCloneExtension {
         }
 
         be.setChanged();
+
         BlockState state = level.getBlockState(worldPos);
         level.sendBlockUpdated(worldPos, state, state, 3);
     }
@@ -265,6 +423,7 @@ public final class AE2ClonerExtension implements StructureCloneExtension {
     ) {
         if (!blockMetadata.contains(StructureToolKeys.CLONE_KEY_PARTS, Tag.TAG_COMPOUND)) {
             cableBus.setChanged();
+
             BlockState state = level.getBlockState(worldPos);
             level.sendBlockUpdated(worldPos, state, state, 3);
             return;
@@ -274,12 +433,14 @@ public final class AE2ClonerExtension implements StructureCloneExtension {
 
         for (Direction dir : Direction.values()) {
             String key = TemplateUtil.directionKey(dir);
+
             if (!partsTag.contains(key, Tag.TAG_COMPOUND)) {
                 continue;
             }
 
             CompoundTag partEntry = partsTag.getCompound(key);
             var part = cableBus.getPart(dir);
+
             if (part == null) {
                 continue;
             }
@@ -305,6 +466,7 @@ public final class AE2ClonerExtension implements StructureCloneExtension {
         }
 
         cableBus.setChanged();
+
         BlockState state = level.getBlockState(worldPos);
         level.sendBlockUpdated(worldPos, state, state, 3);
     }
@@ -336,6 +498,7 @@ public final class AE2ClonerExtension implements StructureCloneExtension {
 
         if (tag instanceof CompoundTag compoundTag) {
             ItemStack stack = NbtUtil.tryReadSavedItemStack(compoundTag);
+
             if (!stack.isEmpty()) {
                 requirements.add(stack);
                 return;
@@ -344,6 +507,7 @@ public final class AE2ClonerExtension implements StructureCloneExtension {
             for (String key : compoundTag.getAllKeys()) {
                 collectNestedSavedItemStacks(compoundTag.get(key), requirements);
             }
+
             return;
         }
 
@@ -360,6 +524,7 @@ public final class AE2ClonerExtension implements StructureCloneExtension {
         }
 
         String id = rawBeTag.getString("id");
+
         if (AE2_CABLE_BUS_ID.equals(id)) {
             return true;
         }
@@ -384,6 +549,7 @@ public final class AE2ClonerExtension implements StructureCloneExtension {
 
         CompoundTag out = new CompoundTag();
         NbtUtil.copyStringIfPresent(rawBeTag, out, "id");
+
         return out;
     }
 
@@ -393,8 +559,10 @@ public final class AE2ClonerExtension implements StructureCloneExtension {
         }
 
         CompoundTag out = new CompoundTag();
+
         NbtUtil.copyStringIfPresent(rawPartTag, out, "id");
         NbtUtil.copyByteIfPresent(rawPartTag, out, "output");
+
         return out;
     }
 
@@ -404,8 +572,23 @@ public final class AE2ClonerExtension implements StructureCloneExtension {
         }
 
         ItemStack copy = stack.copy();
+
         copy.setCount(1);
         copy.setTag(null);
+
+        return copy;
+    }
+
+    private static ItemStack normalizeCountPreserving(ItemStack stack) {
+        if (stack.isEmpty()) {
+            return ItemStack.EMPTY;
+        }
+
+        ItemStack copy = stack.copy();
+
+        copy.setTag(null);
+        copy.setCount(Math.max(1, stack.getCount()));
+
         return copy;
     }
 }

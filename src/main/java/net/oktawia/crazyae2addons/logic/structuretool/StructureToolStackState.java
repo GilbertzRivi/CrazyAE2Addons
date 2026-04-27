@@ -7,6 +7,8 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.UUID;
+
 public final class StructureToolStackState {
 
     private static final String TAG_SEL_A = "sel_a";
@@ -14,6 +16,8 @@ public final class StructureToolStackState {
     private static final String TAG_ORIGIN = "origin";
     private static final String TAG_SRC_FACING = "src_facing";
     private static final String TAG_STRUCTURE_ID = "structure_id";
+    private static final String TAG_CLONER_LIBRARY_OWNER = "cloner_library_owner";
+
     public static final String TAG_PREVIEW_SIDE_MAP = "crazy_preview_side_map";
 
     private StructureToolStackState() {
@@ -37,11 +41,42 @@ public final class StructureToolStackState {
 
     public static void setStructureId(ItemStack stack, @Nullable String id) {
         CompoundTag tag = stack.getOrCreateTag();
+
         if (id == null || id.isBlank()) {
             tag.remove(TAG_STRUCTURE_ID);
         } else {
             tag.putString(TAG_STRUCTURE_ID, id);
         }
+    }
+
+    public static void setClonerLibraryOwner(ItemStack stack, @Nullable UUID owner) {
+        CompoundTag tag = stack.getOrCreateTag();
+
+        if (owner == null) {
+            tag.remove(TAG_CLONER_LIBRARY_OWNER);
+        } else {
+            tag.putString(TAG_CLONER_LIBRARY_OWNER, owner.toString());
+        }
+    }
+
+    public static void setSelectedClonerLibraryEntry(
+            ItemStack stack,
+            @Nullable UUID owner,
+            @Nullable String id
+    ) {
+        if (owner == null || id == null || id.isBlank()) {
+            clearSelectedClonerLibraryEntry(stack);
+            return;
+        }
+
+        setClonerLibraryOwner(stack, owner);
+        setStructureId(stack, id);
+    }
+
+    public static void clearSelectedClonerLibraryEntry(ItemStack stack) {
+        setStructureId(stack, null);
+        setClonerLibraryOwner(stack, null);
+        resetPreviewSideMap(stack);
     }
 
     public static BlockPos getSelectionA(ItemStack stack) {
@@ -58,6 +93,7 @@ public final class StructureToolStackState {
 
     public static Direction getSourceFacing(ItemStack stack) {
         CompoundTag tag = stack.getTag();
+
         if (tag == null || !tag.contains(TAG_SRC_FACING)) {
             return Direction.NORTH;
         }
@@ -71,12 +107,27 @@ public final class StructureToolStackState {
         return tag == null ? "" : tag.getString(TAG_STRUCTURE_ID);
     }
 
+    public static @Nullable UUID getClonerLibraryOwner(ItemStack stack) {
+        CompoundTag tag = stack.getTag();
+
+        if (tag == null || !tag.contains(TAG_CLONER_LIBRARY_OWNER, Tag.TAG_STRING)) {
+            return null;
+        }
+
+        try {
+            return UUID.fromString(tag.getString(TAG_CLONER_LIBRARY_OWNER));
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
+    }
+
     public static boolean hasStructure(ItemStack stack) {
         return !getStructureId(stack).isBlank();
     }
 
     public static void clearSelection(ItemStack stack) {
         CompoundTag tag = stack.getOrCreateTag();
+
         tag.remove(TAG_SEL_A);
         tag.remove(TAG_SEL_B);
         tag.remove(TAG_ORIGIN);
@@ -90,17 +141,20 @@ public final class StructureToolStackState {
     public static int[] getPreviewSideMap(ItemStack stack) {
         int[] identity = identitySideMap();
         CompoundTag tag = stack.getTag();
+
         if (tag == null || !tag.contains(TAG_PREVIEW_SIDE_MAP, Tag.TAG_INT_ARRAY)) {
             return identity;
         }
 
         int[] raw = tag.getIntArray(TAG_PREVIEW_SIDE_MAP);
+
         if (raw.length != Direction.values().length) {
             return identity;
         }
 
         for (Direction side : Direction.values()) {
             int mapped = raw[side.ordinal()];
+
             if (mapped < 0 || mapped >= Direction.values().length) {
                 return identity;
             }
@@ -115,14 +169,17 @@ public final class StructureToolStackState {
 
     public static int[] identitySideMap() {
         int[] map = new int[Direction.values().length];
+
         for (Direction side : Direction.values()) {
             map[side.ordinal()] = side.ordinal();
         }
+
         return map;
     }
 
     private static void setPos(ItemStack stack, String key, @Nullable BlockPos pos) {
         CompoundTag tag = stack.getOrCreateTag();
+
         if (pos == null) {
             tag.remove(key);
             return;
@@ -131,13 +188,15 @@ public final class StructureToolStackState {
         tag.putIntArray(key, new int[]{pos.getX(), pos.getY(), pos.getZ()});
     }
 
-    private static BlockPos getPos(ItemStack stack, String key) {
+    private static @Nullable BlockPos getPos(ItemStack stack, String key) {
         CompoundTag tag = stack.getTag();
+
         if (tag == null || !tag.contains(key)) {
             return null;
         }
 
         int[] arr = tag.getIntArray(key);
+
         if (arr.length != 3) {
             return null;
         }

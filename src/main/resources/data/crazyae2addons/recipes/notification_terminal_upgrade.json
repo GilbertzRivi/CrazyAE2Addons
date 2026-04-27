@@ -1,0 +1,7 @@
+{
+  "type": "ae2wtlib:upgrade",
+  "terminal": {
+    "item": "crazyae2addons:wireless_notification_terminal"
+  },
+  "terminalName": "wireless_notification_terminal"
+}

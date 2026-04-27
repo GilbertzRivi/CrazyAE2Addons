@@ -1,6 +1,5 @@
 package net.oktawia.crazyae2addons.client.renderer.preview;
 
-import lombok.Getter;
 import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
@@ -14,10 +13,11 @@ import net.oktawia.crazyae2addons.client.screens.item.PortableSpatialClonerScree
 import net.oktawia.crazyae2addons.client.screens.item.PortableSpatialStorageScreen;
 import net.oktawia.crazyae2addons.items.PortableSpatialCloner;
 import net.oktawia.crazyae2addons.items.PortableSpatialStorage;
+import net.oktawia.crazyae2addons.logic.structuretool.ClonerStructureLibraryClientCache;
 import net.oktawia.crazyae2addons.logic.structuretool.StructureToolStackState;
 import net.oktawia.crazyae2addons.logic.structuretool.StructureToolUtil;
 import net.oktawia.crazyae2addons.network.NetworkHandler;
-import net.oktawia.crazyae2addons.network.packets.RequestStructureToolPreviewPacket;
+import net.oktawia.crazyae2addons.network.packets.structures.RequestStructureToolPreviewPacket;
 import net.oktawia.crazyae2addons.util.TemplateUtil;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,6 +32,7 @@ public final class PortableSpatialStoragePreviewSync {
     private static final Map<String, CompoundTag> RAW_TAG_CACHE = new HashMap<>();
 
     private static boolean receiving = false;
+    private static String receivingStructureId = "";
     private static String lastRequestedStructureId = "";
     private static int requestCooldownTicks = 0;
 
@@ -39,24 +40,43 @@ public final class PortableSpatialStoragePreviewSync {
     }
 
     static void cachePut(String structureId, PreviewStructure structure) {
-        if (structureId == null || structureId.isBlank() || structure == null) return;
-        STRUCTURE_CACHE.put(structureId, structure);
+        if (structureId == null || structureId.isBlank() || structure == null) {
+            return;
+        }
+
+        PreviewStructure old = STRUCTURE_CACHE.put(structureId, structure);
+
+        if (old != null && old != structure) {
+            old.close();
+        }
     }
 
     public static PreviewStructure cacheGet(String structureId) {
-        if (structureId == null || structureId.isBlank()) return null;
+        if (structureId == null || structureId.isBlank()) {
+            return null;
+        }
+
         return STRUCTURE_CACHE.get(structureId);
     }
 
     static void cacheClear(String structureId) {
-        if (structureId == null || structureId.isBlank()) return;
+        if (structureId == null || structureId.isBlank()) {
+            return;
+        }
+
         PreviewStructure old = STRUCTURE_CACHE.remove(structureId);
-        if (old != null) old.close();
+
+        if (old != null) {
+            old.close();
+        }
+
+        RAW_TAG_CACHE.remove(structureId);
     }
 
     static void cacheClearAll() {
         STRUCTURE_CACHE.values().forEach(PreviewStructure::close);
         STRUCTURE_CACHE.clear();
+        RAW_TAG_CACHE.clear();
     }
 
     @SubscribeEvent
@@ -80,6 +100,7 @@ public final class PortableSpatialStoragePreviewSync {
         if ("__RESET__".equals(data)) {
             BUFFER.setLength(0);
             receiving = true;
+            receivingStructureId = getActivePreviewStructureId();
             return;
         }
 
@@ -99,17 +120,8 @@ public final class PortableSpatialStoragePreviewSync {
             requestCooldownTicks--;
         }
 
-        ItemStack stack = StructureToolUtil.findActive(
-                Minecraft.getInstance().player,
-                PortableSpatialStorage.class,
-                PortableSpatialCloner.class
-        );
-        if (stack.isEmpty()) {
-            lastRequestedStructureId = "";
-            return;
-        }
+        String structureId = getActivePreviewStructureId();
 
-        String structureId = StructureToolStackState.getStructureId(stack);
         if (structureId.isBlank()) {
             lastRequestedStructureId = "";
             return;
@@ -131,49 +143,122 @@ public final class PortableSpatialStoragePreviewSync {
     public static void resetClientState() {
         BUFFER.setLength(0);
         receiving = false;
+        receivingStructureId = "";
         lastRequestedStructureId = "";
         requestCooldownTicks = 0;
         cacheClearAll();
     }
 
     private static void finish() {
-        ItemStack stack = StructureToolUtil.findActive(
-                Minecraft.getInstance().player,
-                PortableSpatialStorage.class,
-                PortableSpatialCloner.class
-        );
-        if (stack.isEmpty()) {
-            BUFFER.setLength(0);
-            return;
+        String structureId = receivingStructureId;
+
+        if (structureId.isBlank()) {
+            structureId = getActivePreviewStructureId();
         }
 
-        String structureId = StructureToolStackState.getStructureId(stack);
         if (structureId.isBlank()) {
             BUFFER.setLength(0);
+            receivingStructureId = "";
             return;
         }
 
         if (BUFFER.length() == 0) {
             cacheClear(structureId);
+            markOpenPreviewDirty();
+            BUFFER.setLength(0);
+            receivingStructureId = "";
             return;
         }
 
         try {
             byte[] bytes = TemplateUtil.fromBase64(BUFFER.toString());
             CompoundTag tag = TemplateUtil.decompressNbt(bytes);
+
+            syncActiveStackTransformFromTag(tag);
+
             RAW_TAG_CACHE.put(structureId, tag.copy());
+
             PreviewStructure structure = PreviewStructure.fromTemplateTag(tag);
             cachePut(structureId, structure);
-            if (Minecraft.getInstance().screen instanceof PortableSpatialStorageScreen<?> pss) {
-                pss.markPreviewDirty();
-            }
-            if (Minecraft.getInstance().screen instanceof PortableSpatialClonerScreen<?> pss) {
-                pss.markPreviewDirty();
-            }
+
+            markOpenPreviewDirty();
         } catch (Exception t) {
             CrazyAddons.LOGGER.debug(t.getLocalizedMessage());
         } finally {
             BUFFER.setLength(0);
+            receivingStructureId = "";
+        }
+    }
+
+    private static String getActivePreviewStructureId() {
+        Minecraft minecraft = Minecraft.getInstance();
+
+        ItemStack stack = StructureToolUtil.findActive(
+                minecraft.player,
+                PortableSpatialStorage.class,
+                PortableSpatialCloner.class
+        );
+
+        if (stack.isEmpty()) {
+            stack = StructureToolUtil.findHeld(
+                    minecraft.player,
+                    PortableSpatialStorage.class,
+                    PortableSpatialCloner.class
+            );
+        }
+
+        if (stack.isEmpty()) {
+            return "";
+        }
+
+        if (stack.getItem() instanceof PortableSpatialCloner) {
+            String selectedId = ClonerStructureLibraryClientCache.selectedId();
+
+            if (selectedId != null && !selectedId.isBlank()) {
+                return selectedId;
+            }
+        }
+
+        return StructureToolStackState.getStructureId(stack);
+    }
+
+    private static void syncActiveStackTransformFromTag(CompoundTag tag) {
+        if (tag == null) {
+            return;
+        }
+
+        Minecraft minecraft = Minecraft.getInstance();
+
+        ItemStack stack = StructureToolUtil.findActive(
+                minecraft.player,
+                PortableSpatialStorage.class,
+                PortableSpatialCloner.class
+        );
+
+        if (stack.isEmpty()) {
+            stack = StructureToolUtil.findHeld(
+                    minecraft.player,
+                    PortableSpatialStorage.class,
+                    PortableSpatialCloner.class
+            );
+        }
+
+        if (stack.isEmpty()) {
+            return;
+        }
+
+        TemplateUtil.copyPreviewTransformState(tag, stack.getOrCreateTag());
+    }
+
+    private static void markOpenPreviewDirty() {
+        Minecraft minecraft = Minecraft.getInstance();
+
+        if (minecraft.screen instanceof PortableSpatialStorageScreen<?> screen) {
+            screen.markPreviewDirty();
+        }
+
+        if (minecraft.screen instanceof PortableSpatialClonerScreen<?> screen) {
+            screen.markPreviewDirty();
         }
     }
 }

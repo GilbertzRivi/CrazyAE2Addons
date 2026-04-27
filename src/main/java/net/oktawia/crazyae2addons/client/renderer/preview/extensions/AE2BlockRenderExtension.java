@@ -2,13 +2,14 @@ package net.oktawia.crazyae2addons.client.renderer.preview.extensions;
 
 import appeng.blockentity.networking.CableBusBlockEntity;
 import appeng.client.render.cablebus.CableBusRenderState;
-import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.client.renderer.block.ModelBlockRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -46,12 +47,17 @@ public final class AE2BlockRenderExtension implements BlockRenderExtension {
             BlockState state,
             BlockPos localPos,
             PoseStack poseStack,
-            BufferBuilder bufferBuilder,
+            VertexConsumer vertexConsumer,
             RenderType renderType,
             long seed,
             ModelData modelData
     ) {
-        ModelData ae2ModelData = getCableBusModelData(localLevel, localPos, sideMap, modelData);
+        ModelData ae2ModelData = getCableBusModelData(
+                localLevel,
+                localPos,
+                sideMap,
+                modelData
+        );
 
         modelRenderer.tesselateBlock(
                 localLevel,
@@ -59,7 +65,7 @@ public final class AE2BlockRenderExtension implements BlockRenderExtension {
                 state,
                 localPos,
                 poseStack,
-                bufferBuilder,
+                vertexConsumer,
                 false,
                 RandomSource.create(seed),
                 seed,
@@ -84,16 +90,25 @@ public final class AE2BlockRenderExtension implements BlockRenderExtension {
             MultiBufferSource bufferSource,
             long seed
     ) {
-        ModelData modelData = getCableBusModelData(localLevel, localPos, sideMap, ModelData.EMPTY);
+        ModelData modelData = getCableBusModelData(
+                localLevel,
+                localPos,
+                sideMap,
+                ModelData.EMPTY
+        );
 
-        for (RenderType renderType : model.getRenderTypes(state, RandomSource.create(seed), modelData)) {
+        for (RenderType renderType : model.getRenderTypes(
+                state,
+                RandomSource.create(seed),
+                modelData
+        )) {
             dispatcher.getModelRenderer().tesselateBlock(
                     localLevel,
                     model,
                     state,
                     localPos,
                     poseStack,
-                    bufferSource.getBuffer(renderType),
+                    bufferSource.getBuffer(toGuiSafeRenderType(renderType)),
                     false,
                     RandomSource.create(seed),
                     seed,
@@ -106,6 +121,16 @@ public final class AE2BlockRenderExtension implements BlockRenderExtension {
         return true;
     }
 
+    private static RenderType toGuiSafeRenderType(RenderType renderType) {
+        String name = renderType.toString();
+
+        if (name.contains("translucent")) {
+            return RenderType.entityTranslucent(TextureAtlas.LOCATION_BLOCKS);
+        }
+
+        return RenderType.entityCutout(TextureAtlas.LOCATION_BLOCKS);
+    }
+
     private static ModelData getCableBusModelData(
             PreviewBlockAndTintGetter localLevel,
             BlockPos localPos,
@@ -113,11 +138,13 @@ public final class AE2BlockRenderExtension implements BlockRenderExtension {
             ModelData fallback
     ) {
         BlockEntity blockEntity = localLevel.getBlockEntity(localPos);
+
         if (!(blockEntity instanceof CableBusBlockEntity)) {
             return fallback;
         }
 
         ModelData modelData;
+
         try {
             modelData = blockEntity.getModelData();
         } catch (Throwable ignored) {
@@ -129,6 +156,7 @@ public final class AE2BlockRenderExtension implements BlockRenderExtension {
         }
 
         CableBusRenderState renderState = modelData.get(CableBusRenderState.PROPERTY);
+
         if (renderState == null) {
             return modelData;
         }
@@ -161,7 +189,10 @@ public final class AE2BlockRenderExtension implements BlockRenderExtension {
         return copy;
     }
 
-    private static void transformCableConnectionsOnly(CableBusRenderState renderState, int[] sideMap) {
+    private static void transformCableConnectionsOnly(
+            CableBusRenderState renderState,
+            int[] sideMap
+    ) {
         remapDirectionMap(renderState.getConnectionTypes(), sideMap);
         remapDirectionSet(renderState.getCableBusAdjacent(), sideMap);
         remapDirectionMap(renderState.getChannelsOnSide(), sideMap);
@@ -215,6 +246,7 @@ public final class AE2BlockRenderExtension implements BlockRenderExtension {
         }
 
         String id = rawBeTag.getString("id");
+
         if (AE2_CABLE_BUS_ID.equals(id)) {
             return true;
         }

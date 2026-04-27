@@ -229,16 +229,50 @@ public final class TemplateUtil {
     }
 
     public static CompoundTag applyFlipHToTag(CompoundTag tag, Direction sourceFacing) {
+        Direction.Axis mirrorAxis = horizontalMirrorAxisForSourceFacing(sourceFacing);
+
         CableBusTransform cableBusTransform = sourceFacing.getAxis() == Direction.Axis.Z
                 ? CableBusTransform.FLIP_H_AXIS_Z
                 : CableBusTransform.FLIP_H_AXIS_X;
 
         return applyTransform(
                 tag,
-                (x, y, z, minX, maxX, minY, maxY, minZ, maxZ) -> new int[]{minX + maxX - x, y, z},
+                horizontalFlipPositionTransform(mirrorAxis),
                 state -> flipHorizontalState(state, sourceFacing),
                 cableBusTransform
         );
+    }
+
+    public static CompoundTag applyFlipEastWestToTag(CompoundTag tag) {
+        return applyFlipHToTag(tag, Direction.NORTH);
+    }
+
+    public static CompoundTag applyFlipNorthSouthToTag(CompoundTag tag) {
+        return applyFlipHToTag(tag, Direction.EAST);
+    }
+
+    public static CompoundTag applyFlipEastWestAroundOriginToTag(CompoundTag tag) {
+        return applyFlipHAroundOriginToTag(tag, Direction.NORTH);
+    }
+
+    public static CompoundTag applyFlipNorthSouthAroundOriginToTag(CompoundTag tag) {
+        return applyFlipHAroundOriginToTag(tag, Direction.EAST);
+    }
+
+    private static Direction.Axis horizontalMirrorAxisForSourceFacing(Direction sourceFacing) {
+        return sourceFacing.getAxis() == Direction.Axis.X
+                ? Direction.Axis.Z
+                : Direction.Axis.X;
+    }
+
+    private static Transform horizontalFlipPositionTransform(Direction.Axis mirrorAxis) {
+        if (mirrorAxis == Direction.Axis.Z) {
+            return (x, y, z, minX, maxX, minY, maxY, minZ, maxZ) ->
+                    new int[]{x, y, minZ + maxZ - z};
+        }
+
+        return (x, y, z, minX, maxX, minY, maxY, minZ, maxZ) ->
+                new int[]{minX + maxX - x, y, z};
     }
 
     public static CompoundTag applyFlipVToTag(CompoundTag tag) {
@@ -341,7 +375,9 @@ public final class TemplateUtil {
     }
 
     private static BlockPos flipHorizontalOffset(BlockPos offset, Direction sourceFacing) {
-        if (sourceFacing.getAxis() == Direction.Axis.Z) {
+        Direction.Axis mirrorAxis = horizontalMirrorAxisForSourceFacing(sourceFacing);
+
+        if (mirrorAxis == Direction.Axis.X) {
             return new BlockPos(
                     clampOffset(-offset.getX()),
                     clampOffset(offset.getY()),

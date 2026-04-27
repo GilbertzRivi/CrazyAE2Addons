@@ -337,7 +337,11 @@ public enum LangDefs implements LocalizationEnum {
     STRUCTURE_GADGET_CLONER_EXPORT("gui.crazyae2addons.structure_gadget_cloner_export", "Export"),
     STRUCTURE_GADGET_CLONER_IMPORT("gui.crazyae2addons.structure_gadget_cloner_import", "Import"),
     STRUCTURE_GADGET_CLONER_EXPORT_TOOLTIP("gui.crazyae2addons.structure_gadget_cloner_export_tooltip", "Exports selected structure to a file you can send to someone."),
-    STRUCTURE_GADGET_CLONER_IMPORT_TOOLTIP("gui.crazyae2addons.structure_gadget_cloner_import_tooltip", "Lets you choose a structure file exported with Export.");
+    STRUCTURE_GADGET_CLONER_IMPORT_TOOLTIP("gui.crazyae2addons.structure_gadget_cloner_import_tooltip", "Lets you choose a structure file exported with Export."),
+    FLIP_EAST_WEST("gui.crazyae2addons.flip_east_west", "Flip East/West"),
+    FLIP_EAST_WEST_AROUND_ORIGIN("gui.crazyae2addons.flip_east_west_around_origin", "Flip East/West around origin"),
+    FLIP_NORTH_SOUTH("gui.crazyae2addons.flip_north_south", "Flip North/South"),
+    FLIP_NORTH_SOUTH_AROUND_ORIGIN("gui.crazyae2addons.flip_north_south_around_origin", "Flip North/South around origin");
 
 
     private final String key;

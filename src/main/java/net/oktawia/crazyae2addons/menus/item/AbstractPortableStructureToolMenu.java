@@ -19,11 +19,12 @@ import java.util.Arrays;
 public abstract class AbstractPortableStructureToolMenu extends AEBaseMenu {
 
     protected static final String ACTION_REQUEST_PREVIEW = "request_preview";
-    protected static final String ACTION_FLIP_HORIZONTAL = "flip_horizontal";
     protected static final String ACTION_FLIP_VERTICAL = "flip_vertical";
     protected static final String ACTION_ROTATE_CLOCKWISE = "rotate_clockwise";
-
-    protected static final String ACTION_FLIP_HORIZONTAL_AROUND_ORIGIN = "flip_horizontal_around_origin";
+    protected static final String ACTION_FLIP_EAST_WEST = "flip_east_west";
+    protected static final String ACTION_FLIP_NORTH_SOUTH = "flip_north_south";
+    protected static final String ACTION_FLIP_EAST_WEST_AROUND_ORIGIN = "flip_east_west_around_origin";
+    protected static final String ACTION_FLIP_NORTH_SOUTH_AROUND_ORIGIN = "flip_north_south_around_origin";
     protected static final String ACTION_FLIP_VERTICAL_AROUND_ORIGIN = "flip_vertical_around_origin";
     protected static final String ACTION_ROTATE_CLOCKWISE_AROUND_ORIGIN = "rotate_clockwise_around_origin";
 
@@ -51,11 +52,12 @@ public abstract class AbstractPortableStructureToolMenu extends AEBaseMenu {
         setupUpgrades(host.getUpgrades());
 
         registerClientAction(ACTION_REQUEST_PREVIEW, this::requestPreview);
-        registerClientAction(ACTION_FLIP_HORIZONTAL, this::flipHorizontal);
+        registerClientAction(ACTION_FLIP_EAST_WEST, this::flipEastWest);
+        registerClientAction(ACTION_FLIP_NORTH_SOUTH, this::flipNorthSouth);
+        registerClientAction(ACTION_FLIP_EAST_WEST_AROUND_ORIGIN, this::flipEastWestAroundOrigin);
+        registerClientAction(ACTION_FLIP_NORTH_SOUTH_AROUND_ORIGIN, this::flipNorthSouthAroundOrigin);
         registerClientAction(ACTION_FLIP_VERTICAL, this::flipVertical);
         registerClientAction(ACTION_ROTATE_CLOCKWISE, Integer.class, this::rotateClockwise);
-
-        registerClientAction(ACTION_FLIP_HORIZONTAL_AROUND_ORIGIN, this::flipHorizontalAroundOrigin);
         registerClientAction(ACTION_FLIP_VERTICAL_AROUND_ORIGIN, this::flipVerticalAroundOrigin);
         registerClientAction(ACTION_ROTATE_CLOCKWISE_AROUND_ORIGIN, Integer.class, this::rotateClockwiseAroundOrigin);
 
@@ -106,24 +108,6 @@ public abstract class AbstractPortableStructureToolMenu extends AEBaseMenu {
         }
     }
 
-    public void flipHorizontal() {
-        if (isClientSide()) {
-            sendClientAction(ACTION_FLIP_HORIZONTAL);
-            return;
-        }
-
-        if (!host.hasStoredStructure()) {
-            return;
-        }
-
-        Direction sourceFacing = StructureToolStackState.getSourceFacing(host.getItemStack());
-
-        applyTransformAndResend(
-                tag -> TemplateUtil.applyFlipHToTag(tag, sourceFacing),
-                buildHorizontalFlipSideMap(sourceFacing)
-        );
-    }
-
     public void flipVertical() {
         if (isClientSide()) {
             sendClientAction(ACTION_FLIP_VERTICAL);
@@ -156,24 +140,6 @@ public abstract class AbstractPortableStructureToolMenu extends AEBaseMenu {
         applyTransformAndResend(
                 tag -> TemplateUtil.applyRotateCWToTag(tag, turns),
                 buildRotationSideMap(normalized)
-        );
-    }
-
-    public void flipHorizontalAroundOrigin() {
-        if (isClientSide()) {
-            sendClientAction(ACTION_FLIP_HORIZONTAL_AROUND_ORIGIN);
-            return;
-        }
-
-        if (!host.hasStoredStructure()) {
-            return;
-        }
-
-        Direction sourceFacing = StructureToolStackState.getSourceFacing(host.getItemStack());
-
-        applyTransformAndResend(
-                tag -> TemplateUtil.applyFlipHAroundOriginToTag(tag, sourceFacing),
-                buildHorizontalFlipSideMap(sourceFacing)
         );
     }
 
@@ -420,24 +386,91 @@ public abstract class AbstractPortableStructureToolMenu extends AEBaseMenu {
         };
     }
 
-    protected int[] buildHorizontalFlipSideMap(Direction sourceFacing) {
-        int[] map = identitySideMap();
-
-        if (sourceFacing.getAxis() == Direction.Axis.Z) {
-            map[Direction.EAST.ordinal()] = Direction.WEST.ordinal();
-            map[Direction.WEST.ordinal()] = Direction.EAST.ordinal();
-        } else {
-            map[Direction.NORTH.ordinal()] = Direction.SOUTH.ordinal();
-            map[Direction.SOUTH.ordinal()] = Direction.NORTH.ordinal();
-        }
-
-        return map;
-    }
-
     protected int[] buildVerticalFlipSideMap() {
         int[] map = identitySideMap();
         map[Direction.UP.ordinal()] = Direction.DOWN.ordinal();
         map[Direction.DOWN.ordinal()] = Direction.UP.ordinal();
+        return map;
+    }
+    public void flipEastWest() {
+        if (isClientSide()) {
+            sendClientAction(ACTION_FLIP_EAST_WEST);
+            return;
+        }
+
+        if (!host.hasStoredStructure()) {
+            return;
+        }
+
+        applyTransformAndResend(
+                TemplateUtil::applyFlipEastWestToTag,
+                buildEastWestFlipSideMap()
+        );
+    }
+
+    public void flipNorthSouth() {
+        if (isClientSide()) {
+            sendClientAction(ACTION_FLIP_NORTH_SOUTH);
+            return;
+        }
+
+        if (!host.hasStoredStructure()) {
+            return;
+        }
+
+        applyTransformAndResend(
+                TemplateUtil::applyFlipNorthSouthToTag,
+                buildNorthSouthFlipSideMap()
+        );
+    }
+
+    public void flipEastWestAroundOrigin() {
+        if (isClientSide()) {
+            sendClientAction(ACTION_FLIP_EAST_WEST_AROUND_ORIGIN);
+            return;
+        }
+
+        if (!host.hasStoredStructure()) {
+            return;
+        }
+
+        applyTransformAndResend(
+                TemplateUtil::applyFlipEastWestAroundOriginToTag,
+                buildEastWestFlipSideMap()
+        );
+    }
+
+    public void flipNorthSouthAroundOrigin() {
+        if (isClientSide()) {
+            sendClientAction(ACTION_FLIP_NORTH_SOUTH_AROUND_ORIGIN);
+            return;
+        }
+
+        if (!host.hasStoredStructure()) {
+            return;
+        }
+
+        applyTransformAndResend(
+                TemplateUtil::applyFlipNorthSouthAroundOriginToTag,
+                buildNorthSouthFlipSideMap()
+        );
+    }
+
+    protected int[] buildEastWestFlipSideMap() {
+        int[] map = identitySideMap();
+
+        map[Direction.EAST.ordinal()] = Direction.WEST.ordinal();
+        map[Direction.WEST.ordinal()] = Direction.EAST.ordinal();
+
+        return map;
+    }
+
+    protected int[] buildNorthSouthFlipSideMap() {
+        int[] map = identitySideMap();
+
+        map[Direction.NORTH.ordinal()] = Direction.SOUTH.ordinal();
+        map[Direction.SOUTH.ordinal()] = Direction.NORTH.ordinal();
+
         return map;
     }
 }

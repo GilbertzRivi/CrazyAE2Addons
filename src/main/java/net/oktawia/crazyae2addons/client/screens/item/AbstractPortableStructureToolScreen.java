@@ -6,7 +6,9 @@ import appeng.client.gui.style.ScreenStyle;
 import appeng.client.gui.widgets.AETextField;
 import appeng.client.gui.widgets.UpgradesPanel;
 import appeng.menu.SlotSemantics;
+import com.lowdragmc.lowdraglib.gui.widget.SceneWidget;
 import com.lowdragmc.lowdraglib.gui.widget.WidgetGroup;
+import com.lowdragmc.lowdraglib.utils.TrackedDummyWorld;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -17,6 +19,8 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.oktawia.crazyae2addons.IsModLoaded;
 import net.oktawia.crazyae2addons.client.misc.IconButton;
 import net.oktawia.crazyae2addons.client.renderer.preview.PortableSpatialStorageDummyWorld;
@@ -44,6 +48,14 @@ public abstract class AbstractPortableStructureToolScreen<M extends AbstractPort
             Direction.UP, Direction.DOWN
     };
 
+    protected static final int DIRECTION_COMPASS_SIZE = 48;
+    protected static final float DIRECTION_COMPASS_ORTHO_RANGE = 18.5F;
+
+    protected final WidgetGroup directionCompassRoot = new WidgetGroup(0, 0, 0, 0);
+    protected TrackedDummyWorld directionCompassWorld;
+    protected SceneWidget directionCompassScene;
+    protected Set<BlockPos> directionCompassCore = Collections.emptySet();
+
     protected boolean transformAroundOriginMode = false;
     protected boolean previewStructureFromSharedCache = false;
     protected boolean initialCameraAlignedToPlayer = false;
@@ -56,7 +68,8 @@ public abstract class AbstractPortableStructureToolScreen<M extends AbstractPort
     protected AETextField offsetDisplayY;
     protected AETextField offsetDisplayZ;
 
-    protected IconButton flipHorizontalButton;
+    protected IconButton flipEastWestButton;
+    protected IconButton flipNorthSouthButton;
     protected IconButton flipVerticalButton;
     protected IconButton rotateButton;
 
@@ -81,12 +94,19 @@ public abstract class AbstractPortableStructureToolScreen<M extends AbstractPort
 
     protected final void initCommonWidgets(ScreenStyle style, List<net.minecraft.network.chat.Component> compatibleUpgrades) {
         this.widgets.add("upgrades", new UpgradesPanel(getMenu().getSlots(SlotSemantics.UPGRADE), () -> compatibleUpgrades));
-
-        this.flipHorizontalButton = new IconButton(Icon.ARROW_RIGHT, button -> {
+        this.flipEastWestButton = new IconButton(Icon.ARROW_LEFT, button -> {
             if (this.transformAroundOriginMode) {
-                getMenu().flipHorizontalAroundOrigin();
+                getMenu().flipEastWestAroundOrigin();
             } else {
-                getMenu().flipHorizontal();
+                getMenu().flipEastWest();
+            }
+        });
+
+        this.flipNorthSouthButton = new IconButton(Icon.ARROW_RIGHT, button -> {
+            if (this.transformAroundOriginMode) {
+                getMenu().flipNorthSouthAroundOrigin();
+            } else {
+                getMenu().flipNorthSouth();
             }
         });
 
@@ -109,7 +129,8 @@ public abstract class AbstractPortableStructureToolScreen<M extends AbstractPort
         refreshTransformAroundOriginMode();
         updateTransformButtonTooltips();
 
-        this.widgets.add("flipH", this.flipHorizontalButton);
+        this.widgets.add("flipEW", this.flipEastWestButton);
+        this.widgets.add("flipH", this.flipNorthSouthButton);
         this.widgets.add("flipV", this.flipVerticalButton);
         this.widgets.add("rotate", this.rotateButton);
 
@@ -182,6 +203,10 @@ public abstract class AbstractPortableStructureToolScreen<M extends AbstractPort
 
     protected final void finishInit() {
         this.root.setSize(this.width, this.height);
+        this.directionCompassRoot.setSize(this.width, this.height);
+
+        ensureDirectionCompassScene();
+
         reloadPreviewNow();
         getMenu().requestPreview();
     }
@@ -214,11 +239,19 @@ public abstract class AbstractPortableStructureToolScreen<M extends AbstractPort
     protected void updateTransformButtonTooltips() {
         boolean aroundOrigin = this.transformAroundOriginMode;
 
-        this.flipHorizontalButton.setTooltip(Tooltip.create(
+        this.flipEastWestButton.setTooltip(Tooltip.create(
                 net.minecraft.network.chat.Component.translatable(
                         aroundOrigin
-                                ? LangDefs.FLIP_HORIZONTAL_AROUND_ORIGIN.getTranslationKey()
-                                : LangDefs.FLIP_HORIZONTAL.getTranslationKey()
+                                ? LangDefs.FLIP_EAST_WEST_AROUND_ORIGIN.getTranslationKey()
+                                : LangDefs.FLIP_EAST_WEST.getTranslationKey()
+                )
+        ));
+
+        this.flipNorthSouthButton.setTooltip(Tooltip.create(
+                net.minecraft.network.chat.Component.translatable(
+                        aroundOrigin
+                                ? LangDefs.FLIP_NORTH_SOUTH_AROUND_ORIGIN.getTranslationKey()
+                                : LangDefs.FLIP_NORTH_SOUTH.getTranslationKey()
                 )
         ));
 
@@ -308,9 +341,18 @@ public abstract class AbstractPortableStructureToolScreen<M extends AbstractPort
         RenderSystem.clear(GL11.GL_DEPTH_BUFFER_BIT, Minecraft.ON_OSX);
         graphics.flush();
 
+        updateDirectionCompassSceneLayoutAndCamera();
+
         root.drawInBackground(graphics, mouseX, mouseY, partialTick);
         root.drawInForeground(graphics, mouseX, mouseY, partialTick);
         root.drawOverlay(graphics, mouseX, mouseY, partialTick);
+
+        RenderSystem.clear(GL11.GL_DEPTH_BUFFER_BIT, Minecraft.ON_OSX);
+        graphics.flush();
+
+        directionCompassRoot.drawInBackground(graphics, mouseX, mouseY, partialTick);
+        directionCompassRoot.drawInForeground(graphics, mouseX, mouseY, partialTick);
+        directionCompassRoot.drawOverlay(graphics, mouseX, mouseY, partialTick);
 
         RenderSystem.depthMask(false);
         RenderSystem.disableDepthTest();
@@ -375,11 +417,16 @@ public abstract class AbstractPortableStructureToolScreen<M extends AbstractPort
     @Override
     public void containerTick() {
         super.containerTick();
+
         root.updateScreen();
+        directionCompassRoot.updateScreen();
+
         syncOffsetDisplays();
 
         refreshTransformAroundOriginMode();
         updateTransformButtonTooltips();
+
+        updateDirectionCompassSceneLayoutAndCamera();
 
         if (previewReloadDelay >= 0) {
             if (previewReloadDelay == 0) {
@@ -395,6 +442,7 @@ public abstract class AbstractPortableStructureToolScreen<M extends AbstractPort
     public void removed() {
         super.removed();
         clearScene();
+        clearDirectionCompassScene();
     }
 
     public void reloadPreviewNow() {
@@ -579,5 +627,226 @@ public abstract class AbstractPortableStructureToolScreen<M extends AbstractPort
         refreshTransformAroundOriginMode();
         updateTransformButtonTooltips();
         return result;
+    }
+
+    protected PreviewRect getDirectionCompassRect() {
+        PreviewRect preview = getPreviewRect();
+
+        return new PreviewRect(
+                preview.x() + preview.width() - DIRECTION_COMPASS_SIZE - 4,
+                preview.y() + 4,
+                DIRECTION_COMPASS_SIZE,
+                DIRECTION_COMPASS_SIZE
+        );
+    }
+
+    protected void ensureDirectionCompassScene() {
+        if (this.directionCompassScene != null) {
+            return;
+        }
+
+        this.directionCompassWorld = new TrackedDummyWorld();
+        this.directionCompassCore = buildDirectionCompassStructure(this.directionCompassWorld);
+
+        this.directionCompassScene = new SceneWidget(
+                0,
+                0,
+                DIRECTION_COMPASS_SIZE,
+                DIRECTION_COMPASS_SIZE,
+                this.directionCompassWorld
+        );
+
+        this.directionCompassScene
+                .useOrtho(true)
+                .setRenderFacing(false)
+                .setRenderSelect(false)
+                .setDraggable(false)
+                .setScalable(false)
+                .setIntractable(false)
+                .setHoverTips(false)
+                .setClearColor(0x00000000);
+
+        this.directionCompassScene.setRenderedCore(this.directionCompassCore);
+        this.directionCompassScene.setOrthoRange(DIRECTION_COMPASS_ORTHO_RANGE);
+        this.directionCompassScene.setZoom(1.0F);
+        this.directionCompassScene.setCenter(new org.joml.Vector3f(0.5F, 0.75F, 0.5F));
+        this.directionCompassScene.setCameraYawAndPitch(this.yaw, this.pitch);
+
+        this.directionCompassRoot.clearAllWidgets();
+        this.directionCompassRoot.addWidget(this.directionCompassScene);
+    }
+
+    protected void updateDirectionCompassSceneLayoutAndCamera() {
+        if (this.directionCompassScene == null) {
+            ensureDirectionCompassScene();
+        }
+
+        if (this.directionCompassScene == null) {
+            return;
+        }
+
+        PreviewRect rect = getDirectionCompassRect();
+
+        if (this.directionCompassScene.getPositionX() != rect.x()
+                || this.directionCompassScene.getPositionY() != rect.y()
+                || this.directionCompassScene.getSizeWidth() != rect.width()
+                || this.directionCompassScene.getSizeHeight() != rect.height()) {
+            this.directionCompassScene.setSelfPosition(rect.x(), rect.y());
+            this.directionCompassScene.setSize(rect.width(), rect.height());
+        }
+
+        this.directionCompassScene.setOrthoRange(DIRECTION_COMPASS_ORTHO_RANGE);
+        this.directionCompassScene.setZoom(1.0F);
+        this.directionCompassScene.setCameraYawAndPitch(this.yaw, this.pitch);
+    }
+
+    protected void clearDirectionCompassScene() {
+        this.directionCompassRoot.clearAllWidgets();
+        this.directionCompassScene = null;
+        this.directionCompassWorld = null;
+        this.directionCompassCore = Collections.emptySet();
+    }
+
+    private static Set<BlockPos> buildDirectionCompassStructure(TrackedDummyWorld world) {
+        Set<BlockPos> core = new HashSet<>();
+
+        BlockState center = Blocks.LIGHT_BLUE_CONCRETE.defaultBlockState();
+        BlockState arrow = Blocks.LIGHT_GRAY_CONCRETE.defaultBlockState();
+        BlockState north = Blocks.RED_CONCRETE.defaultBlockState();
+        BlockState south = Blocks.BLUE_CONCRETE.defaultBlockState();
+        BlockState east = Blocks.YELLOW_CONCRETE.defaultBlockState();
+        BlockState west = Blocks.GREEN_CONCRETE.defaultBlockState();
+
+        for (int x = -1; x <= 1; x++) {
+            for (int z = -1; z <= 1; z++) {
+                placeCompassPillar(world, core, x, z, center);
+            }
+        }
+
+        // North arrow
+        for (int z = -5; z <= -3; z++) {
+            placeCompassPillar(world, core, 0, z, arrow);
+        }
+
+        for (int x = -2; x <= 2; x++) {
+            placeCompassPillar(world, core, x, -6, north);
+        }
+        for (int x = -1; x <= 1; x++) {
+            placeCompassPillar(world, core, x, -7, north);
+        }
+        placeCompassPillar(world, core, 0, -8, north);
+
+        // South arrow
+        for (int z = 3; z <= 5; z++) {
+            placeCompassPillar(world, core, 0, z, arrow);
+        }
+
+        for (int x = -2; x <= 2; x++) {
+            placeCompassPillar(world, core, x, 6, south);
+        }
+        for (int x = -1; x <= 1; x++) {
+            placeCompassPillar(world, core, x, 7, south);
+        }
+        placeCompassPillar(world, core, 0, 8, south);
+
+        // East arrow
+        for (int x = 3; x <= 5; x++) {
+            placeCompassPillar(world, core, x, 0, arrow);
+        }
+
+        for (int z = -2; z <= 2; z++) {
+            placeCompassPillar(world, core, 6, z, east);
+        }
+        for (int z = -1; z <= 1; z++) {
+            placeCompassPillar(world, core, 7, z, east);
+        }
+        placeCompassPillar(world, core, 8, 0, east);
+
+        // West arrow
+        for (int x = -5; x <= -3; x++) {
+            placeCompassPillar(world, core, x, 0, arrow);
+        }
+
+        for (int z = -2; z <= 2; z++) {
+            placeCompassPillar(world, core, -6, z, west);
+        }
+        for (int z = -1; z <= 1; z++) {
+            placeCompassPillar(world, core, -7, z, west);
+        }
+        placeCompassPillar(world, core, -8, 0, west);
+
+        placeCompassGlyph(world, core, -2, -14, north, new String[]{
+                "#...#",
+                "##..#",
+                "#.#.#",
+                "#..##",
+                "#...#"
+        });
+
+        placeCompassGlyph(world, core, -2, 10, south, new String[]{
+                "#####",
+                "#....",
+                "#####",
+                "....#",
+                "#####"
+        });
+
+        placeCompassGlyph(world, core, 10, -2, east, new String[]{
+                "#####",
+                "#....",
+                "####.",
+                "#....",
+                "#####"
+        });
+
+        placeCompassGlyph(world, core, -14, -2, west, new String[]{
+                "#...#",
+                "#...#",
+                "#.#.#",
+                "##.##",
+                "#...#"
+        });
+
+        return core;
+    }
+
+    private static void placeCompassGlyph(
+            TrackedDummyWorld world,
+            Set<BlockPos> core,
+            int startX,
+            int startZ,
+            BlockState state,
+            String[] rows
+    ) {
+        for (int dz = 0; dz < rows.length; dz++) {
+            String row = rows[dz];
+
+            for (int dx = 0; dx < row.length(); dx++) {
+                if (row.charAt(dx) == '#') {
+                    placeCompassPillar(world, core, startX + dx, startZ + dz, state);
+                }
+            }
+        }
+    }
+
+    private static void placeCompassPillar(
+            TrackedDummyWorld world,
+            Set<BlockPos> core,
+            int x,
+            int z,
+            BlockState state
+    ) {
+        placeCompassBlock(world, core, new BlockPos(x, 0, z), state);
+        placeCompassBlock(world, core, new BlockPos(x, 1, z), state);
+    }
+
+    private static void placeCompassBlock(
+            TrackedDummyWorld world,
+            Set<BlockPos> core,
+            BlockPos pos,
+            BlockState state
+    ) {
+        world.setBlock(pos, state, 3, 0);
+        core.add(pos);
     }
 }

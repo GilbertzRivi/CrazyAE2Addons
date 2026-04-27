@@ -272,6 +272,12 @@ public class CrazyConfigScreen {
                             LangDefs.CONFIG_DESC_PSS_COST_1,
                             LangDefs.CONFIG_DESC_PSS_COST_2
                     ));
+                    entries.add(decimal(eb, LangDefs.CONFIG_ENTRY_ENERGY_COST_MULTIPLIER, cfg.PORTABLE_SPATIAL_STORAGE_ENERGY_COST_MULTIPLIER.get(), 1.0D, 0.0D,
+                            cfg.PORTABLE_SPATIAL_STORAGE_ENERGY_COST_MULTIPLIER::set,
+                            LangDefs.CONFIG_DESC_PSS_ENERGY_COST_MULTIPLIER_1,
+                            LangDefs.CONFIG_DESC_PSS_ENERGY_COST_MULTIPLIER_2,
+                            LangDefs.CONFIG_DESC_ENERGY_COST_MULTIPLIER_ZERO
+                    ));
                     entries.add(integer(eb, LangDefs.CONFIG_ENTRY_BASE_INTERNAL_POWER_CAPACITY, cfg.PORTABLE_SPATIAL_STORAGE_BASE_INTERNAL_POWER_CAPACITY.get(), 200000, 0,
                             cfg.PORTABLE_SPATIAL_STORAGE_BASE_INTERNAL_POWER_CAPACITY::set,
                             LangDefs.CONFIG_DESC_PSS_BASE_POWER_1,
@@ -297,6 +303,12 @@ public class CrazyConfigScreen {
                             cfg.PORTABLE_SPATIAL_CLONER_COST::set,
                             LangDefs.CONFIG_DESC_PSC_COST_1,
                             LangDefs.CONFIG_DESC_PSC_COST_2
+                    ));
+                    entries.add(decimal(eb, LangDefs.CONFIG_ENTRY_ENERGY_COST_MULTIPLIER, cfg.PORTABLE_SPATIAL_CLONER_ENERGY_COST_MULTIPLIER.get(), 1.0D, 0.0D,
+                            cfg.PORTABLE_SPATIAL_CLONER_ENERGY_COST_MULTIPLIER::set,
+                            LangDefs.CONFIG_DESC_PSC_ENERGY_COST_MULTIPLIER_1,
+                            LangDefs.CONFIG_DESC_PSC_ENERGY_COST_MULTIPLIER_2,
+                            LangDefs.CONFIG_DESC_ENERGY_COST_MULTIPLIER_ZERO
                     ));
                     entries.add(integer(eb, LangDefs.CONFIG_ENTRY_BASE_INTERNAL_POWER_CAPACITY, cfg.PORTABLE_SPATIAL_CLONER_BASE_INTERNAL_POWER_CAPACITY.get(), 200000, 0,
                             cfg.PORTABLE_SPATIAL_CLONER_BASE_INTERNAL_POWER_CAPACITY::set,
@@ -358,6 +370,23 @@ public class CrazyConfigScreen {
             LangDefs... tooltip
     ) {
         return eb.startIntField(t(name), value)
+                .setDefaultValue(defaultValue)
+                .setMin(min)
+                .setTooltip(tooltip(tooltip))
+                .setSaveConsumer(saveConsumer)
+                .build();
+    }
+
+    private static AbstractConfigListEntry decimal(
+            ConfigEntryBuilder eb,
+            LangDefs name,
+            double value,
+            double defaultValue,
+            double min,
+            Consumer<Double> saveConsumer,
+            LangDefs... tooltip
+    ) {
+        return eb.startDoubleField(t(name), value)
                 .setDefaultValue(defaultValue)
                 .setMin(min)
                 .setTooltip(tooltip(tooltip))

@@ -86,10 +86,6 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
         this.upgradeSlots = upgradeSlots;
     }
 
-    protected AbstractStructureCaptureToolItem(int basePower, int upgradeSlots, Item.Properties properties) {
-        this(() -> basePower, upgradeSlots, properties);
-    }
-
     @FunctionalInterface
     public interface RequirementSink {
         void add(ItemStack stack);
@@ -741,7 +737,8 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
         double requiredPower = StructureToolUtil.calculatePreviewStructurePower(
                 savedTag,
                 localOrigin,
-                getPowerPerBlockCapture()
+                getPowerPerBlockCapture(),
+                getEnergyCostMultiplier()
         );
 
         double usedPower = 0.0D;
@@ -804,6 +801,10 @@ public abstract class AbstractStructureCaptureToolItem extends WirelessTerminalI
         }
 
         return result;
+    }
+
+    protected double getEnergyCostMultiplier() {
+        return 1.0D;
     }
 
     private static void removeCapturedBlocksWithoutDrops(

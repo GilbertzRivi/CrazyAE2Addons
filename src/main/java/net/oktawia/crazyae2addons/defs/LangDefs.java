@@ -341,7 +341,13 @@ public enum LangDefs implements LocalizationEnum {
     FLIP_EAST_WEST("gui.crazyae2addons.flip_east_west", "Flip East/West"),
     FLIP_EAST_WEST_AROUND_ORIGIN("gui.crazyae2addons.flip_east_west_around_origin", "Flip East/West around origin"),
     FLIP_NORTH_SOUTH("gui.crazyae2addons.flip_north_south", "Flip North/South"),
-    FLIP_NORTH_SOUTH_AROUND_ORIGIN("gui.crazyae2addons.flip_north_south_around_origin", "Flip North/South around origin");
+    FLIP_NORTH_SOUTH_AROUND_ORIGIN("gui.crazyae2addons.flip_north_south_around_origin", "Flip North/South around origin"),
+    CONFIG_ENTRY_ENERGY_COST_MULTIPLIER("config.crazyae2addons.entry.energy_cost_multiplier", "Energy cost multiplier"),
+    CONFIG_DESC_PSS_ENERGY_COST_MULTIPLIER_1("config.crazyae2addons.desc.pss_energy_cost_multiplier_1", "Multiplier applied to the distance-based AE cost for portable spatial storage."),
+    CONFIG_DESC_PSS_ENERGY_COST_MULTIPLIER_2("config.crazyae2addons.desc.pss_energy_cost_multiplier_2", "Final cost is: base cost × block distance × multiplier."),
+    CONFIG_DESC_PSC_ENERGY_COST_MULTIPLIER_1("config.crazyae2addons.desc.psc_energy_cost_multiplier_1", "Multiplier applied to the distance-based AE cost for portable spatial cloner."),
+    CONFIG_DESC_PSC_ENERGY_COST_MULTIPLIER_2("config.crazyae2addons.desc.psc_energy_cost_multiplier_2", "Final cost is: base cost × block distance × multiplier."),
+    CONFIG_DESC_ENERGY_COST_MULTIPLIER_ZERO("config.crazyae2addons.desc.energy_cost_multiplier_zero", "Set to 0 to disable energy cost for this gadget.");
 
 
     private final String key;

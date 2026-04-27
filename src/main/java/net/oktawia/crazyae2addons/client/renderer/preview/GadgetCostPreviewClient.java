@@ -17,6 +17,7 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.oktawia.crazyae2addons.CrazyAddons;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.defs.LangDefs;
 import net.oktawia.crazyae2addons.items.PortableSpatialCloner;
 import net.oktawia.crazyae2addons.items.PortableSpatialStorage;
@@ -31,7 +32,6 @@ public class GadgetCostPreviewClient {
     private static final int COLOR_OK = 0xFFFFFF;
     private static final int COLOR_CYAN = 0x55FFFF;
     private static final int COLOR_RED = 0xFF4040;
-    private static final double POWER_PER_BLOCK_CAPTURE = 1.0D;
 
     private static final SelectionCostCache CAPTURE_COST_CACHE = new SelectionCostCache();
 
@@ -39,6 +39,7 @@ public class GadgetCostPreviewClient {
     private static String pasteCostStructureId = "";
     private static PreviewStructure pasteCostStructure = null;
     private static BlockPos pasteCostEnergyOrigin = BlockPos.ZERO;
+    private static double pasteCostEffectivePowerPerBlock = 0.0D;
     private static long pasteCostValue = 0L;
 
     private static Component currentText = null;
@@ -59,13 +60,20 @@ public class GadgetCostPreviewClient {
             return;
         }
 
-        ItemStack held = StructureToolUtil.findHeld(
-                mc.player,
-                PortableSpatialStorage.class,
-                PortableSpatialCloner.class
-        );
+        if (isStructureTool(mc.player.getOffhandItem())) {
+            resetCaches();
+            return;
+        }
 
-        if (held.isEmpty() || !(held.getItem() instanceof AbstractStructureCaptureToolItem tool)) {
+        ItemStack held = mc.player.getMainHandItem();
+
+        if (!isStructureTool(held) || !(held.getItem() instanceof AbstractStructureCaptureToolItem tool)) {
+            resetCaches();
+            return;
+        }
+
+        double effectivePowerPerBlock = getEffectivePowerPerBlock(held);
+        if (effectivePowerPerBlock <= 0.0D) {
             resetCaches();
             return;
         }
@@ -80,7 +88,7 @@ public class GadgetCostPreviewClient {
                 return;
             }
 
-            long cost = computePastePreviewCostAE(held);
+            long cost = computePastePreviewCostAE(held, effectivePowerPerBlock);
             if (cost <= 0) {
                 return;
             }
@@ -114,9 +122,13 @@ public class GadgetCostPreviewClient {
                 mc.level,
                 selectionA.immutable(),
                 previewB,
-                selectionA.immutable(),
-                POWER_PER_BLOCK_CAPTURE
+                previewB,
+                effectivePowerPerBlock
         );
+
+        if (cost <= 0) {
+            return;
+        }
 
         currentText = Component.translatable(
                 LangDefs.CUT_COST_PREVIEW.getTranslationKey(),
@@ -125,7 +137,35 @@ public class GadgetCostPreviewClient {
         currentColor = cost > energy ? COLOR_RED : COLOR_CYAN;
     }
 
-    private static long computePastePreviewCostAE(ItemStack stack) {
+    private static boolean isStructureTool(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) {
+            return false;
+        }
+
+        return stack.getItem() instanceof PortableSpatialStorage
+                || stack.getItem() instanceof PortableSpatialCloner;
+    }
+
+    private static double getEffectivePowerPerBlock(ItemStack stack) {
+        if (stack.getItem() instanceof PortableSpatialStorage) {
+            return CrazyConfig.COMMON.PORTABLE_SPATIAL_STORAGE_COST.get()
+                    * CrazyConfig.COMMON.PORTABLE_SPATIAL_STORAGE_ENERGY_COST_MULTIPLIER.get();
+        }
+
+        if (stack.getItem() instanceof PortableSpatialCloner) {
+            return CrazyConfig.COMMON.PORTABLE_SPATIAL_CLONER_COST.get()
+                    * CrazyConfig.COMMON.PORTABLE_SPATIAL_CLONER_ENERGY_COST_MULTIPLIER.get();
+        }
+
+        return 0.0D;
+    }
+
+    private static long computePastePreviewCostAE(ItemStack stack, double effectivePowerPerBlock) {
+        if (effectivePowerPerBlock <= 0.0D) {
+            invalidatePasteCache();
+            return 0L;
+        }
+
         String structureId = StructureToolStackState.getStructureId(stack);
         if (structureId == null || structureId.isBlank()) {
             invalidatePasteCache();
@@ -144,7 +184,8 @@ public class GadgetCostPreviewClient {
         if (pasteCostCacheValid
                 && structureId.equals(pasteCostStructureId)
                 && structure == pasteCostStructure
-                && energyOrigin.equals(pasteCostEnergyOrigin)) {
+                && energyOrigin.equals(pasteCostEnergyOrigin)
+                && Double.compare(effectivePowerPerBlock, pasteCostEffectivePowerPerBlock) == 0) {
             return pasteCostValue;
         }
 
@@ -158,7 +199,7 @@ public class GadgetCostPreviewClient {
             double dz = pos.getZ() - energyOrigin.getZ();
 
             double distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
-            total += distance;
+            total += distance * effectivePowerPerBlock;
         }
 
         long cost = ceilToLongClamped(Math.max(1.0D, total));
@@ -167,6 +208,7 @@ public class GadgetCostPreviewClient {
         pasteCostStructureId = structureId;
         pasteCostStructure = structure;
         pasteCostEnergyOrigin = energyOrigin.immutable();
+        pasteCostEffectivePowerPerBlock = effectivePowerPerBlock;
         pasteCostValue = cost;
 
         return cost;
@@ -182,6 +224,7 @@ public class GadgetCostPreviewClient {
         pasteCostStructureId = "";
         pasteCostStructure = null;
         pasteCostEnergyOrigin = BlockPos.ZERO;
+        pasteCostEffectivePowerPerBlock = 0.0D;
         pasteCostValue = 0L;
     }
 
@@ -209,13 +252,13 @@ public class GadgetCostPreviewClient {
     private static long blockCaptureCostContribution(
             BlockPos pos,
             BlockPos energyOrigin,
-            double powerPerBlock
+            double effectivePowerPerBlock
     ) {
         double dx = pos.getX() - energyOrigin.getX();
         double dy = pos.getY() - energyOrigin.getY();
         double dz = pos.getZ() - energyOrigin.getZ();
 
-        return Double.doubleToRawLongBits(Math.sqrt(dx * dx + dy * dy + dz * dz) * powerPerBlock);
+        return Double.doubleToRawLongBits(Math.sqrt(dx * dx + dy * dy + dz * dz) * effectivePowerPerBlock);
     }
 
     private static double unpackCost(long packedDouble) {
@@ -242,7 +285,7 @@ public class GadgetCostPreviewClient {
         private BlockPos selectionA = BlockPos.ZERO;
         private BlockPos energyOrigin = BlockPos.ZERO;
         private CuboidBounds bounds = null;
-        private double powerPerBlock = POWER_PER_BLOCK_CAPTURE;
+        private double effectivePowerPerBlock = 0.0D;
 
         private long nonAirBlocks = 0L;
         private double totalCost = 0.0D;
@@ -253,7 +296,7 @@ public class GadgetCostPreviewClient {
             selectionA = BlockPos.ZERO;
             energyOrigin = BlockPos.ZERO;
             bounds = null;
-            powerPerBlock = POWER_PER_BLOCK_CAPTURE;
+            effectivePowerPerBlock = 0.0D;
             nonAirBlocks = 0L;
             totalCost = 0.0D;
         }
@@ -264,7 +307,7 @@ public class GadgetCostPreviewClient {
                 BlockPos newSelectionA,
                 BlockPos newSelectionB,
                 BlockPos newEnergyOrigin,
-                double newPowerPerBlock
+                double newEffectivePowerPerBlock
         ) {
             CuboidBounds newBounds = CuboidBounds.from(newSelectionA, newSelectionB);
 
@@ -273,14 +316,14 @@ public class GadgetCostPreviewClient {
                     || !dimension.equals(newDimension)
                     || !selectionA.equals(newSelectionA)
                     || !energyOrigin.equals(newEnergyOrigin)
-                    || Double.compare(powerPerBlock, newPowerPerBlock) != 0
+                    || Double.compare(effectivePowerPerBlock, newEffectivePowerPerBlock) != 0
                     || bounds == null) {
                 fullRecompute(
                         newDimension,
                         level,
                         newSelectionA,
                         newEnergyOrigin,
-                        newPowerPerBlock,
+                        newEffectivePowerPerBlock,
                         newBounds
                 );
 
@@ -296,7 +339,7 @@ public class GadgetCostPreviewClient {
                     newBounds,
                     bounds,
                     energyOrigin,
-                    powerPerBlock
+                    effectivePowerPerBlock
             );
 
             CountResult removed = countDifference(
@@ -304,7 +347,7 @@ public class GadgetCostPreviewClient {
                     bounds,
                     newBounds,
                     energyOrigin,
-                    powerPerBlock
+                    effectivePowerPerBlock
             );
 
             nonAirBlocks += added.nonAirBlocks;
@@ -331,21 +374,21 @@ public class GadgetCostPreviewClient {
                 Level level,
                 BlockPos newSelectionA,
                 BlockPos newEnergyOrigin,
-                double newPowerPerBlock,
+                double newEffectivePowerPerBlock,
                 CuboidBounds newBounds
         ) {
             CountResult result = countCuboid(
                     level,
                     newBounds,
                     newEnergyOrigin,
-                    newPowerPerBlock
+                    newEffectivePowerPerBlock
             );
 
             valid = true;
             dimension = newDimension;
             selectionA = newSelectionA.immutable();
             energyOrigin = newEnergyOrigin.immutable();
-            powerPerBlock = newPowerPerBlock;
+            effectivePowerPerBlock = newEffectivePowerPerBlock;
             bounds = newBounds;
 
             nonAirBlocks = result.nonAirBlocks;
@@ -353,7 +396,7 @@ public class GadgetCostPreviewClient {
         }
 
         private long toAeCost() {
-            if (!valid || nonAirBlocks <= 0L) {
+            if (!valid || nonAirBlocks <= 0L || effectivePowerPerBlock <= 0.0D) {
                 return 0L;
             }
 
@@ -366,7 +409,7 @@ public class GadgetCostPreviewClient {
             CuboidBounds include,
             CuboidBounds exclude,
             BlockPos energyOrigin,
-            double powerPerBlock
+            double effectivePowerPerBlock
     ) {
         CountResult result = new CountResult();
 
@@ -377,7 +420,7 @@ public class GadgetCostPreviewClient {
                         level,
                         cuboid,
                         energyOrigin,
-                        powerPerBlock
+                        effectivePowerPerBlock
                 ))
         );
 
@@ -388,9 +431,14 @@ public class GadgetCostPreviewClient {
             Level level,
             CuboidBounds bounds,
             BlockPos energyOrigin,
-            double powerPerBlock
+            double effectivePowerPerBlock
     ) {
         CountResult result = new CountResult();
+
+        if (effectivePowerPerBlock <= 0.0D) {
+            return result;
+        }
+
         BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos();
 
         for (int y = bounds.minY(); y <= bounds.maxY(); y++) {
@@ -407,7 +455,7 @@ public class GadgetCostPreviewClient {
                     result.totalCost += unpackCost(blockCaptureCostContribution(
                             mutablePos,
                             energyOrigin,
-                            powerPerBlock
+                            effectivePowerPerBlock
                     ));
                 }
             }

@@ -232,7 +232,8 @@ public class PortableSpatialCloner extends AbstractStructureCaptureToolItem {
         double requiredPower = StructureToolUtil.calculatePreviewStructurePower(
                 savedTag,
                 energyOrigin,
-                getPowerPerBlockPaste()
+                getPowerPerBlockPaste(),
+                getEnergyCostMultiplier()
         );
 
         if (!tryUsePower(player, toolStack, requiredPower)) {
@@ -1480,5 +1481,10 @@ public class PortableSpatialCloner extends AbstractStructureCaptureToolItem {
         private static ClonerRefundResult failure(boolean insertedIntoMe) {
             return new ClonerRefundResult(false, insertedIntoMe);
         }
+    }
+
+    @Override
+    protected double getEnergyCostMultiplier() {
+        return CrazyConfig.COMMON.PORTABLE_SPATIAL_CLONER_ENERGY_COST_MULTIPLIER.get();
     }
 }

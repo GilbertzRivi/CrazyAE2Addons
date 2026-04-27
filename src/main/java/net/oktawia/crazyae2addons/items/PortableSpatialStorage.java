@@ -177,7 +177,12 @@ public class PortableSpatialStorage extends AbstractStructureCaptureToolItem {
     }
 
     private double calculateStructurePower(CompoundTag templateTag, BlockPos localOrigin, double baseCostPerBlock) {
-        return StructureToolUtil.calculatePreviewStructurePower(templateTag, localOrigin, baseCostPerBlock);
+        return StructureToolUtil.calculatePreviewStructurePower(
+                templateTag,
+                localOrigin,
+                baseCostPerBlock,
+                getEnergyCostMultiplier()
+        );
     }
 
     private void paste(ServerLevel level, Player player, ItemStack stack, BlockPos origin) {
@@ -662,5 +667,10 @@ public class PortableSpatialStorage extends AbstractStructureCaptureToolItem {
     }
 
     private record BlockBounds(BlockPos min, BlockPos max) {
+    }
+
+    @Override
+    protected double getEnergyCostMultiplier() {
+        return CrazyConfig.COMMON.PORTABLE_SPATIAL_STORAGE_ENERGY_COST_MULTIPLIER.get();
     }
 }

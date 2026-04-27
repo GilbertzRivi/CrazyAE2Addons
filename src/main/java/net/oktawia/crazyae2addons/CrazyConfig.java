@@ -16,47 +16,26 @@ public final class CrazyConfig {
 
     public static final class Common {
 
-        // =========================
-        // DISPLAY
-        // =========================
         public final ForgeConfigSpec.BooleanValue DISPLAY_ENABLED;
         public final ForgeConfigSpec.BooleanValue DISPLAY_IMAGES_ENABLED;
         public final ForgeConfigSpec.BooleanValue DISPLAY_STOCK_ENABLED;
         public final ForgeConfigSpec.BooleanValue DISPLAY_ICONS_ENABLED;
         public final ForgeConfigSpec.BooleanValue DISPLAY_DELTA_ENABLED;
 
-        // =========================
-        // EMITTER TERMINAL
-        // =========================
         public final ForgeConfigSpec.BooleanValue EMITTER_TERMINAL_ENABLED;
         public final ForgeConfigSpec.BooleanValue WIRELESS_EMITTER_TERMINAL_ENABLED;
 
-        // =========================
-        // WIRELESS NOTIFICATION TERMINAL
-        // =========================
         public final ForgeConfigSpec.BooleanValue WIRELESS_NOTIFICATION_TERMINAL_ENABLED;
         public final ForgeConfigSpec.IntValue WIRELESS_NOTIFICATION_TERMINAL_CONFIG_SLOT;
 
-        // =========================
-        // MULTI LEVEL EMITTER
-        // =========================
         public final ForgeConfigSpec.BooleanValue MULTI_LEVEL_EMITTER_ENABLED;
         public final ForgeConfigSpec.IntValue MULTI_LEVEL_EMITTER_CONFIG_SLOT;
 
-        // =========================
-        // TAG LEVEL EMITTER
-        // =========================
         public final ForgeConfigSpec.BooleanValue TAG_LEVEL_EMITTER_ENABLED;
 
-        // =========================
-        // REDSTONE EMITTER / TERMINAL
-        // =========================
         public final ForgeConfigSpec.BooleanValue REDSTONE_EMITTER_TERMINAL_ENABLED;
         public final ForgeConfigSpec.BooleanValue WIRELESS_REDSTONE_TERMINAL_ENABLED;
 
-        // =========================
-        // WORMHOLE
-        // =========================
         public final ForgeConfigSpec.BooleanValue WORMHOLE_ENABLED;
         public final ForgeConfigSpec.BooleanValue WORMHOLE_TELEPORTATION_ENABLED;
         public final ForgeConfigSpec.BooleanValue WORMHOLE_NESTED_P2PS_ENABLED;
@@ -68,53 +47,31 @@ public final class CrazyConfig {
         public final ForgeConfigSpec.BooleanValue WORMHOLE_MERGED_CAPABILITY_PROXY_ENABLED;
         public final ForgeConfigSpec.BooleanValue WORMHOLE_REMOTE_INTERACTIONS_ENABLED;
 
-        // =========================
-        // ROUND ROBIN P2P
-        // =========================
         public final ForgeConfigSpec.BooleanValue RR_ITEM_P2P_ENABLED;
         public final ForgeConfigSpec.BooleanValue RR_FLUID_P2P_ENABLED;
 
-        // =========================
-        // CPU PRIORITIES
-        // =========================
         public final ForgeConfigSpec.BooleanValue CPU_PRIORITIES_ENABLED;
 
-        // =========================
-        // TAG VIEW CELL
-        // =========================
         public final ForgeConfigSpec.BooleanValue TAG_VIEW_CELL_ENABLED;
 
-        // =========================
-        // PATTERN MULTIPLIER
-        // =========================
         public final ForgeConfigSpec.BooleanValue PATTERN_MULTIPLIER_ENABLED;
 
-        // =========================
-        // CRAZY PATTERN PROVIDER
-        // =========================
         public final ForgeConfigSpec.BooleanValue CRAZY_PATTERN_PROVIDER_BLOCK_ENABLED;
         public final ForgeConfigSpec.BooleanValue CRAZY_PATTERN_PROVIDER_PART_ENABLED;
         public final ForgeConfigSpec.IntValue CRAZY_PROVIDER_MAX_UPGRADES;
 
-        // =========================
-        // EJECTOR
-        // =========================
         public final ForgeConfigSpec.BooleanValue EJECTOR_ENABLED;
         public final ForgeConfigSpec.BooleanValue EJECTOR_CRAFT_MISSING_ENABLED;
 
-        // =========================
-        // PORTABLE SPATIAL STORAGE
-        // =========================
         public final ForgeConfigSpec.BooleanValue PORTABLE_SPATIAL_STORAGE_ENABLED;
         public final ForgeConfigSpec.IntValue PORTABLE_SPATIAL_STORAGE_COST;
+        public final ForgeConfigSpec.DoubleValue PORTABLE_SPATIAL_STORAGE_ENERGY_COST_MULTIPLIER;
         public final ForgeConfigSpec.IntValue PORTABLE_SPATIAL_STORAGE_BASE_INTERNAL_POWER_CAPACITY;
         public final ForgeConfigSpec.IntValue PORTABLE_SPATIAL_STORAGE_MAX_STRUCTURE_SIZE;
 
-        // =========================
-        // PORTABLE SPATIAL CLONER
-        // =========================
         public final ForgeConfigSpec.BooleanValue PORTABLE_SPATIAL_CLONER_ENABLED;
         public final ForgeConfigSpec.IntValue PORTABLE_SPATIAL_CLONER_COST;
+        public final ForgeConfigSpec.DoubleValue PORTABLE_SPATIAL_CLONER_ENERGY_COST_MULTIPLIER;
         public final ForgeConfigSpec.IntValue PORTABLE_SPATIAL_CLONER_BASE_INTERNAL_POWER_CAPACITY;
         public final ForgeConfigSpec.IntValue PORTABLE_SPATIAL_CLONER_MAX_STRUCTURE_SIZE;
 
@@ -125,9 +82,6 @@ public final class CrazyConfig {
                     "For every config entry that defines a limit, -1 means no limit."
             ).push("features");
 
-            // ============================================================
-            // DISPLAY
-            // ============================================================
             builder.comment(
                     "Display feature.",
                     "A part that renders dynamic text, images, and AE2-related data.",
@@ -161,9 +115,6 @@ public final class CrazyConfig {
 
             builder.pop();
 
-            // ============================================================
-            // EMITTER TERMINAL
-            // ============================================================
             builder.comment(
                     "Emitter terminal feature.",
                     "The emitter terminal allows the player to access, query, and configure",
@@ -182,9 +133,6 @@ public final class CrazyConfig {
 
             builder.pop();
 
-            // ============================================================
-            // WIRELESS NOTIFICATION TERMINAL
-            // ============================================================
             builder.comment(
                     "Wireless notification terminal feature.",
                     "The wireless notification terminal allows the player to configure",
@@ -204,9 +152,6 @@ public final class CrazyConfig {
 
             builder.pop();
 
-            // ============================================================
-            // MULTI LEVEL EMITTER
-            // ============================================================
             builder.comment(
                     "Multi level emitter feature.",
                     "The multi level emitter tracks and triggers multiple conditions at once."
@@ -224,9 +169,6 @@ public final class CrazyConfig {
 
             builder.pop();
 
-            // ============================================================
-            // TAG LEVEL EMITTER
-            // ============================================================
             builder.comment(
                     "Tag level emitter feature.",
                     "The tag level emitter tracks resources based on a tag expression",
@@ -240,9 +182,6 @@ public final class CrazyConfig {
 
             builder.pop();
 
-            // ============================================================
-            // REDSTONE EMITTER / TERMINAL
-            // ============================================================
             builder.comment(
                     "Redstone emitter / terminal feature.",
                     "The redstone terminal allows the player to control the redstone output",
@@ -261,9 +200,6 @@ public final class CrazyConfig {
 
             builder.pop();
 
-            // ============================================================
-            // WORMHOLE
-            // ============================================================
             builder.comment(
                     "Wormhole feature.",
                     "Wormhole is a large feature that acts as a universal capability proxy",
@@ -333,9 +269,6 @@ public final class CrazyConfig {
 
             builder.pop();
 
-            // ============================================================
-            // ROUND ROBIN P2P
-            // ============================================================
             builder.comment(
                     "Round robin P2P features.",
                     "Round robin P2P tunnels always split inputs evenly between all outputs,",
@@ -354,9 +287,6 @@ public final class CrazyConfig {
 
             builder.pop();
 
-            // ============================================================
-            // CPU PRIORITIES
-            // ============================================================
             builder.comment(
                     "CPU priorities feature.",
                     "CPU priorities make higher-priority CPUs receive crafting jobs more often,",
@@ -371,9 +301,6 @@ public final class CrazyConfig {
 
             builder.pop();
 
-            // ============================================================
-            // TAG VIEW CELL
-            // ============================================================
             builder.comment(
                     "Tag view cell feature.",
                     "The tag view cell filters the terminal it is placed in based on a tag expression",
@@ -387,9 +314,6 @@ public final class CrazyConfig {
 
             builder.pop();
 
-            // ============================================================
-            // PATTERN MULTIPLIER
-            // ============================================================
             builder.comment(
                     "Pattern multiplier feature.",
                     "The pattern multiplier allows the player to multiply patterns, multiply them up to a limit,",
@@ -404,9 +328,6 @@ public final class CrazyConfig {
 
             builder.pop();
 
-            // ============================================================
-            // CRAZY PATTERN PROVIDER
-            // ============================================================
             builder.comment(
                     "Crazy pattern provider features.",
                     "The crazy pattern provider starts with 72 pattern slots",
@@ -433,9 +354,6 @@ public final class CrazyConfig {
 
             builder.pop();
 
-            // ============================================================
-            // EJECTOR
-            // ============================================================
             builder.comment(
                     "Ejector feature.",
                     "The ejector allows the player to configure its 36-slot config inventory",
@@ -459,9 +377,6 @@ public final class CrazyConfig {
 
             builder.pop();
 
-            // ============================================================
-            // PORTABLE SPATIAL STORAGE
-            // ============================================================
             builder.comment(
                     "Portable spatial storage feature.",
                     "Portable spatial storage can cut structures from the world,",
@@ -476,9 +391,15 @@ public final class CrazyConfig {
 
             PORTABLE_SPATIAL_STORAGE_COST = nonNegativeInt(builder,
                     "cost", 1,
-                    "Base AE cost of cutting or pasting one block.",
-                    "The final cost depends on this value and on the distance of the block",
-                    "from the first selected corner."
+                    "Base AE cost factor for cutting or pasting one block.",
+                    "The final cost is: base cost * block distance * energy cost multiplier."
+            );
+
+            PORTABLE_SPATIAL_STORAGE_ENERGY_COST_MULTIPLIER = nonNegativeDouble(builder,
+                    "energyCostMultiplier", 1.0D,
+                    "Multiplier applied to the distance-based AE cost.",
+                    "Final cost is: base cost * block distance * this multiplier.",
+                    "Set to 0 to disable energy cost for this gadget."
             );
 
             PORTABLE_SPATIAL_STORAGE_BASE_INTERNAL_POWER_CAPACITY = nonNegativeInt(builder,
@@ -496,9 +417,6 @@ public final class CrazyConfig {
 
             builder.pop();
 
-            // ============================================================
-            // PORTABLE SPATIAL CLONER
-            // ============================================================
             builder.comment(
                     "Portable spatial cloner feature.",
                     "Portable spatial cloner can copy structures from the world,",
@@ -513,9 +431,15 @@ public final class CrazyConfig {
 
             PORTABLE_SPATIAL_CLONER_COST = nonNegativeInt(builder,
                     "cost", 1,
-                    "Base AE cost of copying or pasting one block.",
-                    "The final cost depends on this value and on the distance of the block",
-                    "from the first selected corner."
+                    "Base AE cost factor for copying or pasting one block.",
+                    "The final cost is: base cost * block distance * energy cost multiplier."
+            );
+
+            PORTABLE_SPATIAL_CLONER_ENERGY_COST_MULTIPLIER = nonNegativeDouble(builder,
+                    "energyCostMultiplier", 1.0D,
+                    "Multiplier applied to the distance-based AE cost.",
+                    "Final cost is: base cost * block distance * this multiplier.",
+                    "Set to 0 to disable energy cost for this gadget."
             );
 
             PORTABLE_SPATIAL_CLONER_BASE_INTERNAL_POWER_CAPACITY = nonNegativeInt(builder,
@@ -561,6 +485,15 @@ public final class CrazyConfig {
                 String... comment
         ) {
             return builder.comment(comment).defineInRange(key, defaultValue, -1, Integer.MAX_VALUE);
+        }
+
+        private static ForgeConfigSpec.DoubleValue nonNegativeDouble(
+                ForgeConfigSpec.Builder builder,
+                String key,
+                double defaultValue,
+                String... comment
+        ) {
+            return builder.comment(comment).defineInRange(key, defaultValue, 0.0D, Double.MAX_VALUE);
         }
     }
 

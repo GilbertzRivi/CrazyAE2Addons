@@ -95,14 +95,6 @@ public class CrazyItemRegistrar {
             ITEMS.register("round_robin_fluid_p2p_tunnel",
                     () -> new RRFluidP2PTunnelPartItem(new Item.Properties()));
 
-    public static final RegistryObject<PortableSpatialStorage> PORTABLE_SPATIAL_STORAGE =
-            ITEMS.register("portable_spatial_storage",
-                    () -> new PortableSpatialStorage(new Item.Properties()));
-
-    public static final RegistryObject<PortableSpatialCloner> PORTABLE_SPATIAL_CLONER =
-            ITEMS.register("portable_spatial_cloner",
-                    () -> new PortableSpatialCloner(new Item.Properties()));
-
     public static final RegistryObject<CpuPrioTunerItem> CPU_PRIO_TUNER =
             ITEMS.register("cpu_priority_tuner",
                     () -> new CpuPrioTunerItem(new Item.Properties()));

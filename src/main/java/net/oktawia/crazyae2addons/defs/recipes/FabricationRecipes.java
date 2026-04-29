@@ -83,22 +83,6 @@ public class FabricationRecipes {
                 .input("minecraft:diamond", 4)
                 .output("crazyae2addons:wormhole", 1)
                 .register();
-        recipe("portable_spatial_storage")
-                .input("ae2:spatial_io_port", 1)
-                .input("ae2:dense_energy_cell", 1)
-                .input("ae2:spatial_pylon", 16)
-                .input("ae2:import_bus", 4)
-                .input("ae2:export_bus", 4)
-                .input("ae2:wireless_terminal", 1)
-                .output("crazyae2addons:portable_spatial_storage", 1)
-                .register();
-        recipe("portable_spatial_cloner")
-                .input("crazyae2addons:portable_spatial_storage", 1)
-                .input("ae2:dense_energy_cell", 2)
-                .input("ae2:wireless_receiver", 1)
-                .input("ae2:wireless_crafting_terminal", 1)
-                .output("crazyae2addons:portable_spatial_cloner", 1)
-                .register();
     }
 
     public static class Builder {

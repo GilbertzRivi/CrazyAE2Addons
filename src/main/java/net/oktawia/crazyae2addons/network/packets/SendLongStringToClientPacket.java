@@ -2,7 +2,6 @@ package net.oktawia.crazyae2addons.network.packets;
 
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.network.NetworkEvent;
-import net.oktawia.crazyae2addons.client.renderer.preview.PortableSpatialStoragePreviewSync;
 
 import java.nio.charset.StandardCharsets;
 import java.util.function.Supplier;
@@ -26,7 +25,6 @@ public class SendLongStringToClientPacket {
 
     public static void handle(SendLongStringToClientPacket packet, Supplier<NetworkEvent.Context> ctxSupplier) {
         NetworkEvent.Context ctx = ctxSupplier.get();
-        ctx.enqueueWork(() -> PortableSpatialStoragePreviewSync.acceptChunk(packet.data));
         ctx.setPacketHandled(true);
     }
 }

@@ -52,7 +52,7 @@ public final class DisplayRendererCommon {
     private static final float BACKGROUND_LAYER_Z = 0.0005f - DISPLAY_OFFSET;
     private static final float TABLE_LINE_LAYER_Z = 0.0010f - DISPLAY_OFFSET;
     private static final float TEXT_LAYER_Z =  0.0010f - DISPLAY_OFFSET;
-    private static final float ICON_LAYER_Z =  0.0010f - DISPLAY_OFFSET;
+    private static final float ICON_LAYER_Z =  0.0020f - DISPLAY_OFFSET;
     private static final float IMAGE_LAYER_Z = 0.0025f - DISPLAY_OFFSET;
 
     private DisplayRendererCommon() {}

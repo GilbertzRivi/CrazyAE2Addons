@@ -102,11 +102,5 @@ public class CrazyEmiPlugin implements EmiPlugin {
         if (!CrazyConfig.COMMON.EJECTOR_ENABLED.get()) {
             registry.removeEmiStacks(EmiStack.of(CrazyBlockRegistrar.EJECTOR_BLOCK.get()));
         }
-        if (!CrazyConfig.COMMON.PORTABLE_SPATIAL_STORAGE_ENABLED.get()) {
-            registry.removeEmiStacks(EmiStack.of(CrazyItemRegistrar.PORTABLE_SPATIAL_STORAGE.get()));
-        }
-        if (!CrazyConfig.COMMON.PORTABLE_SPATIAL_CLONER_ENABLED.get()) {
-            registry.removeEmiStacks(EmiStack.of(CrazyItemRegistrar.PORTABLE_SPATIAL_CLONER.get()));
-        }
     }
 }

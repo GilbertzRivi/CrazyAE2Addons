@@ -160,18 +160,6 @@ public class CrazyJeiPlugin implements IModPlugin {
                     List.of(new ItemStack(CrazyBlockRegistrar.EJECTOR_BLOCK.get()))
             );
         }
-        if (!CrazyConfig.COMMON.PORTABLE_SPATIAL_STORAGE_ENABLED.get()) {
-            registration.getIngredientManager().removeIngredientsAtRuntime(
-                    VanillaTypes.ITEM_STACK,
-                    List.of(new ItemStack(CrazyItemRegistrar.PORTABLE_SPATIAL_STORAGE.get()))
-            );
-        }
-        if (!CrazyConfig.COMMON.PORTABLE_SPATIAL_CLONER_ENABLED.get()) {
-            registration.getIngredientManager().removeIngredientsAtRuntime(
-                    VanillaTypes.ITEM_STACK,
-                    List.of(new ItemStack(CrazyItemRegistrar.PORTABLE_SPATIAL_CLONER.get()))
-            );
-        }
     }
 
     @Override

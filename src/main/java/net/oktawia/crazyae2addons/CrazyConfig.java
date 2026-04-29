@@ -63,18 +63,6 @@ public final class CrazyConfig {
         public final ForgeConfigSpec.BooleanValue EJECTOR_ENABLED;
         public final ForgeConfigSpec.BooleanValue EJECTOR_CRAFT_MISSING_ENABLED;
 
-        public final ForgeConfigSpec.BooleanValue PORTABLE_SPATIAL_STORAGE_ENABLED;
-        public final ForgeConfigSpec.IntValue PORTABLE_SPATIAL_STORAGE_COST;
-        public final ForgeConfigSpec.DoubleValue PORTABLE_SPATIAL_STORAGE_ENERGY_COST_MULTIPLIER;
-        public final ForgeConfigSpec.IntValue PORTABLE_SPATIAL_STORAGE_BASE_INTERNAL_POWER_CAPACITY;
-        public final ForgeConfigSpec.IntValue PORTABLE_SPATIAL_STORAGE_MAX_STRUCTURE_SIZE;
-
-        public final ForgeConfigSpec.BooleanValue PORTABLE_SPATIAL_CLONER_ENABLED;
-        public final ForgeConfigSpec.IntValue PORTABLE_SPATIAL_CLONER_COST;
-        public final ForgeConfigSpec.DoubleValue PORTABLE_SPATIAL_CLONER_ENERGY_COST_MULTIPLIER;
-        public final ForgeConfigSpec.IntValue PORTABLE_SPATIAL_CLONER_BASE_INTERNAL_POWER_CAPACITY;
-        public final ForgeConfigSpec.IntValue PORTABLE_SPATIAL_CLONER_MAX_STRUCTURE_SIZE;
-
         public Common(ForgeConfigSpec.Builder builder) {
             builder.comment(
                     "Crazy AE2 Addons - Common Config",
@@ -373,86 +361,6 @@ public final class CrazyConfig {
             EJECTOR_CRAFT_MISSING_ENABLED = bool(builder,
                     "craftMissingEnabled", true,
                     "Allow the ejector to craft missing items."
-            );
-
-            builder.pop();
-
-            builder.comment(
-                    "Portable spatial storage feature.",
-                    "Portable spatial storage can cut structures from the world,",
-                    "rotate or flip them, and then paste them back,",
-                    "while preserving block NBT and other metadata."
-            ).push("portableSpatialStorage");
-
-            PORTABLE_SPATIAL_STORAGE_ENABLED = bool(builder,
-                    "enabled", true,
-                    "Enable or disable portable spatial storage."
-            );
-
-            PORTABLE_SPATIAL_STORAGE_COST = nonNegativeInt(builder,
-                    "cost", 1,
-                    "Base AE cost factor for cutting or pasting one block.",
-                    "The final cost is: base cost * block distance * energy cost multiplier."
-            );
-
-            PORTABLE_SPATIAL_STORAGE_ENERGY_COST_MULTIPLIER = nonNegativeDouble(builder,
-                    "energyCostMultiplier", 1.0D,
-                    "Multiplier applied to the distance-based AE cost.",
-                    "Final cost is: base cost * block distance * this multiplier.",
-                    "Set to 0 to disable energy cost for this gadget."
-            );
-
-            PORTABLE_SPATIAL_STORAGE_BASE_INTERNAL_POWER_CAPACITY = nonNegativeInt(builder,
-                    "baseInternalPowerCapacity", 200000,
-                    "Base internal power capacity for portable spatial storage.",
-                    "Each energy upgrade adds this amount once more to the item's",
-                    "internal energy storage."
-            );
-
-            PORTABLE_SPATIAL_STORAGE_MAX_STRUCTURE_SIZE = unlimitedInt(builder,
-                    "maxStructureSize", -1,
-                    "Maximum allowed structure size for portable spatial storage.",
-                    "-1 means no limit."
-            );
-
-            builder.pop();
-
-            builder.comment(
-                    "Portable spatial cloner feature.",
-                    "Portable spatial cloner can copy structures from the world,",
-                    "rotate or flip them, and then paste them back,",
-                    "while preserving machine settings. It works with AE2 cables and parts."
-            ).push("portableSpatialCloner");
-
-            PORTABLE_SPATIAL_CLONER_ENABLED = bool(builder,
-                    "enabled", true,
-                    "Enable or disable portable spatial cloner."
-            );
-
-            PORTABLE_SPATIAL_CLONER_COST = nonNegativeInt(builder,
-                    "cost", 1,
-                    "Base AE cost factor for copying or pasting one block.",
-                    "The final cost is: base cost * block distance * energy cost multiplier."
-            );
-
-            PORTABLE_SPATIAL_CLONER_ENERGY_COST_MULTIPLIER = nonNegativeDouble(builder,
-                    "energyCostMultiplier", 1.0D,
-                    "Multiplier applied to the distance-based AE cost.",
-                    "Final cost is: base cost * block distance * this multiplier.",
-                    "Set to 0 to disable energy cost for this gadget."
-            );
-
-            PORTABLE_SPATIAL_CLONER_BASE_INTERNAL_POWER_CAPACITY = nonNegativeInt(builder,
-                    "baseInternalPowerCapacity", 200000,
-                    "Base internal power capacity for portable spatial cloner.",
-                    "Each energy upgrade adds this amount once more to the item's",
-                    "internal energy storage."
-            );
-
-            PORTABLE_SPATIAL_CLONER_MAX_STRUCTURE_SIZE = unlimitedInt(builder,
-                    "maxStructureSize", -1,
-                    "Maximum allowed structure size for portable spatial cloner.",
-                    "-1 means no limit."
             );
 
             builder.pop();

@@ -12,7 +12,6 @@ import net.oktawia.crazyae2addons.entities.EjectorBE;
 import net.oktawia.crazyae2addons.entities.RecipeFabricatorBE;
 import net.oktawia.crazyae2addons.logic.cpupriority.CpuPrioHost;
 import net.oktawia.crazyae2addons.logic.patternmultiplier.PatternMultiplierHost;
-import net.oktawia.crazyae2addons.logic.structuretool.StructureToolHost;
 import net.oktawia.crazyae2addons.logic.viewcell.TagViewCellHost;
 import net.oktawia.crazyae2addons.menus.CrazyPatternProviderMenu;
 import net.oktawia.crazyae2addons.menus.PatternMultiplierMenu;
@@ -88,12 +87,6 @@ public class CrazyMenuRegistrar {
 
     public static final RegistryObject<MenuType<RedstoneEmitterMenu>> REDSTONE_EMITTER_MENU =
             reg("redstone_emitter_menu", RedstoneEmitterMenu::new, RedstoneEmitter.class);
-
-    public static final RegistryObject<MenuType<PortableSpatialStorageMenu>> PORTABLE_SPATIAL_STORAGE_MENU =
-            reg("portable_spatial_storage_menu", PortableSpatialStorageMenu::new, StructureToolHost.class);
-
-    public static final RegistryObject<MenuType<PortableSpatialClonerMenu>> PORTABLE_SPATIAL_CLONER_MENU =
-            reg("portable_spatial_cloner_menu", PortableSpatialClonerMenu::new, StructureToolHost.class);
 
     public static final RegistryObject<MenuType<PatternMultiplierMenu>> PATTERN_MULTIPLIER_MENU =
             reg("pattern_multiplier_menu", PatternMultiplierMenu::new, PatternMultiplierHost.class);

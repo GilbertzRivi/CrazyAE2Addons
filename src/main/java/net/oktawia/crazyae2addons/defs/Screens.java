@@ -95,16 +95,6 @@ public final class Screens {
                 "/screens/redstone_emitter.json"
         );
         InitScreens.register(
-                CrazyMenuRegistrar.PORTABLE_SPATIAL_STORAGE_MENU.get(),
-                PortableSpatialStorageScreen<PortableSpatialStorageMenu>::new,
-                "/screens/portable_spatial_storage.json"
-        );
-        InitScreens.register(
-                CrazyMenuRegistrar.PORTABLE_SPATIAL_CLONER_MENU.get(),
-                PortableSpatialClonerScreen<PortableSpatialClonerMenu>::new,
-                "/screens/portable_spatial_cloner.json"
-        );
-        InitScreens.register(
                 CrazyMenuRegistrar.PATTERN_MULTIPLIER_MENU.get(),
                 PatternMultiplierScreen<PatternMultiplierMenu>::new,
                 "/screens/pattern_multiplier.json"

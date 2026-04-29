@@ -21,9 +21,6 @@ public class UpgradeCards {
             Upgrades.add(AE2wtlib.QUANTUM_BRIDGE_CARD, CrazyItemRegistrar.WIRELESS_REDSTONE_TERMINAL.get(), 1);
             Upgrades.add(AEItems.CRAFTING_CARD, CrazyItemRegistrar.MULTI_LEVEL_EMITTER.get(), 1);
             Upgrades.add(AEItems.FUZZY_CARD, CrazyItemRegistrar.MULTI_LEVEL_EMITTER.get(), 1);
-            Upgrades.add(AEItems.ENERGY_CARD, CrazyItemRegistrar.PORTABLE_SPATIAL_STORAGE.get(), 4);
-            Upgrades.add(AEItems.ENERGY_CARD, CrazyItemRegistrar.PORTABLE_SPATIAL_CLONER.get(), 4);
-            Upgrades.add(AEItems.CRAFTING_CARD, CrazyItemRegistrar.PORTABLE_SPATIAL_CLONER.get(), 1);
             Upgrades.add(CrazyItemRegistrar.ANALOG_CARD.get(), AEParts.LEVEL_EMITTER, 1);
             Upgrades.add(CrazyItemRegistrar.ANALOG_CARD.get(), CrazyItemRegistrar.TAG_LEVEL_EMITTER.get(), 1);
             if (IsModLoaded.APP_FLUX){

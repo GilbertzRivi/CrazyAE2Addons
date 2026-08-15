@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -26,6 +27,8 @@ import net.minecraft.client.gui.components.Whence;
 import net.minecraft.client.gui.narration.NarratedElementType;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -41,6 +44,8 @@ public class MultilineTextFieldWidget extends AbstractWidget {
     private static final int SCROLLBAR_TRACK_COLOR = 0x40606060;
     private static final int SCROLLBAR_THUMB_COLOR = 0x80A0A0A0;
     private static final long DOUBLE_CLICK_MS = 250L;
+    private static final char ASCII_START = ' ';
+    private static final char ASCII_END = 127;
 
     private enum ScrollbarDrag {
         NONE, VERTICAL, HORIZONTAL
@@ -70,7 +75,17 @@ public class MultilineTextFieldWidget extends AbstractWidget {
     private double scrollbarDragScrollStart;
 
     private List<HighlightRule> highlightRules = List.of();
+
+    @Nullable
+    private Function<String, List<HighlightRule>> dynamicHighlightRules;
+
     private int defaultTextColor = 0xFFFFFFFF;
+    private float textScale = 1.0f;
+    private Style textStyle = Style.EMPTY;
+    private Component[] asciiGlyphs = new Component[ASCII_END - ASCII_START];
+    private int[] glyphOffsets = new int[ASCII_END - ASCII_START];
+    private int cellAdvance;
+    private boolean monospace;
 
     @Nullable
     private Consumer<String> onValueChanged;
@@ -100,9 +115,93 @@ public class MultilineTextFieldWidget extends AbstractWidget {
         invalidateHighlightCache();
     }
 
+    public void setDynamicHighlightRules(@Nullable Function<String, List<HighlightRule>> rules) {
+        this.dynamicHighlightRules = rules;
+        invalidateHighlightCache();
+    }
+
     public void setDefaultTextColor(int color) {
         this.defaultTextColor = color;
         invalidateHighlightCache();
+    }
+
+    public void setTextScale(float scale) {
+        this.textScale = Mth.clamp(scale, 0.25f, 2.0f);
+        clampScroll();
+        clampScrollX();
+    }
+
+    public void setMonospace(boolean monospace) {
+        this.monospace = monospace;
+        clampScrollX();
+    }
+
+    public void setFontId(@Nullable ResourceLocation fontId) {
+        this.textStyle = fontId == null ? Style.EMPTY : Style.EMPTY.withFont(fontId);
+        this.asciiGlyphs = new Component[ASCII_END - ASCII_START];
+        this.glyphOffsets = new int[ASCII_END - ASCII_START];
+        this.cellAdvance = 0;
+        clampScrollX();
+    }
+
+    private float lineHeight() {
+        return font.lineHeight * textScale;
+    }
+
+    private Component styled(String s) {
+        return Component.literal(s).withStyle(textStyle);
+    }
+
+    private Component glyph(char c) {
+        if (c < ASCII_START || c >= ASCII_END) {
+            return styled(String.valueOf(c));
+        }
+
+        Component cached = asciiGlyphs[c - ASCII_START];
+        if (cached == null) {
+            cached = styled(String.valueOf(c));
+            asciiGlyphs[c - ASCII_START] = cached;
+        }
+
+        return cached;
+    }
+
+    private int cellAdvance() {
+        if (cellAdvance <= 0) {
+            int widest = 1;
+            for (char c = ASCII_START; c < ASCII_END; c++) {
+                widest = Math.max(widest, font.width(glyph(c)));
+            }
+
+            cellAdvance = widest;
+
+            for (char c = ASCII_START; c < ASCII_END; c++) {
+                glyphOffsets[c - ASCII_START] = centeringOffset(c);
+            }
+        }
+
+        return cellAdvance;
+    }
+
+    private int centeringOffset(char c) {
+        return Math.max(0, (cellAdvance - Math.max(0, font.width(glyph(c)) - 1)) / 2);
+    }
+
+    private int glyphOffset(char c) {
+        cellAdvance();
+        return c < ASCII_START || c >= ASCII_END ? centeringOffset(c) : glyphOffsets[c - ASCII_START];
+    }
+
+    private float cellWidth() {
+        return cellAdvance() * textScale;
+    }
+
+    private float columnX(String lineText, int columns) {
+        int clamped = Mth.clamp(columns, 0, lineText.length());
+
+        return monospace
+                ? clamped * cellWidth()
+                : font.width(styled(lineText.substring(0, clamped))) * textScale;
     }
 
     public void setOnValueChanged(@Nullable Consumer<String> onValueChanged) {
@@ -157,32 +256,25 @@ public class MultilineTextFieldWidget extends AbstractWidget {
     }
 
     public double getMaxScroll() {
-        int textH = textField.lineCount() * font.lineHeight;
+        float textH = textField.lineCount() * lineHeight();
         return Math.max(textH - textAreaHeight(), 0);
     }
 
     public double getMaxScrollX() {
-        int maxW = 0;
+        float maxW = 0f;
         String val = textField.value();
 
         for (int i = 0; i < textField.lineCount(); i++) {
             Line ln = textField.line(i);
-            int renderEnd = getRenderableLineEnd(val, ln);
-            int w = 0;
-            try {
-                w = font.width(val.substring(ln.begin(), renderEnd));
-            } catch (Exception ignored) {
-            }
-            if (w > maxW) {
-                maxW = w;
-            }
+            String lineText = val.substring(ln.begin(), getRenderableLineEnd(val, ln));
+            maxW = Math.max(maxW, columnX(lineText, lineText.length()));
         }
 
         return Math.max(maxW - textAreaWidth(), 0);
     }
 
     public int getScrollStep() {
-        return this.font.lineHeight;
+        return Math.max(1, Math.round(lineHeight()));
     }
 
     @Override
@@ -324,9 +416,9 @@ public class MultilineTextFieldWidget extends AbstractWidget {
         }
 
         if (hasShiftDown()) {
-            setScrollAmountX(scrollX - delta * font.lineHeight);
+            setScrollAmountX(scrollX - delta * getScrollStep());
         } else {
-            setScrollAmount(scrollAmount - delta * font.lineHeight);
+            setScrollAmount(scrollAmount - delta * getScrollStep());
         }
 
         return true;
@@ -342,15 +434,15 @@ public class MultilineTextFieldWidget extends AbstractWidget {
     private void ensureCursorVisible() {
         int viewH = textAreaHeight();
         int caretLine = textField.lineAtCursor();
-        int caretY = caretLine * font.lineHeight;
+        float caretY = caretLine * lineHeight();
 
         double top = scrollAmount;
-        double bottom = scrollAmount + viewH - font.lineHeight;
+        double bottom = scrollAmount + viewH - lineHeight();
 
         if (caretY < top) {
             setScrollAmount(caretY);
         } else if (caretY > bottom) {
-            setScrollAmount(caretY - (viewH - font.lineHeight));
+            setScrollAmount(caretY - (viewH - lineHeight()));
         }
     }
 
@@ -358,23 +450,18 @@ public class MultilineTextFieldWidget extends AbstractWidget {
         int viewW = textAreaWidth();
         int curLine = textField.lineAtCursor();
         Line ln = textField.line(curLine);
-        int caretX = 0;
         String text = textField.value();
-
-        try {
-            int renderEnd = getRenderableLineEnd(text, ln);
-            int cursor = Math.min(textField.cursor(), renderEnd);
-            caretX = font.width(text.substring(ln.begin(), cursor));
-        } catch (Exception ignored) {
-        }
+        int renderEnd = getRenderableLineEnd(text, ln);
+        String lineText = text.substring(ln.begin(), renderEnd);
+        float caretX = columnX(lineText, Math.min(textField.cursor(), renderEnd) - ln.begin());
 
         double left = scrollX;
-        double right = scrollX + viewW - font.lineHeight;
+        double right = scrollX + viewW - lineHeight();
 
         if (caretX < left) {
             setScrollAmountX(caretX);
         } else if (caretX > right) {
-            setScrollAmountX(caretX - (viewW - font.lineHeight));
+            setScrollAmountX(caretX - (viewW - lineHeight()));
         }
     }
 
@@ -402,9 +489,9 @@ public class MultilineTextFieldWidget extends AbstractWidget {
         String fullText = textField.value();
         int[] colors = getHighlightColors(fullText);
 
-        int firstLine = (int) (scrollAmount / font.lineHeight);
-        int y = clipT - (int) scrollAmount + firstLine * font.lineHeight;
-        int xBase = clipL - (int) scrollX;
+        int firstLine = (int) (scrollAmount / lineHeight());
+        float y = clipT - (float) scrollAmount + firstLine * lineHeight();
+        float xBase = clipL - (float) scrollX;
 
         int selectionBegin = textField.hasSelection() ? textField.selection().begin() : -1;
         int selectionEnd = textField.hasSelection() ? textField.selection().end() : -1;
@@ -413,7 +500,10 @@ public class MultilineTextFieldWidget extends AbstractWidget {
         for (int idx = firstLine; idx < textField.lineCount() && y <= clipB; idx++) {
             Line ln = textField.line(idx);
             int renderEnd = getRenderableLineEnd(fullText, ln);
-            int xOff = xBase;
+
+            g.pose().pushPose();
+            g.pose().translate(Math.round(xBase), Math.round(y), 0f);
+            g.pose().scale(textScale, textScale, 1f);
 
             if (textField.hasSelection()) {
                 int lineStartChar = ln.begin();
@@ -425,20 +515,20 @@ public class MultilineTextFieldWidget extends AbstractWidget {
 
                     if (selStartInLine < selEndInLine) {
                         String lineText = fullText.substring(lineStartChar, lineEndChar);
-                        String preSel = lineText.substring(0, selStartInLine);
-                        String selTxt = lineText.substring(selStartInLine, selEndInLine);
-                        int selX = xOff + font.width(preSel);
-                        int selW = font.width(selTxt);
-                        g.fill(selX, y, selX + selW, y + font.lineHeight, selectionColor);
+                        int selX = rawColumnX(lineText, selStartInLine);
+                        int selW = rawColumnX(lineText, selEndInLine) - selX;
+                        g.fill(selX, 0, selX + selW, font.lineHeight, selectionColor);
                     }
                 }
             }
 
             if (renderEnd > ln.begin()) {
-                drawHighlightedLine(g, fullText, colors, ln.begin(), renderEnd, xOff, y);
+                drawHighlightedLine(g, fullText, colors, ln.begin(), renderEnd);
             }
 
-            y += font.lineHeight;
+            g.pose().popPose();
+
+            y += lineHeight();
         }
 
         if (isFocused() && blink()) {
@@ -446,18 +536,22 @@ public class MultilineTextFieldWidget extends AbstractWidget {
             Line ln = textField.line(curLine);
             int renderEnd = getRenderableLineEnd(fullText, ln);
             int cursor = Math.min(textField.cursor(), renderEnd);
-            int cx = xBase + font.width(fullText.substring(ln.begin(), cursor));
-            int cy = clipT + curLine * font.lineHeight - (int) scrollAmount;
+            float cx = xBase + columnX(fullText.substring(ln.begin(), renderEnd), cursor - ln.begin());
+            float cy = clipT + curLine * lineHeight() - (float) scrollAmount;
 
             if (cy >= clipT && cy < clipB && cx >= clipL && cx <= clipR) {
-                g.fill(cx, cy, cx + 1, cy + font.lineHeight, 0xFFFFFFFF);
+                g.fill(Math.round(cx), Math.round(cy), Math.round(cx) + 1, Math.round(cy + lineHeight()), 0xFFFFFFFF);
             }
         }
 
         g.disableScissor();
 
         if (textField.value().isEmpty() && !isFocused()) {
-            g.drawString(font, getMessage(), clipL, clipT, 0xFF808080);
+            g.pose().pushPose();
+            g.pose().translate(clipL, clipT, 0f);
+            g.pose().scale(textScale, textScale, 1f);
+            g.drawString(font, getMessage(), 0, 0, 0xFF808080);
+            g.pose().popPose();
         }
 
         double maxScrollY = getMaxScroll();
@@ -496,16 +590,12 @@ public class MultilineTextFieldWidget extends AbstractWidget {
         Arrays.fill(colors, defaultTextColor);
 
         for (HighlightRule rule : highlightRules) {
-            Matcher matcher = rule.pattern().matcher(text);
-            while (matcher.find()) {
-                int start = matcher.start();
-                int end = matcher.end();
-                if (start < 0 || end <= start) {
-                    continue;
-                }
-                for (int i = start; i < end && i < colors.length; i++) {
-                    colors[i] = rule.color();
-                }
+            applyHighlightRule(colors, text, rule);
+        }
+
+        if (dynamicHighlightRules != null) {
+            for (HighlightRule rule : dynamicHighlightRules.apply(text)) {
+                applyHighlightRule(colors, text, rule);
             }
         }
 
@@ -514,26 +604,63 @@ public class MultilineTextFieldWidget extends AbstractWidget {
         return colors;
     }
 
-    private void drawHighlightedLine(GuiGraphics g, String fullText, int[] colors, int start, int end, int x, int y) {
+    private static void applyHighlightRule(int[] colors, String text, HighlightRule rule) {
+        Matcher matcher = rule.pattern().matcher(text);
+
+        while (matcher.find()) {
+            int start = matcher.start();
+            int end = matcher.end();
+
+            if (start < 0 || end <= start) {
+                continue;
+            }
+
+            for (int i = start; i < end && i < colors.length; i++) {
+                colors[i] = rule.color();
+            }
+        }
+    }
+
+    private void drawHighlightedLine(GuiGraphics g, String fullText, int[] colors, int start, int end) {
         if (start < 0 || end <= start || end > fullText.length()) {
             return;
         }
 
+        if (monospace) {
+            int advance = cellAdvance();
+
+            for (int i = start; i < end; i++) {
+                char c = fullText.charAt(i);
+                if (c == ' ' || c == '\t') {
+                    continue;
+                }
+
+                g.drawString(font, glyph(c), (i - start) * advance + glyphOffset(c), 0, colors[i]);
+            }
+
+            return;
+        }
+
+        int x = 0;
         int runStart = start;
         int currentColor = colors[start];
 
         for (int i = start + 1; i < end; i++) {
             if (colors[i] != currentColor) {
                 String part = fullText.substring(runStart, i);
-                g.drawString(font, part, x, y, currentColor);
-                x += font.width(part);
+                g.drawString(font, styled(part), x, 0, currentColor);
+                x += font.width(styled(part));
                 runStart = i;
                 currentColor = colors[i];
             }
         }
 
-        String lastPart = fullText.substring(runStart, end);
-        g.drawString(font, lastPart, x, y, currentColor);
+        g.drawString(font, styled(fullText.substring(runStart, end)), x, 0, currentColor);
+    }
+
+    private int rawColumnX(String lineText, int columns) {
+        int clamped = Mth.clamp(columns, 0, lineText.length());
+        return monospace ? clamped * cellAdvance() : font.width(styled(lineText.substring(0, clamped)));
     }
 
     private int getRenderableLineEnd(String fullText, Line ln) {
@@ -582,14 +709,10 @@ public class MultilineTextFieldWidget extends AbstractWidget {
             end = Math.min(column + 1, lineText.length());
         }
 
-        double yWithinContent = lineIndex * font.lineHeight + (font.lineHeight / 2.0);
-        double startX = font.width(lineText.substring(0, start));
-        double endX = font.width(lineText.substring(0, end));
-
         textField.setSelecting(false);
-        moveCursorToContent(startX, yWithinContent);
+        textField.seekCursor(Whence.ABSOLUTE, ln.begin() + start);
         textField.setSelecting(true);
-        moveCursorToContent(endX, yWithinContent);
+        textField.seekCursor(Whence.ABSOLUTE, ln.begin() + end);
         textField.setSelecting(false);
 
         ensureCursorVisible();
@@ -598,21 +721,21 @@ public class MultilineTextFieldWidget extends AbstractWidget {
 
     private int getLineIndexAtMouse(double my) {
         double relY = my - (getY() + 2) + scrollAmount;
-        return Mth.clamp((int) (relY / font.lineHeight), 0, Math.max(0, textField.lineCount() - 1));
+        return Mth.clamp((int) (relY / lineHeight()), 0, Math.max(0, textField.lineCount() - 1));
     }
 
     private int getColumnFromMouse(String lineText, double mx) {
         double relX = mx - (getX() + 2) + scrollX;
-        if (lineText.isEmpty()) {
-            return 0;
+
+        if (monospace) {
+            return Mth.clamp((int) Math.round(relX / cellWidth()), 0, lineText.length());
         }
 
         int bestCol = lineText.length();
-        int bestDist = Integer.MAX_VALUE;
+        double bestDist = Double.MAX_VALUE;
 
         for (int i = 0; i <= lineText.length(); i++) {
-            int width = font.width(lineText.substring(0, i));
-            int dist = Math.abs((int) relX - width);
+            double dist = Math.abs(relX - columnX(lineText, i));
             if (dist < bestDist) {
                 bestDist = dist;
                 bestCol = i;
@@ -628,13 +751,13 @@ public class MultilineTextFieldWidget extends AbstractWidget {
     }
 
     private void moveCursorToMouse(double mx, double my) {
-        double relX = mx - (getX() + 2) + scrollX;
-        double relY = my - (getY() + 2) + scrollAmount;
-        textField.seekCursorToPoint(relX, relY);
-    }
+        String fullText = textField.value();
+        int lineIndex = getLineIndexAtMouse(my);
+        Line ln = textField.line(lineIndex);
+        int renderEnd = getRenderableLineEnd(fullText, ln);
 
-    private void moveCursorToContent(double relX, double relY) {
-        textField.seekCursorToPoint(relX, relY);
+        String lineText = fullText.substring(ln.begin(), renderEnd);
+        textField.seekCursor(Whence.ABSOLUTE, ln.begin() + getColumnFromMouse(lineText, mx));
     }
 
     @Override
@@ -643,7 +766,9 @@ public class MultilineTextFieldWidget extends AbstractWidget {
     }
 
     private static final class CachedTextField extends MultilineTextField {
-        private List<Line> cache = new ArrayList<>();
+        private final List<Line> cache = new ArrayList<>();
+        private Consumer<String> valueListener = v -> {
+        };
 
         record Selection(int begin, int end) {
         }
@@ -652,11 +777,21 @@ public class MultilineTextFieldWidget extends AbstractWidget {
 
         CachedTextField(Font font, int w) {
             super(font, w);
+            super.setValueListener(v -> {
+                rebuild();
+                valueListener.accept(v);
+            });
             rebuild();
         }
 
         @Override
         public boolean keyPressed(int key) {
+            if (!hasControlDown() && (key == GLFW.GLFW_KEY_UP || key == GLFW.GLFW_KEY_DOWN)) {
+                setSelecting(hasShiftDown());
+                seekCursorLineKeepingColumn(key == GLFW.GLFW_KEY_DOWN ? 1 : -1);
+                return true;
+            }
+
             if (hasControlDown() && (key == GLFW.GLFW_KEY_LEFT || key == GLFW.GLFW_KEY_RIGHT)) {
                 setSelecting(hasShiftDown());
                 String text = value();
@@ -667,6 +802,29 @@ public class MultilineTextFieldWidget extends AbstractWidget {
                 return true;
             }
             return super.keyPressed(key);
+        }
+
+        private void seekCursorLineKeepingColumn(int delta) {
+            int target = getLineAtCursor() + delta;
+            if (target < 0 || target >= cache.size()) {
+                return;
+            }
+
+            int column = cursor() - line(getLineAtCursor()).begin();
+            Line next = line(target);
+
+            seekCursor(Whence.ABSOLUTE, next.begin() + Math.min(column, visibleLength(next)));
+        }
+
+        private int visibleLength(Line ln) {
+            String v = value();
+            int end = ln.end();
+
+            if (end > ln.begin() && end <= v.length() && v.charAt(end - 1) == '\n') {
+                end--;
+            }
+
+            return end - ln.begin();
         }
 
         private static int charClass(char c) {
@@ -745,21 +903,11 @@ public class MultilineTextFieldWidget extends AbstractWidget {
         }
 
         @Override
-        public void setValue(String v) {
-            super.setValue(v);
-            rebuild();
-        }
-
-        @Override
-        public void insertText(String t) {
-            super.insertText(t);
-            rebuild();
+        public void setValueListener(Consumer<String> listener) {
+            this.valueListener = listener;
         }
 
         private void rebuild() {
-            if (cache == null) {
-                cache = new ArrayList<>();
-            }
             cache.clear();
             super.iterateLines().forEach(sv -> cache.add(new Line(sv.beginIndex(), sv.endIndex())));
         }
@@ -784,7 +932,7 @@ public class MultilineTextFieldWidget extends AbstractWidget {
     }
 
     private int verticalThumbHeight(int trackH) {
-        int totalH = textField.lineCount() * font.lineHeight;
+        int totalH = Math.round(textField.lineCount() * lineHeight());
         return Math.max(4, trackH * textAreaHeight() / Math.max(1, totalH));
     }
 
@@ -925,42 +1073,16 @@ public class MultilineTextFieldWidget extends AbstractWidget {
         setFocused(true);
     }
 
+    public void setValueKeepingCursor(String v) {
+        int cursor = textField.cursor();
+        setValue(v);
+        moveCursorToIndex(Mth.clamp(cursor, 0, v.length()));
+        ensureCursorVisible();
+        ensureCursorVisibleX();
+    }
+
     private void moveCursorToIndex(int index) {
-        String text = textField.value();
-        int len = text.length();
-
-        index = Mth.clamp(index, 0, len);
-
-        if (textField.lineCount() <= 0) {
-            return;
-        }
-
-        int targetLine = 0;
-        Line target = textField.line(0);
-
-        for (int i = 0; i < textField.lineCount(); i++) {
-            Line ln = textField.line(i);
-            int renderEnd = getRenderableLineEnd(text, ln);
-
-            if (index >= ln.begin() && index <= renderEnd) {
-                targetLine = i;
-                target = ln;
-                break;
-            }
-
-            if (i == textField.lineCount() - 1) {
-                targetLine = i;
-                target = ln;
-            }
-        }
-
-        int renderEnd = getRenderableLineEnd(text, target);
-        int clampedIndex = Mth.clamp(index, target.begin(), renderEnd);
-
-        double relX = font.width(text.substring(target.begin(), clampedIndex));
-        double relY = targetLine * font.lineHeight + font.lineHeight / 2.0;
-
-        textField.seekCursorToPoint(relX, relY);
+        textField.seekCursor(Whence.ABSOLUTE, Mth.clamp(index, 0, textField.value().length()));
     }
 
     @Nullable

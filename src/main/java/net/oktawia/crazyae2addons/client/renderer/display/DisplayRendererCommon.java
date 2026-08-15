@@ -252,13 +252,19 @@ public final class DisplayRendererCommon {
                 drawPlan.add(new DrawEntry(ln, 1));
                 remainingH -= lh;
             } else if (ln instanceof TableBlock tb) {
-                float rowH = font.lineHeight * tb.scaleMul();
-                int rowsFit = Math.min((int) Math.floor((remainingH + EPSILON) / rowH), tb.rows().size());
+                float rowH = DisplayRenderData.tableRowHeightPx(font) * tb.scaleMul();
+                float headerH = rowH + DisplayRenderData.TABLE_HEADER_EXTRA_PX * tb.scaleMul();
+
+                int rowsFit = remainingH + EPSILON < headerH
+                        ? 0
+                        : 1 + (int) Math.floor((remainingH - headerH + EPSILON) / rowH);
+                rowsFit = Math.min(rowsFit, tb.rows().size());
+
                 if (rowsFit <= 0) {
                     break;
                 }
                 drawPlan.add(new DrawEntry(ln, rowsFit));
-                remainingH -= rowsFit * rowH;
+                remainingH -= DisplayRenderData.tableBlockHeightPx(font, tb, rowsFit);
             }
         }
 
@@ -267,7 +273,7 @@ public final class DisplayRendererCommon {
             if (de.line() instanceof StyledLine sl) {
                 drawnH += font.lineHeight * sl.scaleMul();
             } else if (de.line() instanceof TableBlock tb) {
-                drawnH += de.tableRowsToDraw() * font.lineHeight * tb.scaleMul();
+                drawnH += DisplayRenderData.tableBlockHeightPx(font, tb, de.tableRowsToDraw());
             }
         }
 
@@ -296,7 +302,7 @@ public final class DisplayRendererCommon {
                 float blockScalePx = globalScalePx * tb.scaleMul();
 
                 appendTableCommands(out, font, tb, de.tableRowsToDraw(), baseX, baseY, blockScalePx);
-                yCursor += de.tableRowsToDraw() * font.lineHeight * tb.scaleMul();
+                yCursor += DisplayRenderData.tableBlockHeightPx(font, tb, de.tableRowsToDraw());
             }
         }
 
@@ -403,9 +409,12 @@ public final class DisplayRendererCommon {
         int pad = layout.padPx();
         int barW = layout.barW();
         int[] colW = layout.colContentW();
-        float rowH = font.lineHeight;
+        float rowH = DisplayRenderData.tableRowHeightPx(font);
+        float headerH = rowH + DisplayRenderData.TABLE_HEADER_EXTRA_PX;
+        float drawnH = rowsToDraw <= 0 ? 0f : headerH + (rowsToDraw - 1) * rowH;
+        float rightEdge = layout.totalW() - barW + 1f;
 
-        Component bar = Component.literal("|").withStyle(Style.EMPTY.withColor(0xAAAAAA));
+        int barColor = 0xFFAAAAAA;
         @Nullable
         Component indent = layout.indentText().isEmpty()
                 ? null
@@ -416,25 +425,25 @@ public final class DisplayRendererCommon {
         out.add(new RectCommand(
                 baseX + layout.prefixW() * scalePx,
                 baseY - 1f * scalePx,
-                baseX + layout.totalW() * scalePx,
+                baseX + rightEdge * scalePx,
                 baseY,
                 lineColor,
                 TABLE_LINE_LAYER_Z));
 
         out.add(new RectCommand(
                 baseX + layout.prefixW() * scalePx,
-                baseY + (rowsToDraw * rowH - 1f) * scalePx,
-                baseX + layout.totalW() * scalePx,
-                baseY + rowsToDraw * rowH * scalePx,
+                baseY + (drawnH - 1f) * scalePx,
+                baseX + rightEdge * scalePx,
+                baseY + drawnH * scalePx,
                 lineColor,
                 TABLE_LINE_LAYER_Z));
 
         if (rowsToDraw > 1) {
             out.add(new RectCommand(
                     baseX + layout.prefixW() * scalePx,
-                    baseY + (rowH - 1f) * scalePx,
-                    baseX + layout.totalW() * scalePx,
-                    baseY + rowH * scalePx,
+                    baseY + (headerH - 1f) * scalePx,
+                    baseX + rightEdge * scalePx,
+                    baseY + headerH * scalePx,
                     lineColor,
                     TABLE_LINE_LAYER_Z));
         }
@@ -442,7 +451,8 @@ public final class DisplayRendererCommon {
         int drawRows = Math.min(rowsToDraw, tb.rows().size());
         for (int r = 0; r < drawRows; r++) {
             TableRow row = tb.rows().get(r);
-            float rowY = baseY + r * rowH * scalePx;
+            float rowY = baseY
+                    + ((r == 0 ? 0f : headerH + (r - 1) * rowH) + DisplayRenderData.TABLE_ROW_TOP_PAD_PX) * scalePx;
             float x = 0f;
 
             if (indent != null) {
@@ -450,7 +460,10 @@ public final class DisplayRendererCommon {
                 x += layout.prefixW();
             }
 
-            out.add(new TextCommand(bar, baseX + x * scalePx, rowY, scalePx));
+            if (r == 0) {
+                appendTableBar(out, baseX, baseY, x, drawnH, scalePx, barColor);
+            }
+
             x += barW;
 
             for (int c = 0; c < cols; c++) {
@@ -468,10 +481,31 @@ public final class DisplayRendererCommon {
                 appendLineSegCommands(out, font, cell, baseX + contentX * scalePx, rowY, scalePx);
 
                 x += innerW + pad * 2;
-                out.add(new TextCommand(bar, baseX + x * scalePx, rowY, scalePx));
+
+                if (r == 0) {
+                    appendTableBar(out, baseX, baseY, x, drawnH, scalePx, barColor);
+                }
+
                 x += barW;
             }
         }
+    }
+
+    private static void appendTableBar(
+            List<DrawCommand> out,
+            float baseX,
+            float baseY,
+            float x,
+            float height,
+            float scalePx,
+            int color) {
+        out.add(new RectCommand(
+                baseX + x * scalePx,
+                baseY,
+                baseX + (x + 1f) * scalePx,
+                baseY + height * scalePx,
+                color,
+                TABLE_LINE_LAYER_Z));
     }
 
     private static float renderLineWidthPx(Font font, RenderLine ln) {

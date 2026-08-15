@@ -34,6 +34,8 @@ import net.oktawia.crazyae2addons.client.renderer.display.DisplayGuiRenderer;
 import net.oktawia.crazyae2addons.client.renderer.display.DisplayRendererCommon;
 import net.oktawia.crazyae2addons.defs.LangDefs;
 import net.oktawia.crazyae2addons.logic.display.DisplayImageEntry;
+import net.oktawia.crazyae2addons.logic.display.DisplayMacros;
+import net.oktawia.crazyae2addons.logic.display.DisplayTableFormatter;
 import net.oktawia.crazyae2addons.menus.part.DisplayMenu;
 import net.oktawia.crazyae2addons.parts.Display;
 
@@ -50,7 +52,10 @@ public class DisplayScreen<C extends DisplayMenu> extends AEBaseScreen<C> {
 
     private static final Pattern BG_COLOR_TOKEN = Pattern.compile("(?i)&b([0-9a-f]{6})");
 
+    private static final int MACRO_COLOR = 0xFFCC88FF;
+
     private final MultilineTextFieldWidget value;
+    private final IconButton formatTables;
     private final LDLibColorSelectorAdapter backgroundColor;
     private final LDLibColorSelectorAdapter selectedTextColor;
     private final ToggleButton mode;
@@ -79,6 +84,8 @@ public class DisplayScreen<C extends DisplayMenu> extends AEBaseScreen<C> {
                 0, 0, 0, 0,
                 Component.translatable(LangDefs.INSERT.getTranslationKey()));
         value.setDefaultTextColor(0xFFFFFFFF);
+        value.setMonospace(true);
+        value.setTextScale(2f / 3f);
         value.setHighlightRules(List.of(
                 new MultilineTextFieldWidget.HighlightRule("&[cb][0-9A-Fa-f]{6}(?=\\(|\\b)", 0xFF00FFC8),
                 new MultilineTextFieldWidget.HighlightRule(
@@ -96,7 +103,10 @@ public class DisplayScreen<C extends DisplayMenu> extends AEBaseScreen<C> {
                 new MultilineTextFieldWidget.HighlightRule("\\|", 0xFFB8B8B8),
                 new MultilineTextFieldWidget.HighlightRule("(?m):?-{3,}:?", 0xFFB8B8B8),
                 new MultilineTextFieldWidget.HighlightRule("\\*\\*|__|~~", 0xFFFFC800),
-                new MultilineTextFieldWidget.HighlightRule("(?<!\\*)\\*(?!\\*)|(?<!_)_(?!_)", 0xFFFFC800)));
+                new MultilineTextFieldWidget.HighlightRule("(?<!\\*)\\*(?!\\*)|(?<!_)_(?!_)", 0xFFFFC800),
+                new MultilineTextFieldWidget.HighlightRule(
+                        "\\$with\\([A-Za-z0-9_]{1,32}=(?:[^()\\r\\n]|\\([^()\\r\\n]*\\))*\\)", MACRO_COLOR)));
+        value.setDynamicHighlightRules(DisplayScreen::macroUsageRules);
 
         this.backgroundColor = new LDLibColorSelectorAdapter(
                 0, 0, 16, 16,
@@ -154,6 +164,13 @@ public class DisplayScreen<C extends DisplayMenu> extends AEBaseScreen<C> {
                                         : LangDefs.INSERT_TOKEN.getTranslationKey())));
         widgets.add("insertToken", insertToken);
 
+        this.formatTables = new IconButton(Icon.TERMINAL_STYLE_MEDIUM, btn -> formatTables());
+        this.formatTables
+                .setTooltip(Tooltip.create(Component.translatable(LangDefs.FORMAT_TABLES.getTranslationKey())));
+        this.formatTables.setVisibility(false);
+        widgets.add("formatTables", this.formatTables);
+        value.setOnValueChanged(text -> formatTables.setVisibility(DisplayTableFormatter.hasTable(text)));
+
         this.mode = new ToggleButton(Icon.ENTER, Icon.CLEAR, this::changeMode);
         this.center = new ToggleButton(Icon.ENTER, Icon.CLEAR, this::changeCenter);
         this.margin = new ToggleButton(Icon.ENTER, Icon.CLEAR, this::changeMargin);
@@ -184,6 +201,27 @@ public class DisplayScreen<C extends DisplayMenu> extends AEBaseScreen<C> {
         widgets.add("connectDown", connectDown);
         widgets.add("connectLeft", connectLeft);
         widgets.add("connectRight", connectRight);
+    }
+
+    private void formatTables() {
+        String current = value.getValue();
+        String formatted = DisplayTableFormatter.format(current);
+
+        if (!formatted.equals(current)) {
+            value.setValueKeepingCursor(formatted);
+        }
+    }
+
+    private static List<MultilineTextFieldWidget.HighlightRule> macroUsageRules(String text) {
+        Set<String> names = DisplayMacros.collectNames(text);
+        if (names.isEmpty()) {
+            return List.of();
+        }
+
+        return List.of(new MultilineTextFieldWidget.HighlightRule(
+                "(?:&[sdi]\\^|[&^])(?:" + String.join("|", names) + ")"
+                        + "(?![A-Za-z0-9_:./-])(?:%\\d+[tsm]?)?(?:@\\d+[tsm])?",
+                MACRO_COLOR));
     }
 
     @Override

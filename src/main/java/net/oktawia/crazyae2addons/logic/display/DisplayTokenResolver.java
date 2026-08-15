@@ -80,7 +80,7 @@ public final class DisplayTokenResolver {
             return;
         }
 
-        String rawText = part.getTextValue() == null ? "" : part.getTextValue();
+        String rawText = DisplayMacros.expand(part.getTextValue());
 
         DatabaseResolveResult databaseResult = resolveDatabaseTokensServerSide(part, rawText);
         String txt = databaseResult.expandedText();

@@ -100,14 +100,20 @@ public final class DisplayRenderData {
 
     private static final Pattern LINE_SPLIT = Pattern.compile("&nl|\\r\\n|\\r|\\n");
 
+    public static final float TABLE_HEADER_EXTRA_PX = 2f;
+
+    public static final float TABLE_ROW_TOP_PAD_PX = 1f;
+
     private static final Pattern CLIENT_DYNAMIC_TOKEN = Pattern
             .compile("&d\\^([a-z0-9_\\.:]+)(?:%(\\d+[tsm]))?@(\\d+[tsm])", Pattern.CASE_INSENSITIVE);
 
     private DisplayRenderData() {
     }
 
-    public static String resolveTokensClientSide(String input, Map<String, String> variables) {
-        if (input == null || input.isEmpty()) {
+    public static String resolveTokensClientSide(String rawInput, Map<String, String> variables) {
+        String input = DisplayMacros.expand(rawInput);
+
+        if (input.isEmpty()) {
             return "";
         }
 
@@ -852,13 +858,7 @@ public final class DisplayRenderData {
         }
 
         String t = stripLeadingStructurePreamble(s).trim();
-        int pipes = 0;
-        for (int i = 0; i < t.length(); i++) {
-            if (t.charAt(i) == '|') {
-                pipes++;
-            }
-        }
-        return pipes >= 2;
+        return DisplayTableFormatter.pipeCount(t) >= 2;
     }
 
     private static boolean isMdTableSepCore(String s) {
@@ -890,26 +890,30 @@ public final class DisplayRenderData {
 
     private static TableCells splitMdTableCells(String line) {
         String t = line == null ? "" : line.trim();
-        int firstPipe = t.indexOf('|');
+        int firstPipe = DisplayTableFormatter.indexOfCellPipe(t, 0);
         if (firstPipe < 0) {
             return new TableCells("", List.of(t));
         }
 
-        int lastPipe = t.lastIndexOf('|');
-        if (lastPipe < firstPipe) {
-            return new TableCells("", List.of(t));
-        }
+        int lastPipe = DisplayTableFormatter.lastIndexOfCellPipe(t);
+        boolean closed = lastPipe > firstPipe;
 
         String rowPrefix = t.substring(0, firstPipe);
-        String rowSuffix = lastPipe + 1 < t.length() ? t.substring(lastPipe + 1) : "";
+        String rowSuffix = closed && lastPipe + 1 < t.length() ? t.substring(lastPipe + 1) : "";
 
-        String middle = t.substring(firstPipe + 1, lastPipe);
-        String[] parts = middle.split("\\|", -1);
+        String middle = closed ? t.substring(firstPipe + 1, lastPipe) : t.substring(firstPipe + 1);
 
-        List<String> out = new ArrayList<>(parts.length);
-        for (String p : parts) {
-            out.add(p.trim());
+        List<String> out = new ArrayList<>();
+        int cellStart = 0;
+        int next = DisplayTableFormatter.indexOfCellPipe(middle, 0);
+
+        while (next >= 0) {
+            out.add(middle.substring(cellStart, next).trim());
+            cellStart = next + 1;
+            next = DisplayTableFormatter.indexOfCellPipe(middle, cellStart);
         }
+
+        out.add(middle.substring(cellStart).trim());
 
         if (!out.isEmpty() && !rowSuffix.isEmpty()) {
             int last = out.size() - 1;
@@ -1005,9 +1009,20 @@ public final class DisplayRenderData {
             return font.lineHeight * sl.scaleMul();
         }
         if (ln instanceof TableBlock tb) {
-            return (font.lineHeight * tb.rows().size()) * tb.scaleMul();
+            return tableBlockHeightPx(font, tb, tb.rows().size());
         }
         return font.lineHeight;
+    }
+
+    public static float tableRowHeightPx(Font font) {
+        return font.lineHeight + TABLE_ROW_TOP_PAD_PX;
+    }
+
+    public static float tableBlockHeightPx(Font font, TableBlock tb, int rows) {
+        if (rows <= 0) {
+            return 0f;
+        }
+        return (tableRowHeightPx(font) * rows + TABLE_HEADER_EXTRA_PX) * tb.scaleMul();
     }
 
     private static final class ScopedTextColorFrame {

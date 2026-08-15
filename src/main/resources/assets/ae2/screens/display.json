@@ -38,6 +38,12 @@
     }
   },
   "widgets": {
+    "formatTables": {
+      "left": 74,
+      "top": 6,
+      "width": 16,
+      "height": 16
+    },
     "confirm": {
       "left": 94,
       "top": 6,

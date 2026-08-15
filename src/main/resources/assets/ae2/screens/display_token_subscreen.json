@@ -20,20 +20,33 @@
     "icon": {
       "left": 5,
       "top": 18,
-      "width": 65,
+      "width": 50,
       "height": 14
     },
     "stock": {
-      "left": 75,
+      "left": 57,
       "top": 18,
-      "width": 65,
+      "width": 50,
       "height": 14
     },
     "delta": {
-      "left": 145,
+      "left": 109,
       "top": 18,
-      "width": 65,
+      "width": 50,
       "height": 14
+    },
+    "macro": {
+      "left": 161,
+      "top": 18,
+      "width": 50,
+      "height": 14
+    },
+
+    "macroName": {
+      "left": 52,
+      "top": 66,
+      "width": 100,
+      "height": 12
     },
 
     "itemId": {

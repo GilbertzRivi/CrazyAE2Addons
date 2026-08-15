@@ -29,6 +29,7 @@ import appeng.client.gui.widgets.TabButton;
 import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.client.misc.AETextButton;
 import net.oktawia.crazyae2addons.defs.LangDefs;
+import net.oktawia.crazyae2addons.logic.display.DisplayMacros;
 import net.oktawia.crazyae2addons.logic.display.keytypes.DisplayKeyCompatRegistry;
 import net.oktawia.crazyae2addons.menus.part.DisplayTokenSubMenu;
 
@@ -37,7 +38,8 @@ public class DisplayTokenSubScreen extends AEBaseScreen<DisplayTokenSubMenu> {
     private enum TokenType {
         ICON,
         STOCK,
-        DELTA
+        DELTA,
+        MACRO
     }
 
     private static final int DROP_MAX = 8;
@@ -72,6 +74,7 @@ public class DisplayTokenSubScreen extends AEBaseScreen<DisplayTokenSubMenu> {
     private TokenType type = TokenType.STOCK;
 
     private final AETextField itemIdField;
+    private final AETextField macroNameField;
     private final AETextField perNField;
     private final AETextField winNField;
 
@@ -94,6 +97,7 @@ public class DisplayTokenSubScreen extends AEBaseScreen<DisplayTokenSubMenu> {
     private final AETextButton iconBtn;
     private final AETextButton stockBtn;
     private final AETextButton deltaBtn;
+    private final AETextButton macroBtn;
 
     public DisplayTokenSubScreen(DisplayTokenSubMenu menu, Inventory inv, Component title, ScreenStyle style) {
         super(menu, inv, title, style);
@@ -128,10 +132,22 @@ public class DisplayTokenSubScreen extends AEBaseScreen<DisplayTokenSubMenu> {
         this.deltaBtn.active = this.deltaBtn.visible;
         widgets.add("delta", this.deltaBtn);
 
+        this.macroBtn = new AETextButton(
+                0, 0, 0, 0,
+                Component.translatable(LangDefs.MACRO.getTranslationKey()),
+                btn -> setType(TokenType.MACRO));
+        widgets.add("macro", this.macroBtn);
+
         itemIdField = new AETextField(style, font, 0, 0, 0, 0);
         itemIdField.setBordered(false);
         itemIdField.setMaxLength(256);
         widgets.add("itemId", itemIdField);
+
+        macroNameField = new AETextField(style, font, 0, 0, 0, 0);
+        macroNameField.setBordered(false);
+        macroNameField.setMaxLength(32);
+        macroNameField.setFilter(DisplayMacros::isNameCharset);
+        widgets.add("macroName", macroNameField);
 
         typeBtn = new AETextButton(
                 0, 0, 0, 0,
@@ -213,6 +229,8 @@ public class DisplayTokenSubScreen extends AEBaseScreen<DisplayTokenSubMenu> {
             setType(TokenType.ICON);
         } else if (CrazyConfig.COMMON.DISPLAY_DELTA_ENABLED.get()) {
             setType(TokenType.DELTA);
+        } else {
+            setType(TokenType.MACRO);
         }
     }
 
@@ -286,6 +304,13 @@ public class DisplayTokenSubScreen extends AEBaseScreen<DisplayTokenSubMenu> {
                 this.winNField.setFocused(true);
                 return true;
             }
+
+            if (this.macroNameField != null && this.macroNameField.visible
+                    && this.macroNameField.isMouseOver(mouseX, mouseY)) {
+                this.macroNameField.setValue("");
+                this.macroNameField.setFocused(true);
+                return true;
+            }
         }
 
         if (dropdownOpen) {
@@ -351,7 +376,15 @@ public class DisplayTokenSubScreen extends AEBaseScreen<DisplayTokenSubMenu> {
             }
         }
 
+        if (key == 258 && type == TokenType.MACRO) {
+            setFocused(macroNameField.isFocused() ? itemIdField : macroNameField);
+            return true;
+        }
+
         if (itemIdField.keyPressed(key, sc, mod)) {
+            return true;
+        }
+        if (macroNameField.visible && macroNameField.keyPressed(key, sc, mod)) {
             return true;
         }
         if (perNField.visible && perNField.keyPressed(key, sc, mod)) {
@@ -367,6 +400,9 @@ public class DisplayTokenSubScreen extends AEBaseScreen<DisplayTokenSubMenu> {
     @Override
     public boolean charTyped(char codePoint, int modifiers) {
         if (itemIdField.charTyped(codePoint, modifiers)) {
+            return true;
+        }
+        if (macroNameField.visible && macroNameField.charTyped(codePoint, modifiers)) {
             return true;
         }
         if (perNField.visible && perNField.charTyped(codePoint, modifiers)) {
@@ -394,14 +430,20 @@ public class DisplayTokenSubScreen extends AEBaseScreen<DisplayTokenSubMenu> {
 
         boolean stock = t == TokenType.STOCK;
         boolean delta = t == TokenType.DELTA;
+        boolean macro = t == TokenType.MACRO;
 
         setWidgetVisibility(divisorBtn, stock);
         setWidgetVisibility(perNField, delta);
         setWidgetVisibility(perUnitBtn, delta);
         setWidgetVisibility(winNField, delta);
         setWidgetVisibility(winUnitBtn, delta);
+        setWidgetVisibility(macroNameField, macro);
 
         if (!delta && (perNField.isFocused() || winNField.isFocused())) {
+            setFocused(itemIdField);
+        }
+
+        if (!macro && macroNameField.isFocused()) {
             setFocused(itemIdField);
         }
     }
@@ -487,8 +529,13 @@ public class DisplayTokenSubScreen extends AEBaseScreen<DisplayTokenSubMenu> {
                 : "";
     }
 
+    private String currentId() {
+        String raw = itemIdField.getValue().trim();
+        return type == TokenType.MACRO ? raw : raw.toLowerCase();
+    }
+
     private void doInsert() {
-        String id = itemIdField.getValue().trim().toLowerCase();
+        String id = currentId();
         if (id.isEmpty()) {
             return;
         }
@@ -541,6 +588,17 @@ public class DisplayTokenSubScreen extends AEBaseScreen<DisplayTokenSubMenu> {
                 }
                 yield "&d^" + prefix + id + perPart + "@" + wN + unitCode(winUnitIdx);
             }
+            case MACRO -> {
+                String name = macroNameField.getValue().trim();
+                if (!DisplayMacros.isValidName(name)) {
+                    yield null;
+                }
+
+                if (isTagExprType()) {
+                    yield "$with(" + name + "=tag{" + id + "})";
+                }
+                yield "$with(" + name + "=" + prefix + id + ")";
+            }
         };
     }
 
@@ -566,7 +624,9 @@ public class DisplayTokenSubScreen extends AEBaseScreen<DisplayTokenSubMenu> {
         public void renderWidget(GuiGraphics g, int mx, int my, float partial) {
             g.drawString(
                     font,
-                    Component.translatable(LangDefs.ITEM_ID_LABEL.getTranslationKey()),
+                    Component.translatable(type == TokenType.MACRO
+                            ? LangDefs.MACRO_VALUE_LABEL.getTranslationKey()
+                            : LangDefs.ITEM_ID_LABEL.getTranslationKey()),
                     leftPos + 5,
                     itemIdField.getY() + 2,
                     0xFFAAAAAA,
@@ -604,9 +664,17 @@ public class DisplayTokenSubScreen extends AEBaseScreen<DisplayTokenSubMenu> {
                         winNField.getY() + 2,
                         0xFFAAAAAA,
                         false);
+            } else if (type == TokenType.MACRO) {
+                g.drawString(
+                        font,
+                        Component.translatable(LangDefs.MACRO_NAME_LABEL.getTranslationKey()),
+                        leftPos + 5,
+                        macroNameField.getY() + 2,
+                        0xFFAAAAAA,
+                        false);
             }
 
-            String preview = buildToken(itemIdField.getValue().trim().toLowerCase(), currentPrefix());
+            String preview = buildToken(currentId(), currentPrefix());
             if (preview != null && !preview.isBlank()) {
                 g.drawString(
                         font,
@@ -615,6 +683,17 @@ public class DisplayTokenSubScreen extends AEBaseScreen<DisplayTokenSubMenu> {
                         insertBtn.getY() - 17,
                         0xFF55FF55,
                         false);
+
+                if (type == TokenType.MACRO) {
+                    String name = macroNameField.getValue().trim();
+                    g.drawString(
+                            font,
+                            "&i^" + name + "  &s^" + name + "  &d^" + name + "@30s",
+                            leftPos + 5,
+                            insertBtn.getY() - 8,
+                            0xFFAAAAAA,
+                            false);
+                }
             }
 
             if (dropdownOpen && !availableTypes.isEmpty()) {

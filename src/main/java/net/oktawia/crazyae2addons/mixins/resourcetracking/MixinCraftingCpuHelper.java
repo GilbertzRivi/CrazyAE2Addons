@@ -18,6 +18,7 @@ import appeng.crafting.inv.ListCraftingInventory;
 
 import net.oktawia.crazyae2addons.logic.buffer.ManagedBuffer;
 import net.oktawia.crazyae2addons.tracking.IResourceTrackingService;
+import net.oktawia.crazyae2addons.tracking.ResourceTrackingGate;
 import net.oktawia.crazyae2addons.tracking.UsageTarget;
 
 @Mixin(value = CraftingCpuHelper.class, remap = false)
@@ -31,6 +32,9 @@ public class MixinCraftingCpuHelper {
             IActionSource src,
             CallbackInfoReturnable<GenericStack> cir) {
         if (cir.getReturnValue() != null)
+            return;
+
+        if (!ResourceTrackingGate.isEnabled())
             return;
 
         var svc = grid.getService(IResourceTrackingService.class);

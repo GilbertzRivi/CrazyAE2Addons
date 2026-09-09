@@ -99,6 +99,7 @@ public final class DisplayRenderData {
             Pattern.CASE_INSENSITIVE);
 
     private static final Pattern LINE_SPLIT = Pattern.compile("&nl|\\r\\n|\\r|\\n");
+    private static final Pattern MARKDOWN_SPAN = Pattern.compile("(\\*\\*|\\*|__|~~|`)(.+?)\\1");
 
     public static final float TABLE_HEADER_EXTRA_PX = 2f;
 
@@ -707,8 +708,7 @@ public final class DisplayRenderData {
     }
 
     private static Component parseMarkdownSegment(String text, Style baseStyle) {
-        Pattern pattern = Pattern.compile("(\\*\\*|\\*|__|~~|`)(.+?)\\1");
-        Matcher matcher = pattern.matcher(text);
+        Matcher matcher = MARKDOWN_SPAN.matcher(text);
         MutableComponent result = Component.empty();
         int last = 0;
 

@@ -7,18 +7,17 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.NetworkEvent;
 
 import net.oktawia.crazyae2addons.logic.display.DisplayImageStore;
-import net.oktawia.crazyae2addons.network.NetworkHandler;
+import net.oktawia.crazyae2addons.logic.display.DisplayImageTransfer;
+import net.oktawia.crazyae2addons.network.transfer.DisplayImageStreamSender;
 
 public record RequestDisplayImagePacket(String imageId) {
 
-    private static final int MAX_ID_LEN = 128;
-
     public static void encode(RequestDisplayImagePacket pkt, FriendlyByteBuf buf) {
-        buf.writeUtf(pkt.imageId == null ? "" : pkt.imageId, MAX_ID_LEN);
+        buf.writeUtf(pkt.imageId == null ? "" : pkt.imageId, DisplayImageTransfer.MAX_ID_LEN);
     }
 
     public static RequestDisplayImagePacket decode(FriendlyByteBuf buf) {
-        return new RequestDisplayImagePacket(buf.readUtf(MAX_ID_LEN));
+        return new RequestDisplayImagePacket(buf.readUtf(DisplayImageTransfer.MAX_ID_LEN));
     }
 
     public static void handle(RequestDisplayImagePacket pkt, Supplier<NetworkEvent.Context> ctxSupplier) {
@@ -35,7 +34,7 @@ public record RequestDisplayImagePacket(String imageId) {
                 return;
             }
 
-            NetworkHandler.sendToPlayer(player, new DisplayImageDataPacket(pkt.imageId(), bytes));
+            DisplayImageStreamSender.sendImage(player, pkt.imageId(), bytes);
         });
 
         ctx.setPacketHandled(true);

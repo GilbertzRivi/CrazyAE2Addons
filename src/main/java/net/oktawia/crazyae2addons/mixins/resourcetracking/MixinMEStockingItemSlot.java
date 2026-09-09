@@ -16,6 +16,7 @@ import appeng.api.stacks.AEKey;
 import appeng.api.storage.MEStorage;
 
 import net.oktawia.crazyae2addons.tracking.IResourceTrackingService;
+import net.oktawia.crazyae2addons.tracking.ResourceTrackingGate;
 import net.oktawia.crazyae2addons.tracking.UsageTarget;
 
 @Mixin(targets = "com.gregtechceu.gtceu.integration.ae2.machine.MEStockingBusPartMachine$ExportOnlyAEStockingItemSlot", remap = false)
@@ -25,7 +26,7 @@ public class MixinMEStockingItemSlot {
     private long crazyAe2$trackExtract(MEStorage storage, AEKey what, long amount, Actionable mode,
             IActionSource source) {
         long extracted = storage.extract(what, amount, mode, source);
-        if (extracted > 0 && mode == Actionable.MODULATE) {
+        if (extracted > 0 && mode == Actionable.MODULATE && ResourceTrackingGate.isEnabled()) {
             source.machine().ifPresent(host -> {
                 if (!(host instanceof MEStockingBusPartMachine machine))
                     return;

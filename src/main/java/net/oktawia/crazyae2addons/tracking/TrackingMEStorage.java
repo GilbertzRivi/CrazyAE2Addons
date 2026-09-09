@@ -49,7 +49,7 @@ public class TrackingMEStorage implements MEStorage {
     @Override
     public long extract(AEKey what, long amount, Actionable mode, IActionSource source) {
         long extracted = delegate.extract(what, amount, mode, source);
-        if (extracted <= 0 || mode != Actionable.MODULATE) {
+        if (extracted <= 0 || mode != Actionable.MODULATE || !ResourceTrackingGate.isEnabled()) {
             return extracted;
         }
 

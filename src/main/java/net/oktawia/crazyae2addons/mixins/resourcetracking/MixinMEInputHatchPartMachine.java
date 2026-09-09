@@ -16,6 +16,7 @@ import appeng.api.stacks.AEKey;
 import appeng.api.storage.MEStorage;
 
 import net.oktawia.crazyae2addons.tracking.IResourceTrackingService;
+import net.oktawia.crazyae2addons.tracking.ResourceTrackingGate;
 import net.oktawia.crazyae2addons.tracking.UsageTarget;
 
 @Mixin(value = MEInputHatchPartMachine.class, remap = false)
@@ -25,7 +26,7 @@ public class MixinMEInputHatchPartMachine {
     private long crazyAe2$trackExtract(MEStorage storage, AEKey what, long amount, Actionable mode,
             IActionSource source) {
         long extracted = storage.extract(what, amount, mode, source);
-        if (extracted > 0) {
+        if (extracted > 0 && ResourceTrackingGate.isEnabled()) {
             var self = (MEInputHatchPartMachine) (Object) this;
             var grid = self.getMainNode().getGrid();
             if (grid != null) {

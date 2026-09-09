@@ -95,6 +95,7 @@ public class MultilineTextFieldWidget extends AbstractWidget {
 
     private long lastClickTime = 0L;
     private int lastClickButton = -1;
+    private int clickCount = 0;
 
     public MultilineTextFieldWidget(Font font, int x, int y, int w, int h, Component placeholder) {
         super(x, y, w, h, placeholder);
@@ -334,11 +335,18 @@ public class MultilineTextFieldWidget extends AbstractWidget {
         setFocused(true);
 
         long now = Util.getMillis();
-        boolean isDoubleClick = btn == lastClickButton && (now - lastClickTime) <= DOUBLE_CLICK_MS;
+        boolean chained = btn == lastClickButton && (now - lastClickTime) <= DOUBLE_CLICK_MS;
+        clickCount = chained ? Math.min(clickCount + 1, 3) : 1;
         lastClickTime = now;
         lastClickButton = btn;
 
-        if (isDoubleClick) {
+        if (clickCount >= 3) {
+            selectLineAtMouse(my);
+            dragging = false;
+            return true;
+        }
+
+        if (clickCount == 2) {
             selectTokenAtMouse(mx, my);
             dragging = false;
             return true;
@@ -671,6 +679,24 @@ public class MultilineTextFieldWidget extends AbstractWidget {
         return renderEnd;
     }
 
+    private void selectLineAtMouse(double my) {
+        if (textField.lineCount() <= 0) {
+            return;
+        }
+
+        Line ln = textField.line(getLineIndexAtMouse(my));
+        int end = getRenderableLineEnd(textField.value(), ln);
+
+        textField.setSelecting(false);
+        textField.seekCursor(Whence.ABSOLUTE, ln.begin());
+        textField.setSelecting(true);
+        textField.seekCursor(Whence.ABSOLUTE, end);
+        textField.setSelecting(false);
+
+        ensureCursorVisible();
+        ensureCursorVisibleX();
+    }
+
     private void selectTokenAtMouse(double mx, double my) {
         String fullText = textField.value();
         if (fullText.isEmpty() || textField.lineCount() <= 0) {
@@ -697,11 +723,22 @@ public class MultilineTextFieldWidget extends AbstractWidget {
         int start = column;
         int end = column;
 
-        if (isTokenChar(lineText.charAt(column))) {
-            while (start > 0 && isTokenChar(lineText.charAt(start - 1))) {
+        if (CachedTextField.isMarker(lineText, column)) {
+            char marker = lineText.charAt(column);
+            while (start > 0 && lineText.charAt(start - 1) == marker
+                    && CachedTextField.isMarker(lineText, start - 1)) {
                 start--;
             }
-            while (end + 1 < lineText.length() && isTokenChar(lineText.charAt(end + 1))) {
+            while (end + 1 < lineText.length() && lineText.charAt(end + 1) == marker
+                    && CachedTextField.isMarker(lineText, end + 1)) {
+                end++;
+            }
+            end++;
+        } else if (isTokenChar(lineText, column)) {
+            while (start > 0 && isTokenChar(lineText, start - 1)) {
+                start--;
+            }
+            while (end + 1 < lineText.length() && isTokenChar(lineText, end + 1)) {
                 end++;
             }
             end++;
@@ -745,9 +782,11 @@ public class MultilineTextFieldWidget extends AbstractWidget {
         return bestCol;
     }
 
-    private boolean isTokenChar(char c) {
+    private boolean isTokenChar(String lineText, int index) {
+        char c = lineText.charAt(index);
         return !Character.isWhitespace(c)
-                && "[](){},".indexOf(c) < 0;
+                && "[](){},".indexOf(c) < 0
+                && !CachedTextField.isMarker(lineText, index);
     }
 
     private void moveCursorToMouse(double mx, double my) {
@@ -773,7 +812,8 @@ public class MultilineTextFieldWidget extends AbstractWidget {
         record Selection(int begin, int end) {
         }
 
-        private static final String WORD_EXTRA = "_.+-*?";
+        private static final String WORD_EXTRA = ".+-?";
+        private static final String MARKERS = "*_~`#>|";
 
         CachedTextField(Font font, int w) {
             super(font, w);
@@ -827,11 +867,33 @@ public class MultilineTextFieldWidget extends AbstractWidget {
             return end - ln.begin();
         }
 
-        private static int charClass(char c) {
+        static boolean isMarker(String s, int i) {
+            char c = s.charAt(i);
+            if (MARKERS.indexOf(c) < 0) {
+                return false;
+            }
+            return c != '_' || !isInsideWord(s, i);
+        }
+
+        private static boolean isInsideWord(String s, int i) {
+            return i > 0 && i + 1 < s.length()
+                    && isPlainWordChar(s.charAt(i - 1))
+                    && isPlainWordChar(s.charAt(i + 1));
+        }
+
+        private static boolean isPlainWordChar(char c) {
+            return Character.isLetterOrDigit(c) || WORD_EXTRA.indexOf(c) >= 0;
+        }
+
+        private static int charClass(String s, int i) {
+            char c = s.charAt(i);
             if (Character.isWhitespace(c)) {
                 return 0;
             }
-            if (Character.isLetterOrDigit(c) || WORD_EXTRA.indexOf(c) >= 0) {
+            if (isMarker(s, i)) {
+                return 3;
+            }
+            if (isPlainWordChar(c) || c == '_') {
                 return 1;
             }
             return 2;
@@ -843,19 +905,20 @@ public class MultilineTextFieldWidget extends AbstractWidget {
             if (i >= n) {
                 return n;
             }
-            int cls = charClass(s.charAt(i));
+            int cls = charClass(s, i);
             if (cls == 1) {
-                while (i < n && charClass(s.charAt(i)) == 1) {
+                while (i < n && charClass(s, i) == 1) {
+                    i++;
+                }
+            } else if (cls == 3) {
+                char marker = s.charAt(i);
+                while (i < n && s.charAt(i) == marker && charClass(s, i) == 3) {
                     i++;
                 }
             } else if (cls == 2) {
                 i++;
-            } else {
-                while (i < n && charClass(s.charAt(i)) == 0) {
-                    i++;
-                }
             }
-            while (i < n && charClass(s.charAt(i)) == 0) {
+            while (i < n && charClass(s, i) == 0) {
                 i++;
             }
             return i;
@@ -863,14 +926,20 @@ public class MultilineTextFieldWidget extends AbstractWidget {
 
         private static int prevTokenBoundary(String s, int cursor) {
             int i = Mth.clamp(cursor, 0, s.length());
-            while (i > 0 && charClass(s.charAt(i - 1)) == 0) {
+            while (i > 0 && charClass(s, i - 1) == 0) {
                 i--;
             }
             if (i <= 0) {
                 return 0;
             }
-            if (charClass(s.charAt(i - 1)) == 1) {
-                while (i > 0 && charClass(s.charAt(i - 1)) == 1) {
+            int cls = charClass(s, i - 1);
+            if (cls == 1) {
+                while (i > 0 && charClass(s, i - 1) == 1) {
+                    i--;
+                }
+            } else if (cls == 3) {
+                char marker = s.charAt(i - 1);
+                while (i > 0 && s.charAt(i - 1) == marker && charClass(s, i - 1) == 3) {
                     i--;
                 }
             } else {

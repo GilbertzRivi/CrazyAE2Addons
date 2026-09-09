@@ -16,8 +16,11 @@ public class ResourceTrackingService implements IResourceTrackingService, IGridS
 
     private static final int MAX_KEYS = 10_000;
     private static final int MAX_TARGETS_PER_KEY = 200;
+    private static final int CLEANUP_INTERVAL = 20;
 
     private final HashMap<AEKey, PerKeyData> data = new HashMap<>();
+
+    private int cleanupCountdown = CLEANUP_INTERVAL;
 
     public ResourceTrackingService(IGrid grid) {
     }
@@ -72,6 +75,16 @@ public class ResourceTrackingService implements IResourceTrackingService, IGridS
 
     @Override
     public void onServerEndTick() {
+        if (--cleanupCountdown > 0) {
+            return;
+        }
+        cleanupCountdown = CLEANUP_INTERVAL;
+
+        if (!ResourceTrackingGate.isEnabled()) {
+            data.clear();
+            return;
+        }
+
         long now = System.currentTimeMillis();
         data.entrySet().removeIf(e -> e.getValue().perMinute(now) == 0);
     }

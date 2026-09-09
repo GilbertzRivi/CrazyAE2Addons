@@ -8,7 +8,6 @@ import java.util.Map;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 
 import lombok.Getter;
@@ -23,8 +22,6 @@ import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.logic.display.DisplayGrid;
 import net.oktawia.crazyae2addons.logic.display.DisplayImageEntry;
-import net.oktawia.crazyae2addons.network.NetworkHandler;
-import net.oktawia.crazyae2addons.network.packets.SyncDisplayImagePreviewPacket;
 import net.oktawia.crazyae2addons.parts.Display;
 
 public class DisplayMenu extends AEBaseMenu {
@@ -37,9 +34,9 @@ public class DisplayMenu extends AEBaseMenu {
     public static final String ACTION_MODE = "changeMode";
     public static final String ACTION_MARGIN = "changeMargin";
     public static final String ACTION_CENTER = "changeCenter";
+    public static final String ACTION_FONT_SIZE = "changeFontSize";
     public static final String ACTION_OPEN_INSERT = "openInsert";
     public static final String ACTION_OPEN_IMAGES = "openImages";
-    public static final String ACTION_REQUEST_IMAGES = "requestImages";
     public static final String ACTION_CONNECT_DIR = "setConnectDir";
 
     @GuiSync(145)
@@ -53,6 +50,9 @@ public class DisplayMenu extends AEBaseMenu {
 
     @GuiSync(32)
     public boolean centerText;
+
+    @GuiSync(24)
+    public int fontSize;
 
     @GuiSync(33)
     public String pendingInsert = "";
@@ -98,6 +98,7 @@ public class DisplayMenu extends AEBaseMenu {
         this.mode = host.isMergeMode();
         this.margin = host.isAddMargin();
         this.centerText = host.getCenterText();
+        this.fontSize = host.getFontSize();
         this.connectUp = host.canConnectLocal(Display.LocalDir.UP);
         this.connectDown = host.canConnectLocal(Display.LocalDir.DOWN);
         this.connectLeft = host.canConnectLocal(Display.LocalDir.LEFT);
@@ -117,9 +118,9 @@ public class DisplayMenu extends AEBaseMenu {
         registerClientAction(ACTION_MODE, Boolean.class, this::changeMode);
         registerClientAction(ACTION_MARGIN, Boolean.class, this::changeMargin);
         registerClientAction(ACTION_CENTER, Boolean.class, this::changeCenter);
+        registerClientAction(ACTION_FONT_SIZE, Integer.class, this::changeFontSize);
         registerClientAction(ACTION_OPEN_INSERT, Integer.class, this::openInsert);
         registerClientAction(ACTION_OPEN_IMAGES, this::openImages);
-        registerClientAction(ACTION_REQUEST_IMAGES, this::requestImages);
         registerClientAction(ACTION_CONNECT_DIR, String.class, this::setConnectDirFromPayload);
 
         createPlayerInventorySlots(inv);
@@ -165,34 +166,6 @@ public class DisplayMenu extends AEBaseMenu {
         return parsedPreviewImagesCache;
     }
 
-    public void requestImages() {
-        if (!CrazyConfig.COMMON.DISPLAY_IMAGES_ENABLED.get()) {
-            return;
-        }
-
-        if (isClientSide()) {
-            sendClientAction(ACTION_REQUEST_IMAGES);
-            return;
-        }
-
-        if (!(getPlayer() instanceof ServerPlayer player)) {
-            return;
-        }
-
-        List<DisplayImageEntry> images = host.getDisplayImages();
-        if (images == null || images.isEmpty()) {
-            return;
-        }
-
-        for (DisplayImageEntry entry : images) {
-            byte[] bytes = host.getDisplayImageBytes(entry.id());
-            if (bytes == null || bytes.length == 0) {
-                continue;
-            }
-            NetworkHandler.sendToPlayer(player, new SyncDisplayImagePreviewPacket(entry.id(), bytes));
-        }
-    }
-
     public void syncValue(String value) {
         this.displayValue = value;
         host.setTextValue(value);
@@ -236,6 +209,16 @@ public class DisplayMenu extends AEBaseMenu {
 
         if (isClientSide()) {
             sendClientAction(ACTION_CENTER, v);
+        }
+    }
+
+    public void changeFontSize(int size) {
+        this.fontSize = size;
+        host.setFontSize(size);
+        syncPreviewData();
+
+        if (isClientSide()) {
+            sendClientAction(ACTION_FONT_SIZE, size);
         }
     }
 

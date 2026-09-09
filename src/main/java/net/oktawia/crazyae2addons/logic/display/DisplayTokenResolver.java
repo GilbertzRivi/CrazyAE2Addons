@@ -25,6 +25,7 @@ import appeng.api.networking.storage.IStorageService;
 import appeng.api.stacks.AEFluidKey;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.AEKey;
+import appeng.api.stacks.KeyCounter;
 
 import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.CrazyConfig;
@@ -355,22 +356,17 @@ public final class DisplayTokenResolver {
                 return out;
             }
 
-            var avail = storage.getInventory().getAvailableStacks();
-            Map<Object, Long> byKey = new HashMap<>();
-
-            for (var gs : avail) {
-                byKey.merge(gs.getKey(), gs.getLongValue(), Long::sum);
-            }
+            KeyCounter avail = storage.getCachedInventory();
 
             for (String id : ids) {
                 try {
                     if (id.regionMatches(true, 0, "tag{", 0, 4)) {
                         String expr = id.substring(4, id.length() - 1);
-                        out.put(id, resolveTagExprAmount(expr, byKey));
+                        out.put(id, resolveTagExprAmount(expr, avail));
                     } else {
                         AEKey key = resolveKey(id);
                         if (key != null) {
-                            out.put(id, byKey.getOrDefault(key, 0L));
+                            out.put(id, avail.get(key));
                         }
                     }
                 } catch (Throwable e) {
@@ -388,16 +384,16 @@ public final class DisplayTokenResolver {
         return COMPILED_CACHE.computeIfAbsent(expr, TagMatcher::compile);
     }
 
-    private static long resolveTagExprAmount(String tagExpr, Map<Object, Long> byKey) {
+    private static long resolveTagExprAmount(String tagExpr, KeyCounter available) {
         TagMatcher.Compiled compiled = getOrCompileTagExpr(tagExpr);
         if (!compiled.isValid() || !compiled.isNeedsTags()) {
             return 0L;
         }
         long sum = 0L;
-        for (Map.Entry<Object, Long> entry : byKey.entrySet()) {
+        for (var entry : available) {
             if (entry.getKey() instanceof AEItemKey itemKey) {
                 if (TagMatcher.doesItemMatch(itemKey, compiled)) {
-                    sum += entry.getValue();
+                    sum += entry.getLongValue();
                 }
             }
         }

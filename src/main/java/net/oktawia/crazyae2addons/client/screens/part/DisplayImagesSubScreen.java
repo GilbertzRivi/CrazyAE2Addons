@@ -1,12 +1,10 @@
 package net.oktawia.crazyae2addons.client.screens.part;
 
-import java.io.ByteArrayInputStream;
 import java.nio.file.Path;
 import java.util.List;
 
-import com.mojang.blaze3d.platform.NativeImage;
-
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -14,7 +12,6 @@ import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
@@ -30,9 +27,14 @@ import appeng.client.gui.widgets.TabButton;
 
 import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.client.misc.AETextButton;
+import net.oktawia.crazyae2addons.client.misc.DisplayImageClientCache;
+import net.oktawia.crazyae2addons.client.misc.DisplayImageTextures;
 import net.oktawia.crazyae2addons.client.misc.DisplayImageUploadClient;
 import net.oktawia.crazyae2addons.defs.LangDefs;
+import net.oktawia.crazyae2addons.logic.display.DisplayImageAnimation;
 import net.oktawia.crazyae2addons.logic.display.DisplayImageEntry;
+import net.oktawia.crazyae2addons.logic.display.DisplayImageLimits;
+import net.oktawia.crazyae2addons.logic.display.DisplayImageUploadStatus;
 import net.oktawia.crazyae2addons.menus.part.DisplayImagesSubMenu;
 
 public class DisplayImagesSubScreen extends AEBaseScreen<DisplayImagesSubMenu> {
@@ -57,11 +59,11 @@ public class DisplayImagesSubScreen extends AEBaseScreen<DisplayImagesSubMenu> {
     private int statusColor = 0xFFAAAAAA;
     private int statusTimer = 0;
 
-    private DynamicTexture previewTexture;
     private ResourceLocation previewTextureLocation;
     private int previewTextureWidth = 0;
     private int previewTextureHeight = 0;
     private String previewImageId = "";
+    private DisplayImageAnimation.Frame previewFrame = null;
 
     private String lastAutoAppliedImageId = null;
     private int lastAutoAppliedX = Integer.MIN_VALUE;
@@ -148,7 +150,6 @@ public class DisplayImagesSubScreen extends AEBaseScreen<DisplayImagesSubMenu> {
         super.init();
         addRenderableOnly(new StatusWidget());
         syncControlsFromSelection();
-        getMenu().requestPreview();
     }
 
     @Override
@@ -165,10 +166,9 @@ public class DisplayImagesSubScreen extends AEBaseScreen<DisplayImagesSubMenu> {
         if ((selectedId == null && lastSelectedId != null)
                 || (selectedId != null && !selectedId.equals(lastSelectedId))) {
             syncControlsFromSelection();
-            if (selectedId == null || !selectedId.equals(previewImageId)) {
-                getMenu().requestPreview();
-            }
         }
+
+        refreshPreviewTexture(selected);
 
         syncPair(xField, xSlider, MIN_PERCENT, MAX_PERCENT);
         syncPair(yField, ySlider, MIN_PERCENT, MAX_PERCENT);
@@ -220,41 +220,69 @@ public class DisplayImagesSubScreen extends AEBaseScreen<DisplayImagesSubMenu> {
 
     @Override
     public void onFilesDrop(@NotNull List<Path> paths) {
-        DisplayImageUploadClient.Result result = DisplayImageUploadClient.uploadDroppedFiles(paths);
+        DisplayImageUploadClient.Result result = DisplayImageUploadClient.uploadDroppedFiles(paths, limits());
         setStatus(result.message(), result.color());
     }
 
-    @Override
-    public void removed() {
-        clearPreviewTexture();
-        super.removed();
+    public void applyUploadResult(DisplayImageUploadStatus status, int detail) {
+        switch (status) {
+            case OK -> setStatus(Component.translatable(LangDefs.IMAGE_UPLOAD_OK.getTranslationKey()), 0xFF55FF55);
+            case TOO_LARGE -> setStatus(
+                    Component.translatable(LangDefs.IMAGE_UPLOAD_TOO_LARGE.getTranslationKey(), detail),
+                    0xFFFF5555);
+            case INVALID_IMAGE -> setStatus(
+                    Component.translatable(LangDefs.IMAGE_UPLOAD_INVALID_IMAGE.getTranslationKey()),
+                    0xFFFF5555);
+            case TOO_MANY_IMAGES -> setStatus(
+                    Component.translatable(LangDefs.IMAGE_UPLOAD_TOO_MANY.getTranslationKey()),
+                    0xFFFF5555);
+            case STORAGE_FULL -> setStatus(
+                    Component.translatable(LangDefs.IMAGE_UPLOAD_STORAGE_FULL.getTranslationKey(), detail),
+                    0xFFFF5555);
+            case DISABLED -> setStatus(
+                    Component.translatable(LangDefs.FEATURE_DISABLED.getTranslationKey()),
+                    0xFFFF5555);
+            default -> setStatus(
+                    Component.translatable(LangDefs.IMAGE_UPLOAD_FAILED.getTranslationKey()),
+                    0xFFFF5555);
+        }
     }
 
-    public void applyPreviewFromServer(String imageId, byte[] pngBytes) {
-        clearPreviewTexture();
+    private DisplayImageLimits limits() {
+        return new DisplayImageLimits(getMenu().maxImageDimension, getMenu().maxImageBytes).sanitized();
+    }
 
-        previewImageId = imageId == null ? "" : imageId;
-
-        if (pngBytes == null || pngBytes.length == 0) {
+    private void refreshPreviewTexture(@Nullable DisplayImageEntry selected) {
+        if (selected == null) {
+            clearPreviewState();
             return;
         }
 
-        try {
-            NativeImage image = NativeImage.read(new ByteArrayInputStream(pngBytes));
+        byte[] bytes = DisplayImageClientCache.get(selected.id());
 
-            previewTextureWidth = image.getWidth();
-            previewTextureHeight = image.getHeight();
-
-            previewTexture = new DynamicTexture(image);
-            previewTexture.upload();
-
-            previewTextureLocation = Minecraft.getInstance().getTextureManager().register(
-                    "crazyae2addons_display_preview_" + System.nanoTime(),
-                    previewTexture);
-        } catch (Throwable e) {
-            CrazyAddons.LOGGER.debug("failed to load display image preview texture", e);
-            clearPreviewTexture();
+        if (bytes == null) {
+            clearPreviewState();
+            return;
         }
+
+        DisplayImageTextures.Entry entry = DisplayImageTextures.get(selected.id(), bytes);
+
+        if (entry == null) {
+            clearPreviewState();
+            return;
+        }
+
+        previewFrame = DisplayImageAnimation.current(selected, entry.width(), entry.height());
+        previewTextureLocation = entry.location();
+        previewTextureWidth = entry.width();
+        previewTextureHeight = entry.height();
+        previewImageId = selected.id();
+    }
+
+    private void clearPreviewState() {
+        previewTextureLocation = null;
+        previewFrame = null;
+        previewImageId = "";
     }
 
     private void syncPair(AETextField field, Scrollbar slider, int min, int max) {
@@ -317,21 +345,13 @@ public class DisplayImagesSubScreen extends AEBaseScreen<DisplayImagesSubMenu> {
     }
 
     private void onPickFile() {
-        DisplayImageUploadClient.Result result = DisplayImageUploadClient.pickAndUpload();
+        DisplayImageUploadClient.Result result = DisplayImageUploadClient.pickAndUpload(limits());
         setStatus(result.message(), result.color());
-
-        if (result.success()) {
-            getMenu().requestPreview();
-        }
     }
 
     private void onPasteShortcut() {
-        DisplayImageUploadClient.Result result = DisplayImageUploadClient.pasteAndUpload();
+        DisplayImageUploadClient.Result result = DisplayImageUploadClient.pasteAndUpload(limits());
         setStatus(result.message(), result.color());
-
-        if (result.success()) {
-            getMenu().requestPreview();
-        }
     }
 
     private void syncControlsFromSelection() {
@@ -405,26 +425,17 @@ public class DisplayImagesSubScreen extends AEBaseScreen<DisplayImagesSubMenu> {
         }
     }
 
+    private Component storageUsageText() {
+        return Component.translatable(
+                LangDefs.IMAGE_STORAGE_USAGE.getTranslationKey(),
+                getMenu().storageUsedBytes / 1024,
+                Math.max(1, getMenu().storageBudgetBytes / 1024));
+    }
+
     private void setStatus(Component text, int color) {
         statusText = text == null ? Component.empty() : text;
         statusColor = color;
         statusTimer = 80;
-    }
-
-    private void clearPreviewTexture() {
-        if (previewTextureLocation != null) {
-            Minecraft.getInstance().getTextureManager().release(previewTextureLocation);
-            previewTextureLocation = null;
-        }
-
-        if (previewTexture != null) {
-            previewTexture.close();
-            previewTexture = null;
-        }
-
-        previewTextureWidth = 0;
-        previewTextureHeight = 0;
-        previewImageId = "";
     }
 
     private final class ImageListWidget extends AbstractWidget {
@@ -691,12 +702,16 @@ public class DisplayImagesSubScreen extends AEBaseScreen<DisplayImagesSubMenu> {
                 int percentY = getLivePercentY();
                 int percentScale = getLivePercentScale();
 
-                float fit = Math.min(
-                        previewW / (float) previewTextureWidth,
-                        previewH / (float) previewTextureHeight);
+                DisplayImageAnimation.Frame frame = previewFrame == null
+                        ? new DisplayImageAnimation.Frame(0f, 0f, 1f, 1f, previewTextureWidth, previewTextureHeight)
+                        : previewFrame;
 
-                float fitW = previewTextureWidth * fit;
-                float fitH = previewTextureHeight * fit;
+                float fit = Math.min(
+                        previewW / (float) frame.width(),
+                        previewH / (float) frame.height());
+
+                float fitW = frame.width() * fit;
+                float fitH = frame.height() * fit;
 
                 int targetW = Math.max(1, Math.round(fitW * (percentScale / 100.0f)));
                 int targetH = Math.max(1, Math.round(fitH * (percentScale / 100.0f)));
@@ -713,10 +728,10 @@ public class DisplayImagesSubScreen extends AEBaseScreen<DisplayImagesSubMenu> {
                 int drawY1 = Math.min(targetY + targetH, clipY1);
 
                 if (drawX1 > drawX0 && drawY1 > drawY0) {
-                    float u0 = (drawX0 - targetX) / (float) targetW;
-                    float v0 = (drawY0 - targetY) / (float) targetH;
-                    float u1 = (drawX1 - targetX) / (float) targetW;
-                    float v1 = (drawY1 - targetY) / (float) targetH;
+                    float u0 = frame.u0() + (drawX0 - targetX) / (float) targetW * (frame.u1() - frame.u0());
+                    float v0 = frame.v0() + (drawY0 - targetY) / (float) targetH * (frame.v1() - frame.v0());
+                    float u1 = frame.u0() + (drawX1 - targetX) / (float) targetW * (frame.u1() - frame.u0());
+                    float v1 = frame.v0() + (drawY1 - targetY) / (float) targetH * (frame.v1() - frame.v0());
 
                     g.blit(
                             previewTextureLocation,
@@ -726,8 +741,8 @@ public class DisplayImagesSubScreen extends AEBaseScreen<DisplayImagesSubMenu> {
                             drawY1 - drawY0,
                             u0 * previewTextureWidth,
                             v0 * previewTextureHeight,
-                            (int) ((u1 - u0) * previewTextureWidth),
-                            (int) ((v1 - v0) * previewTextureHeight),
+                            Math.max(1, Math.round((u1 - u0) * previewTextureWidth)),
+                            Math.max(1, Math.round((v1 - v0) * previewTextureHeight)),
                             previewTextureWidth,
                             previewTextureHeight);
                 }
@@ -741,10 +756,24 @@ public class DisplayImagesSubScreen extends AEBaseScreen<DisplayImagesSubMenu> {
                         previewAreaX + previewAreaW / 2,
                         textY,
                         0xFFFFFFFF);
+
+                if (selected.animated()) {
+                    g.drawCenteredString(
+                            font,
+                            Component.translatable(
+                                    LangDefs.IMAGE_FRAMES.getTranslationKey(),
+                                    selected.frameCount(),
+                                    selected.frameDurationMs()),
+                            previewAreaX + previewAreaW / 2,
+                            Math.min(topPos + imageHeight - 12, textY + 10),
+                            0xFFAAAAAA);
+                }
             }
 
             if (statusTimer > 0 && !statusText.getString().isEmpty()) {
                 g.drawString(font, statusText, leftPos + 6, topPos + imageHeight - 12, statusColor, false);
+            } else {
+                g.drawString(font, storageUsageText(), leftPos + 6, topPos + imageHeight - 12, 0xFFAAAAAA, false);
             }
         }
 

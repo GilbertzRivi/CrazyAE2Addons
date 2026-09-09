@@ -15,6 +15,7 @@ import appeng.api.stacks.AEKey;
 import appeng.parts.automation.ExportBusPart;
 
 import net.oktawia.crazyae2addons.tracking.IResourceTrackingService;
+import net.oktawia.crazyae2addons.tracking.ResourceTrackingGate;
 import net.oktawia.crazyae2addons.tracking.UsageTarget;
 
 @Mixin(value = ExportBusPart.class, remap = false)
@@ -48,7 +49,7 @@ public class MixinExportBusPart {
 
     @Unique
     private void crazyAe2$track(AEKey what, long amount) {
-        if (amount <= 0) {
+        if (amount <= 0 || !ResourceTrackingGate.isEnabled()) {
             return;
         }
 

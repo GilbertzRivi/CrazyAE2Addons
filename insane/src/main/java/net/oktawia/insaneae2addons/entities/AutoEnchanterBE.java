@@ -420,7 +420,7 @@ public class AutoEnchanterBE extends AENetworkInvBlockEntity
         }
 
         Set<AEFluidKey> available = new HashSet<>();
-        node.getGrid().getStorageService().getInventory().getAvailableStacks().forEach(key -> {
+        node.getGrid().getStorageService().getCachedInventory().forEach(key -> {
             if (key.getKey() instanceof AEFluidKey fkey && validXpFluids.contains(fkey.getFluid())) {
                 available.add(fkey);
             }

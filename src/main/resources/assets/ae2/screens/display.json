@@ -39,10 +39,16 @@
   },
   "widgets": {
     "formatTables": {
-      "left": 74,
+      "left": 46,
       "top": 6,
       "width": 16,
       "height": 16
+    },
+    "fontSize": {
+      "left": 64,
+      "top": 8,
+      "width": 28,
+      "height": 12
     },
     "confirm": {
       "left": 94,

@@ -13,6 +13,7 @@ import appeng.api.storage.MEStorage;
 import appeng.helpers.InterfaceLogicHost;
 import appeng.parts.storagebus.StorageBusPart;
 
+import net.oktawia.crazyae2addons.tracking.ResourceTrackingGate;
 import net.oktawia.crazyae2addons.tracking.TrackingMEStorage;
 
 @Mixin(value = StorageBusPart.class, remap = false)
@@ -20,6 +21,11 @@ public class MixinStorageBusPart {
 
     @Redirect(method = "mountInventories", at = @At(value = "INVOKE", target = "Lappeng/api/storage/IStorageMounts;mount(Lappeng/api/storage/MEStorage;I)V"))
     private void wrapIfInterface(IStorageMounts mounts, MEStorage handler, int priority) {
+        if (!ResourceTrackingGate.isEnabled()) {
+            mounts.mount(handler, priority);
+            return;
+        }
+
         var self = (StorageBusPart) (Object) this;
 
         BlockPos targetPos = self.getBlockEntity().getBlockPos().relative(self.getSide());

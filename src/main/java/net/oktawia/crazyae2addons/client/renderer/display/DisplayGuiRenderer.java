@@ -3,12 +3,14 @@ package net.oktawia.crazyae2addons.client.renderer.display;
 import java.util.List;
 import java.util.Map;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
+import net.oktawia.crazyae2addons.client.misc.DisplayImageTextures;
 import net.oktawia.crazyae2addons.logic.display.DisplayImageEntry;
 
 public final class DisplayGuiRenderer {
@@ -34,7 +36,8 @@ public final class DisplayGuiRenderer {
             boolean center,
             boolean margin,
             int gridWidthBlocks,
-            int gridHeightBlocks) {
+            int gridHeightBlocks,
+            int fontSize) {
         return DisplayRendererCommon.prepare(
                 font,
                 textValue,
@@ -45,7 +48,8 @@ public final class DisplayGuiRenderer {
                 Math.max(1, gridHeightBlocks),
                 List.of(),
                 Map.of(),
-                true);
+                true,
+                fontSize);
     }
 
     public static DisplayRendererCommon.PreparedDisplay preparePreview(
@@ -57,7 +61,8 @@ public final class DisplayGuiRenderer {
             int gridWidthBlocks,
             int gridHeightBlocks,
             List<DisplayImageEntry> images,
-            Map<String, byte[]> imageData) {
+            Map<String, byte[]> imageData,
+            int fontSize) {
         return DisplayRendererCommon.prepare(
                 font,
                 textValue,
@@ -68,7 +73,8 @@ public final class DisplayGuiRenderer {
                 Math.max(1, gridHeightBlocks),
                 images == null ? List.of() : images,
                 imageData == null ? Map.of() : imageData,
-                true);
+                true,
+                fontSize);
     }
 
     public static void renderPreview(
@@ -113,8 +119,12 @@ public final class DisplayGuiRenderer {
         int sx1 = round(drawX + drawW);
         int sy1 = round(drawY + drawH);
 
+        int surfaceColor = prepared.backgroundColor() == null
+                ? SURFACE_INNER
+                : 0xFF000000 | prepared.backgroundColor();
+
         gui.fill(sx0 - 1, sy0 - 1, sx1 + 1, sy1 + 1, SURFACE_OUTER);
-        gui.fill(sx0, sy0, sx1, sy1, SURFACE_INNER);
+        gui.fill(sx0, sy0, sx1, sy1, surfaceColor);
 
         int blocksW = Math.max(1, Math.round(surfaceW / 64f));
         int blocksH = Math.max(1, Math.round(surfaceH / 64f));
@@ -129,6 +139,8 @@ public final class DisplayGuiRenderer {
             gui.fill(sx0, gy, sx1, gy + 1, SURFACE_GRID);
         }
 
+        renderPreviewImages(gui, prepared, drawX, drawY, fit, sx0, sy0, sx1, sy1);
+
         PoseStack ps = gui.pose();
         ps.pushPose();
 
@@ -140,10 +152,74 @@ public final class DisplayGuiRenderer {
                 ps,
                 gui.bufferSource(),
                 Minecraft.getInstance().font,
-                0xF000F0);
+                0xF000F0,
+                false);
 
         ps.popPose();
         gui.flush();
+    }
+
+    private static void renderPreviewImages(
+            GuiGraphics gui,
+            DisplayRendererCommon.PreparedDisplay prepared,
+            float drawX,
+            float drawY,
+            float fit,
+            int clipX0,
+            int clipY0,
+            int clipX1,
+            int clipY1) {
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+
+        for (DisplayRendererCommon.DrawCommand cmd : prepared.commands()) {
+            if (!(cmd instanceof DisplayRendererCommon.ImageCommand ic)) {
+                continue;
+            }
+
+            DisplayImageTextures.Entry entry = DisplayImageTextures.get(ic.imageId(), ic.pngBytes());
+            if (entry == null || entry.width() <= 0 || entry.height() <= 0) {
+                continue;
+            }
+
+            float targetX = drawX + ic.x() * fit;
+            float targetY = drawY + ic.y() * fit;
+            float targetW = ic.widthPx() * fit;
+            float targetH = ic.heightPx() * fit;
+
+            if (targetW <= 0f || targetH <= 0f) {
+                continue;
+            }
+
+            int dstX0 = Math.max(clipX0, Math.round(targetX));
+            int dstY0 = Math.max(clipY0, Math.round(targetY));
+            int dstX1 = Math.min(clipX1, Math.round(targetX + targetW));
+            int dstY1 = Math.min(clipY1, Math.round(targetY + targetH));
+
+            if (dstX1 <= dstX0 || dstY1 <= dstY0) {
+                continue;
+            }
+
+            float u0 = ic.u0() + (dstX0 - targetX) / targetW * (ic.u1() - ic.u0());
+            float v0 = ic.v0() + (dstY0 - targetY) / targetH * (ic.v1() - ic.v0());
+            float u1 = ic.u0() + (dstX1 - targetX) / targetW * (ic.u1() - ic.u0());
+            float v1 = ic.v0() + (dstY1 - targetY) / targetH * (ic.v1() - ic.v0());
+
+            gui.blit(
+                    entry.location(),
+                    dstX0,
+                    dstY0,
+                    dstX1 - dstX0,
+                    dstY1 - dstY0,
+                    u0 * entry.width(),
+                    v0 * entry.height(),
+                    Math.max(1, Math.round((u1 - u0) * entry.width())),
+                    Math.max(1, Math.round((v1 - v0) * entry.height())),
+                    entry.width(),
+                    entry.height());
+        }
+
+        RenderSystem.disableBlend();
     }
 
     public static int computePreviewWidth(int leftPos, int preferredWidth, int gap, int minX) {

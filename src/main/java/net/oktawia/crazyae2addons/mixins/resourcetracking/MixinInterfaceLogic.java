@@ -19,6 +19,7 @@ import appeng.helpers.InterfaceLogic;
 import appeng.helpers.InterfaceLogicHost;
 
 import net.oktawia.crazyae2addons.tracking.IResourceTrackingService;
+import net.oktawia.crazyae2addons.tracking.ResourceTrackingGate;
 import net.oktawia.crazyae2addons.tracking.UsageTarget;
 
 @Mixin(value = InterfaceLogic.class, remap = false)
@@ -46,7 +47,7 @@ public class MixinInterfaceLogic {
             long amount,
             IActionSource src) {
         long acquired = StorageHelper.poweredExtraction(energy, inv, what, amount, src);
-        if (acquired > 0) {
+        if (acquired > 0 && ResourceTrackingGate.isEnabled()) {
             var grid = mainNode.getGrid();
             if (grid != null) {
                 var svc = grid.getService(IResourceTrackingService.class);

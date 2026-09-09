@@ -10,7 +10,7 @@ import com.google.gson.reflect.TypeToken;
 
 import org.jetbrains.annotations.Nullable;
 
-import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 
@@ -22,8 +22,8 @@ import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.logic.display.DisplayGrid;
 import net.oktawia.crazyae2addons.logic.display.DisplayImageEntry;
-import net.oktawia.crazyae2addons.network.NetworkHandler;
-import net.oktawia.crazyae2addons.network.packets.SyncDisplayImagePreviewPacket;
+import net.oktawia.crazyae2addons.logic.display.DisplayImageStore;
+import net.oktawia.crazyae2addons.logic.display.DisplayImageUploadStatus;
 import net.oktawia.crazyae2addons.parts.Display;
 
 public class DisplayImagesSubMenu extends AEBaseMenu implements ISubMenu {
@@ -36,7 +36,6 @@ public class DisplayImagesSubMenu extends AEBaseMenu implements ISubMenu {
     public static final String ACTION_REMOVE = "removeImage";
     public static final String ACTION_UPDATE = "updateImage";
     public static final String ACTION_REORDER = "reorderImage";
-    public static final String ACTION_REQUEST_PREVIEW = "requestPreview";
 
     @GuiSync(1)
     public String imagesJson = "[]";
@@ -53,6 +52,18 @@ public class DisplayImagesSubMenu extends AEBaseMenu implements ISubMenu {
     @GuiSync(21)
     public int previewGridHeight = 1;
 
+    @GuiSync(30)
+    public int maxImageBytes = 0;
+
+    @GuiSync(31)
+    public int maxImageDimension = 0;
+
+    @GuiSync(32)
+    public int storageUsedBytes = 0;
+
+    @GuiSync(33)
+    public int storageBudgetBytes = 0;
+
     private transient String lastParsedImagesJson = null;
     private transient List<DisplayImageEntry> parsedImagesCache = List.of();
 
@@ -68,7 +79,6 @@ public class DisplayImagesSubMenu extends AEBaseMenu implements ISubMenu {
         registerClientAction(ACTION_REMOVE, String.class, this::removeImage);
         registerClientAction(ACTION_UPDATE, String.class, this::updateImageFromPayload);
         registerClientAction(ACTION_REORDER, String.class, this::reorderImageFromPayload);
-        registerClientAction(ACTION_REQUEST_PREVIEW, this::requestPreview);
     }
 
     @Override
@@ -129,7 +139,6 @@ public class DisplayImagesSubMenu extends AEBaseMenu implements ISubMenu {
         host.selectDisplayImage(id);
         syncFromHost();
         broadcastChanges();
-        sendSelectedPreviewToClient();
     }
 
     public void removeImage(String id) {
@@ -153,7 +162,6 @@ public class DisplayImagesSubMenu extends AEBaseMenu implements ISubMenu {
         host.removeDisplayImage(id);
         syncFromHost();
         broadcastChanges();
-        sendSelectedPreviewToClient();
     }
 
     public void updateImage(String id, int x, int y, int width, int height) {
@@ -180,7 +188,6 @@ public class DisplayImagesSubMenu extends AEBaseMenu implements ISubMenu {
         host.updateDisplayImage(id, x, y, width, height);
         syncFromHost();
         broadcastChanges();
-        sendSelectedPreviewToClient();
     }
 
     public void reorderImage(String id, int delta) {
@@ -213,28 +220,25 @@ public class DisplayImagesSubMenu extends AEBaseMenu implements ISubMenu {
         broadcastChanges();
     }
 
-    public void addImage(String sourceName, byte[] pngBytes, int width, int height) {
-        if (isClientSide()) {
-            return;
+    public DisplayImageUploadStatus addImage(
+            String sourceName,
+            byte[] pngBytes,
+            int frameCount,
+            int columns,
+            int frameDurationMs) {
+        if (isClientSide() || host == null) {
+            return DisplayImageUploadStatus.FAILED;
         }
 
-        if (host == null) {
-            return;
-        }
-
-        host.addDisplayImage(sourceName, pngBytes, width, height);
+        DisplayImageUploadStatus status = host.addDisplayImage(
+                sourceName,
+                pngBytes,
+                frameCount,
+                columns,
+                frameDurationMs);
         syncFromHost();
         broadcastChanges();
-        sendSelectedPreviewToClient();
-    }
-
-    public void requestPreview() {
-        if (isClientSide()) {
-            sendClientAction(ACTION_REQUEST_PREVIEW);
-            return;
-        }
-
-        sendSelectedPreviewToClient();
+        return status;
     }
 
     private void updateImageFromPayload(String payload) {
@@ -261,7 +265,6 @@ public class DisplayImagesSubMenu extends AEBaseMenu implements ISubMenu {
             host.updateDisplayImage(id, x, y, w, h);
             syncFromHost();
             broadcastChanges();
-            sendSelectedPreviewToClient();
         } catch (Throwable e) {
             CrazyAddons.LOGGER.debug("failed to update display image and send preview", e);
         }
@@ -318,6 +321,13 @@ public class DisplayImagesSubMenu extends AEBaseMenu implements ISubMenu {
         var dims = DisplayGrid.computePreviewGridSize(host);
         this.previewGridWidth = Math.max(1, dims.getFirst());
         this.previewGridHeight = Math.max(1, dims.getSecond());
+
+        this.maxImageBytes = DisplayImageStore.maxImageBytes();
+        this.maxImageDimension = DisplayImageStore.maxImageDimension();
+        this.storageBudgetBytes = (int) DisplayImageStore.budgetBytes();
+        this.storageUsedBytes = host.getLevel() instanceof ServerLevel level
+                ? (int) DisplayImageStore.get(level).usedBytes()
+                : 0;
     }
 
     private void applyClientMirror(List<DisplayImageEntry> images) {
@@ -332,24 +342,5 @@ public class DisplayImagesSubMenu extends AEBaseMenu implements ISubMenu {
         }
 
         this.lastParsedImagesJson = this.imagesJson;
-    }
-
-    private void sendSelectedPreviewToClient() {
-        if (host == null) {
-            return;
-        }
-
-        if (!(getPlayer() instanceof ServerPlayer player)) {
-            return;
-        }
-
-        DisplayImageEntry selected = host.getSelectedDisplayImage();
-        String imageId = selected == null ? "" : selected.id();
-        byte[] bytes = selected == null ? new byte[0] : host.getDisplayImageBytes(imageId);
-        if (bytes == null) {
-            bytes = new byte[0];
-        }
-
-        NetworkHandler.sendToPlayer(player, new SyncDisplayImagePreviewPacket(imageId, bytes));
     }
 }

@@ -11,6 +11,7 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.imageio.ImageIO;
@@ -22,9 +23,12 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
 import net.oktawia.crazyae2addons.CrazyAddons;
+import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.defs.LangDefs;
+import net.oktawia.crazyae2addons.logic.display.DisplayImageLimits;
+import net.oktawia.crazyae2addons.logic.display.DisplayImageTransfer;
 import net.oktawia.crazyae2addons.network.NetworkHandler;
-import net.oktawia.crazyae2addons.network.packets.UploadDisplayImagePacket;
+import net.oktawia.crazyae2addons.network.packets.UploadDisplayImageStreamPacket;
 
 @OnlyIn(Dist.CLIENT)
 public final class DisplayImageUploadClient {
@@ -32,19 +36,12 @@ public final class DisplayImageUploadClient {
     public record Result(Component message, int color, boolean success) {
     }
 
-    private static final int MAX_DIM = UploadDisplayImagePacket.MAX_IMAGE_DIM;
-    private static final int MAX_PACKET_BYTES = 32 * 1024;
-    private static final int PACKET_ESTIMATE_EXTRA_BYTES = 512;
     private static final int MAX_SOURCE_NAME_BYTES = 64;
-
-    private static final int MAX_EFFECTIVE_IMAGE_BYTES = Math.min(
-            UploadDisplayImagePacket.MAX_IMAGE_BYTES,
-            MAX_PACKET_BYTES - PACKET_ESTIMATE_EXTRA_BYTES);
 
     private DisplayImageUploadClient() {
     }
 
-    public static Result pickAndUpload() {
+    public static Result pickAndUpload(DisplayImageLimits limits) {
         String selected = TinyFileDialogs.tinyfd_openFileDialog(
                 Component.translatable(LangDefs.PICK_FILE.getTranslationKey()).getString(),
                 "",
@@ -60,7 +57,7 @@ public final class DisplayImageUploadClient {
         }
 
         try {
-            return uploadPath(Path.of(stripQuotes(selected.trim())));
+            return uploadPath(Path.of(stripQuotes(selected.trim())), limits);
         } catch (Throwable e) {
             CrazyAddons.LOGGER.debug("invalid display image path from file dialog", e);
             return new Result(
@@ -70,7 +67,7 @@ public final class DisplayImageUploadClient {
         }
     }
 
-    public static Result pasteAndUpload() {
+    public static Result pasteAndUpload(DisplayImageLimits limits) {
         try {
             System.setProperty("java.awt.headless", "false");
             var clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
@@ -86,7 +83,7 @@ public final class DisplayImageUploadClient {
             if (transferable.isDataFlavorSupported(DataFlavor.imageFlavor)) {
                 Object data = transferable.getTransferData(DataFlavor.imageFlavor);
                 if (data instanceof Image image) {
-                    return uploadBufferedImage(toBufferedImage(image), "clipboard_image.png");
+                    return uploadBufferedImage(toBufferedImage(image), "clipboard_image.png", limits);
                 }
             }
 
@@ -95,7 +92,7 @@ public final class DisplayImageUploadClient {
                 if (data instanceof List<?> list && !list.isEmpty()) {
                     Object first = list.get(0);
                     if (first instanceof File file) {
-                        return uploadPath(file.toPath());
+                        return uploadPath(file.toPath(), limits);
                     }
                 }
             }
@@ -104,7 +101,7 @@ public final class DisplayImageUploadClient {
                 Object data = transferable.getTransferData(DataFlavor.stringFlavor);
                 if (data instanceof String s && !s.isBlank()) {
                     try {
-                        return uploadPath(Path.of(stripQuotes(s.trim())));
+                        return uploadPath(Path.of(stripQuotes(s.trim())), limits);
                     } catch (Throwable e) {
                         CrazyAddons.LOGGER.debug("invalid display image path from clipboard string", e);
                         return new Result(
@@ -128,7 +125,7 @@ public final class DisplayImageUploadClient {
                 false);
     }
 
-    public static Result uploadDroppedFiles(List<Path> paths) {
+    public static Result uploadDroppedFiles(List<Path> paths, DisplayImageLimits limits) {
         if (paths == null || paths.isEmpty()) {
             return new Result(
                     Component.translatable(LangDefs.IMAGE_UPLOAD_INVALID_PATH.getTranslationKey()),
@@ -138,7 +135,7 @@ public final class DisplayImageUploadClient {
 
         for (Path path : paths) {
             if (path != null && Files.isRegularFile(path)) {
-                return uploadPath(path);
+                return uploadPath(path, limits);
             }
         }
 
@@ -148,7 +145,7 @@ public final class DisplayImageUploadClient {
                 false);
     }
 
-    public static Result uploadPath(Path path) {
+    public static Result uploadPath(Path path, DisplayImageLimits limits) {
         if (path == null || !Files.isRegularFile(path)) {
             return new Result(
                     Component.translatable(LangDefs.IMAGE_UPLOAD_INVALID_PATH.getTranslationKey()),
@@ -157,6 +154,19 @@ public final class DisplayImageUploadClient {
         }
 
         try {
+            DisplayImageGif.Animation animation = DisplayImageGif.read(
+                    path.toFile(),
+                    CrazyConfig.COMMON.DISPLAY_IMAGE_MAX_FRAMES.get());
+
+            Path animationName = path.getFileName();
+
+            if (animation != null) {
+                return uploadAnimation(
+                        animation,
+                        animationName == null ? "image.gif" : animationName.toString(),
+                        limits);
+            }
+
             BufferedImage image = ImageIO.read(path.toFile());
             if (image == null) {
                 return new Result(
@@ -166,7 +176,7 @@ public final class DisplayImageUploadClient {
             }
 
             Path fileName = path.getFileName();
-            return uploadBufferedImage(image, fileName == null ? "image.png" : fileName.toString());
+            return uploadBufferedImage(image, fileName == null ? "image.png" : fileName.toString(), limits);
         } catch (Throwable e) {
             CrazyAddons.LOGGER.debug("failed to upload display image from path", e);
             return new Result(
@@ -176,7 +186,9 @@ public final class DisplayImageUploadClient {
         }
     }
 
-    private static Result uploadBufferedImage(BufferedImage original, String sourceName) {
+    private static Result uploadBufferedImage(BufferedImage original, String sourceName, DisplayImageLimits rawLimits) {
+        DisplayImageLimits limits = rawLimits == null ? DisplayImageLimits.fromConfig() : rawLimits.sanitized();
+
         try {
             BufferedImage img = ensureArgb(original);
 
@@ -187,14 +199,14 @@ public final class DisplayImageUploadClient {
                         false);
             }
 
-            if (img.getWidth() > MAX_DIM || img.getHeight() > MAX_DIM) {
-                img = resizeToFit(img, MAX_DIM, MAX_DIM);
+            if (img.getWidth() > limits.maxDimension() || img.getHeight() > limits.maxDimension()) {
+                img = resizeToFit(img, limits.maxDimension(), limits.maxDimension());
             }
 
             String safeName = sanitizeSourceName(sourceName);
             byte[] pngBytes = encodePng(img);
 
-            while (isUploadTooLarge(safeName, pngBytes, img.getWidth(), img.getHeight())) {
+            while (pngBytes.length > limits.maxBytes()) {
                 int oldW = img.getWidth();
                 int oldH = img.getHeight();
 
@@ -213,27 +225,23 @@ public final class DisplayImageUploadClient {
                 pngBytes = encodePng(img);
             }
 
-            if (isUploadTooLarge(safeName, pngBytes, img.getWidth(), img.getHeight())) {
+            if (pngBytes.length > limits.maxBytes()) {
                 return new Result(
                         Component.translatable(
                                 LangDefs.IMAGE_UPLOAD_TOO_LARGE.getTranslationKey(),
-                                MAX_PACKET_BYTES / 1024),
+                                limits.maxBytes() / 1024),
                         0xFFFF5555,
                         false);
             }
 
-            NetworkHandler.sendToServer(new UploadDisplayImagePacket(
-                    safeName,
-                    pngBytes,
-                    img.getWidth(),
-                    img.getHeight()));
+            sendStream(safeName, pngBytes);
 
             return new Result(
                     Component.translatable(
-                            LangDefs.IMAGE_UPLOAD_OK.getTranslationKey(),
+                            LangDefs.IMAGE_UPLOAD_SENDING.getTranslationKey(),
                             img.getWidth(),
                             img.getHeight()),
-                    0xFF55FF55,
+                    0xFFFFFF55,
                     true);
         } catch (Throwable e) {
             CrazyAddons.LOGGER.debug("failed to upload buffered display image", e);
@@ -244,44 +252,138 @@ public final class DisplayImageUploadClient {
         }
     }
 
-    private static boolean isUploadTooLarge(String sourceName, byte[] pngBytes, int width, int height) {
-        if (pngBytes == null) {
-            return true;
-        }
+    private static Result uploadAnimation(
+            DisplayImageGif.Animation animation,
+            String sourceName,
+            DisplayImageLimits rawLimits) {
+        DisplayImageLimits limits = rawLimits == null ? DisplayImageLimits.fromConfig() : rawLimits.sanitized();
 
-        return pngBytes.length > MAX_EFFECTIVE_IMAGE_BYTES
-                || estimateUploadPacketBytes(sourceName, pngBytes, width, height) > MAX_PACKET_BYTES;
+        try {
+            List<BufferedImage> frames = animation.frames();
+            BufferedImage first = frames.get(0);
+
+            if (first.getWidth() <= 0 || first.getHeight() <= 0) {
+                return new Result(
+                        Component.translatable(LangDefs.IMAGE_UPLOAD_INVALID_IMAGE.getTranslationKey()),
+                        0xFFFF5555,
+                        false);
+            }
+
+            int columns = (int) Math.ceil(Math.sqrt(frames.size()));
+            int rows = (frames.size() + columns - 1) / columns;
+
+            float fit = Math.min(
+                    limits.maxDimension() / (float) (columns * first.getWidth()),
+                    limits.maxDimension() / (float) (rows * first.getHeight()));
+
+            int cellWidth = Math.max(1, (int) Math.floor(first.getWidth() * Math.min(1f, fit)));
+            int cellHeight = Math.max(1, (int) Math.floor(first.getHeight() * Math.min(1f, fit)));
+
+            byte[] pngBytes = encodePng(buildAtlas(frames, columns, rows, cellWidth, cellHeight));
+
+            while (pngBytes.length > limits.maxBytes() && (cellWidth > 1 || cellHeight > 1)) {
+                int nextWidth = cellWidth > 1 ? Math.max(1, (int) Math.floor(cellWidth * 0.85)) : 1;
+                int nextHeight = cellHeight > 1 ? Math.max(1, (int) Math.floor(cellHeight * 0.85)) : 1;
+
+                if (nextWidth == cellWidth && nextHeight == cellHeight) {
+                    break;
+                }
+
+                cellWidth = nextWidth;
+                cellHeight = nextHeight;
+                pngBytes = encodePng(buildAtlas(frames, columns, rows, cellWidth, cellHeight));
+            }
+
+            if (pngBytes.length > limits.maxBytes()) {
+                return new Result(
+                        Component.translatable(
+                                LangDefs.IMAGE_UPLOAD_TOO_LARGE.getTranslationKey(),
+                                limits.maxBytes() / 1024),
+                        0xFFFF5555,
+                        false);
+            }
+
+            sendStream(
+                    sanitizeSourceName(sourceName),
+                    pngBytes,
+                    frames.size(),
+                    columns,
+                    animation.frameDurationMs());
+
+            return new Result(
+                    Component.translatable(
+                            LangDefs.IMAGE_UPLOAD_SENDING_ANIMATED.getTranslationKey(),
+                            cellWidth,
+                            cellHeight,
+                            frames.size()),
+                    0xFFFFFF55,
+                    true);
+        } catch (Throwable e) {
+            CrazyAddons.LOGGER.debug("failed to upload animated display image", e);
+            return new Result(
+                    Component.translatable(LangDefs.IMAGE_UPLOAD_FAILED.getTranslationKey()),
+                    0xFFFF5555,
+                    false);
+        }
     }
 
-    private static int estimateUploadPacketBytes(String sourceName, byte[] pngBytes, int width, int height) {
-        int size = 0;
+    private static BufferedImage buildAtlas(
+            List<BufferedImage> frames,
+            int columns,
+            int rows,
+            int cellWidth,
+            int cellHeight) {
+        BufferedImage atlas = new BufferedImage(
+                columns * cellWidth,
+                rows * cellHeight,
+                BufferedImage.TYPE_INT_ARGB);
 
-        size += 5;
+        Graphics2D graphics = atlas.createGraphics();
+        try {
+            graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            graphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 
-        byte[] nameBytes = sourceName.getBytes(StandardCharsets.UTF_8);
-        size += varIntSize(nameBytes.length);
-        size += nameBytes.length;
-
-        size += varIntSize(pngBytes.length);
-        size += pngBytes.length;
-
-        size += 4;
-        size += 4;
-
-        size += PACKET_ESTIMATE_EXTRA_BYTES;
-
-        return size;
-    }
-
-    private static int varIntSize(int value) {
-        int bytes = 1;
-
-        while ((value & ~0x7F) != 0) {
-            value >>>= 7;
-            bytes++;
+            for (int i = 0; i < frames.size(); i++) {
+                int column = i % columns;
+                int row = i / columns;
+                graphics.drawImage(
+                        frames.get(i),
+                        column * cellWidth,
+                        row * cellHeight,
+                        cellWidth,
+                        cellHeight,
+                        null);
+            }
+        } finally {
+            graphics.dispose();
         }
 
-        return bytes;
+        return atlas;
+    }
+
+    private static void sendStream(String sourceName, byte[] pngBytes) {
+        sendStream(sourceName, pngBytes, 1, 1, 0);
+    }
+
+    private static void sendStream(
+            String sourceName,
+            byte[] pngBytes,
+            int frameCount,
+            int columns,
+            int frameDurationMs) {
+        NetworkHandler.sendToServer(UploadDisplayImageStreamPacket.begin(
+                sourceName,
+                frameCount,
+                columns,
+                frameDurationMs));
+
+        for (int offset = 0; offset < pngBytes.length; offset += DisplayImageTransfer.CHUNK_BYTES) {
+            int end = Math.min(pngBytes.length, offset + DisplayImageTransfer.CHUNK_BYTES);
+            NetworkHandler.sendToServer(UploadDisplayImageStreamPacket.data(
+                    Arrays.copyOfRange(pngBytes, offset, end)));
+        }
+
+        NetworkHandler.sendToServer(UploadDisplayImageStreamPacket.end());
     }
 
     private static String sanitizeSourceName(String sourceName) {

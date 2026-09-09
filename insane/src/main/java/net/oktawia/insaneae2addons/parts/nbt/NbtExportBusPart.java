@@ -1,5 +1,8 @@
 package net.oktawia.insaneae2addons.parts.nbt;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.core.GlobalPos;
@@ -29,6 +32,7 @@ import appeng.util.SettingsFrom;
 import appeng.util.prioritylist.DefaultPriorityList;
 
 import net.oktawia.crazyae2addons.tracking.IResourceTrackingService;
+import net.oktawia.crazyae2addons.tracking.ResourceTrackingGate;
 import net.oktawia.crazyae2addons.tracking.UsageTarget;
 import net.oktawia.insaneae2addons.InsaneConfig;
 import net.oktawia.insaneae2addons.defs.regs.InsaneMenuRegistrar;
@@ -112,19 +116,24 @@ public class NbtExportBusPart extends IOBusPart {
                 storageService, grid.getEnergyService(), this.source,
                 getOperationsPerTick(), DefaultPriorityList.INSTANCE);
 
-        var stacks = storageService.getInventory().getAvailableStacks();
+        var stacks = storageService.getCachedInventory();
         if (stacks.isEmpty()) {
             return false;
         }
 
         var compiled = matcher();
-        boolean didWork = false;
+        List<AEItemKey> matching = new ArrayList<>();
         for (var entry : stacks) {
-            AEKey key = entry.getKey();
-            if (!(key instanceof AEItemKey itemKey) || !NBTMatcher.doesItemMatch(itemKey, compiled)) {
-                continue;
+            if (entry.getKey() instanceof AEItemKey itemKey && NBTMatcher.doesItemMatch(itemKey, compiled)) {
+                matching.add(itemKey);
             }
+        }
+        if (matching.isEmpty()) {
+            return false;
+        }
 
+        boolean didWork = false;
+        for (AEItemKey itemKey : matching) {
             int transferFactor = InsaneConfig.COMMON.NBT_EXPORT_BUS_TRANSFER_FACTOR.get();
             long amount = (long) context.getOperationsRemaining() * transferFactor;
             long transferred = getExportStrategy().transfer(context, itemKey, amount);
@@ -141,6 +150,9 @@ public class NbtExportBusPart extends IOBusPart {
     }
 
     private void trackConsumed(IGrid grid, AEKey what, long amount) {
+        if (!ResourceTrackingGate.isEnabled()) {
+            return;
+        }
         var svc = grid.getService(IResourceTrackingService.class);
         if (svc == null) {
             return;

@@ -20,6 +20,11 @@ public final class CrazyConfig {
         public final ForgeConfigSpec.BooleanValue DISPLAY_ENABLED;
         public final ForgeConfigSpec.BooleanValue DISPLAY_DATABASE_ENABLED;
         public final ForgeConfigSpec.BooleanValue DISPLAY_IMAGES_ENABLED;
+        public final ForgeConfigSpec.IntValue DISPLAY_IMAGE_MAX_BYTES;
+        public final ForgeConfigSpec.IntValue DISPLAY_IMAGE_MAX_DIMENSION;
+        public final ForgeConfigSpec.IntValue DISPLAY_IMAGES_TOTAL_BYTES;
+        public final ForgeConfigSpec.BooleanValue DISPLAY_IMAGE_ANIMATION_ENABLED;
+        public final ForgeConfigSpec.IntValue DISPLAY_IMAGE_MAX_FRAMES;
         public final ForgeConfigSpec.BooleanValue DISPLAY_STOCK_ENABLED;
         public final ForgeConfigSpec.BooleanValue DISPLAY_ICONS_ENABLED;
         public final ForgeConfigSpec.BooleanValue DISPLAY_DELTA_ENABLED;
@@ -92,6 +97,31 @@ public final class CrazyConfig {
             DISPLAY_IMAGES_ENABLED = bool(builder,
                     "imagesEnabled", true,
                     "Enable or disable uploading and rendering custom images on displays.");
+
+            DISPLAY_IMAGE_MAX_BYTES = boundedInt(builder,
+                    "imageMaxBytes", 16 * 1024 * 1024, 1024 * 1024, 64 * 1024 * 1024,
+                    "Maximum size in bytes of a single uploaded image.",
+                    "Uploads are split into chunks, so this is not limited by the vanilla packet size.");
+
+            DISPLAY_IMAGE_MAX_DIMENSION = boundedInt(builder,
+                    "imageMaxDimension", 2048, 16, 4096,
+                    "Maximum width and height in pixels of a single uploaded image.",
+                    "Larger images are downscaled by the client before they are sent.");
+
+            DISPLAY_IMAGES_TOTAL_BYTES = boundedInt(builder,
+                    "imagesTotalBytes", 128 * 1024 * 1024, 64 * 1024 * 1024, 512 * 1024 * 1024,
+                    "Total size in bytes of all images stored in the world.",
+                    "Identical images are stored once and shared, so copying a display with a memory card is free.");
+
+            DISPLAY_IMAGE_ANIMATION_ENABLED = bool(builder,
+                    "imageAnimationEnabled", true,
+                    "Enable or disable playback of animated images such as GIFs.",
+                    "When disabled, animated images render their first frame only.");
+
+            DISPLAY_IMAGE_MAX_FRAMES = boundedInt(builder,
+                    "imageMaxFrames", 256, 1, 512,
+                    "Maximum number of frames kept when an animated image is imported.",
+                    "Longer animations are sampled evenly down to this many frames.");
 
             DISPLAY_STOCK_ENABLED = bool(builder,
                     "stockEnabled", true,
@@ -358,6 +388,16 @@ public final class CrazyConfig {
                 int defaultValue,
                 String... comment) {
             return builder.comment(comment).defineInRange(key, defaultValue, 0, Integer.MAX_VALUE);
+        }
+
+        private static ForgeConfigSpec.IntValue boundedInt(
+                ForgeConfigSpec.Builder builder,
+                String key,
+                int defaultValue,
+                int min,
+                int max,
+                String... comment) {
+            return builder.comment(comment).defineInRange(key, defaultValue, min, max);
         }
 
         private static ForgeConfigSpec.IntValue unlimitedInt(

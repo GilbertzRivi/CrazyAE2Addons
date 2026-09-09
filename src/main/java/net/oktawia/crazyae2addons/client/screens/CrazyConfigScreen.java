@@ -44,6 +44,26 @@ public class CrazyConfigScreen {
             entries.add(bool(eb, LangDefs.CONFIG_ENTRY_IMAGES_ENABLED, cfg.DISPLAY_IMAGES_ENABLED.get(), true,
                     cfg.DISPLAY_IMAGES_ENABLED::set,
                     LangDefs.CONFIG_DESC_DISPLAY_IMAGES_ENABLED));
+            entries.add(boundedInteger(eb, LangDefs.CONFIG_ENTRY_IMAGE_MAX_KILOBYTES,
+                    cfg.DISPLAY_IMAGE_MAX_BYTES.get() / 1024, 16 * 1024, 1024, 64 * 1024,
+                    kilobytes -> cfg.DISPLAY_IMAGE_MAX_BYTES.set(kilobytes * 1024),
+                    LangDefs.CONFIG_DESC_DISPLAY_IMAGE_MAX_KILOBYTES));
+            entries.add(boundedInteger(eb, LangDefs.CONFIG_ENTRY_IMAGE_MAX_DIMENSION,
+                    cfg.DISPLAY_IMAGE_MAX_DIMENSION.get(), 2048, 16, 4096,
+                    cfg.DISPLAY_IMAGE_MAX_DIMENSION::set,
+                    LangDefs.CONFIG_DESC_DISPLAY_IMAGE_MAX_DIMENSION));
+            entries.add(boundedInteger(eb, LangDefs.CONFIG_ENTRY_IMAGES_TOTAL_KILOBYTES,
+                    cfg.DISPLAY_IMAGES_TOTAL_BYTES.get() / 1024, 128 * 1024, 64 * 1024, 512 * 1024,
+                    kilobytes -> cfg.DISPLAY_IMAGES_TOTAL_BYTES.set(kilobytes * 1024),
+                    LangDefs.CONFIG_DESC_DISPLAY_IMAGES_TOTAL_KILOBYTES));
+            entries.add(bool(eb, LangDefs.CONFIG_ENTRY_IMAGE_ANIMATION_ENABLED,
+                    cfg.DISPLAY_IMAGE_ANIMATION_ENABLED.get(), true,
+                    cfg.DISPLAY_IMAGE_ANIMATION_ENABLED::set,
+                    LangDefs.CONFIG_DESC_DISPLAY_IMAGE_ANIMATION_ENABLED));
+            entries.add(boundedInteger(eb, LangDefs.CONFIG_ENTRY_IMAGE_MAX_FRAMES,
+                    cfg.DISPLAY_IMAGE_MAX_FRAMES.get(), 256, 1, 512,
+                    cfg.DISPLAY_IMAGE_MAX_FRAMES::set,
+                    LangDefs.CONFIG_DESC_DISPLAY_IMAGE_MAX_FRAMES));
             entries.add(bool(eb, LangDefs.CONFIG_ENTRY_STOCK_ENABLED, cfg.DISPLAY_STOCK_ENABLED.get(), true,
                     cfg.DISPLAY_STOCK_ENABLED::set,
                     LangDefs.CONFIG_DESC_DISPLAY_STOCK_ENABLED));
@@ -285,6 +305,24 @@ public class CrazyConfigScreen {
         return eb.startIntField(t(name), value)
                 .setDefaultValue(defaultValue)
                 .setMin(min)
+                .setTooltip(tooltip(tooltip))
+                .setSaveConsumer(saveConsumer)
+                .build();
+    }
+
+    private static AbstractConfigListEntry boundedInteger(
+            ConfigEntryBuilder eb,
+            LangDefs name,
+            int value,
+            int defaultValue,
+            int min,
+            int max,
+            Consumer<Integer> saveConsumer,
+            LangDefs... tooltip) {
+        return eb.startIntField(t(name), value)
+                .setDefaultValue(defaultValue)
+                .setMin(min)
+                .setMax(max)
                 .setTooltip(tooltip(tooltip))
                 .setSaveConsumer(saveConsumer)
                 .build();

@@ -18,15 +18,18 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 
 import appeng.client.gui.AEBaseScreen;
 import appeng.client.gui.Icon;
 import appeng.client.gui.style.ScreenStyle;
+import appeng.client.gui.widgets.AETextField;
 import appeng.client.gui.widgets.ToggleButton;
 
 import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.CrazyConfig;
+import net.oktawia.crazyae2addons.client.misc.DisplayImageClientCache;
 import net.oktawia.crazyae2addons.client.misc.IconButton;
 import net.oktawia.crazyae2addons.client.misc.LDLibColorSelectorAdapter;
 import net.oktawia.crazyae2addons.client.misc.MultilineTextFieldWidget;
@@ -55,6 +58,7 @@ public class DisplayScreen<C extends DisplayMenu> extends AEBaseScreen<C> {
     private static final int MACRO_COLOR = 0xFFCC88FF;
 
     private final MultilineTextFieldWidget value;
+    private final AETextField fontSize;
     private final IconButton formatTables;
     private final LDLibColorSelectorAdapter backgroundColor;
     private final LDLibColorSelectorAdapter selectedTextColor;
@@ -65,8 +69,6 @@ public class DisplayScreen<C extends DisplayMenu> extends AEBaseScreen<C> {
     private final ToggleButton connectDown;
     private final ToggleButton connectLeft;
     private final ToggleButton connectRight;
-
-    private final Map<String, byte[]> previewImageData = new HashMap<>();
 
     private boolean initialized = false;
     private boolean modeState = true;
@@ -107,6 +109,14 @@ public class DisplayScreen<C extends DisplayMenu> extends AEBaseScreen<C> {
                 new MultilineTextFieldWidget.HighlightRule(
                         "\\$with\\([A-Za-z0-9_]{1,32}=(?:[^()\\r\\n]|\\([^()\\r\\n]*\\))*\\)", MACRO_COLOR)));
         value.setDynamicHighlightRules(DisplayScreen::macroUsageRules);
+
+        this.fontSize = new AETextField(style, Minecraft.getInstance().font, 0, 0, 0, 0);
+        this.fontSize.setMaxLength(3);
+        this.fontSize.setBordered(false);
+        this.fontSize.setFilter(text -> text.chars().allMatch(Character::isDigit));
+        this.fontSize.setTooltipMessage(
+                List.of(Component.translatable(LangDefs.FONT_SIZE_TOOLTIP.getTranslationKey())));
+        this.fontSize.setResponder(text -> applyFontSize());
 
         this.backgroundColor = new LDLibColorSelectorAdapter(
                 0, 0, 16, 16,
@@ -190,6 +200,7 @@ public class DisplayScreen<C extends DisplayMenu> extends AEBaseScreen<C> {
         this.connectRight
                 .setTooltip(Tooltip.create(Component.translatable(LangDefs.CONNECT_RIGHT.getTranslationKey())));
 
+        widgets.add("fontSize", fontSize);
         widgets.add("value", value);
         widgets.add("confirm", confirm);
         widgets.add("mode", mode);
@@ -249,11 +260,10 @@ public class DisplayScreen<C extends DisplayMenu> extends AEBaseScreen<C> {
             connectLeft.setState(getMenu().connectLeft);
             connectRight.setState(getMenu().connectRight);
 
+            fontSize.setValue(getMenu().fontSize > 0 ? String.valueOf(getMenu().fontSize) : "");
+
             backgroundColor.setColor(extractBackgroundColor(value.getValue(), 0xFF202020));
             selectedTextColor.setColor(0xFFFFFFFF);
-
-            previewImageData.clear();
-            getMenu().requestImages();
 
             initialized = true;
         }
@@ -286,6 +296,11 @@ public class DisplayScreen<C extends DisplayMenu> extends AEBaseScreen<C> {
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT && fontSize.isMouseOver(mouseX, mouseY)) {
+            fontSize.setValue("");
+            return true;
+        }
+
         if (backgroundColor.mouseClicked(mouseX, mouseY, button)) {
             return true;
         }
@@ -293,6 +308,7 @@ public class DisplayScreen<C extends DisplayMenu> extends AEBaseScreen<C> {
             return true;
         }
         if (value.mouseClicked(mouseX, mouseY, button)) {
+            fontSize.setFocused(false);
             return true;
         }
         return super.mouseClicked(mouseX, mouseY, button);
@@ -360,6 +376,12 @@ public class DisplayScreen<C extends DisplayMenu> extends AEBaseScreen<C> {
                 return true;
             }
 
+            if (fontSize.isFocused()) {
+                fontSize.setFocused(false);
+                setFocused(null);
+                return true;
+            }
+
             if (value.isFocused()) {
                 value.setFocused(false);
                 setFocused(null);
@@ -367,6 +389,10 @@ public class DisplayScreen<C extends DisplayMenu> extends AEBaseScreen<C> {
             }
 
             requestCloseWithConfirmation();
+            return true;
+        }
+
+        if (fontSize.isFocused() && fontSize.keyPressed(key, sc, mod)) {
             return true;
         }
 
@@ -397,23 +423,13 @@ public class DisplayScreen<C extends DisplayMenu> extends AEBaseScreen<C> {
         if (selectedTextColor.charTyped(codePoint, modifiers)) {
             return true;
         }
+        if (fontSize.isFocused() && fontSize.charTyped(codePoint, modifiers)) {
+            return true;
+        }
         if (value.isFocused() && value.charTyped(codePoint, modifiers)) {
             return true;
         }
         return super.charTyped(codePoint, modifiers);
-    }
-
-    public void applyPreviewImageFromServer(String imageId, byte[] pngBytes) {
-        if (imageId == null || imageId.isBlank()) {
-            return;
-        }
-
-        if (pngBytes == null || pngBytes.length == 0) {
-            previewImageData.remove(imageId);
-            return;
-        }
-
-        previewImageData.put(imageId, pngBytes);
     }
 
     private void renderPreview(GuiGraphics gui) {
@@ -441,7 +457,8 @@ public class DisplayScreen<C extends DisplayMenu> extends AEBaseScreen<C> {
                 dims.getFirst(),
                 dims.getSecond(),
                 images,
-                previewImageData);
+                DisplayImageClientCache.collect(images),
+                currentFontSize());
 
         Component label = Component.translatable(
                 LangDefs.DISPLAY_PREVIEW_SIZE.getTranslationKey(),
@@ -474,6 +491,28 @@ public class DisplayScreen<C extends DisplayMenu> extends AEBaseScreen<C> {
         } catch (Exception e) {
             CrazyAddons.LOGGER.debug("failed to parse display tokens JSON", e);
             return Collections.emptyMap();
+        }
+    }
+
+    private int currentFontSize() {
+        String text = fontSize.getValue().trim();
+
+        if (text.isEmpty()) {
+            return 0;
+        }
+
+        try {
+            return Mth.clamp(Integer.parseInt(text), 0, 999);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    private void applyFontSize() {
+        int size = currentFontSize();
+
+        if (size != getMenu().fontSize) {
+            getMenu().changeFontSize(size);
         }
     }
 

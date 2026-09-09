@@ -50,16 +50,16 @@ public final class NetworkHandler {
                 .consumerMainThread(DisplaySyncPacket::handle)
                 .add();
 
-        CHANNEL.messageBuilder(SyncDisplayImagePreviewPacket.class, nextId++, NetworkDirection.PLAY_TO_CLIENT)
-                .encoder(SyncDisplayImagePreviewPacket::encode)
-                .decoder(SyncDisplayImagePreviewPacket::decode)
-                .consumerMainThread(SyncDisplayImagePreviewPacket::handle)
+        CHANNEL.messageBuilder(DisplayImageStreamPacket.class, nextId++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(DisplayImageStreamPacket::encode)
+                .decoder(DisplayImageStreamPacket::decode)
+                .consumerMainThread(DisplayImageStreamPacket::handle)
                 .add();
 
-        CHANNEL.messageBuilder(UploadDisplayImagePacket.class, nextId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder(UploadDisplayImagePacket::encode)
-                .decoder(UploadDisplayImagePacket::decode)
-                .consumerMainThread(UploadDisplayImagePacket::handle)
+        CHANNEL.messageBuilder(UploadDisplayImageStreamPacket.class, nextId++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder(UploadDisplayImageStreamPacket::encode)
+                .decoder(UploadDisplayImageStreamPacket::decode)
+                .consumerMainThread(UploadDisplayImageStreamPacket::handle)
                 .add();
 
         CHANNEL.messageBuilder(RequestDisplayImagePacket.class, nextId++, NetworkDirection.PLAY_TO_SERVER)
@@ -68,10 +68,10 @@ public final class NetworkHandler {
                 .consumerMainThread(RequestDisplayImagePacket::handle)
                 .add();
 
-        CHANNEL.messageBuilder(DisplayImageDataPacket.class, nextId++, NetworkDirection.PLAY_TO_CLIENT)
-                .encoder(DisplayImageDataPacket::encode)
-                .decoder(DisplayImageDataPacket::decode)
-                .consumerMainThread(DisplayImageDataPacket::handle)
+        CHANNEL.messageBuilder(DisplayImageUploadResultPacket.class, nextId++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder(DisplayImageUploadResultPacket::encode)
+                .decoder(DisplayImageUploadResultPacket::decode)
+                .consumerMainThread(DisplayImageUploadResultPacket::handle)
                 .add();
 
         CHANNEL.messageBuilder(NotificationHudPacket.class, nextId++, NetworkDirection.PLAY_TO_CLIENT)

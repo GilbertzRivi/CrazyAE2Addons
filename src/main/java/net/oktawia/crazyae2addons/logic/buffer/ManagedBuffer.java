@@ -44,6 +44,7 @@ import appeng.me.helpers.MachineSource;
 
 import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.tracking.IResourceTrackingService;
+import net.oktawia.crazyae2addons.tracking.ResourceTrackingGate;
 import net.oktawia.crazyae2addons.tracking.UsageTarget;
 
 public class ManagedBuffer {
@@ -522,7 +523,7 @@ public class ManagedBuffer {
     }
 
     public void trackConsumed(AEKey what, long amount) {
-        if (what == null || amount <= 0)
+        if (what == null || amount <= 0 || !ResourceTrackingGate.isEnabled())
             return;
         var grid = grid();
         if (grid == null)

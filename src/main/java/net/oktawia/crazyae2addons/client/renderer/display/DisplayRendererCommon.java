@@ -1,15 +1,14 @@
 package net.oktawia.crazyae2addons.client.renderer.display;
 
-import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import java.util.WeakHashMap;
 
-import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
@@ -21,10 +20,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.FormattedText;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.inventory.InventoryMenu;
@@ -33,10 +33,11 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.client.extensions.common.IClientFluidTypeExtensions;
 import net.minecraftforge.fluids.FluidStack;
 
-import net.oktawia.crazyae2addons.CrazyAddons;
 import net.oktawia.crazyae2addons.CrazyConfig;
 import net.oktawia.crazyae2addons.client.misc.DisplayImageClientCache;
+import net.oktawia.crazyae2addons.client.misc.DisplayImageTextures;
 import net.oktawia.crazyae2addons.logic.display.DisplayGrid;
+import net.oktawia.crazyae2addons.logic.display.DisplayImageAnimation;
 import net.oktawia.crazyae2addons.logic.display.DisplayImageEntry;
 import net.oktawia.crazyae2addons.logic.display.DisplayRenderData;
 import net.oktawia.crazyae2addons.logic.display.DisplayRenderData.DrawEntry;
@@ -55,18 +56,19 @@ public final class DisplayRendererCommon {
 
     private static final float DISPLAY_OFFSET = 2f;
     private static final float BACKGROUND_LAYER_Z = 0.005f - DISPLAY_OFFSET;
-    private static final float TABLE_LINE_LAYER_Z = 0.010f - DISPLAY_OFFSET;
-    private static final float TEXT_LAYER_Z = 0.010f - DISPLAY_OFFSET;
-    private static final float ICON_LAYER_Z = 0.020f - DISPLAY_OFFSET;
-    private static final float IMAGE_LAYER_Z = 0.025f - DISPLAY_OFFSET;
+    private static final float IMAGE_LAYER_Z = 0.010f - DISPLAY_OFFSET;
+    private static final float IMAGE_LAYER_STEP = 0.02f;
+    private static final float CONTENT_LAYER_Z = 0.050f - DISPLAY_OFFSET;
+    private static final float ICON_LAYER_DELTA = 0.010f;
+    private static final float CLIP_TOLERANCE_PX = 1f;
 
     private DisplayRendererCommon() {
     }
 
-    private record CachedImage(DynamicTexture texture, ResourceLocation location, int width, int height) {
-    }
+    private static final Map<Display, CachedPrepared> PREPARED_CACHE = new WeakHashMap<>();
 
-    private static final Map<String, CachedImage> IMAGE_CACHE = new HashMap<>();
+    private record CachedPrepared(long signature, PreparedDisplay prepared) {
+    }
 
     public interface DrawCommand {
     }
@@ -74,7 +76,9 @@ public final class DisplayRendererCommon {
     public record PreparedDisplay(
             float surfaceWidthPx,
             float surfaceHeightPx,
-            List<DrawCommand> commands) {
+            List<DrawCommand> commands,
+            @Nullable Integer backgroundColor,
+            float contentZ) {
     }
 
     public record TextCommand(Component text, float x, float y, float scale) implements DrawCommand {
@@ -90,26 +94,32 @@ public final class DisplayRendererCommon {
     }
 
     public record ImageCommand(
-            String cacheKey,
+            String imageId,
             byte[] pngBytes,
             float x,
             float y,
             float widthPx,
             float heightPx,
-            float z) implements DrawCommand {
+            float z,
+            float u0,
+            float v0,
+            float u1,
+            float v1) implements DrawCommand {
     }
 
     public static PreparedDisplay prepare(Font font, Display renderOrigin, Set<Display> grid) {
         var dims = DisplayGrid.getGridSize(new ArrayList<>(grid));
         List<DisplayImageEntry> images = renderOrigin.getDisplayImages();
-        Map<String, byte[]> imageData = new HashMap<>();
-        for (DisplayImageEntry image : images) {
-            byte[] bytes = DisplayImageClientCache.get(image.id());
-            if (bytes != null) {
-                imageData.put(image.id(), bytes);
-            }
+        Map<String, byte[]> imageData = DisplayImageClientCache.collect(images);
+
+        long signature = signatureOf(renderOrigin, dims.getFirst(), dims.getSecond(), images, imageData);
+        CachedPrepared cached = PREPARED_CACHE.get(renderOrigin);
+
+        if (cached != null && cached.signature() == signature) {
+            return cached.prepared();
         }
-        return prepare(
+
+        PreparedDisplay prepared = prepare(
                 font,
                 renderOrigin.getTextValue(),
                 renderOrigin.resolvedTokens,
@@ -119,7 +129,43 @@ public final class DisplayRendererCommon {
                 dims.getSecond(),
                 images,
                 imageData,
-                renderOrigin.isPowered());
+                renderOrigin.isPowered(),
+                renderOrigin.getFontSize());
+
+        PREPARED_CACHE.put(renderOrigin, new CachedPrepared(signature, prepared));
+        return prepared;
+    }
+
+    public static void invalidatePreparedCache() {
+        PREPARED_CACHE.clear();
+    }
+
+    private static long signatureOf(
+            Display renderOrigin,
+            int widthBlocks,
+            int heightBlocks,
+            List<DisplayImageEntry> images,
+            Map<String, byte[]> imageData) {
+        long hash = 1L;
+
+        hash = hash * 31 + Objects.hashCode(renderOrigin.getTextValue());
+        hash = hash * 31 + Objects.hashCode(renderOrigin.resolvedTokens);
+        hash = hash * 31 + Boolean.hashCode(renderOrigin.getCenterText());
+        hash = hash * 31 + Boolean.hashCode(renderOrigin.isAddMargin());
+        hash = hash * 31 + Boolean.hashCode(renderOrigin.isPowered());
+        hash = hash * 31 + renderOrigin.getFontSize();
+        hash = hash * 31 + widthBlocks;
+        hash = hash * 31 + heightBlocks;
+        hash = hash * 31 + Objects.hashCode(images);
+        hash = hash * 31 + imageData.size();
+        hash = hash * 31 + Boolean.hashCode(CrazyConfig.COMMON.DISPLAY_ENABLED.get());
+        hash = hash * 31 + Boolean.hashCode(CrazyConfig.COMMON.DISPLAY_IMAGES_ENABLED.get());
+
+        for (DisplayImageEntry image : images) {
+            hash = hash * 31 + DisplayImageAnimation.frameIndex(image);
+        }
+
+        return hash;
     }
 
     public static PreparedDisplay prepare(
@@ -132,7 +178,8 @@ public final class DisplayRendererCommon {
             int heightBlocks,
             List<DisplayImageEntry> images,
             Map<String, byte[]> imageData,
-            boolean powered) {
+            boolean powered,
+            int fontSize) {
         float pxW = Math.max(1f, 64f * Math.max(1, widthBlocks));
         float pxH = Math.max(1f, 64f * Math.max(1, heightBlocks));
 
@@ -140,7 +187,7 @@ public final class DisplayRendererCommon {
         List<ImageCommand> imageCommands = new ArrayList<>();
 
         if (!powered || !CrazyConfig.COMMON.DISPLAY_ENABLED.get()) {
-            return new PreparedDisplay(pxW, pxH, out);
+            return new PreparedDisplay(pxW, pxH, out, null, CONTENT_LAYER_Z);
         }
 
         String raw = textValue == null ? "" : textValue;
@@ -167,23 +214,27 @@ public final class DisplayRendererCommon {
                     continue;
                 }
 
-                String cacheKey = imageCacheKey(image.id(), pngBytes);
-                CachedImage cached = getOrCreateCachedImage(cacheKey, pngBytes);
+                DisplayImageTextures.Entry cached = DisplayImageTextures.get(image.id(), pngBytes);
                 if (cached == null || cached.width() <= 0 || cached.height() <= 0) {
                     imageListIdx++;
                     continue;
                 }
+
+                DisplayImageAnimation.Frame frame = DisplayImageAnimation.current(
+                        image,
+                        cached.width(),
+                        cached.height());
 
                 float xPercent = clampPercent(image.x());
                 float yPercent = clampPercent(image.y());
                 float scalePercent = clampPercent(Math.min(image.width(), image.height()));
 
                 float fit = Math.min(
-                        pxW / (float) cached.width(),
-                        pxH / (float) cached.height());
+                        pxW / (float) frame.width(),
+                        pxH / (float) frame.height());
 
-                float fitW = cached.width() * fit;
-                float fitH = cached.height() * fit;
+                float fitW = frame.width() * fit;
+                float fitH = frame.height() * fit;
 
                 float imageW = Math.max(1f, fitW * (scalePercent / 100f));
                 float imageH = Math.max(1f, fitH * (scalePercent / 100f));
@@ -191,25 +242,31 @@ public final class DisplayRendererCommon {
                 float xPx = Math.max(0f, pxW - imageW) * (xPercent / 100f);
                 float yPx = Math.max(0f, pxH - imageH) * (yPercent / 100f);
 
-                float imageZ = IMAGE_LAYER_Z + (listSize - 1 - imageListIdx) * 0.5f;
+                float imageZ = IMAGE_LAYER_Z + (listSize - 1 - imageListIdx) * IMAGE_LAYER_STEP;
 
                 imageCommands.add(new ImageCommand(
-                        cacheKey,
+                        image.id(),
                         pngBytes,
                         xPx,
                         yPx,
                         imageW,
                         imageH,
-                        imageZ));
+                        imageZ,
+                        frame.u0(),
+                        frame.v0(),
+                        frame.u1(),
+                        frame.v1()));
                 imageListIdx++;
             }
         }
 
         Collections.reverse(imageCommands);
 
+        float contentZ = contentLayerZ(imageCommands);
+
         if (renderLines.isEmpty()) {
             out.addAll(imageCommands);
-            return new PreparedDisplay(pxW, pxH, out);
+            return new PreparedDisplay(pxW, pxH, out, parsed.backgroundColor(), contentZ);
         }
 
         float maxLineWidth = 1f;
@@ -225,9 +282,11 @@ public final class DisplayRendererCommon {
         float usableW = Math.max(1f, pxW - 2f * marginX);
         float usableH = Math.max(1f, pxH - 2f * marginY);
 
-        float globalScalePx = Math.min(
-                usableW / Math.max(1f, maxLineWidth),
-                usableH / Math.max(1f, totalTextHeight));
+        float globalScalePx = fontSize > 0
+                ? fontSize / (float) font.lineHeight
+                : Math.min(
+                        usableW / Math.max(1f, maxLineWidth),
+                        usableH / Math.max(1f, totalTextHeight));
         if (!Float.isFinite(globalScalePx) || globalScalePx <= 0f) {
             globalScalePx = 1f;
         }
@@ -301,13 +360,95 @@ public final class DisplayRendererCommon {
                 float baseY = marginY + centerYOffsetPx + yCursor * globalScalePx;
                 float blockScalePx = globalScalePx * tb.scaleMul();
 
-                appendTableCommands(out, font, tb, de.tableRowsToDraw(), baseX, baseY, blockScalePx);
+                appendTableCommands(out, font, tb, de.tableRowsToDraw(), baseX, baseY, blockScalePx, contentZ);
                 yCursor += DisplayRenderData.tableBlockHeightPx(font, tb, de.tableRowsToDraw());
             }
         }
 
+        clipToSurface(out, font, pxW, pxH);
         out.addAll(imageCommands);
-        return new PreparedDisplay(pxW, pxH, out);
+        return new PreparedDisplay(pxW, pxH, out, parsed.backgroundColor(), contentZ);
+    }
+
+    private static void clipToSurface(List<DrawCommand> out, Font font, float pxW, float pxH) {
+        List<DrawCommand> clipped = new ArrayList<>(out.size());
+
+        for (DrawCommand cmd : out) {
+            if (cmd instanceof TextCommand tc) {
+                if (tc.x() >= pxW || tc.y() >= pxH) {
+                    continue;
+                }
+
+                float available = (pxW - tc.x()) / Math.max(0.0001f, tc.scale());
+
+                if (available < 1f) {
+                    continue;
+                }
+
+                if (font.width(tc.text()) <= available + CLIP_TOLERANCE_PX) {
+                    clipped.add(tc);
+                    continue;
+                }
+
+                Component trimmed = trimToWidth(font, tc.text(), (int) Math.floor(available));
+
+                if (trimmed != null) {
+                    clipped.add(new TextCommand(trimmed, tc.x(), tc.y(), tc.scale()));
+                }
+            } else if (cmd instanceof ItemCommand ic) {
+                if (ic.x() + ic.sizePx() <= pxW + CLIP_TOLERANCE_PX
+                        && ic.y() + ic.sizePx() <= pxH + CLIP_TOLERANCE_PX) {
+                    clipped.add(ic);
+                }
+            } else if (cmd instanceof FluidCommand fc) {
+                if (fc.x() + fc.sizePx() <= pxW + CLIP_TOLERANCE_PX
+                        && fc.y() + fc.sizePx() <= pxH + CLIP_TOLERANCE_PX) {
+                    clipped.add(fc);
+                }
+            } else if (cmd instanceof RectCommand rc) {
+                if (rc.x0() >= pxW || rc.y0() >= pxH) {
+                    continue;
+                }
+
+                clipped.add(new RectCommand(
+                        rc.x0(),
+                        rc.y0(),
+                        Math.min(rc.x1(), pxW),
+                        Math.min(rc.y1(), pxH),
+                        rc.argb(),
+                        rc.z()));
+            } else {
+                clipped.add(cmd);
+            }
+        }
+
+        out.clear();
+        out.addAll(clipped);
+    }
+
+    @Nullable
+    private static Component trimToWidth(Font font, Component text, int maxWidth) {
+        FormattedText head = font.getSplitter().headByWidth(text, maxWidth, Style.EMPTY);
+        MutableComponent trimmed = Component.empty();
+
+        head.visit((style, part) -> {
+            if (!part.isEmpty()) {
+                trimmed.append(Component.literal(part).withStyle(style));
+            }
+            return Optional.empty();
+        }, Style.EMPTY);
+
+        return trimmed.getSiblings().isEmpty() ? null : trimmed;
+    }
+
+    private static float contentLayerZ(List<ImageCommand> imageCommands) {
+        float topImageZ = CONTENT_LAYER_Z;
+
+        for (ImageCommand image : imageCommands) {
+            topImageZ = Math.max(topImageZ, image.z() + IMAGE_LAYER_STEP);
+        }
+
+        return topImageZ;
     }
 
     public static void renderPrepared(
@@ -316,12 +457,26 @@ public final class DisplayRendererCommon {
             MultiBufferSource buf,
             Font font,
             int light) {
+        renderPrepared(prepared, ps, buf, font, light, true);
+    }
+
+    public static void renderPrepared(
+            PreparedDisplay prepared,
+            PoseStack ps,
+            MultiBufferSource buf,
+            Font font,
+            int light,
+            boolean includeImages) {
         for (DrawCommand cmd : prepared.commands()) {
+            if (!includeImages && cmd instanceof ImageCommand) {
+                continue;
+            }
+
             if (cmd instanceof RectCommand rc) {
                 drawSolidRect(ps, buf, light, rc.argb(), rc.x0(), rc.y0(), rc.x1(), rc.y1(), rc.z());
             } else if (cmd instanceof TextCommand tc) {
                 ps.pushPose();
-                ps.translate(tc.x(), tc.y(), TEXT_LAYER_Z);
+                ps.translate(tc.x(), tc.y(), prepared.contentZ());
                 ps.scale(tc.scale(), tc.scale(), 1f);
 
                 font.drawInBatch(
@@ -345,13 +500,23 @@ public final class DisplayRendererCommon {
                         light,
                         ic.x(),
                         ic.y(),
-                        Math.max(1, Math.round(ic.sizePx())));
+                        Math.max(1, Math.round(ic.sizePx())),
+                        prepared.contentZ() + ICON_LAYER_DELTA);
             } else if (cmd instanceof FluidCommand fc) {
                 TextureAtlasSprite sprite = getFluidSprite(fc.stack());
                 int tint = getFluidTint(fc.stack());
-                drawSpriteQuad(ps, buf, light, tint, fc.x(), fc.y(), fc.sizePx(), sprite);
+                drawSpriteQuad(
+                        ps,
+                        buf,
+                        light,
+                        tint,
+                        fc.x(),
+                        fc.y(),
+                        fc.sizePx(),
+                        sprite,
+                        prepared.contentZ() + ICON_LAYER_DELTA);
             } else if (cmd instanceof ImageCommand ic) {
-                CachedImage cached = getOrCreateCachedImage(ic.cacheKey(), ic.pngBytes());
+                DisplayImageTextures.Entry cached = DisplayImageTextures.get(ic.imageId(), ic.pngBytes());
                 if (cached != null) {
                     drawClippedTexturedQuad(
                             ps,
@@ -364,7 +529,11 @@ public final class DisplayRendererCommon {
                             ic.heightPx(),
                             prepared.surfaceWidthPx(),
                             prepared.surfaceHeightPx(),
-                            ic.z());
+                            ic.z(),
+                            ic.u0(),
+                            ic.v0(),
+                            ic.u1(),
+                            ic.v1());
                 }
             }
         }
@@ -403,7 +572,8 @@ public final class DisplayRendererCommon {
             int rowsToDraw,
             float baseX,
             float baseY,
-            float scalePx) {
+            float scalePx,
+            float lineZ) {
         var layout = DisplayRenderData.computeTableLayout(font, tb);
         int cols = layout.cols();
         int pad = layout.padPx();
@@ -428,7 +598,7 @@ public final class DisplayRendererCommon {
                 baseX + rightEdge * scalePx,
                 baseY,
                 lineColor,
-                TABLE_LINE_LAYER_Z));
+                lineZ));
 
         out.add(new RectCommand(
                 baseX + layout.prefixW() * scalePx,
@@ -436,7 +606,7 @@ public final class DisplayRendererCommon {
                 baseX + rightEdge * scalePx,
                 baseY + drawnH * scalePx,
                 lineColor,
-                TABLE_LINE_LAYER_Z));
+                lineZ));
 
         if (rowsToDraw > 1) {
             out.add(new RectCommand(
@@ -445,7 +615,7 @@ public final class DisplayRendererCommon {
                     baseX + rightEdge * scalePx,
                     baseY + headerH * scalePx,
                     lineColor,
-                    TABLE_LINE_LAYER_Z));
+                    lineZ));
         }
 
         int drawRows = Math.min(rowsToDraw, tb.rows().size());
@@ -461,7 +631,7 @@ public final class DisplayRendererCommon {
             }
 
             if (r == 0) {
-                appendTableBar(out, baseX, baseY, x, drawnH, scalePx, barColor);
+                appendTableBar(out, baseX, baseY, x, drawnH, scalePx, barColor, lineZ);
             }
 
             x += barW;
@@ -483,7 +653,7 @@ public final class DisplayRendererCommon {
                 x += innerW + pad * 2;
 
                 if (r == 0) {
-                    appendTableBar(out, baseX, baseY, x, drawnH, scalePx, barColor);
+                    appendTableBar(out, baseX, baseY, x, drawnH, scalePx, barColor, lineZ);
                 }
 
                 x += barW;
@@ -498,14 +668,15 @@ public final class DisplayRendererCommon {
             float x,
             float height,
             float scalePx,
-            int color) {
+            int color,
+            float lineZ) {
         out.add(new RectCommand(
                 baseX + x * scalePx,
                 baseY,
                 baseX + (x + 1f) * scalePx,
                 baseY + height * scalePx,
                 color,
-                TABLE_LINE_LAYER_Z));
+                lineZ));
     }
 
     private static float renderLineWidthPx(Font font, RenderLine ln) {
@@ -554,7 +725,8 @@ public final class DisplayRendererCommon {
             float x,
             float y,
             float sizePx,
-            TextureAtlasSprite sprite) {
+            TextureAtlasSprite sprite,
+            float z) {
         VertexConsumer buffer = buf.getBuffer(RenderType.textPolygonOffset(InventoryMenu.BLOCK_ATLAS));
         Matrix4f m = ps.last().pose();
 
@@ -565,7 +737,6 @@ public final class DisplayRendererCommon {
 
         float x1 = x + sizePx;
         float y1 = y + sizePx;
-        float z = ICON_LAYER_Z;
 
         float u0 = sprite.getU0();
         float u1 = sprite.getU1();
@@ -590,11 +761,12 @@ public final class DisplayRendererCommon {
             int light,
             float x,
             float y,
-            int iconPx) {
+            int iconPx,
+            float z) {
         Minecraft mc = Minecraft.getInstance();
 
         ps.pushPose();
-        ps.translate(x, y, ICON_LAYER_Z);
+        ps.translate(x, y, z);
         ps.translate(iconPx / 2f, iconPx / 2f, 0f);
         ps.scale(1f, -1f, 1f);
 
@@ -637,7 +809,11 @@ public final class DisplayRendererCommon {
             float height,
             float clipX1,
             float clipY1,
-            float z) {
+            float z,
+            float frameU0,
+            float frameV0,
+            float frameU1,
+            float frameV1) {
         if (width <= 0f || height <= 0f) {
             return;
         }
@@ -654,10 +830,10 @@ public final class DisplayRendererCommon {
             return;
         }
 
-        float u0 = (dstX0 - x) / width;
-        float v0 = (dstY0 - y) / height;
-        float u1 = (dstX1 - x) / width;
-        float v1 = (dstY1 - y) / height;
+        float u0 = frameU0 + (dstX0 - x) / width * (frameU1 - frameU0);
+        float v0 = frameV0 + (dstY0 - y) / height * (frameV1 - frameV0);
+        float u1 = frameU0 + (dstX1 - x) / width * (frameU1 - frameU0);
+        float v1 = frameV0 + (dstY1 - y) / height * (frameV1 - frameV0);
 
         VertexConsumer buffer = buf.getBuffer(RenderType.textPolygonOffset(texture));
         Matrix4f m = ps.last().pose();
@@ -671,39 +847,5 @@ public final class DisplayRendererCommon {
         buffer.vertex(m, dstX0, dstY1, z).color(255, 255, 255, 255).uv(u0, v1).uv2(light).endVertex();
         buffer.vertex(m, dstX1, dstY1, z).color(255, 255, 255, 255).uv(u1, v1).uv2(light).endVertex();
         buffer.vertex(m, dstX1, dstY0, z).color(255, 255, 255, 255).uv(u1, v0).uv2(light).endVertex();
-    }
-
-    @Nullable
-    private static CachedImage getOrCreateCachedImage(String cacheKey, byte[] pngBytes) {
-        CachedImage cached = IMAGE_CACHE.get(cacheKey);
-        if (cached != null) {
-            return cached;
-        }
-
-        try {
-            NativeImage image = NativeImage.read(new ByteArrayInputStream(pngBytes));
-            if (image == null) {
-                return null;
-            }
-
-            int width = image.getWidth();
-            int height = image.getHeight();
-
-            DynamicTexture texture = new DynamicTexture(image);
-            ResourceLocation location = Minecraft.getInstance().getTextureManager().register(
-                    "crazyae2addons_display_image_" + cacheKey,
-                    texture);
-
-            CachedImage created = new CachedImage(texture, location, width, height);
-            IMAGE_CACHE.put(cacheKey, created);
-            return created;
-        } catch (Throwable e) {
-            CrazyAddons.LOGGER.debug("failed to create display image texture", e);
-            return null;
-        }
-    }
-
-    private static String imageCacheKey(String imageId, byte[] pngBytes) {
-        return imageId + "_" + pngBytes.length + "_" + Arrays.hashCode(pngBytes);
     }
 }

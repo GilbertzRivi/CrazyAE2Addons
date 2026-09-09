@@ -27,6 +27,7 @@ import appeng.parts.PartModel;
 import appeng.parts.automation.IOBusPart;
 
 import net.oktawia.crazyae2addons.tracking.IResourceTrackingService;
+import net.oktawia.crazyae2addons.tracking.ResourceTrackingGate;
 import net.oktawia.crazyae2addons.tracking.UsageTarget;
 import net.oktawia.insaneae2addons.defs.regs.InsaneMenuRegistrar;
 import net.oktawia.insaneae2addons.mobstorage.MobKey;
@@ -129,6 +130,9 @@ public class MobExportBusPart extends IOBusPart {
     }
 
     private void trackConsumed(IGrid grid, ServerLevel level, MobKey mobKey) {
+        if (!ResourceTrackingGate.isEnabled()) {
+            return;
+        }
         var svc = grid.getService(IResourceTrackingService.class);
         if (svc == null) {
             return;

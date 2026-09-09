@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.jetbrains.annotations.Nullable;
@@ -55,6 +54,7 @@ import net.oktawia.crazyae2addons.defs.regs.CrazyMenuRegistrar;
 import net.oktawia.crazyae2addons.logic.display.DisplayGrid;
 import net.oktawia.crazyae2addons.logic.display.DisplayImageEntry;
 import net.oktawia.crazyae2addons.logic.display.DisplayImageStore;
+import net.oktawia.crazyae2addons.logic.display.DisplayImageUploadStatus;
 import net.oktawia.crazyae2addons.logic.display.DisplayTokenResolver;
 import net.oktawia.crazyae2addons.logic.display.SampleRing;
 import net.oktawia.crazyae2addons.menus.part.DisplayMenu;
@@ -152,6 +152,15 @@ public class Display extends AEBasePart implements MenuProvider, ISubMenuHost, I
         markDirtyAndSync();
     }
 
+    public int getFontSize() {
+        return state.fontSize;
+    }
+
+    public void setFontSize(int fontSize) {
+        state.fontSize = Mth.clamp(fontSize, 0, 999);
+        markDirtyAndSync();
+    }
+
     public boolean getCenterText() {
         return state.centerText;
     }
@@ -174,6 +183,7 @@ public class Display extends AEBasePart implements MenuProvider, ISubMenuHost, I
         boolean oldMode = state.mergeMode;
         boolean oldMargin = state.addMargin;
         boolean oldCenter = state.centerText;
+        int oldFontSize = state.fontSize;
         byte oldSpin = state.spin;
         String oldTextValue = state.textValue;
         String oldSelectedImageId = state.selectedDisplayImageId;
@@ -206,6 +216,7 @@ public class Display extends AEBasePart implements MenuProvider, ISubMenuHost, I
         boolean displayStateChanged = oldSpin != state.spin
                 || oldMargin != state.addMargin
                 || oldCenter != state.centerText
+                || oldFontSize != state.fontSize
                 || !oldTextValue.equals(state.textValue);
 
         if (topologyChanged) {
@@ -338,27 +349,46 @@ public class Display extends AEBasePart implements MenuProvider, ISubMenuHost, I
         markDirtyAndSync();
     }
 
-    public void addDisplayImage(String sourceName, byte[] pngBytes, int width, int height) {
-        if (pngBytes == null || pngBytes.length == 0) {
-            return;
-        }
-
-        if (!(getLevel() instanceof ServerLevel)) {
-            return;
+    public DisplayImageUploadStatus addDisplayImage(
+            String sourceName,
+            byte[] pngBytes,
+            int frameCount,
+            int columns,
+            int frameDurationMs) {
+        if (pngBytes == null || pngBytes.length == 0 || !(getLevel() instanceof ServerLevel)) {
+            return DisplayImageUploadStatus.FAILED;
         }
 
         if (state.displayImages.size() >= MAX_DISPLAY_IMAGES) {
-            return;
+            return DisplayImageUploadStatus.TOO_MANY_IMAGES;
         }
 
-        String id = UUID.randomUUID().toString();
+        String id = DisplayImageStore.get(getLevel()).putImageIfFits(pngBytes);
+
+        if (id == null) {
+            return DisplayImageUploadStatus.STORAGE_FULL;
+        }
+
         String normalizedName = (sourceName == null || sourceName.isBlank()) ? "image.png" : sourceName;
 
-        DisplayImageStore.get(getLevel()).putImage(id, pngBytes);
-        state.displayImages.add(new DisplayImageEntry(id, normalizedName, 0, 0, 100, 100));
+        int frames = Mth.clamp(frameCount, 1, CrazyConfig.COMMON.DISPLAY_IMAGE_MAX_FRAMES.get());
+        int normalizedColumns = frames > 1 ? Mth.clamp(columns, 1, frames) : 1;
+        int duration = frames > 1 ? Mth.clamp(frameDurationMs, 20, 2000) : 0;
+
+        state.displayImages.add(new DisplayImageEntry(
+                id,
+                normalizedName,
+                0,
+                0,
+                100,
+                100,
+                frames,
+                normalizedColumns,
+                duration));
         state.selectedDisplayImageId = id;
 
         markDirtyAndSync();
+        return DisplayImageUploadStatus.OK;
     }
 
     public void removeDisplayImage(String id) {
@@ -368,7 +398,7 @@ public class Display extends AEBasePart implements MenuProvider, ISubMenuHost, I
 
         boolean removed = state.displayImages.removeIf(entry -> entry.id().equals(id));
         if (removed && getLevel() instanceof ServerLevel) {
-            DisplayImageStore.get(getLevel()).removeImage(id);
+            DisplayImageStore.get(getLevel()).release(id);
         }
 
         if (removed && id.equals(state.selectedDisplayImageId)) {
@@ -440,14 +470,6 @@ public class Display extends AEBasePart implements MenuProvider, ISubMenuHost, I
         markDirtyAndSync();
     }
 
-    @Nullable
-    public byte[] getDisplayImageBytes(String id) {
-        if (id == null || id.isEmpty() || !(getLevel() instanceof ServerLevel)) {
-            return null;
-        }
-        return DisplayImageStore.get(getLevel()).getImage(id);
-    }
-
     private void markDirtyAndSync() {
         if (getHost() != null) {
             getHost().markForSave();
@@ -506,15 +528,17 @@ public class Display extends AEBasePart implements MenuProvider, ISubMenuHost, I
 
         List<DisplayImageEntry> imported = new ArrayList<>();
         for (DisplayImageEntry entry : cardEntries) {
-            String newId = store.copyImage(entry.id());
-            if (newId != null) {
-                imported.add(new DisplayImageEntry(newId, entry.sourceName(), entry.x(), entry.y(), entry.width(),
-                        entry.height()));
+            if (store.acquire(entry.id())) {
+                imported.add(entry);
             }
         }
 
         if (!cardEntries.isEmpty() && imported.isEmpty()) {
             return;
+        }
+
+        for (DisplayImageEntry entry : state.displayImages) {
+            store.release(entry.id());
         }
 
         state.displayImages.clear();
@@ -533,6 +557,7 @@ public class Display extends AEBasePart implements MenuProvider, ISubMenuHost, I
         private static final String NBT_MERGE = "merge_mode";
         private static final String NBT_MARGIN = "add_margin";
         private static final String NBT_CENTER = "center_text";
+        private static final String NBT_FONT_SIZE = "font_size";
         private static final String NBT_DISPLAY_IMAGES = "display_images";
         private static final String NBT_SELECTED_DISPLAY_IMAGE = "selected_display_image";
         private static final String NBT_CONNECT_UP = "connect_up";
@@ -545,6 +570,7 @@ public class Display extends AEBasePart implements MenuProvider, ISubMenuHost, I
         private boolean mergeMode = true;
         private boolean addMargin = false;
         private boolean centerText = false;
+        private int fontSize = 0;
         private boolean connectUp = true;
         private boolean connectDown = true;
         private boolean connectLeft = true;
@@ -568,6 +594,9 @@ public class Display extends AEBasePart implements MenuProvider, ISubMenuHost, I
                 img.putInt("y", entry.y());
                 img.putInt("width", entry.width());
                 img.putInt("height", entry.height());
+                img.putInt("frames", entry.frameCount());
+                img.putInt("columns", entry.columns());
+                img.putInt("frameMs", entry.frameDurationMs());
                 list.add(img);
             }
             return list;
@@ -577,13 +606,17 @@ public class Display extends AEBasePart implements MenuProvider, ISubMenuHost, I
             List<DisplayImageEntry> entries = new ArrayList<>();
             for (int i = 0; i < list.size(); i++) {
                 CompoundTag img = list.getCompound(i);
+                int frames = Math.max(1, img.getInt("frames"));
                 entries.add(new DisplayImageEntry(
                         img.getString("id"),
                         img.getString("source"),
                         Mth.clamp(img.getInt("x"), 0, 100),
                         Mth.clamp(img.getInt("y"), 0, 100),
                         Mth.clamp(img.getInt("width"), 0, 100),
-                        Mth.clamp(img.getInt("height"), 0, 100)));
+                        Mth.clamp(img.getInt("height"), 0, 100),
+                        frames,
+                        frames > 1 ? Math.max(1, img.getInt("columns")) : 1,
+                        frames > 1 ? Math.max(1, img.getInt("frameMs")) : 0));
             }
             return entries;
         }
@@ -595,6 +628,7 @@ public class Display extends AEBasePart implements MenuProvider, ISubMenuHost, I
             tag.putBoolean(NBT_MERGE, mergeMode);
             tag.putBoolean(NBT_MARGIN, addMargin);
             tag.putBoolean(NBT_CENTER, centerText);
+            tag.putInt(NBT_FONT_SIZE, fontSize);
 
             tag.put(NBT_DISPLAY_IMAGES, writeImageEntries(displayImages));
 
@@ -612,6 +646,7 @@ public class Display extends AEBasePart implements MenuProvider, ISubMenuHost, I
             mergeMode = tag.getBoolean(NBT_MERGE);
             addMargin = tag.getBoolean(NBT_MARGIN);
             centerText = tag.getBoolean(NBT_CENTER);
+            fontSize = Mth.clamp(tag.getInt(NBT_FONT_SIZE), 0, 999);
 
             displayImages.clear();
             if (tag.contains(NBT_DISPLAY_IMAGES, Tag.TAG_LIST)) {
@@ -654,6 +689,7 @@ public class Display extends AEBasePart implements MenuProvider, ISubMenuHost, I
             tag.putBoolean(NBT_MERGE, mergeMode);
             tag.putBoolean(NBT_MARGIN, addMargin);
             tag.putBoolean(NBT_CENTER, centerText);
+            tag.putInt(NBT_FONT_SIZE, fontSize);
             tag.put(NBT_DISPLAY_IMAGES, writeImageEntries(displayImages));
 
             return tag;
@@ -674,6 +710,10 @@ public class Display extends AEBasePart implements MenuProvider, ISubMenuHost, I
 
             if (tag.contains(NBT_CENTER, Tag.TAG_BYTE)) {
                 centerText = tag.getBoolean(NBT_CENTER);
+            }
+
+            if (tag.contains(NBT_FONT_SIZE, Tag.TAG_INT)) {
+                fontSize = Mth.clamp(tag.getInt(NBT_FONT_SIZE), 0, 999);
             }
 
             normalizeSelectedImage();

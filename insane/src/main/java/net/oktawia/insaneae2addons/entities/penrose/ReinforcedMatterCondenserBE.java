@@ -27,6 +27,8 @@ import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuLocator;
 import appeng.util.inv.AppEngInternalInventory;
 import appeng.util.inv.CombinedInternalInventory;
+import appeng.util.inv.FilteredInternalInventory;
+import appeng.util.inv.filter.AEItemFilters;
 import appeng.util.inv.filter.IAEItemFilter;
 
 import net.oktawia.crazyae2addons.util.IManagedBEHelper;
@@ -55,7 +57,7 @@ public class ReinforcedMatterCondenserBE extends AEBaseInvBlockEntity
 
     @Getter
     private final AppEngInternalInventory outputInventory = new AppEngInternalInventory(this, 1, 64,
-            onlyItem(AEItems.SINGULARITY.asItem()));
+            onlyItem(InsaneItemRegistrar.SUPER_SINGULARITY.get()));
 
     @Getter
     private final AppEngInternalInventory componentInventory = new AppEngInternalInventory(this, 1,
@@ -66,7 +68,7 @@ public class ReinforcedMatterCondenserBE extends AEBaseInvBlockEntity
     private final InternalInventory inputInventory = new CondenseInventory();
 
     private final InternalInventory exposedInventory = new CombinedInternalInventory(this.inputInventory,
-            this.outputInventory);
+            new FilteredInternalInventory(this.outputInventory, AEItemFilters.EXTRACT_ONLY));
 
     public ReinforcedMatterCondenserBE(BlockPos pos, BlockState blockState) {
         super(InsaneBlockEntityRegistrar.REINFORCED_MATTER_CONDENSER_BE.get(), pos, blockState);
@@ -128,8 +130,8 @@ public class ReinforcedMatterCondenserBE extends AEBaseInvBlockEntity
     }
 
     private boolean canPushOutput() {
-        ItemStack output = this.outputInventory.getStackInSlot(0);
-        return output.isEmpty() || output.getCount() < this.outputInventory.getSlotLimit(0);
+        return this.outputInventory
+                .insertItem(0, InsaneItemRegistrar.SUPER_SINGULARITY.get().getDefaultInstance(), true).isEmpty();
     }
 
     private int freeCapacity() {
@@ -139,10 +141,11 @@ public class ReinforcedMatterCondenserBE extends AEBaseInvBlockEntity
     private void compress(int amount) {
         this.storedSingularities += amount;
 
-        if (this.storedSingularities >= SINGULARITIES_PER_SUPER) {
-            this.storedSingularities = 0;
-            this.outputInventory.insertItem(0,
-                    InsaneItemRegistrar.SUPER_SINGULARITY.get().getDefaultInstance(), false);
+        if (this.storedSingularities >= SINGULARITIES_PER_SUPER
+                && this.outputInventory
+                        .insertItem(0, InsaneItemRegistrar.SUPER_SINGULARITY.get().getDefaultInstance(), false)
+                        .isEmpty()) {
+            this.storedSingularities -= SINGULARITIES_PER_SUPER;
         }
 
         setChanged();
